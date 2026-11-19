@@ -1,0 +1,539 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>滞回模型 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="def_hysteretic_property.html" rel="next" title="Hysteretic Model Properties"/>
+<link href="../../../hertz/doc/manual/def_hertz_property.html" rel="prev" title="Hertz Model Properties"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<style>
+
+/* table definition for contact model properties*/
+table[class^="icg"] {
+   border-left: 0;
+   border-right: 0;
+   margin-left: auto;
+   margin-right: auto;
+   text-align: left;
+   border-collapse: collapse;
+}
+table[class^="icg"] td:only-child{
+  background:#f6f6f1;
+  border-spacing: 0px;
+}
+
+table[class^="icg"] th.head{
+   border: 2px solid white;
+}
+
+/* table definitions for contact models*/
+table.icgcmprop td:nth-child(3), table.icgcmprop td:nth-child(6) {
+ border-right: 1px solid black;
+}
+
+table.icgcmprop td:nth-child(7), table.icgcmprop td:first-child+td+td+td+td+td+td, table.icgcmprop td:nth-child(8), table.icgcmprop td:first-child+td+td+td+td+td+td+td {
+   text-align: center;
+}
+
+table.icgcmmeth td:last-child, table.icgcmmeth td:nth-child(2), table.icgcmener td:nth-child(3), table.icgcmener td:first-child+td+td, table.icgcmce td:nth-child(2), table.icgcmce td:nth-child(4), table.icgcmce td:nth-child(5) {
+  border-left: 1px solid black;
+}
+
+</style><div class="section" id="hysteretic-model">
+<span id="cmhysteretic"></span><h1>滞回模型</h1>
+<p class="h2 rubric">引言</p>
+<p><span class="codename">PFC</span> 中的滞回接触模型由“<a class="reference internal" href="../../../hertz/doc/manual/cmhertz.html#cmhertz">Hertz 模型（<span class="std std-ref">Hertz Model</span>）</a>”一节所述的 Hertz 模型弹性部分，
+与法向方向上一个由非线性黏弹性单元组成的替代阻尼器组合而成。
+该模型在命令和 <span class="codename">FISH</span> 中称为 <span class="cmdkey">hysteretic</span>。</p>
+<div class="admonition note">
+<p class="first admonition-title">注意</p>
+<p>版本 28 包含以下附加修改：</p>
+<p class="last">由接触块体的参数推导接触模型弹性参数的属性继承机制已改为遵循 <a class="reference internal" href="../../../hertz/doc/manual/cmhertz.html#mindlin1953" id="id1">[Mindlin1953]</a>，
+并遵循<a class="reference internal" href="../../../hertz/doc/manual/cmhertz.html#cmhertz-propinh"><span class="std std-ref">下文</span>（below）</a>的公式。
+在此修改之前，接触的有效剪切模量和泊松比分别取为
+接触块体剪切模量和泊松比的平均值。请注意，此更改可能会改变
+对 <span class="cmdkey">hysteretic</span> 模型使用属性继承机制的模型的输出。
+更多信息请参阅“<a class="reference internal" href="../../../hertz/doc/manual/cmhertz.html#cmhertz">Hertz 模型（<span class="std std-ref">Hertz Model</span>）</a>”的文档。</p>
+</div>
+<div class="section" id="behavior-summary">
+<h2>行为概要</h2>
+<p>该公式基于 <a class="reference internal" href="#machado2012" id="id2">[Machado2012]</a> 的文献综述。共提供三种不同的阻尼器模式，
+它们分别对应阻尼器力计算的三种不同表达式。</p>
+</div>
+<div class="section" id="activity-deletion-criteria">
+<h2>活动-删除准则</h2>
+<p>滞回模型定义的激活距离为 0.0。接触的激活状态按如下方式更新：</p>
+<div class="math" id="equation-cmhysteretic_activity">
+<span class="eqno">(1)</span>\[\begin{split}\begin{cases}
+  g_c \leq 0.0 &amp; \Rightarrow  \mbox{contact active}
+\\
+  g_c &gt; 0.0    &amp; \Rightarrow  \mbox{contact inactive}
+\end{cases}\end{split}\]</div>
+<p>如“<a class="reference internal" href="../../../../../pfc/docproject/source/manual/pfc_model_components/contacts/contact_resolution.html#contact-resolution">接触识别（<span class="std std-ref">Contact Resolution</span>）</a>”一节所述，对未激活的接触会跳过力-位移计算。</p>
+</div>
+<div class="section" id="force-displacement-law">
+<h2>力-位移定律</h2>
+<p>与 <a class="reference internal" href="../../../hertz/doc/manual/cmhertz.html#cmhertz">赫兹（<span class="std std-ref">Hertz</span>）</a> 模型类似，滞回模型传递力而不传递力矩。该力包含一个非线性弹性分量 <span class="math">\(\mathbf{F^{h}}\)</span> 和
+一个黏性分量 <span class="math">\(\mathbf{F^{d}}\)</span></p>
+<div class="math" id="equation-cmhysteretic_eqF">
+<span class="eqno">(2)</span>\[\mathbf{F_{c}} =\mathbf{F^{h}} +\mathbf{F^{d}} \mbox{, } \mathbf{M_{c}} \equiv 0\]</div>
+<p>非线性 Hertz 力可分解为法向贡献和剪切贡献：</p>
+<div class="math" id="equation-cmhysteretic_eqFh">
+<span id="cmhysteretic-eqfh"></span><span class="eqno">(3)</span>\[\mathbf{F^{h}} = -F_{n}^{h} {\kern 1pt} \hat{\mathbf{n}}_\mathbf{c} +\mathbf{F_{s}^{h}}\]</div>
+<p>其公式与<a class="reference internal" href="../../../hertz/doc/manual/cmhertz.html#cmhertz">赫兹接触模型（<span class="std std-ref">Hertz contact model</span>）</a>中描述的非线性 Hertz 力等价。</p>
+<p>阻尼器力只有法向分量：</p>
+<div class="math" id="equation-cmhysteretic_eqFd">
+<span class="eqno">(4)</span>\[\mathbf{F^{d}} =-F_{n}^{d} {\kern 1pt} \hat{\mathbf{n}}_\mathbf{c}\]</div>
+<p>其中 <span class="math">\(F_{n}^{d}\)</span> 的表达式可用滞回阻尼因子 <span class="math">\(\chi\)</span> 表示为：</p>
+<div class="math" id="equation-cmhysteretic_eqFdn1">
+<span class="eqno">(5)</span>\[F_{n}^{d} = \chi \delta_{n}^{\alpha} \dot{\delta}_n\]</div>
+<p>其中 <span class="math">\(\delta_{n} = -g_c\)</span> 表示实际重叠量，<span class="math">\(\dot{\delta}_n = \mathbf{\dot{\delta}} {\kern 1pt} \hat{\mathbf{n}}_\mathbf{c}\)</span>
+是相对平动速度的法向分量，滞回阻尼因子 <span class="math">\(\chi\)</span> 取决于阻尼器模式 <span class="math">\(M_d\)</span>、
+目标恢复系数 <span class="math">\(e_n\)</span>、Hertz 法向力系数 <span class="math">\(h_n\)</span>（见<a class="reference internal" href="../../../hertz/doc/manual/cmhertz.html#cmhertz-eq5"><span class="std std-ref">此处</span>（here）</a>）以及法向撞击速度 <span class="math">\(\dot{\delta}^{(-)}_n\)</span>，其关系为：</p>
+<div class="math" id="equation-cmhysteretic_eqFdn">
+<span class="eqno">(6)</span>\[\begin{split}\chi = \begin{cases}
+          \dfrac{1-e_n^2}{e_n} \frac{h_n}{\dot{\delta}^{(-)}_n} &amp; \mbox{, } M_d = 0
+       \\
+          \dfrac{3\left(1-e_n^2\right)}{4} \frac{h_n}{\dot{\delta}^{(-)}_n} &amp; \mbox{, } M_d = 1
+       \\
+          \dfrac{3\left(1-e_n^2\right)e^{2\left(1-e_n\right)}}{4} \frac{h_n}{\dot{\delta}^{(-)}_n} &amp; \mbox{, } M_d = 2
+       \end{cases}\end{split}\]</div>
+<p>注意，对于 <span class="math">\(M_d=1\)</span> 的情况，上式中所用的目标恢复系数取 <span class="math">\(e_n\)</span> 与最小值 <span class="math">\(e^*_n\)</span> 之间的较大者。</p>
+</div>
+<div class="section" id="energy-partitions">
+<h2>能量分区</h2>
+<p>滞回模型定义三个能量分区：</p>
+<ul class="simple">
+<li>储存在弹簧中的应变能 <span class="math">\(E_{k}\)</span>；</li>
+<li>滑动功 <span class="math">\(E_{\mu}\)</span>，定义为摩擦滑动耗散的总能量；以及</li>
+<li>阻尼功 <span class="math">\(E_{\beta}\)</span>，定义为阻尼器耗散的总能量。</li>
+</ul>
+<p>若激活能量跟踪，这些能量分区按如下方式更新。</p>
+<ol class="arabic">
+<li><p class="first">更新应变能：</p>
+<div class="math" id="equation-cmhysteretic_eq16">
+<span class="eqno">(7)</span>\[E_{k} = \frac{\alpha}{(\alpha+1)} \left(\frac{\left(F^{h}_n\right)^2}{k_n}\right) + \frac{1}{2} \frac{\|\mathbf{F^{h}_s)}\|^2}{k_s}\]</div>
+</li>
+<li><p class="first">更新滑动能量：</p>
+<div class="math" id="equation-cmhysteretic_eq17">
+<span class="eqno">(8)</span>\[\begin{split}\begin{array}{l} {E_{\mu } :=E_{\mu } - {\tfrac{1}{2}} \left(\left(\mathbf{F_{s}^{h}} \right)_{o} +\mathbf{F_{s}^{h}} \right)\cdot \Delta \pmb{δ}_\mathbf{s}^{\mu } } \\
+{{\rm with}\qquad \Delta \pmb{δ}_\mathbf{s}^{\mu } =\Delta \pmb{δ}_\mathbf{s} -\Delta \pmb{δ}_\mathbf{s}^{k} =\Delta \pmb{δ}_\mathbf{s} -\left(\frac{\mathbf{F_{s}^{h}} -\left(\mathbf{F_{s}^{h}} \right)_{o} }{k_{s} } \right)} \end{array}\end{split}\]</div>
+<p>其中 <span class="math">\(\left(\mathbf{F_{s}^{h}} \right)_{o}\)</span> 是时间步开始时的剪切力，“<a class="reference internal" href="../../../../../pfc/docproject/source/manual/pfc_model_components/contacts/contact_resolution.html#contact-resolution"><span class="std std-ref">接触解析</span>（Contact Resolution）</a>”一节中 <a class="reference internal" href="../../../../../pfc/docproject/source/manual/pfc_model_components/contacts/contact_resolution.html#contactres-eq10"><span class="std std-ref">该</span>（this）</a> 公式的
+相对剪切位移增量已被分解为弹性 <span class="math">\(\left(\Delta \pmb{δ}_\mathbf{s}^{k} \right)\)</span> 和
+滑动 <span class="math">\(\left(\Delta \pmb{δ}_\mathbf{s}^{\mu } \right)\)</span> 分量。滑动分量与时间步内平均剪切力的
+点积给出滑动能量的增量。</p>
+</li>
+<li><p class="first">更新阻尼器能量：</p>
+<div class="math" id="equation-cmhysteretic_eq18">
+<span class="eqno">(9)</span>\[E_{\beta } :=E_{\beta } - \mathbf{F^{d}} \cdot \left(\dot{\pmb{δ} }{\kern 1pt} {\kern 1pt} \Delta t\right)\]</div>
+<p>其中 <span class="math">\(\dot{\pmb{δ} }\)</span> 是“<a class="reference internal" href="../../../../../pfc/docproject/source/manual/pfc_model_components/contacts/contact_resolution.html#contact-resolution"><span class="std std-ref">接触解析</span>（Contact Resolution）</a>”一节中 <a class="reference internal" href="../../../../../pfc/docproject/source/manual/pfc_model_components/contacts/contact_resolution.html#contactres-eq10"><span class="std std-ref">该</span>（this）</a> 公式的相对平动
+速度。</p>
+</li>
+</ol>
+<p>关于这些分区在命令和 <span class="codename">FISH</span> 中所用关键字的附加信息，见下表。</p>
+<span id="cmhysteretic-entable"></span><table border="1" class="icgcmener docutils" id="id5">
+<caption><span class="caption-text">表 1：滞回模型能量</span></caption>
+<colgroup>
+<col width="21%"/>
+<col width="14%"/>
+<col width="34%"/>
+<col width="17%"/>
+<col width="14%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">关键字</th>
+<th class="head">符号</th>
+<th class="head">说明</th>
+<th class="head">范围</th>
+<th class="head">累积</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td colspan="5">Hertz 组：</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal"><span class="pre">energy‑strain</span></code></td>
+<td><span class="math">\(E_{k}\)</span></td>
+<td>应变能</td>
+<td><span class="math">\([0.0,+\infty)\)</span></td>
+<td>NO</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">energy‑slip</span></code></td>
+<td><span class="math">\(E_{\mu}\)</span></td>
+<td>滑动耗散的总能量</td>
+<td><span class="math">\([0.0,+\infty)\)</span></td>
+<td>YES</td>
+</tr>
+<tr class="row-odd"><td colspan="5">阻尼器组：</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal"><span class="pre">energy‑dashpot</span></code></td>
+<td><span class="math">\(E_{\beta}\)</span></td>
+<td>阻尼器耗散的总能量</td>
+<td><span class="math">\([0.0,+\infty)\)</span></td>
+<td>YES</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="properties">
+<h2>属性</h2>
+<p>滞回接触模型所定义的属性列于下表中以供快速查阅；表中各列信息的说明见“<a class="reference internal" href="../../../../../pfc/docproject/source/manual/pfc_model_components/contacts/contact_properties.html#contact-properties">接触属性（<span class="std std-ref">Contact Properties</span>）</a>”一节。
+下文还将讨论由表面可继承属性到接触模型属性的映射关系。</p>
+<span id="cmhysteretic-proptable"></span><table border="1" class="icgcmprop docutils" id="id6">
+<caption><span class="caption-text">表 2：滞回模型属性</span></caption>
+<colgroup>
+<col width="13%"/>
+<col width="17%"/>
+<col width="24%"/>
+<col width="4%"/>
+<col width="14%"/>
+<col width="11%"/>
+<col width="8%"/>
+<col width="9%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">关键字</th>
+<th class="head">符号</th>
+<th class="head">说明</th>
+<th class="head">类型</th>
+<th class="head">范围</th>
+<th class="head">默认</th>
+<th class="head">可修改</th>
+<th class="head">可继承</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td colspan="2"><span class="cmdkey">hysteretic</span></td>
+<td colspan="6">模型名称</td>
+</tr>
+<tr class="row-odd"><td colspan="8">Hertz 组：</td>
+</tr>
+<tr class="row-even"><td><span class="cmdkey">hz_shear</span></td>
+<td><span class="math">\(G\)</span></td>
+<td>剪切模量    [应力]</td>
+<td>FLT</td>
+<td><span class="math">\([0.0,+\infty)\)</span></td>
+<td>0.0</td>
+<td>YES</td>
+<td>YES</td>
+</tr>
+<tr class="row-odd"><td><span class="cmdkey">hz_poiss</span></td>
+<td><span class="math">\(\nu\)</span></td>
+<td>泊松比    [-]</td>
+<td>FLT</td>
+<td><span class="math">\((-1.0,0.5]\)</span></td>
+<td>0.0</td>
+<td>YES</td>
+<td>YES</td>
+</tr>
+<tr class="row-even"><td><span class="cmdkey">fric</span></td>
+<td><span class="math">\(\mu\)</span></td>
+<td>摩擦系数 [-]</td>
+<td>FLT</td>
+<td><span class="math">\([0.0,+\infty)\)</span></td>
+<td>0.0</td>
+<td>YES</td>
+<td>YES</td>
+</tr>
+<tr class="row-odd"><td><span class="cmdkey">hz_mode</span></td>
+<td><span class="math">\(M_s\)</span></td>
+<td>剪切力缩放模式 [-]</td>
+<td>INT</td>
+<td><span class="math">\(\{0;1\}\)</span></td>
+<td>0</td>
+<td>YES</td>
+<td>NO</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td> </td>
+<td><span class="math">\(\;\;\;\;\;\;\begin{cases} \mbox{0: no scaling} \\ \mbox{1: scaling is active} \end{cases}\)</span></td>
+<td> </td>
+<td> </td>
+<td> </td>
+<td> </td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td><span class="cmdkey">hz_alpha</span></td>
+<td><span class="math">\(\alpha\)</span></td>
+<td>指数          [_]</td>
+<td>FLT</td>
+<td><span class="math">\([0.0,+\infty)\)</span></td>
+<td>1.5</td>
+<td>YES</td>
+<td>NO</td>
+</tr>
+<tr class="row-even"><td><span class="cmdkey">hz_slip</span></td>
+<td><span class="math">\(s\)</span></td>
+<td>滑动状态 [-]</td>
+<td>BOOL</td>
+<td>{false,true}</td>
+<td>false</td>
+<td>NO</td>
+<td>N/A</td>
+</tr>
+<tr class="row-odd"><td><span class="cmdkey">hz_force</span></td>
+<td><span class="math">\(\mathbf{F^{h}}\)</span></td>
+<td>Hertz 力（接触平面坐标系）</td>
+<td>VEC</td>
+<td><span class="math">\(\mathbb{R}^3\)</span></td>
+<td><span class="math">\(\mathbf{0}\)</span></td>
+<td>YES</td>
+<td>NO</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td> </td>
+<td><span class="math">\(\left( -F_n^h,F_{ss}^h,F_{st}^h \right) \quad \left(\mbox{2D model: }  F_{ss}^h \equiv 0 \right)\)</span></td>
+<td> </td>
+<td> </td>
+<td> </td>
+<td> </td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td colspan="8">阻尼器组：</td>
+</tr>
+<tr class="row-even"><td><span class="cmdkey">dp_mode</span></td>
+<td><span class="math">\(M_d\)</span></td>
+<td>阻尼器模式 [-]</td>
+<td>INT</td>
+<td>{0;1;2}</td>
+<td>0</td>
+<td>YES</td>
+<td>NO</td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td> </td>
+<td><span class="math">\(\;\;\;\;\;\;\begin{cases} \mbox{0: default mode} \\ \mbox{1: mode 1} \\ \mbox{2: mode 2} \end{cases}\)</span></td>
+<td> </td>
+<td> </td>
+<td> </td>
+<td> </td>
+<td> </td>
+</tr>
+<tr class="row-even"><td><span class="cmdkey">dp_en</span></td>
+<td><span class="math">\(e_n\)</span></td>
+<td>目标恢复系数 [-]</td>
+<td>FLT</td>
+<td><span class="math">\([0.0,1.0]\)</span></td>
+<td>1.0</td>
+<td>YES</td>
+<td>NO</td>
+</tr>
+<tr class="row-odd"><td><span class="cmdkey">dp_enmin</span></td>
+<td><span class="math">\(e^*_n\)</span></td>
+<td>最小恢复系数 [-]</td>
+<td>FLT</td>
+<td><span class="math">\([0.0,1.0]\)</span></td>
+<td>0.0</td>
+<td>YES</td>
+<td>NO</td>
+</tr>
+<tr class="row-even"><td><span class="cmdkey">dp_force</span></td>
+<td><span class="math">\(\mathbf{F^{d}}\)</span></td>
+<td>阻尼力（接触面坐标系）</td>
+<td>VEC</td>
+<td><span class="math">\(\mathbb{R}^3\)</span></td>
+<td><span class="math">\(\mathbf{0}\)</span></td>
+<td>NO</td>
+<td>NO</td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td> </td>
+<td><span class="math">\(\left( -F_n^d,0,0 \right)\)</span></td>
+<td> </td>
+<td> </td>
+<td> </td>
+<td> </td>
+<td> </td>
+</tr>
+</tbody>
+</table>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p class="h3 rubric">属性继承</p>
+<p>剪切模量 <span class="math">\(G\)</span>、泊松比 <span class="math">\(\nu\)</span> 和摩擦系数 <span class="math">\(\mu\)</span> 可以从接触块体继承。继承逻辑
+与<a class="reference internal" href="../../../hertz/doc/manual/cmhertz.html#cmhertz-propinh"><span class="std std-ref">此处</span>（here）</a>描述的 <a class="reference internal" href="../../../../docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">hertz</span></span></a> 接触模型类似。</p>
+</div>
+<div class="section" id="methods">
+<h2>方法</h2>
+<p>滞回模型未定义任何方法。</p>
+</div>
+<div class="section" id="callback-events">
+<h2>回调事件</h2>
+<span id="cmhysteretic-fctable"></span><table border="1" class="icgcmce docutils" id="id7">
+<caption><span class="caption-text">表 3：滞回接触模型回调事件</span></caption>
+<colgroup>
+<col width="22%"/>
+<col width="12%"/>
+<col width="14%"/>
+<col width="8%"/>
+<col width="44%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">事件</th>
+<th class="head">数组槽位</th>
+<th class="head">值类型</th>
+<th class="head">范围</th>
+<th class="head">说明</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td colspan="4"><span class="cmdkey">contact_activated</span></td>
+<td>接触变为激活状态</td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td>1</td>
+<td>C_PNT</td>
+<td>N/A</td>
+<td>接触指针</td>
+</tr>
+<tr class="row-even"><td colspan="4"><span class="cmdkey">slip_change</span></td>
+<td>滑动状态已改变</td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td>1</td>
+<td>C_PNT</td>
+<td>N/A</td>
+<td>接触指针</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td>2</td>
+<td>INT</td>
+<td>{0;1}</td>
+<td>滑移变化模式</td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td> </td>
+<td> </td>
+<td> </td>
+<td><span class="math">\(\;\;\;\;\;\;\begin{cases} \mbox{0: slip has initiated} \\ \mbox{1: slip has ended} \end{cases}\)</span></td>
+</tr>
+</tbody>
+</table>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+</div>
+<div class="section" id="model-summary">
+<h2>模型概要</h2>
+<p>滞回模型属性的字母顺序列表见<a class="reference internal" href="def_hysteretic_property.html#def-hysteretic-property"><span class="std std-ref">此处</span>（here）</a>。</p>
+<div class="toctree-wrapper hide compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="def_hysteretic_property.html">Hysteretic Model Properties</a></li>
+</ul>
+</div>
+<div class="hide docutils container">
+<p>This is a hidden link to: <a class="reference internal" href="#gonthier2004" id="id3">[Gonthier2004]</a></p>
+<p>And this is a hidden link to: <a class="reference internal" href="#lankarani1990" id="id4">[Lankarani1990]</a></p>
+</div>
+<p class="h2 rubric">参考文献</p>
+<table class="docutils citation" frame="void" id="gonthier2004" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[Gonthier2004]</a></td><td>Y. Gonthier、J. McPhee、C. Lange、J-C. Piedboeuf，“A regularized contact model with asymmetric damping and dwell-time dependent friction”，<em>Multibody System Dynamics</em>，第 11 卷，第 209-233 页（2004）。</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="lankarani1990" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id4">[Lankarani1990]</a></td><td>H.M. Lankarani、P.E. Nikravesh，“A contact force model with hysteresis damping for impact analysis of multibody systems”，<em>Journal of Mechanical Design</em>，第 112 卷，第 369-376 页（1990）。</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="machado2012" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[Machado2012]</a></td><td>M. Machado、P. Moreira、P. Flores、H.M. Lankarani，“Compliant contact force models in multibody dynamics: Evolution of the Hertz contact theory”，<em>Mechanism and Machine Theory</em>，第 53 卷，第 99-121 页（2012 年 7 月）。</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../../../pfc/docproject/source/manual/pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../../../pfc/docproject/source/manual/pfc_model_components/pfc_model_objects.html"><span class="codename">PFC</span> Model Objects</a> »</li>
+<li class="nav-item nav-item-3"><a href="../../../../../pfc/docproject/source/manual/pfc_model_components/contacts/contacts.html">Contacts and Contact Models</a> »</li>
+<li class="nav-item nav-item-4"><a href="../../../../../pfc/docproject/source/manual/pfc_model_components/contacts/contact_models.html">Contact Models</a> »</li>
+<li class="nav-item nav-item-5"><a accesskey="U" href="../../../../../pfc/docproject/source/manual/pfc_model_components/contacts/contact_built-in.html">Built-in Contact Models</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../../../hertz/doc/manual/def_hertz_property.html" title="previous chapter"> Hertz Model Properties</a> |    
+       <a href="def_hysteretic_property.html" title="next chapter">Hysteretic Model Properties</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Hysteretic Model" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

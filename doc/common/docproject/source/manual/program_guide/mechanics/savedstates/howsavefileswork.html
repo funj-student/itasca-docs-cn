@@ -1,0 +1,116 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>保存文件的工作方式 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../../search.html" rel="search" title="Search"/>
+<link href="savefilehandling.html" rel="next" title="Save File Handling"/>
+<link href="savedstates.html" rel="prev" title="Saving"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="how-save-files-work">
+<h1>保存文件的工作方式</h1>
+<p>当前模型数据和模型保存文件是程序的基本“素材”：跟踪模型数据以及打开和关闭保存文件正是程序所做的工作。</p>
+<p>一次只能有一个模型状态处于活动状态。恢复一个保存文件会关闭当前的保存文件。如果在请求恢复另一个保存文件时当前状态存在模型更改，程序将提示用户根据需要保存当前状态。</p>
+<p><span class="flag4">i</span> <a class="reference internal" href="../projects/project_pane/projectsoverview.html#theprojectpane"><span class="std std-ref">项目</span>（Project）</a> 窗格允许在保存文件之间快速切换。在“已保存状态”列表中双击某个项目项，会对该文件执行 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.restore.html#command:model.restore" title="Restore program-state information. The state information, resulting from a previous...">恢复模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">restore</span></code>）</a>，使程序处于该模型状态。</p>
+<p>建模项目往往取决于少数（或一个）关键模型状态。将模型恢复到该状态的能力，便成为实现建模项目目标的基础。例如，参数研究通常是对同一个已保存（并恢复）的状态多次进行改动，以确定对正在研究的参数的敏感性。设计研究可能会将模型恢复到某一时点，然后“分支”一次以考察安装结构支护后的结果，再分支一次以考察无支护时的模型。反分析可能会反复将模型恢复到某个已保存的破坏前状态，以研究若干可能的破坏机制。</p>
+<p class="h2 rubric" id="savefileanatomy">保存文件剖析</p>
+<p>保存文件是一个二进制文件<a class="reference internal" href="#ss-note1"><span class="std std-ref">*</span></a>，其中包含已保存的<a class="reference internal" href="../../../glossaryofterms.html#term-model-state"><span class="xref std std-term">模型状态</span>（model state）</a>。它可能被压缩，也可能不被压缩（详见 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.save.html#command:model.save" title="Save all model-state information. The file  s  is created and, if no extension
+is...">保存模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">save</span></code>）</a> 命令）。</p>
+<p>保存文件包含一个基于文本的文件头，其中封装了有关该文件来源以及用于生成它的命令/输入的信息。保存文件的主体以二进制形式包含完整的模型状态信息，包括以下内容。</p>
+<ul class="simple">
+<li>所有模型对象以及随它们存储的所有自定义数据（存储在额外变量中）</li>
+<li>所有辅助实体（几何体、DFN 等）</li>
+<li>所有中间模型对象（<span class="codename">FLAC3D</span> 中的拉伸集和构建块集、<span class="codename">PFC</span> 中的块体模板等）</li>
+<li>所有当前的 <span class="codename">FISH</span> 符号和值</li>
+</ul>
+<p>当使用 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.new.html#command:model.new" title="Clear model-state information. Model information is cleared, allowing one to
+begin a new...">新建模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">new</span></code>）</a> 命令清除模型状态时，上述所有内容都会从内存中<em>被完全清除</em>。</p>
+<p>记住这一点很有用，它可以用来区分哪些内容<em>不会</em>随模型状态一起保存，因而要么记录在 <a class="reference internal" href="../projects/projects.html#projectsmainpage"><span class="std std-ref">项目文件</span>（project file）</a> 中，要么可能是持久的程序设置。</p>
+<div class="admonition note" id="ss-note1">
+<p class="first admonition-title">注意</p>
+<p class="last">*可以选择将文件保存为基于文本的 JSON 格式。这样会产生很大的文件，读写速度较慢，但其优点是其他应用程序可以访问其中的数据。</p>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../program_guide.html">程序指南</a> »</li>
+<li class="nav-item nav-item-2"><a href="../program_mechanics.html">Program Mechanics</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="savedstates.html">Saving</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="savedstates.html" title="previous chapter"> Saving</a> |    
+       <a href="savefilehandling.html" title="next chapter">Save File Handling</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?How Save Files Work" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

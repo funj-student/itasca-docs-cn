@@ -1,0 +1,250 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>在 FLAC3D 和 3DEC 中的强度折减流程 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../../search.html" rel="search" title="Search"/>
+<link href="fosexample.html" rel="next" title="Example Factor of Safety Calculations using the Strength Reduction Method"/>
+<link href="computationalmethods.html" rel="prev" title="Computational Methods for Factor of Safety Calculation of Slopes"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="hide sectionname docutils container">
+<span class="codename">FLAC3D</span> Theory and Background • Factor of Safety</div>
+<div class="section" id="strength-reduction-procedure-in-flac3d-and-3dec">
+<span id="fos-strengthreduction"></span><h1>在 <span class="codename">FLAC3D</span> 和 <span class="codename">3DEC</span> 中的强度折减流程</h1>
+<p>强度折减法基本上可应用于任何材料破坏模型，以根据指定强度属性或属性组的折减来评估安全系数。该方法已在摩尔-库仑材料的背景下广泛使用，并且主要体现为同时折减黏聚力和摩擦强度。从 <span class="codename">FLAC3D</span> 5.0 版本起，除摩尔-库仑强度属性（用 <a class="reference internal" href="../../../../../../../flac3d/zone/doc/manual/zone_manual/zone_commands/cmd_zone.cmodel.html#kwd:zone.cmodel.assign.mohr-coulomb" title="Mohr-Coulomb elasto-plasticity model (see the  Mohr-Coulomb model &lt;modelmohr&gt; 
+description)...">指定Mohr-Coulomb本构模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">cmodel</span> <span class="pre">assign</span> <span class="pre">mohr-coulomb</span></code>）</a> 指定）外，当给出 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 命令时，该方法还会自动应用于遍布节理强度属性（用 <a class="reference internal" href="../../../../../../../flac3d/zone/doc/manual/zone_manual/zone_commands/cmd_zone.cmodel.html#kwd:zone.cmodel.assign.ubiquitous-joint" title="Mohr-Coulomb elasto-plasticity model with a plane of weakness, known also as
+UBI model (see the  Ubiquitous-Joint model &lt;modelubiquit&gt;  description)...">指定遍布节理本构模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">cmodel</span> <span class="pre">assign</span> <span class="pre">ubiquitous-joint</span></code>）</a> 指定）和 Hoek-Brown 强度属性（用 <a class="reference internal" href="../../../../../../../flac3d/zone/doc/manual/zone_manual/zone_commands/cmd_zone.cmodel.html#kwd:zone.cmodel.assign.hoek-brown" title="Hoek-Brown elasto-plasticity model (see the  Hoek-Brown model &lt;modelhoek&gt; 
+description)...">指定Hoek-Brown本构模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">cmodel</span> <span class="pre">assign</span> <span class="pre">hoek-brown</span></code>）</a> 指定）。</p>
+<p>当在 <span class="codename">FLAC3D</span> 中针对接触面黏聚力和摩擦（通过 <a class="reference internal" href="../../../../../../../flac3d/zone/doc/manual/zone_manual/zone_commands/zoneinterface/cmd_zone.interface.node.html#kwd:zone.interface.node.property" title="Assigns one or more new property values to all interface nodes in the range...">设置接触面节点属性（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">interface</span> <span class="pre">node</span> <span class="pre">property</span></code>）</a> 指定）、或在 <span class="codename">3DEC</span> 中针对节理黏聚力和摩擦（通过 <a class="reference internal" href="../../../../../../../3dec/block/doc/manual/block_manual/block_commands/block.contact/cmd_block.contact.property.html#command:block.contact.property" title="Assign joint constitutive model properties to subcontacts.  The possible properties
+depend on the constitutive model assigned to the contact...">设置块体接触属性（<code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">contact</span> <span class="pre">property</span></code>）</a> 指定）执行 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 时，也可以应用强度折减法。</p>
+<p>通过 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 命令实施强度折减技术的步骤如下。</p>
+<p>首先，程序确定一个“特征响应时间”，即表征系统响应时间的一个代表性步数（记为 <span class="math">\(N_r\)</span>）。<span class="math">\(N_r\)</span> 的求法是：把材料强度（对摩尔-库仑材料为黏聚力和抗拉强度）设为一个很大的值，使内部应力发生很大变化（默认对应力状态施加扰动因子 2），然后确定系统恢复到平衡所需的步数。</p>
+<p>默认情况下，<span class="math">\(N_r\)</span> 的最大限值为 50,000。如果模型在 50,000 步内未达到平衡，计算将停止，安全系数解无法完成。此时用户应检查为模型选择的参数。例如，如果用户选用了杨氏模量很高的结构支护，这可能会影响解的收敛时间。</p>
+<p>也可以通过 <span class="cmdkey">characteristic-steps</span> 关键字手动设置 <span class="math">\(N_r\)</span> 的值来指定 <span class="math">\(N_r\)</span>。或者，使用 <span class="cmdkey">perturbation</span> 关键字指定不同的扰动因子，以改变内部应力的初始扰动。注意，这些手动控制应谨慎使用。</p>
+<p>在 <span class="math">\(N_r\)</span> 确定之后，对于给定的强度折减系数 <span class="math">\(F\)</span>，执行 <span class="math">\(N_r\)</span> 个计算步。如果在 <span class="math">\(N_r\)</span> 步之后不平衡力比 <a class="footnote-reference" href="#id2" id="id1">[1]</a> 小于 10<sup>-5</sup>，则系统处于平衡状态。如果不平衡力比大于 10<sup>-5</sup>，则再执行 <span class="math">\(N_r\)</span> 步；如果此时力比小于 10<sup>-5</sup>，则退出循环。将当前 <span class="math">\(N_r\)</span> 步跨度结束时力比的值与前一个 <span class="math">\(N_r\)</span> 步结束时力比的值进行比较。如果差值小于 10%，则认为系统处于非平衡状态，并以新的非平衡状态 <span class="math">\(F\)</span> 退出循环。如果上述差值大于 10%，则继续执行由 <span class="math">\(N_r\)</span> 步组成的块，直至：(1) 差值小于 10%；或 (2) 已执行 6 个这样的块；或 (3) 力比小于 10<sup>-5</sup>。情形 (1) 的理由是：平均力比正在收敛到一个大于平衡所对应值的稳定值，因此系统必定处于持续运动状态。</p>
+<p>求解过程中会显示以下信息：</p>
+<ol class="arabic simple">
+<li>当前正在执行的操作；</li>
+<li>为确定给定 <span class="math">\(F\)</span> 值而完成的计算步数；</li>
+<li>两倍特征响应时间 <span class="math">\(N_r\)</span>（注意，不平衡力比的变化首先在两倍 <span class="math">\(N_r\)</span> 时检查）；</li>
+<li>不平衡力比；</li>
+<li>已完成的求解阶段数（即平衡或非平衡检验次数）；以及</li>
+<li><span class="math">\(F\)</span> 的当前区间值。</li>
+</ol>
+<p>当上、下区间值之差小于平均值的 0.005 倍时，安全系数求解停止。（该分辨率限值可通过 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 命令的可选关键字 <span class="cmdkey">resolution</span> 更改。）</p>
+<p>使用 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 命令调用的区间求解方法，在确定安全系数之前可能需要进行大量（稳定与不稳定）求解。如果已知安全系数的近似范围，则可通过指定起始区间值来减少求解次数（以及总求解时间）。这可以通过 <span class="cmdkey">bracket</span> <a class="reference internal" href="../../../../../utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">v1</span></span></a> <a class="reference internal" href="../../../../../utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">v2</span></span></a> 实现，该短语是 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 命令的可选短语。如果计算得到的安全系数超出指定区间，将发出警告消息。此外，还可以通过设置 <span class="cmdkey">bracket</span> <a class="reference internal" href="../../../../../utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">v1</span></span></a> <a class="reference internal" href="../../../../../utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">v2</span></span></a> 来检验指定安全系数是高于还是低于实际安全系数。</p>
+<p>使用 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 时应注意以下情况。</p>
+<ol class="arabic simple">
+<li>在执行 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 计算之前，必须保存模型状态。</li>
+<li>对于 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 计算，初始应力状态可以是零应力状态，也可以是应力平衡状态。如果模型处于零应力状态，则仅施加重力荷载来确定 <span class="math">\(N_r\)</span>。</li>
+<li>发出 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 时，安全系数计算在小应变计算模式下进行。</li>
+<li>如果对流体流动-力学耦合模型（已指定 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.fluid" title="Fluid-flow analysis...">配置流体计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">fluid</span></code>）</a>）进行安全系数计算，则在发出 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 时，流体流动计算将被关闭，流体体积模量将被设为零。</li>
+<li>安全系数计算假定为 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 的非关联塑性流动。可添加关键字 <span class="cmdkey">associated</span> 进行关联塑性流动计算。</li>
+</ol>
+<p>在 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 计算期间会保存三个文件：初始条件状态、最近一次稳定的安全系数计算以及最近一次不稳定的安全系数计算。默认情况下，初始状态保存到名为“FOS-Init.sav”的文件，稳定状态保存到名为“FOS-Stable.sav”的文件，不稳定状态保存到“FOS-Unstable.sav”文件。每个安全系数计算阶段都从“FOS-Init.sav”状态开始。</p>
+<p>可以为这三个文件分别指定不同的文件名（参见 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#kwd:model.factor-of-safety.filename" title="Sets the file name prefix used to identify save files created during the factor
+of safety calculation.  Three files will be created during the process.  For
+example, if the prefix given was  test , then the filenames  test-Init.f3sav ,
+ test-Stable.f3sav , and  test-Unstable.f3sav  will be created.
+ These files represent the *initial* state, the last *stable* state, and the
+last *unstable* state, respectively...">设置安全系数分析文件名（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span> <span class="pre">filename</span></code>）</a> 命令）。</p>
+<div class="section" id="strength-reduction-properties">
+<span id="fos-srm-properties"></span><h2>强度折减属性</h2>
+<p>使用 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 时可折减的强度属性在以下各节中描述。</p>
+<div class="section" id="mohr-coulomb-material">
+<span id="fos-mohr-coulomb-material"></span><h3>摩尔-库仑材料</h3>
+<p>如果指定了<a class="reference internal" href="../../../../../../models/mohr/doc/modelmohr.html#modelmohr"><span class="std std-ref">摩尔-库仑模型</span>（Mohr-Coulomb model）</a>破坏准则，则执行 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 时，黏聚力 <span class="math">\(c\)</span> 和内摩擦角 <span class="math">\(\phi\)</span> 默认被选入安全系数计算。这些属性的折减方程为</p>
+<div class="math" id="equation-eqfos-srm-mc-cohesion">
+<span class="eqno">(1)</span>\[c^{\rm trial}\ =\ {1 \over {F^{\rm trial}}}\ c\]</div>
+<div class="math" id="equation-eqfos-srm-mc-friction">
+<span class="eqno">(2)</span>\[\phi^{\rm trial}\ =\ \arctan\biggl({1 \over {F^{\rm trial}}}\tan\phi\biggr)\]</div>
+<p>这些强度可与<a class="reference internal" href="#fos-strengthreduction"><span class="std std-ref">强度折减过程</span>（strength reduction procedure）</a>配合使用。可通过关键字短语 <span class="cmdkey">exclude cohesion</span> 或 <span class="cmdkey">exclude friction</span> 选择将这些强度从 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 计算中排除。</p>
+<p>抗拉强度 <span class="math">\(\sigma^t\)</span> 也可以通过可选短语 <span class="cmdkey">include tension</span> 纳入。抗拉强度的试算属性按与材料摩擦和黏聚力类似的方式计算。抗拉强度的折减方程为</p>
+<div class="math" id="equation-eqfos-srm-mc-tension">
+<span class="eqno">(3)</span>\[\sigma^{t (trial)}\ =\ {1 \over {F^{trial}}}\ \sigma^t\]</div>
+</div>
+<div class="section" id="ubiquitous-joint-material">
+<h3>遍布节理材料</h3>
+<p>如果使用<a class="reference internal" href="../../../../../../models/ubiquit/doc/modelubiquit.html#modelubiquit"><span class="std std-ref">遍布节理模型</span>（ubiquitous-joint model）</a>，完整材料的强度值 <span class="math">\(c\)</span> 和 <span class="math">\(\phi\)</span>、以及遍布节理的强度值 <span class="math">\(c_j\)</span> 和 <span class="math">\(\phi_j\)</span> 默认被包括在 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 计算中。抗拉强度 <span class="math">\(\sigma^t\)</span> 和 <span class="math">\(\sigma^t_j\)</span> 也可以通过分别添加关键字短语 <span class="cmdkey">include tension</span> 和 <span class="cmdkey">include joint-tension</span> 而被选入折减。完整材料的折减方程与公式 <a class="reference internal" href="#equation-eqfos-srm-mc-cohesion">(1)</a> 至 <a class="reference internal" href="#equation-eqfos-srm-mc-tension">(3)</a> 相同，而遍布节理的折减方程为</p>
+<div class="math" id="equation-eqfos-srm-ubi-cohesion">
+<span class="eqno">(4)</span>\[c_j^{trial}\ =\ {1 \over {F^{trial}}}\ c_j\]</div>
+<div class="math" id="equation-eqfos-srm-ubi-friction">
+<span class="eqno">(5)</span>\[\phi_j^{trial}\ =\ \arctan\biggl({1 \over {F^{trial}}}\tan\phi_j\biggr)\]</div>
+<div class="math" id="equation-eqfos-srm-ubi-tension">
+<span class="eqno">(6)</span>\[\sigma_j^{t (trial)}\ =\ {1 \over {F^{trial}}}\ \sigma_j^t\]</div>
+<p>遍布节理黏聚力和摩擦可通过分别为 <a class="reference internal" href="../../../../../utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">包含节理黏聚力选项（<span class="varfishsym"><span class="null">include joint-cohesion</span></span>）</a> 和 <a class="reference internal" href="../../../../../utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">排除节理摩擦选项（<span class="varfishsym"><span class="null">exclude joint-friction</span></span>）</a> 从安全系数计算中排除。</p>
+</div>
+<div class="section" id="hoek-brown-material">
+<span id="fos-hoek-brown-material"></span><h3>Hoek-Brown 材料</h3>
+<p><a class="reference internal" href="../../../../../../models/hoek/doc/modelhoek.html#modelhoek"><span class="std std-ref">Hoek-Brown 模型</span>（Hoek-Brown model）</a>支持使用 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 进行安全系数计算。强度折减是相对于抗剪强度进行的（<span class="cmdkey">flag-fos</span> = <a class="reference internal" href="../../../../../utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">0</span></span></a>）。</p>
+<p>注意，虽然 Hoek-Brown 模型的软化/硬化功能可以在执行安全系数计算<em>之前</em>激活，但在强度折减过程中应将其禁用（通过移除表格属性赋值），因为此时演化参数的值定义不明确。</p>
+<p><strong>关于抗剪强度的安全系数，</strong> <span class="math">\(\tau\)</span></p>
+<p>Hoek-Brown 准则可以在局部用摩尔-库仑准则近似：</p>
+<div class="math" id="equation-eqfos-srm-mhoek-tau">
+<span class="eqno">(7)</span>\[\tau = \sigma^{\prime} \tan{\phi_c} + c_c\]</div>
+<p>其中表观黏聚力和摩擦角由 <span class="math">\(\sigma_3\)</span> 的局部值表示为</p>
+<div class="math" id="equation-eqfos-srm-mhoek-friction">
+<span class="eqno">(8)</span>\[\phi_c\ =\ 2 \tan^{-1} \sqrt{N_{\phi_c}}\ -\ 90^\circ\]</div>
+<div class="math" id="equation-eqfos-srm-mhoek-cohesion">
+<span class="eqno">(9)</span>\[c_c\    =\ {\sigma^{ucs}_c \over {2\sqrt{N_{\phi_c}}}}\]</div>
+<p>其中（压应力为正）若 <span class="math">\(\sigma_3 \ge 0\)</span>：</p>
+<div class="math" id="equation-eqfos-srm-mhoek-nphic">
+<span class="eqno">(10)</span>\[N_{\phi_c}\ =\ 1 + am_b {\Bigl(m_b {\sigma_3 \over \sigma_{ci}} + s \Bigr)}^{a-1}\]</div>
+<div class="math" id="equation-eqfos-srm-mhoek-sigmacucs">
+<span class="eqno">(11)</span>\[\sigma^{ucs}_c  =\ \sigma_3 (1 - N_{\phi_c}) + \sigma_{ci}  {\Bigl(m_b {\sigma_3 \over \sigma_{ci}} + s \Bigr)}^a\]</div>
+<p>并且，若 <span class="math">\(\sigma_3 &lt; 0\)</span>：</p>
+<div class="math" id="equation-eqfos-srm-mhoek-nphic2">
+<span class="eqno">(12)</span>\[N_{\phi_c}\ =\ 1 + am_b (s)^{a-1}\]</div>
+<div class="math" id="equation-eqfos-srm-mhoek-sigmacucs2">
+<span class="eqno">(13)</span>\[\sigma^{ucs}_c  =\ \sigma_{ci}  (s)^a\]</div>
+<p>采用一种基于强度折减技术的实用方法来评估边坡安全系数：将局部黏聚力 <span class="math">\(c_c\)</span> 和摩擦系数 <span class="math">\(\tan{\phi}_c\)</span> 除以一个系数，直至检测到边坡发生主动破坏。该系数直接适用于最大允许剪应力 <span class="math">\(\tau_{max}\)</span>（见公式 <a class="reference internal" href="#equation-eqfos-srm-mhoek-tau">(7)</a>）。边坡临近破坏时的折减系数被定义为基于所提出的（局部强度折减）技术的安全系数。</p>
+<p>理论上可以找到与折减后包络线最佳拟合的 Hoek-Brown 型方程（例如参见 Hammah 等 2005），但本模型的特定实现不要求这一步，因为其逻辑依赖于直接使用包络线切线（既然切线已经可用，就无需先定义曲线再求切线——见上文）。此外，所提出的局部强度折减技术提供了一种量化剪切应力破坏容许量的手段，正如人们所预期的那样。在这种情况下，折减系数并不直接作用于模型参数（也没有绝对理由要直接作用）。</p>
+<p><strong>关于无侧限抗压强度的安全系数，</strong> <span class="math">\(\sigma_{ci}\)</span></p>
+<p><a class="reference internal" href="../../../../../../models/hoek/doc/modelhoek.html#modelhoek"><span class="std std-ref">Hoek-Brown 模型</span>（Hoek-Brown model）</a>支持使用 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 进行另一种安全系数计算；通过设置 <span class="cmdkey">flag-fos</span> = <a class="reference internal" href="../../../../../utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">1</span></span></a>，折减是相对于无侧限抗压强度进行的。完整无侧限抗压强度被折减系数折减，直至检测到主动破坏，以便与 Li 等（2008）用极限分析得到的简单边坡稳定图进行比较。</p>
+</div>
+<div class="section" id="interfaces-flac3d">
+<h3>接触面（<span class="codename">FLAC3D</span>）</h3>
+<p>通过将 <span class="cmdkey">interface include</span> <a class="reference internal" href="../../../../../utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information...">属性名（<span class="varstring"><span class="null">propname</span></span>）</a> 添加到 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a>，可将接触面强度计入安全系数计算。对于接触面强度值 <span class="math">\(c_i\)</span> 和 <span class="math">\(\phi_i\)</span>，方程为</p>
+<div class="math" id="equation-eqfos-srm-interface-cohesion">
+<span class="eqno">(14)</span>\[c_i^{trial}\ =\ {1 \over {F^{trial}}}\ c_i\]</div>
+<div class="math" id="equation-eqfos-srm-interface-friction">
+<span class="eqno">(15)</span>\[\phi_i^{trial}\ =\ \arctan\biggl({1 \over {F^{trial}}}\tan\phi_i\biggr)\]</div>
+</div>
+<div class="section" id="coulomb-joints-3dec">
+<h3>库仑节理（<span class="codename">3DEC</span>）</h3>
+<p>通过用 <span class="fishcmd">block contact jmodel assign mohr</span> 指定库仑节理材料，可将节理强度计入安全系数计算。默认情况下，执行 <span class="fishcmd">model factor-of-safety</span> 时会包括节理黏聚力和摩擦角。这些属性的强度折减方程为</p>
+<div class="math">
+\[c_i^{trial}\ =\ {1 \over {F^{trial}}}\ c_i\]</div>
+<div class="math">
+\[\phi_i^{trial}\ =\ \arctan\biggl({1 \over {F^{trial}}}\tan\phi_i\biggr)\]</div>
+<p>节理强度属性可通过关键字 <span class="cmdkey">include/exclude cohesion</span>、<span class="cmdkey">friction</span> 包含或排除。</p>
+<p class="endnotesection rubric">尾注</p>
+<table class="docutils footnote" frame="void" id="id2" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><em>不平衡力</em>是作用在一个网格点上的净力。该力与周围各网格单元所施加力的绝对平均值之比，称为<em>不平衡力比</em>。不平衡力比的限值可通过 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 命令的可选关键字 <span class="cmdkey">ratio</span> 更改。</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../program_guide.html">程序指南</a> »</li>
+<li class="nav-item nav-item-2"><a href="../methodology.html">Modeling Methodology</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="factorofsafety.html">Factor of Safety</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="computationalmethods.html" title="previous chapter"> Computational Methods for Factor of Safety Calculation of Slopes</a> |    
+       <a href="fosexample.html" title="next chapter">Example Factor of Safety Calculations using the Strength Reduction Method</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Strength Reduction Procedure in FLAC3D and 3DEC" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

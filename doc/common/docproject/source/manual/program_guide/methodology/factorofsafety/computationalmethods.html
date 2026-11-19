@@ -1,0 +1,139 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>边坡安全系数计算的计算方法 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../../search.html" rel="search" title="Search"/>
+<link href="strengthreduction.html" rel="next" title="Strength Reduction Procedure in FLAC3D and 3DEC"/>
+<link href="factorofsafetyindex.html" rel="prev" title="Factor of Safety Defined"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="hide sectionname docutils container">
+<span class="codename">FLAC3D</span> Theory and Background • Factor of Safety</div>
+<div class="section" id="computational-methods-for-factor-of-safety-calculation-of-slopes">
+<span id="fos-computationalmethods"></span><h1>边坡安全系数计算的计算方法</h1>
+<p>在数值分析程序中，计算边坡安全系数通常采用三种不同的计算方法：强度折减法、极限分析（上界解与下界解）以及极限平衡法（上界解）。<a class="reference internal" href="#fos-strengthreductiontechnique"><span class="std std-ref">强度折减法</span>（strength reduction method）</a>用于 <span class="codename">FLAC3D</span> 和 <span class="codename">3DEC</span>，可通过 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 命令自动执行。下文介绍该实现，随后介绍 <a class="reference internal" href="#fos-limitanalysis"><span class="std std-ref">数值极限分析</span>（Numerical Limit Analysis）</a>和 <a class="reference internal" href="#fos-limitequilibrium"><span class="std std-ref">极限平衡分析</span>（Limit Equilibrium Analysis）</a>。</p>
+<div class="section" id="strength-reduction-technique">
+<span id="fos-strengthreductiontechnique"></span><h2>强度折减技术</h2>
+<p>“强度折减技术”通常用于安全系数计算，其做法是逐步降低材料的抗剪强度，使边坡达到极限平衡状态。该方法常与摩尔-库仑破坏准则结合使用（例如，参见 Zienkiewicz 等 1975、Naylor 1982、Donald 与 Giam 1988、Matsui 与 San 1992、Ugai 1989 以及 Ugai 与 Leshchinsky 1995 的应用）。在此情况下，安全系数 <span class="math">\(F\)</span> 按以下公式定义：</p>
+<div class="math" id="equation-eqfos-srm-cohesion">
+<span class="eqno">(1)</span>\[ c^{\rm trial}\ =\ {c \over {F^{\rm trial}}}\]</div>
+<div class="math" id="equation-eqfos-srm-friction">
+<span class="eqno">(2)</span>\[ \phi^{\rm trial}\ =\ \arctan\biggl({\tan\phi \over {F^{\rm trial}}}\biggr)\]</div>
+<p>使用安全系数的试算值 <span class="math">\(F^{\rm trial}\)</span> 进行一系列模拟，不断折减黏聚力 <span class="math">\(c\)</span> 和内摩擦角 <span class="math">\(\phi\)</span>，直至边坡发生破坏。（注意：如果边坡初始不稳定，则会 <em>增大</em> <span class="math">\(c\)</span> 和 <span class="math">\(\phi\)</span>，直至找到极限条件。）寻找与破坏起始点相对应的强度值的一种方法是，以小增量单调折减（或增大）强度，直至达到破坏状态。另一种方法是在 <span class="codename">FLAC3D</span> 和 <span class="codename">3DEC</span> 中执行 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 命令时采用区间逼近法——类似于 Dawson、Roth 和 Drescher（1999）提出的方法。采用该技术时，首先找出稳定与不稳定的区间状态，然后逐步缩小稳定解与不稳定解之间的区间，直至二者之差低于指定容差。</p>
+<p>程序中实现的强度折减法总能产生有效的解：对于物理上不稳定的系统，程序只是显示模型中持续发生运动。有限元法中常用的迭代求解在这里并不使用。<span class="codename">FLAC3D</span> 和 <span class="codename">3DEC</span> 的解是一种动态的时间推进模拟，其中持续运动与平衡同样有效。使用弹塑性本构模型时也不进行迭代：一旦检测到塑性屈服，应力张量就被精确地置于屈服面上（满足流动法则和弹/塑性应变分解等方程）。程序中安全系数 = 1 时的应力状态就是与屈服机制相对应的实际应力状态，而不是任意的前屈服应力状态或弹性应力状态。</p>
+<p>在 <span class="codename">3DEC</span> 和 <span class="codename">FLAC3D</span> 中，物理稳定与不稳定之间分界的判定基于一个客观准则，该准则判断系统处于平衡状态还是持续运动状态。时间推进格式不需要迭代求解格式中那种可能影响解的更细的增量变化，而且这些变化不会影响解。为确定物理稳定与不稳定之间的分界，需用不同的强度折减系数进行一组完全独立的计算，然后检查每次计算是达到平衡还是持续塑性流动。通过对强度折减系数连续进行区间逼近，可以将破坏点确定到任意所需精度（通常为 1%）。这一过程不应与采用更细的求解步长相混淆；对于该组中的每次计算，求解格式都是<em>完全相同</em>的（无论其结果是平衡还是持续运动）。</p>
+</div>
+<div class="section" id="limit-analysis">
+<span id="fos-limitanalysis"></span><h2>极限分析</h2>
+<p>极限分析依赖于构造满足塑性理论中上界定理和下界定理的解。这些定理（见于大多数塑性力学教科书）为服从正交流动法则（关联流动法则）的理想塑性材料系统的破坏条件提供了严格的界限。特别值得关注的是下界定理，其表述为（Davis 与 Selvadurai 2002）：</p>
+<blockquote>
+<div><em>如果能找到任一应力状态，它满足平衡方程和面力边界条件，且处处“低于屈服”，则不会发生破坏。</em></div></blockquote>
+<p>在该定理中，“平衡方程”一词指的是局部平衡。任何满足下界定理准则的应力场都称为静力容许应力场。此外，在安全系数计算中，静力容许应力场可为安全系数（FOS）提供下界（保守）估计。</p>
+<p>同样有必要回顾上界定理，其表述为（Davis 与 Selvadurai 2002）：</p>
+<blockquote>
+<div><em>若对于任一协调塑性变形，外力对物体做功的速率等于或超过内部能量耗散速率，则必定发生破坏。</em></div></blockquote>
+<p>在该表述中，“协调塑性变形”是指满足所有位移边界条件、并且按控制容许剪胀的关联流动法则在运动学上可能的任何变形。任何满足上界定理准则的变形场都称为运动学容许变形。</p>
+<p>均质简单边坡（“黏性”材料）的稳定图在实际中仍被用作边坡安全性的初步估计。通常，图中采用极限分析（上界和下界解）得到的数值以稳定数的形式给出（例如参见 Taylor 1937、Dawson 等 2000、Michalowski 2002 和 Li 等 2008）。这些数是无量纲量，将边坡高度、材料重度与摩尔-库仑材料的黏聚力这一材料强度属性、或 Hoek-Brown 材料的完整无侧限抗压强度联系起来。稳定数已被用于非传统的安全系数度量（例如，针对摩尔-库仑材料（Michalowski 2002）以及针对 Hoek-Brown 材料（Li 等 2008））。</p>
+</div>
+<div class="section" id="limit-equilibrium">
+<span id="fos-limitequilibrium"></span><h2>极限平衡</h2>
+<p>极限平衡（LE）法是近似方法，假定存在某种简单形状的滑动面：平面、圆弧面或对数螺线面。这些方法还基于另一项假设，即土体或岩体可划分为条块。于是问题转化为寻找所选形状滑动面的最危险位置。现有多种方法，包括 Fellenius（1936）、Bishop（1955）、Lowe 与 Karafiath（1960）、Janbu（1968）、Morgenstern 与 Price（1965）以及 Spencer（1967）的方法。各方法之间的主要差异之一在于对条块间侧向力方向的假设，这可能影响平衡条件。关于各方法假设与局限性的比较性概述，可参见 TRB 特别报告（1996）和 Abramson 等（2002）。</p>
+<p>注意，在破坏面（假定滑动面）内部或外部，固体力学方程均未被显式满足。此外，根据 Chen（2007）：</p>
+<blockquote>
+<div><em>尽管极限平衡技术采用了极限分析上界准则的基本思想，即假定一个破坏面并寻求最小解，但它并不满足上界准则的精确要求，因此并不是上界。该方法基本上不考虑土的运动学，平衡条件也仅在有限意义上得到满足。由此可见，用极限平衡法得到的解不一定就是上界或下界。</em></div></blockquote>
+</div>
+<div class="section" id="relation-of-strength-reduction-method-to-limit-equilibrium-and-limit-analysis">
+<span id="fos-relation-srm-la"></span><h2>强度折减法与极限平衡法及极限分析法的关系</h2>
+<p>如<a class="reference internal" href="#fos-limitequilibrium"><span class="std std-ref">极限平衡</span>（Limit Equilibrium）</a>一节所述，极限平衡（LE）解绝不是荷载的下界，因为尽管 LE 解满足整体平衡，但局部平衡得不到保证（没有任何 LE 解是静力容许的）。</p>
+<p>此外，文献中（例如 Davis 与 Selvadurai 2002）有一个有力的论断：对于任何平动破坏机制（即由薄剪切面分隔的刚性土块系统），LE 的结果将始终与上界定理的结果相同。因此，在某些情况下，LE 解会给出荷载的上界（Drescher 与 Detournay 1993）。</p>
+<p>那么人们可能会问：既然 LE 解不仅不能保证给出安全系数（FOS）的下界，而且在某些情况下甚至被证明会给出安全系数的上界，为什么它仍然“有效”？Wa-I-Fah Chen 在其著作 <span class="bi">Limit Analysis and Soil Plasticity</span>（《极限分析与土塑性力学》）中给出的答案基于以下观察：大多数安全系数分析关注的是边坡，而且显然对于大多数边坡而言，LE 解给出的安全系数值接近精确解。</p>
+<p>另一方面，对于关联问题，考虑由 <span class="codename">FLAC3D</span> 或 <span class="codename">3DEC</span> 计算得到的最后一个稳定状态（最后一个下界区间值，通常比最终安全系数小 0.005）。两个程序在该状态下都能提供该问题的近似精确解：在网格单元之间的边界上，局部平衡不一定处处满足，但如果把网格单元尺寸减小到零，局部平衡将在极限意义上得到满足。特别地，极限应力场满足下界定理。此外，程序计算出的“破坏状态”（最后一个上界区间值）下的变形场是运动学容许变形（它满足上界定理的全部准则）。因此可以说，如果随着网格尺寸减小，计算得到的安全系数趋于某一极限，则该极限可以认为非常接近（误差在 0.005 以内）问题的精确安全系数。</p>
+<p>总之，在大多数情况下，<span class="codename">3DEC</span> 或 <span class="codename">FLAC3D</span>（在细网格上）与 LE 解给出的安全系数非常接近。在某些情况下，<span class="codename">3DEC</span> 和 <span class="codename">FLAC3D</span> 在细网格上给出的安全系数低于极限平衡（LE）解给出的安全系数，这意味着 LE 解给出了安全系数的上界。在另一些情况下，程序在细网格上给出的安全系数高于极限平衡（LE）解给出的值。这并不意味着 <span class="codename">FLAC3D</span> 和 <span class="codename">3DEC</span> 不保守，而是说明我们遇到了一种不能依赖 LE 解的情形（因为 LE 解永远不可能对应于荷载的下界）。</p>
+<p>注意，极限分析的界定理适用于关联流动法则（参见 Davis 与 Selvadurai 2002）。这种法则在某些情况下可能不太符合实际，因为它给出的剪胀过大。然而，非关联流动法则不能保证解的唯一性。缺乏这种保证，破坏荷载就不再是唯一的。显然，唯一有用的结论是：非关联材料不可能比关联材料更强。这是因为，在破坏时，非关联土体中的实际应力场是静力容许的。因此，根据下界定理，非关联材料的破坏荷载不能超过相应关联流动法则材料的破坏荷载。</p>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../program_guide.html">程序指南</a> »</li>
+<li class="nav-item nav-item-2"><a href="../methodology.html">Modeling Methodology</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="factorofsafety.html">Factor of Safety</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="factorofsafetyindex.html" title="previous chapter"> Factor of Safety Defined</a> |    
+       <a href="strengthreduction.html" title="next chapter">Strength Reduction Procedure in <span class="codename">FLAC3D</span> and <span class="codename">3DEC</span></a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Computational Methods for Factor of Safety Calculation of Slopes" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>
