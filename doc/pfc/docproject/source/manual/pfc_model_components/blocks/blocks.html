@@ -1,0 +1,183 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>刚性块体 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="../../../../../rblock/doc/manual/commands/rblock_commands.html" rel="next" title="Commands"/>
+<link href="../../../../../pfcmodule/doc/manual/clump_manual/clump_fish/clump.pebble_intrinsics/fish_clump.pebble.vel.html" rel="prev" title="clump.pebble.vel"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="rigid-blocks">
+<span id="rblock"></span><h1>刚性块体</h1>
+<p class="h2 rubric">引言</p>
+<p>刚性块体模块为 PFC 引入了对封闭、凸且流形的 {二维多边形；三维多面体} 进行建模的能力。刚性块体的面片为 {二维中的线段；三维中的三角形}。与刚性团簇一样，采用完整的惯性张量来更新转动运动方程（参见此处的说明）。每个刚性块体的惯性性质按此处所述计算。保留面片连通性信息，以辅助接触检测与接触解析。刚性块体存在于模型域内，可与球颗粒、刚性团簇、墙体、网格单元（通过墙-网格单元耦合）以及三维中的结构单元（通过墙-结构耦合，也可直接）发生相互作用。它们可以由顶点创建、从几何对象导入、被切割，并且还支持边/顶点圆化处理。</p>
+<p>在 PFC 的术语中，刚性块体就是一个部件。部件是指它们之间只能存在单一接触的对象。此处所述的体由一个或多个部件组成。换言之，刚性块体与其他部件（包括球颗粒、刚性团簇子颗粒、墙面片和其他刚性块体）之间只能存在一个接触。这与刚性团簇形成对比：刚性团簇中的每个子颗粒都被视为一个部件，因此多子颗粒刚性团簇与另一部件之间往往存在多个接触。这种接触数量的减少有利于提高性能，因为运行时性能剖析表明，随着 CPU 核心数增加，因遍历接触而导致的 L3 缓存未命中会迅速成为运行时性能下降的主要因素。另一方面，刚性块体与另一部件之间仅存在一个接触，这意味着必须采用稳健且可能需要大量计算的接触检测与解析策略。以下各节概述如何识别和解析刚性块体与其他部件之间的接触。</p>
+<p class="h2 rubric">接触检测与解析</p>
+<p>接触检测是判定部件之间是否发生碰撞的过程。而接触解析则用于定义接触的法向、间隙和位置。本节重点介绍在至少有一个接触部件为刚性块体的情况下，接触检测的宽相与窄相。</p>
+<p class="h2 rubric">宽相接触检测</p>
+<p>如这里所讨论的，刚性块体被加入单元空间以实现快速的宽相接触检测。每种部件类型都有各自独立的单元空间。这种构造可以高效地剔除窄相运算的数量，从而降低 DEM 模拟的计算强度。为加快这一过程，每个刚性块体被抽象为一个轴对齐包围盒（称为范围），并依据放大的范围（称为单元范围）将其加入单元空间中的单元（即空间分箱）。只要刚性块体映射到其他部件的单元空间中覆盖相同空间区域的单元，它们便是可能与其他部件发生碰撞的候选对象。一旦两个部件的单元范围重叠，这对部件即被视为接触候选；对这类候选应用窄相接触检测算法。通过限制每个时步内部件可以移动的距离，可以确保在发生重叠之前检测到所有接触。</p>
+<p class="h2 rubric">窄相接触检测</p>
+<p>一旦一对部件被判定为可能发生碰撞，就会创建一个接触。接触的创建会依据所涉及的部件类型触发相应的窄相接触检测算法。只要该接触存在，窄相接触检测算法就会在每个时步中先于力-位移定律运行。若判定这些部件处于接触状态，则可能还需要额外的接触解析算法来确定接触的间隙、法向和位置。</p>
+<p class="h3 rubric">刚性块体与球颗粒/子颗粒的接触</p>
+<p>对于与球颗粒或子颗粒的接触情形，采用一种受 <a class="reference internal" href="#nezami2006" id="id1">[Nezami2006]</a> 启发的方法进行窄相接触检测。该方法旨在确定刚性块体表面上距球颗粒或子颗粒质心最近的点。只要质心位于刚性块体之外，这样的最近点就只有一个。最近点的搜索利用面片连通性信息遍历刚性块体表面，找出与球颗粒或子颗粒质心距离全局最小的表面点。在每个时步中，必须检查所有相邻面片，以判断表面上的最近点是否发生了移动；如有必要，还可再次对表面进行局部遍历以找出最近点。若假定相互作用距离为 0，而表面上最近点的距离小于球颗粒半径，则认为该接触是活动的。</p>
+<p class="h3 rubric">刚性块体与刚性块体的接触</p>
+<p>在凸的{二维多边形；三维多面体}之间进行高效的窄相接触检测，计算量可能非常大。下文的讨论在二维和三维情形下均适用。采用 Gilbert–Johnson–Keerthi（GJK）算法（<a class="reference internal" href="#gilbert1988" id="id2">[Gilbert1988]</a>）确定刚性块体的重叠状态。该迭代方案利用闵可夫斯基差（Minkowski difference）的概念，在二维和三维中高效检测凸形状的重叠状态。两个闭合凸对象的完整闵可夫斯基差，可通过取对象 A 表面上的全部顶点、并用另一对象（对象 B）上的全部顶点逐一减去这些顶点来构造。因此，若对象 A 的外表面有 N 个顶点、对象 B 的外表面有 M 个顶点，则这 N * M 个顶点的凸包即构成完整的闵可夫斯基差。闵可夫斯基差具有一个有趣的性质：若原点位于闵可夫斯基差之内，则两对象重叠。此外，从原点到闵可夫斯基差上最近点的向量，是使两对象从重叠状态位移至恰好接触所需的最小向量；这称为穿透向量。请注意，一般而言穿透向量可能并不唯一。另一方面，若凸对象不重叠，则从原点到闵可夫斯基差上最近点的向量表示分离向量，即两对象从分离状态位移至恰好接触所需的向量。</p>
+<p>GJK 算法并不求取完整的闵可夫斯基差，而是迭代地尝试构建一个由闵可夫斯基差上的顶点组成、且包含原点的单纯形（即{二维三角形；三维四面体}）。若存在这样的单纯形，则用于构建闵可夫斯基差的对象发生重叠。GJK 算法依赖于在不计算闵可夫斯基差整个表面的前提下获取其表面上的点。这可以通过使用凸支撑点来实现。凸支撑点是凸对象表面上沿指定方向最远的点；该点可能并不唯一。通过查询各个凸对象上的支撑点，即可找到闵可夫斯基表面上沿指定方向最远的点。请注意，闵可夫斯基差上沿指定方向的最远点也可能并不唯一。对于刚性块体，确定支撑点需要计算刚性块体的每个顶点与指定方向的点积。因此，该算法的计算时间直接取决于每个块体的顶点数量。</p>
+<p>GJK 算法首先选择一个初始方向（通常为两对象质心之差），并查询闵可夫斯基差上沿该方向的点。由该点构成一个不完整的单纯形。在随后的每一步中，利用从不完整单纯形上最近点指向原点的方向，确定闵可夫斯基差上的一个新点。若任一不完整单纯形包含原点，则两对象重叠。当构建出完整单纯形时，算法检查原点是否位于该单纯形内部。若原点不在内部，算法则退化为距原点最近的最大不完整单纯形。若没有其他支撑点比单纯形中已有的点更靠近原点，则两对象不发生碰撞。</p>
+<p>GJK 算法足以确定分离向量。然而，当物体相互重叠时，还需要另一种算法来计算穿透向量。当原点位于 Minkowski 差集内部时，扩张多面体算法（EPA）（<a class="reference internal" href="#bergen1999" id="id3">[Bergen1999]</a>）可用于确定曲面上距原点最近的点。该算法在本质上与用于计算空间中一组点的凸包的 Quickhull（<a class="reference internal" href="#barber1996" id="id4">[Barber1996]</a>）算法相似。基于距原点最近的单纯形的面片外法向，计算 Minkowski 差集表面上的一个附加点。通过计算该点位于原点另一侧的那些面，将单纯形扩张为凸包以纳入该新点。移除这些面并创建新的面以封闭凸包。凸包以这种方式逐步扩张，直到新选择要添加的点已经位于凸包内。该增量过程可有效地构建 Minkowski 差集的局部表示，从而确定穿透向量。</p>
+<p>为加速刚性块体窄相接触检测的计算，引入了刚性块体圆角化，以期省去 EPA 算法（请参阅 <a class="reference internal" href="../../../../../rblock/doc/manual/commands/cmd_rblock_erode.html#command:rblock.erode" title="Change the rigid block rounding by erosion. A rigid block is represented by
+a core shape that is composed of {linear..."><code class="xref fish fish-cmd docutils literal"><span class="pre">rblock</span> <span class="pre">erode</span></code></a> 和 <a class="reference internal" href="../../../../../rblock/doc/manual/commands/cmd_rblock_dilate.html#command:rblock.dilate" title="Change the rigid block rounding by dilation. A rigid block is represented by
+a core shape that is composed of {linear..."><code class="xref fish fish-cmd docutils literal"><span class="pre">rblock</span> <span class="pre">dilate</span></code></a> 命令）。若使用圆角化，通常建议对用于生成刚性块体堆积的模板进行圆角化，或在循环计算开始之前进行圆角化。当圆角化处于激活状态且重叠量小于刚性块体圆角距离之和时，无需使用 EPA 算法，因为在圆角化条件下分离向量已足以确定穿透向量。</p>
+<p class="h3 rubric">刚性块体与墙面片的接触</p>
+<p>墙面由 {2D 时为线性面片；3D 时为三角形面片} 组成。当前的实现将面片中心处的一个点加入 GJK 和 EPA 算法所使用的点集，因为这些算法是通用的，同样可应用于平面几何。请注意，目前墙面分辨率（请参阅 <a class="reference internal" href="../../../../../pfcmodule/doc/manual/wall_manual/wall_commands/cmd_wall_resolution.html#command:wall.resolution" title='Modify the contact-resolution strategy as outlined in the " wall_faceted "
+section. By default, the resolution strategy is set to the  reduced  state.
+In all cases, contact activity based on contact with active/inactive facet sides
+(see  wall.active-sides ) is determined...'><code class="xref fish fish-cmd docutils literal"><span class="pre">wall</span> <span class="pre">resolution</span></code></a> 命令）不应用于墙面片与刚性块体之间的接触。</p>
+<p class="h2 rubric">接触求解</p>
+<p>一旦接触存在且窄相接触检测确定各块体相互重叠（即计算得到穿透向量且间隙为负值），计算力所需的其余信息便是接触位置。对于与刚性块体的接触，只有一个计算力的接触位置。这与 UDEC 和 3DEC 中所用的逻辑不同，后者在相互接触的凸块体之间存在多个子接触。采用这一差异的原因是避免因每对相互接触的物体之间存在大量接触位置而带来可能显著的内存和计算开销。对于与刚性块体的接触，有两种接触求解模式，即简化模式和完整模式（请参阅 <a class="reference internal" href="../../../../../rblock/doc/manual/commands/cmd_rblock_contact-resolution.html#command:rblock.contact-resolution" title="Set the default contact resolution behavior involving rigid blocks. This impacts
+contact resolution..."><code class="xref fish fish-cmd docutils literal"><span class="pre">rblock</span> <span class="pre">contact-resolution</span></code></a> 命令）。下文将针对每种接触类型详细讨论这两种模式。</p>
+<p>除这些接触求解模式外，还必须处理黏结处于激活状态时接触位置的更新问题。当黏结处于激活状态时，黏结时刻的接触位置被用作初始位置，并根据接触位置处的相对速度对该位置进行增量更新。该位置可能与下文所述方法确定的接触位置存在显著差异。若将黏结视为一种把各块体黏合在一起的机制，那么这种增量式的接触位置更新是合理的，因为从概念上讲，黏结材料会黏附于黏结时刻各块体的表面。这一概念要求刚性块体相互重叠才能安装黏结。可以组合使用 <a class="reference internal" href="../../../../../rblock/doc/manual/commands/cmd_rblock_erode.html#command:rblock.erode" title="Change the rigid block rounding by erosion. A rigid block is represented by
+a core shape that is composed of {linear..."><code class="xref fish fish-cmd docutils literal"><span class="pre">rblock</span> <span class="pre">erode</span></code></a> 和 <a class="reference internal" href="../../../../../rblock/doc/manual/commands/cmd_rblock_scale.html#command:rblock.scale" title="Scale rigid blocks. If the volume or moment of inertia has been previously specified
+by the user either..."><code class="xref fish fish-cmd docutils literal"><span class="pre">rblock</span> <span class="pre">scale</span></code></a> 命令来制备用于黏结的零孔隙率刚性块体堆积。</p>
+<p class="h3 rubric">刚性块体与球颗粒/子颗粒的接触</p>
+<p>窄相接触检测给出刚性块体表面上距球颗粒或子颗粒形心最近的点。接触位置可方便地取为以下两点的平均值来计算：球颗粒表面上沿最近点位置方向上的点，以及该最近点位置。这一定义与球颗粒-球颗粒、球颗粒-子颗粒和球颗粒-面片的接触位置一致。</p>
+<p class="h3 rubric">刚性块体与刚性块体的接触</p>
+<p>为刚性块体接触确定单一的接触位置是一项困难的任务。如 <a class="reference internal" href="#feng2012" id="id5">[Feng2012]</a> 所述，为使刚性块体在仅有一个接触时保持静止，接触位置必须置于重叠区域的形心处 {2D 时为面积；3D 时为体积}。</p>
+<p>二维凸多边形的重叠区域可通过平面扫描法计算，如 <a class="reference internal" href="#shamos1976" id="id6">[Shamos1976]</a> 所述。这种行进算法要求各点按某个全局坐标轴方向上的递增方向排序。根据两个多边形的有序顶点将顶点划分为若干条带，即可计算重叠多边形。</p>
+<p>另一方面，三维多面体的重叠计算则更为复杂。其中一种方法在 <a class="reference internal" href="#preparata1979" id="id7">[Preparata1979]</a> 中作了概述。该方法对面片法向施加仿射变换，在变换空间中生成一组新的点。该变换要求指定一个完全位于重叠体积内部的点。由相对速度增量更新的前一接触位置通常位于重叠体积之内。若该点未能完全位于重叠体积内部，则必须重新计算一个点。在这种情况下，利用前一接触位置作一平面来剖切刚性块体；随后采用 <a class="reference internal" href="#shamos1976" id="id8">[Shamos1976]</a> 方法求出重叠区域的中心，该中心很可能是一个完全位于相交体积内部的点。在变换空间中定义了一组合适的点之后，通过 Quickhull 算法（Barber et al. 1996）计算凸包。请注意，在穿透量非常小的情况下，变换后的点往往近似共线，这凸显了采用稳健凸包实现的必要性。PFC 为此使用了内部开发的 Quickhull 实现。一旦在变换空间中确定了凸包，便对凸包的面片法向施加仿射变换的逆变换，以生成相交体积外表面上的点。利用变换后凸包的面片连通性，可以推断出实空间中相交体积凸包的连通性。该计算量直接取决于块体顶点的数量。对于空间相干性较好的系统，可以通过缓存有关仿射变换凸包的信息、并检查前一凸包在新的块体位置下是否仍然有效，来加速这一计算。这是缩短接触求解时间的一种相当有效的策略。</p>
+<p>前文的讨论概述了接触求解的完整方法。在简化模式下，不计算重叠区域的精确形心。取而代之的是，由穿透向量确定最深穿透点，并取位于这些点正中间的平面作为接触平面。两个块体均被该平面切割，接触位置则取为两次切割的 {二维时为相交线；三维时为相交面积} 的形心。该计算同样可以通过缓存相邻时步之间切割起始处的面片来加速。一旦确定了初始切割，通过遍历面片连通性信息即可快速确定切割位置。</p>
+<p>当圆角化处于激活状态时，也可以采用完整模式或简化模式。在这种情况下，将核心形状等量位移，使其按计算得到的间隙相互重叠，然后采用上文概述的方案。</p>
+<p class="h3 rubric">刚性块体与墙面片的接触</p>
+<p>为了将上述逻辑应用于与墙面片的接触，必须由面片构造出一个凸形状。具体做法是沿穿透方向、背离刚性块体形心的方向拉伸该面片。这种拉伸可使与面片棱边的接触位置按预期方式起作用，同时也与用刚性块体替代墙体的做法相一致。</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../rblock/doc/manual/commands/rblock_commands.html">命令（Commands）</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../rblock/doc/manual/fish/rblock_fish.html"><span class="codename">FISH</span> 函数（FISH Functions）</a></li>
+</ul>
+</div>
+<p class="h2 rubric">参考文献</p>
+<table class="docutils citation" frame="void" id="barber1996" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id4">[Barber1996]</a></td><td>Barber, C.B.、Dobkin, D.P. 与 H. Huhdanpaa，“计算凸包的 Quickhull 算法”（The quickhull algorithm for convex hulls），<em>ACM Transactions on Mathematical Software</em>，<span class="bi">22</span>(4)，第 469-483 页（1996 年）。</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="bergen1999" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[Bergen1999]</a></td><td>van den Bergen, G.，“凸物体碰撞检测的快速稳健 GJK 实现”（A fast and robust GJK implementation for collision detection of convex objects），<em>Journal of Graphics Tools</em>，<span class="bi">4</span>(2)，第 7-25 页（1999 年）。</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="feng2012" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id5">[Feng2012]</a></td><td>Feng, Y.T.、Han, K. 与 D.R.J. Owen，“任意形状离散单元的能量守恒接触相互作用模型”（Energy-conserving contact interaction models for arbitrarily shaped discrete elements），<em>Computer Methods in Applied Mechanics and Engineering</em>，<span class="bi">205–208</span>，第 169-177 页（2012 年）。</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="gilbert1988" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[Gilbert1988]</a></td><td>Gilbert, E.G.、D.W. Johnson 与 S.S. Keerthi，“计算三维空间中凸物体之间距离的快速方法”（A fast procedure for computing the distance between convex objects in three-dimensional space），<em>IEEE Journal of Robotics and Automation</em>，<span class="bi">4</span>(2)，第 193-203 页（1988 年）。</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="nezami2006" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[Nezami2006]</a></td><td>Nezami G.、Hashash Y.、Zhao D. 与 J. Ghaboussi，“离散元方法中接触检测的最短链接法”（Shortest link method for contact detection in discrete element method），<em>International Journal for Numerical and Analytical Methods in Geomechanics</em>，<span class="bi">30</span>(8)，第 783–801 页（2006 年）。</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="preparata1979" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id7">[Preparata1979]</a></td><td>Preparata, F.P. 与 D.E. Muller，“在 O(nlogn) 时间内求 n 个半空间的交”（Finding the intersection of n half-spaces in time O(nlogn)），<em>Theoretical Computer Science</em>，<span class="bi">8</span>(1)，第 45-55 页（1979 年）。</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="shamos1976" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Shamos1976]</td><td><em>(<a class="fn-backref" href="#id6">1</a>, <a class="fn-backref" href="#id8">2</a>)</em> Shamos, M.I. 与 D. Hoey，“几何相交问题”（Geometric intersection problems），<em>SFCS ‘76 第 17 届计算机科学基础研讨会年会论文集（SFCS ‘76 Proceedings of the 17th Annual Symposium on Foundations of Computer Science），10 月 25 - 27 日</em>，第 208-215 页（1976 年）。</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a accesskey="U" href="../pfc_model_objects.html"><span class="codename">PFC</span> Model Objects</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../../../../../pfcmodule/doc/manual/clump_manual/clump_fish/clump.pebble_intrinsics/fish_clump.pebble.vel.html" title="previous chapter"> <code class="docutils literal"><span class="pre">clump.pebble.vel</span></code></a> |    
+       <a href="../../../../../rblock/doc/manual/commands/rblock_commands.html" title="next chapter">Commands</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Rigid Blocks" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

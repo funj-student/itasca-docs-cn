@@ -1,0 +1,307 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>接触求解 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="cmat_description.html" rel="next" title="Contact Model Assignment Table (CMAT)"/>
+<link href="contacts.html" rel="prev" title="Contacts and Contact Models"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="contact-resolution">
+<span id="id1"></span><h1>接触求解</h1>
+<p>当循环序列中检测到新接触时，在力-位移计算之前进行接触解析。在接触解析过程中，更新接触状态变量（见 <a class="reference internal" href="#state-variables"><span class="std std-ref">表</span>（table）</a>）。本节给出这些变量的定义，并描述其计算过程。</p>
+<p><a href="#contactres-fig1">图 1（Figure  1）</a> 所示的接触是在两个物体的部件之间创建的。每个接触都有两个端点，即 <strong>end1</strong> 和 <strong>end2</strong>，其关联的部件和物体分别标记为 1 和 2。物体是刚性的；因此，物体 <span class="math">\((b)\)</span> 的运动由其转动速度 <span class="math">\(( \pmb{ω}^{(b)} )\)</span> 及其平动速度 <span class="math">\(( \dot{\mathbf{x}}^{(b)} )\)</span> 描述，后者是质心 <span class="math">\(( \mathbf{x}^{(b)} )\)</span> 的速度。</p>
+<div class="figure align-center" id="id2">
+<span id="contactres-fig1"></span><a class="reference internal image-reference" href="../../../../../../_images/contact_res1.png"><img alt="../../../../../../_images/contact_res1.png" src="../../../../../../_images/contact_res1.png" style="width: 300pt;"/></a>
+<p class="caption"><span class="caption-text">图 1：两个物体的部件之间的一个接触。</span></p>
+</div>
+<p>需要首先更新的接触状态变量为：接触的有效惯性质量 <span class="math">\(( m_c )\)</span>；接触平面的位置 <span class="math">\(( \mathbf{ x_c } )\)</span>、法向方向 <span class="math">\(( \hat{\mathbf{n}}_\mathbf{c} )\)</span> 和坐标系 <span class="math">\(( nst )\)</span>；以及接触间隙 <span class="math">\(( g_c )\)</span>，即分隔部件表面的最小带符号距离。接触质量由下式给出</p>
+<div class="math" id="equation-contactres_eq1">
+<span class="eqno">(1)</span>\[\begin{split}m_c = \left\{ \begin{array}{rl}
+                \displaystyle\frac{m^{(1)} m^{(2)}} {m^{(1)} + m^{(2)}}, &amp; \mbox{ball-ball} \\
+                                                                m^{(1)}, &amp; \mbox{ball-facet}
+              \end{array}
+      \right.\end{split}\]</div>
+<p>式中，<span class="math">\(m^{(b)}\)</span> 为物体 <span class="math">\((b)\)</span> 的质量。位置、法向方向与间隙的计算取决于接触附近两个接触部件的表面几何形状（将在下文“<a class="reference internal" href="#con-res-contact-plane"><span class="std std-ref">接触平面</span>（Contact Plane）</a>”一节中描述）。</p>
+<p>上述各量更新之后，接触模型负责根据更新后的接触间隙更新接触的活动状态。用于确定接触活动性的确切判据取决于各接触模型的具体实现。如果未发现接触处于活动状态，则执行附加检查，以评估在当前条件下它是否可能在不久的将来变为活动状态。活动接触与可能变为活动的接触都参与时步估算过程。如果发现接触处于活动状态，则计算定义部件表面相对运动的变量（如“<a class="reference internal" href="#con-res-relative-motion"><span class="std std-ref">接触处的相对运动</span>（Relative Motion at a Contact）</a>”一节所述）。</p>
+<p>运动学信息将在接下来的两节中描述，这两节定义接触平面，并描述接触处部件表面的相对运动。由于球颗粒与子颗粒具有相同的形状，所有接触类型均可不失一般性地用球颗粒-球颗粒和球颗粒-面片这两种组合来描述。球颗粒-球颗粒接触类型包括球颗粒-球颗粒、球颗粒-子颗粒和子颗粒-子颗粒；球颗粒-面片接触类型包括球颗粒-面片和子颗粒-面片。</p>
+<table border="1" class="colwidths-given icgcmprop stripes docutils" id="state-variables">
+<caption><span class="caption-text">表 1：接触状态变量</span></caption>
+<colgroup>
+<col width="30%"/>
+<col width="70%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">属性</th>
+<th class="head">说明</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><span class="math">\(m_c\)</span></td>
+<td>有效惯性质量</td>
+</tr>
+<tr class="row-odd"><td>接触平面：</td>
+<td> </td>
+</tr>
+<tr class="row-even"><td><span class="math">\(\mathbf{ x_c }\)</span></td>
+<td>接触平面位置</td>
+</tr>
+<tr class="row-odd"><td><span class="math">\(\hat{\mathbf{n}}_\mathbf{c}\)</span></td>
+<td>接触平面法向方向</td>
+</tr>
+<tr class="row-even"><td><span class="math">\(\hat{\mathbf{s}}_\mathbf{c}\)</span></td>
+<td>接触平面坐标系（<span class="math">\(s\)</span> 轴）<br/>（二维模型：<span class="math">\(\;\hat{\mathbf{s}}_\mathbf{c} \equiv -\hat{\mathbf{k}}\)</span>）</td>
+</tr>
+<tr class="row-odd"><td><span class="math">\(\hat{\mathbf{t}}_\mathbf{c}\)</span></td>
+<td>接触平面坐标系（<span class="math">\(t\)</span> 轴）</td>
+</tr>
+<tr class="row-even"><td><span class="math">\(g_c\)</span></td>
+<td>接触间隙</td>
+</tr>
+<tr class="row-odd"><td>相对运动：</td>
+<td> </td>
+</tr>
+<tr class="row-even"><td><span class="math">\(\dot{\pmb{δ}}\)</span></td>
+<td>相对平动速度</td>
+</tr>
+<tr class="row-odd"><td><span class="math">\(\dot{\pmb{θ}}\)</span></td>
+<td>相对转动速度</td>
+</tr>
+<tr class="row-even"><td><span class="math">\(\Delta\delta_n\)</span></td>
+<td>相对法向位移增量</td>
+</tr>
+<tr class="row-odd"><td><span class="math">\(\Delta\pmb{δ}_\mathbf{s}\)</span></td>
+<td>相对剪切位移增量 <span class="math">\((\Delta\delta_{ss},\Delta\delta_{st})\)</span> <br/>（二维模型：<span class="math">\(\Delta\delta_{ss}\equiv 0\)</span>）</td>
+</tr>
+<tr class="row-even"><td><span class="math">\(\Delta\theta_t\)</span></td>
+<td>相对扭转转动增量 <br/>（二维模型：<span class="math">\(\Delta \theta _{t} \equiv 0\)</span>）</td>
+</tr>
+<tr class="row-odd"><td><span class="math">\(\Delta\pmb{θ}_\mathbf{b}\)</span></td>
+<td>相对弯曲转动增量 <span class="math">\((\Delta\theta_{bs},\Delta\theta_{bt})\)</span> <br/>（二维模型：<span class="math">\(\Delta \theta _{bk} =-\Delta \theta _{bs},\Delta \theta _{bt} \equiv 0\)</span>）</td>
+</tr>
+</tbody>
+</table>
+<p class="h2 rubric" id="con-res-contact-plane">接触平面</p>
+<p>接触为两个部件之间提供一个交界面（见 <a href="#contactres-fig2">图 2（Figure  2）</a>）。该交界面由一个接触平面构成，其位置为 <span class="math">\(( \mathbf{ x_c } )\)</span>、法向方向为 <span class="math">\(( \hat{\mathbf{n}}_\mathbf{c} )\)</span>、坐标系为 <span class="math">\(( nst )\)</span>。接触平面位于两个部件的相互作用体积（间隙或重叠）的中心，与两个部件相切定向，并经过旋转，以确保接触位置处部件表面的相对运动相对于接触平面保持对称。</p>
+<div class="figure align-center" id="id3">
+<span id="contactres-fig2"></span><a class="reference internal image-reference" href="../../../../../../_images/contact_res2.png"><img alt="../../../../../../_images/contact_res2.png" src="../../../../../../_images/contact_res2.png" style="width: 400pt;"/></a>
+<p class="caption"><span class="caption-text">图 2：二维与三维模型的接触平面坐标系。</span></p>
+</div>
+<p>接触平面位于两个部件的相互作用体积的中心，由部件 1 指向部件 2，并与部件 1 相切定向。接触平面的位置 <span class="math">\(( \mathbf{ x_c } )\)</span> 与法向方向 <span class="math">\(( \hat{\mathbf{n}}_\mathbf{c} )\)</span> 由下式给出（见 <a href="#contactres-fig3">图 3（Figure  3）</a>）：</p>
+<div class="math" id="equation-contactres_eq2">
+<span class="eqno">(2)</span>\[\begin{split}\begin{array}{l}
+  \mathbf{x_c} =
+    \mathbf{x}^{(1)} + \left( R^{(1)} + \displaystyle\frac{g_c}{2} \right) \hat{\mathbf{n}}_\mathbf{c},\quad
+    \hat{\mathbf{n}}_\mathbf{c} =
+      \left\{ \begin{array}{rl}
+                \displaystyle\frac{\mathbf{x}^{(2)} - \mathbf{x}^{(1)}}{d}, &amp; \mbox{ball-ball} \\
+                \displaystyle\frac{  \mathbf{x_f} - \mathbf{x}^{(1)}  }{d}, &amp; \mbox{ball-facet}
+              \end{array} \right. \\[3mm]
+  \mbox{with }\; g_c =
+    \left\{ \begin{array}{rl}
+              d - \left( R^{(1)} + R^{(2)} \right), &amp; \mbox{ball-ball} \\
+                                       d - R^{(1)}, &amp; \mbox{ball-facet}
+            \end{array}\right. \\[3mm]
+  \hskip{12mm}\; d =
+    \left\{ \begin{array}{rl}
+                   \left\| \mathbf{x}^{(2)} - \mathbf{x}^{(1)} \right\|, &amp; \mbox{ball-ball} \\
+              \left\| \mathbf{x}_\mathbf{f} - \mathbf{x}^{(1)} \right\|, &amp; \mbox{ball-facet}
+            \end{array}\right.
+\end{array}\end{split}\]</div>
+<p>式中，<span class="math">\(\mathbf{x}^{(b)}\)</span> 与 <span class="math">\(R^{(b)}\)</span> 分别为球颗粒 <span class="math">\((b)\)</span> 的中心与半径；<span class="math">\(\mathbf{x_f}\)</span> 是墙面片上距 <span class="math">\(\mathbf{x}^{(1)}\)</span> 最近的点；<span class="math">\(\mathbf{x_w}\)</span> 是墙的旋转中心，<span class="math">\(g_c\)</span> 是接触间隙。接触间隙是分隔部件表面的最小带符号距离，若表面重叠则间隙为负。</p>
+<div class="figure align-center" id="id4">
+<span id="contactres-fig3"></span><a class="reference internal image-reference" href="../../../../../../_images/contact_res3.png"><img alt="../../../../../../_images/contact_res3.png" src="../../../../../../_images/contact_res3.png" style="width: 400pt;"/></a>
+<p class="caption"><span class="caption-text">图 3：两种基本接触
+类型（球颗粒-球颗粒与球颗粒-面片）的接触平面位置与法向方向。</span></p>
+</div>
+<p>接触平面坐标系 <span class="math">\(( nst )\)</span> 的定向使得 <span class="math">\(n\)</span> 与接触法向方向重合，而 <span class="math">\(s\)</span> 与 <span class="math">\(t\)</span> 是平面上的正交坐标，且 <span class="math">\(\hat{\mathbf{n}}_\mathbf{c} = \hat{\mathbf{s}}_\mathbf{c} \times \hat{\mathbf{t}}_\mathbf{c}\)</span>。对接触平面坐标系进行平移与旋转，以确保接触位置处部件表面的相对运动相对于接触平面保持对称（如 <a href="#contactres-fig7">图 7（Figure  7）</a> 和 <a href="#contactres-fig8">图 8（Figure  8）</a> 所示）。平移通过方程 <a class="reference internal" href="#equation-contactres_eq2">(2)</a> 更新位置与法向方向。对于二维模型，以下约束使旋转成为隐式：</p>
+<ol class="arabic">
+<li><p class="first">接触位置与法向方向位于 <span class="math">\(xy\)</span> 平面内，使得</p>
+<div class="math" id="equation-contactres_eq3">
+<span class="eqno">(3)</span>\[\begin{split}\begin{array}{l} {\mathbf{x_c} =\mathbf{x_{c}} (x,y,z)=x_{cx} {\kern 1pt} \hat{\mathbf{i}}+x_{cy} {\kern 1pt} \hat{\mathbf{j}}+x_{cz} {\kern 1pt} \hat{\mathbf{k}}\; \; \left(x_{cz} \equiv 0\right)}
+\\[3mm] {\hat{\mathbf{n}}_\mathbf{c} =\hat{\mathbf{n}}_\mathbf{c} (x,y,z)=n_{cx} {\kern 1pt} \hat{\mathbf{i}}+n_{cy} {\kern 1pt} \hat{\mathbf{j}}+n_{cz} {\kern 1pt} \hat{\mathbf{k}}\; \; \left(n_{cz} \equiv 0\right).} \end{array}\end{split}\]</div>
+</li>
+<li><p class="first"><span class="math">\(nt\)</span> 轴位于 <span class="math">\(xy\)</span> 平面内，使得</p>
+<div class="math" id="equation-contactres_eq4">
+<span class="eqno">(4)</span>\[ \hat{\mathbf{t}}_\mathbf{c} = \hat{\mathbf{k}} \times \hat{\mathbf{n}}_\mathbf{c}.\]</div>
+</li>
+</ol>
+<p>对于三维模型，<span class="math">\(s\)</span> 轴初始与全局 <span class="math">\(x\)</span> 或 <span class="math">\(y\)</span> 方向在接触平面上的投影对齐（取其中与 <span class="math">\(\hat{\mathbf{n}}_\mathbf{c}\)</span> 不平行者），随后旋转更新 <span class="math">\(s\)</span> 轴的方位：</p>
+<div class="math" id="equation-contactres_eq5">
+<span class="eqno">(5)</span>\[\begin{split}\begin{array}{l} {\hat{\mathbf{s}}_\mathbf{c} =\displaystyle\frac{\mathbf{s}_{2} }{\left\| \mathbf{s}_{2} \right\| } } \\[3mm]
+{{\rm with}\qquad \mathbf{s}_{2} =\mathbf{s}_{1} -\mathbf{s}_{1} \times \tilde{\pmb{ω}}\Delta t,\quad \tilde{\pmb{ω} }=\left({\tfrac{1}{2}} \left(\pmb{ω} ^{(1)} +\pmb{ω} ^{(2)} \right)\cdot \hat{\mathbf{n}}_\mathbf{c} \right)\hat{\mathbf{n}}_\mathbf{c} } \\[3mm]
+{\qquad \qquad \mathbf{s}_{1} =\hat{\mathbf{s}}_\mathbf{c}^{*} -\hat{\mathbf{s}}_\mathbf{c}^{*} \times \left(\hat{\mathbf{n}}^{*} _\mathbf{c} \times \hat{\mathbf{n}}_\mathbf{c} \right)} \end{array}\end{split}\]</div>
+<p>式中，第一次旋转（得到 <span class="math">\(\mathbf{s}_{1}\)</span>）绕新旧平面的公共线进行，第二次旋转（得到 <span class="math">\(\mathbf{s}_{2}\)</span>）绕新的法向方向进行；星号（<span class="math">\(*\)</span>）表示上一时步结束时的值；<span class="math">\(\pmb{ω} ^{(p)}\)</span> 是部件 <span class="math">\((p)\)</span> 的转动速度；<span class="math">\(\tilde{\pmb{ω} }\)</span> 是两个部件绕新法向方向的平均转动速度。请参阅 <a href="#contactres-fig4">图 4（Figure  4）</a>，并注意向量 <span class="math">\(\mathbf{S}\)</span> 随平面一同旋转（如同它被标记在平面上一样）。</p>
+<div class="figure align-center" id="id5">
+<span id="contactres-fig4"></span><a class="reference internal image-reference" href="../../../../../../_images/contact_res4.png"><img alt="../../../../../../_images/contact_res4.png" src="../../../../../../_images/contact_res4.png" style="width: 400pt;"/></a>
+<p class="caption"><span class="caption-text">图 4：接触平面的方位，以及平面上一个向量在底部部件旋转
+与顶部部件平移作用下的响应。</span></p>
+</div>
+<p>位于接触平面 <span class="math">\((\mathbf{S})\)</span> 上的向量可在接触平面坐标系中由以下关系式表示：</p>
+<div class="math" id="equation-contactres_eq6">
+<span class="eqno">(6)</span>\[\begin{split} \begin{array}{l} {\mathbf{S}=\mathbf{S}\left(s,t\right)=S_{s} {\kern 1pt} \hat{\mathbf{s}}_\mathbf{c} +S_{t} {\kern 1pt} \hat{\mathbf{t}}_\mathbf{c} \; \; \left({\rm 2D\; model:\; }S_{s} \equiv 0\right)} \\[3mm]
+ {{\rm with}\qquad S_{s} =\mathbf{S}\cdot \hat{\mathbf{s}}_\mathbf{c} ,\quad S_{t} =\mathbf{S}\cdot \hat{\mathbf{t}}_\mathbf{c} .} \end{array}\end{split}\]</div>
+<p class="h2 rubric" id="con-res-relative-motion">接触处的相对运动</p>
+<p>接触处部件表面的相对运动由相对平动速度 <span class="math">\(( \dot{\pmb{δ}} )\)</span> 和相对转动速度 <span class="math">\(( \dot{\pmb{θ}} )\)</span> 描述：</p>
+<div class="math" id="equation-contactres_eq7">
+<span class="eqno">(7)</span>\[\eqalign{ \dot{ \pmb{δ} } &amp;= \dot{\mathbf{x}}_\mathbf{c}^{(2)} - \dot{\mathbf{x}}_\mathbf{c}^{(1)} \cr
+          \dot{ \pmb{θ} } &amp;= \pmb{ω}^{(2)} - \pmb{ω}^{(1)}. \cr }\]</div>
+<p>在该表达式中，<span class="math">\(\dot{\mathbf{x}}_\mathbf{c}^{(b)}\)</span> 为体 <span class="math">\((b)\)</span> 在接触位置处的平动速度：</p>
+<div class="math" id="equation-contactres_eq8">
+<span class="eqno">(8)</span>\[\dot{\mathbf{x}}_\mathbf{c} ^{\left(b\right)} =\dot{\mathbf{x}}^{\left(b\right)} +\pmb{ω} ^{\left(b\right)} \times \left(\mathbf{x}_\mathbf{c} -\mathbf{x}^{\left(b\right)} \right)\]</div>
+<p>式中，<span class="math">\(\dot{\mathbf{x}}^{\left(b\right)}\)</span> 为体 <span class="math">\((b)\)</span> 的平动速度；<span class="math">\(\pmb{ω} ^{\left(b\right)}\)</span> 为体 <span class="math">\((b)\)</span> 的转动速度；<span class="math">\(\mathbf{x_c}\)</span> 为接触位置，<span class="math">\(\mathbf{x}^{\left(b\right)}\)</span> 为体 <span class="math">\((b)\)</span> 的形心（若该体为球颗粒或刚性团簇）或旋转中心（若该体为墙）。请参阅 <a href="#contactres-fig5">图 5（Figure  5）</a>，并注意，在方程 <a class="reference internal" href="#equation-contactres_eq9">(9)</a> 中令 <span class="math">\(\mathbf{x_p} =\mathbf{x_c}\)</span> 即可得到该表达式。接触位置定义了一个相对于各体固定的点，因此 <span class="math">\(\dot{\mathbf{x}}_\mathbf{c} ^{(b)}\)</span> 为该点在体 <span class="math">\((b)\)</span> 中的平动速度。</p>
+<div class="figure align-center" id="id6">
+<span id="contactres-fig5"></span><a class="reference internal image-reference" href="../../../../../../_images/contact_res5.png"><img alt="../../../../../../_images/contact_res5.png" src="../../../../../../_images/contact_res5.png" style="width: 400pt;"/></a>
+<p class="caption"><span class="caption-text">图 5：两种基本接触类型（ball-ball 和
+ball-facet）下接触处的体运动。</span></p>
+</div>
+<p>每个体都有一个参考点（<span class="math">\(\mathbf{x}\)</span>）和一个转动速度
+（<span class="math">\(\pmb{ω}\)</span>）。该参考点相对于体保持固定。球颗粒或刚性团簇的参考点
+为该体的形心，墙的参考点则为
+旋转中心。相对体固定的点 <span class="math">\(\mathbf{x_{p}}\)</span> 的
+平动速度由下式给出</p>
+<div class="math" id="equation-contactres_eq9">
+<span class="eqno">(9)</span>\[\begin{split}\begin{array}{l} {\dot{\mathbf{x}}_\mathbf{p} =\dot{\mathbf{x}}+\pmb{ω} \times \mathbf{r_{p}} ,\quad \mathbf{r_{p}} =\mathbf{x_{p}} -\mathbf{x}} \\[3mm]
+{{\rm with}\qquad \mathbf{x}=\left\{\begin{array}{l} {\qquad \mathbf{x}^{\left(b\right)} ,\qquad {\rm ball\; or\; clump}} \\[3mm] {\qquad \mathbf{x_{w}} ,\qquad {\rm \hspace{2mm} wall}} \end{array}\right. } \end{array}\end{split}\]</div>
+<p>式中，<span class="math">\(\mathbf{r_{p}}\)</span> 为该点的相对位置，<span class="math">\(\mathbf{x}^{\left(b\right)}\)</span>
+为体（<span class="math">\(b\)</span>）的形心，<span class="math">\(\mathbf{x_{w}}\)</span> 为墙的旋转中心。</p>
+<div class="figure align-center" id="id7">
+<span id="contactres-fig6"></span><a class="reference internal image-reference" href="../../../../../../_images/contact_res6.png"><img alt="../../../../../../_images/contact_res6.png" src="../../../../../../_images/contact_res6.png" style="width: 400pt;"/></a>
+<p class="caption"><span class="caption-text">图 6：用于描述三种基本体类型（球颗粒、刚性团簇和墙）体运动的
+运动学变量。</span></p>
+</div>
+<p>相对平动速度可表示为</p>
+<div class="math" id="equation-contactres_eq10">
+<span id="contactres-eq10"></span><span class="eqno">(10)</span>\[\begin{split}\begin{array}{l} {\dot{\pmb{δ} }=\dot{\pmb{δ} }_\mathbf{n} +\dot{\pmb{δ} }_\mathbf{s} } \\[3mm]
+{{\rm with}\qquad \dot{\pmb{δ} }_\mathbf{n} =\left(\dot{\pmb{δ} }\cdot \hat{\mathbf{n}}_\mathbf{c} \right)\hat{\mathbf{n}}_\mathbf{c} =\dot{\delta }_{n} \hat{\mathbf{n}}_\mathbf{c} ,\quad \dot{\pmb{δ} }_\mathbf{s} =\dot{\pmb{δ} }-\dot{\pmb{δ} }_\mathbf{n} } \end{array}\end{split}\]</div>
+<p>式中，<span class="math">\(\dot{\pmb{δ }}_\mathbf{n}\)</span>（<span class="math">\(\dot{\delta}_{n} &gt;0\)</span> 表示正在分离）和
+<span class="math">\(\dot{\pmb{δ} }_\mathbf{s}\)</span> 分别为相对接触平面的法向和
+切向相对平动速度，下标 <span class="math">\(n\)</span> 和 <span class="math">\(s\)</span> 分别对应
+法向和剪切作用（请参阅 <a href="#contactres-fig7">图 7（Figure  7）</a> 和
+<a href="#contactres-fig9">图 9（Figure  9）</a>——接触在相互作用
+体积内居中，可确保相对位移相对于接触平面保持对称）。
+对于二维模型，方程 <a class="reference internal" href="#equation-contactres_eq10">(10)</a> 满足条件
+<span class="math">\(\dot{\delta}_{ss} \equiv 0\)</span>。</p>
+<p>相对转动速度可表示为</p>
+<div class="math" id="equation-contactres_eq11">
+<span class="eqno">(11)</span>\[\begin{split}\begin{array}{l} {\dot{\pmb{θ} }=\dot{\pmb{θ} }_\mathbf{t} +\dot{\pmb{θ} }_\mathbf{b} } \\[3mm]
+{{\rm with}\qquad \dot{\pmb{θ} }_\mathbf{t} =\left(\dot{\pmb{θ} }\cdot \hat{\mathbf{n}}_\mathbf{c} \right)\hat{\mathbf{n}}_\mathbf{c} =\dot{\theta }_{t} {\kern 1pt} \hat{\mathbf{n}}_\mathbf{c} ,\quad \dot{\pmb{θ} }_\mathbf{b} =\dot{\pmb{θ} }-\dot{\pmb{θ }}_\mathbf{t} } \end{array}\end{split}\]</div>
+<p>式中，<span class="math">\(\dot{\pmb{θ} }_\mathbf{t}\)</span>（<span class="math">\(\dot{\theta }_{t} &gt;0\)</span> 如图 <a href="#contactres-fig8">图 8（Figure  8）</a> 所示）
+和 <span class="math">\(\dot{\pmb{θ} }_\mathbf{b}\)</span> 分别为相对接触平面的法向和
+切向相对转动速度，下标 <span class="math">\(t\)</span> 和 <span class="math">\(b\)</span> 分别对应
+扭转和弯曲作用（请参阅 <a href="#contactres-fig8">图 8（Figure  8）</a> 和 <a href="#contactres-fig9">图 9（Figure  9）</a>——方程 <a class="reference internal" href="#equation-contactres_eq5">(5)</a> 中的第二次旋转确保相对
+转动相对于接触平面保持对称）。对于二维模型，方程 <a class="reference internal" href="#equation-contactres_eq11">(11)</a>
+满足以下条件：<span class="math">\(\dot{\pmb{θ} }_\mathbf{t} \equiv \mathbf{0}\)</span>，且 <span class="math">\(\dot{\pmb{θ} }_\mathbf{b}\)</span>
+与 <span class="math">\(z\)</span> 轴对齐，从而 <span class="math">\(\dot{\theta }_{bt} \equiv 0\)</span> 且 <span class="math">\(\dot{\theta }_{bk} =-\dot{\theta }_{bs}\)</span>。</p>
+<p>在一个时步 <span class="math">\(\Delta t\)</span> 内，接触处的相对位移增量和相对转动增量
+为</p>
+<div class="math" id="equation-contactres_eq12">
+<span id="contactres-eq12"></span><span class="eqno">(12)</span>\[\begin{split}\begin{array}{l} {\Delta \pmb{δ} =\Delta \delta _{n} {\kern 1pt} \hat{\mathbf{n}}_\mathbf{c} +\Delta \pmb{δ} _\mathbf{s} \; \; \left[\Delta \delta _{ss} =\Delta \pmb{δ} _\mathbf{s} \cdot \hat{\mathbf{s}}_\mathbf{c} ,\; \; \Delta \delta _{st} =\Delta \pmb{δ} _\mathbf{s} \cdot \hat{\mathbf{t}}_\mathbf{c} \right]} \\[3mm]
+{\Delta \pmb{θ} =\Delta \theta _{t} {\kern 1pt} \hat{\mathbf{n}}_\mathbf{c} +\Delta \pmb{θ} _\mathbf{b} \; \; \left[\Delta \theta _{bs} =\Delta \pmb{θ} _\mathbf{b} \cdot \hat{\mathbf{s}}_\mathbf{c} ,\; \; \Delta \theta _{bt} =\Delta \pmb{θ} _\mathbf{b} \cdot \hat{\mathbf{t}}_\mathbf{c} \right]} \\[3mm]
+{{\rm with}\qquad \Delta \delta _{n} =\dot{\delta }_{n} {\kern 1pt} \Delta t,\qquad \Delta \pmb{δ} _\mathbf{s} =\dot{\pmb{δ} }_\mathbf{s} {\kern 1pt} \Delta t} \\[3mm]
+{\qquad \qquad \Delta \theta _{t} =\dot{\theta }_{t} {\kern 1pt} \Delta t,\qquad \Delta \pmb{θ} _\mathbf{b} =\dot{\pmb{θ} }_\mathbf{b} {\kern 1pt} \Delta t} \end{array}\end{split}\]</div>
+<p>式中，<span class="math">\(\Delta \delta _{n}\)</span> 为相对法向位移增量，<span class="math">\(\Delta \pmb{δ} _\mathbf{s}\)</span>
+为相对剪切位移增量，<span class="math">\(\Delta \theta _{t}\)</span> 为相对
+扭转转动增量，<span class="math">\(\Delta \pmb{θ} _\mathbf{b}\)</span> 为相对弯曲转动
+增量。对于二维模型，方程 <a class="reference internal" href="#equation-contactres_eq12">(12)</a> 满足以下条件：
+<span class="math">\(\Delta \delta _{ss} \equiv \Delta \theta _{t} \equiv \Delta \theta _{bt} \equiv 0\)</span>，且
+<span class="math">\(\Delta \theta _{bk} =-\Delta \theta _{bs}\)</span>。</p>
+<div class="figure align-center" id="id8">
+<span id="contactres-fig7"></span><a class="reference internal image-reference" href="../../../../../../_images/contact_res7.png"><img alt="../../../../../../_images/contact_res7.png" src="../../../../../../_images/contact_res7.png" style="width: 400pt;"/></a>
+<p class="caption"><span class="caption-text">图 7：接触的运动学示意图，显示接触平面及其相对位移和部件表面的
+运动。</span></p>
+</div>
+<div class="figure align-center" id="id9">
+<span id="contactres-fig8"></span><a class="reference internal image-reference" href="../../../../../../_images/contact_res8.png"><img alt="../../../../../../_images/contact_res8.png" src="../../../../../../_images/contact_res8.png" style="width: 400pt;"/></a>
+<p class="caption"><span class="caption-text">图 8：接触的运动学示意图，显示接触平面及其相对转动和部件表面的
+运动。</span></p>
+</div>
+<div class="figure align-center" id="id10">
+<span id="contactres-fig9"></span><a class="reference internal image-reference" href="../../../../../../_images/contact_res9.png"><img alt="../../../../../../_images/contact_res9.png" src="../../../../../../_images/contact_res9.png" style="width: 400pt;"/></a>
+<p class="caption"><span class="caption-text">图 9：二维模型中接触的运动学示意图，显示接触平面及其相对
+转动和部件表面的运动。</span></p>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../pfc_model_objects.html"><span class="codename">PFC</span> Model Objects</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="contacts.html">Contacts and Contact Models</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="contacts.html" title="previous chapter"> Contacts and Contact Models</a> |    
+       <a href="cmat_description.html" title="next chapter">Contact Model Assignment Table (CMAT)</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Contact Resolution" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>
