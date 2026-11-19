@@ -49,7 +49,17 @@ function doNav() {
 function openNav() {
   if (isMobileNav()) {
     document.body.classList.add('nav-open');
-    document.getElementById("mySidenav").style.width = "";
+    var side = document.getElementById("mySidenav");
+    side.style.width = "";
+    side.scrollTop = 0;
+    var toc = document.getElementById('toctobj2');
+    if (toc) {
+      try {
+        var d = toc.contentDocument || toc.contentWindow.document;
+        if (d && d.documentElement) { d.documentElement.scrollTop = 0; }
+        if (d && d.body) { d.body.scrollTop = 0; }
+      } catch (e) {}
+    }
     document.getElementById("main").style.marginLeft = "0";
     document.getElementById("navbutton").style.marginLeft = "0";
   } else {
@@ -74,8 +84,16 @@ function sizeMobileNav() {
   try {
     var doc = tocFrame.contentDocument || tocFrame.contentWindow.document;
     // Let the iframe grow to its content; the sidebar itself scrolls.
+    try {
+      if (doc.body && !doc.body.dataset.mobileScrollFixed) {
+        var st = doc.createElement('style');
+        st.textContent = 'html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;margin:0;}body{padding-bottom:3em!important;}';
+        doc.head.appendChild(st);
+        doc.body.dataset.mobileScrollFixed = '1';
+      }
+    } catch (e) {}
     var contentHeight = doc.body ? doc.body.scrollHeight : 0;
-    var frameHeight = Math.max(contentHeight, 100);
+    var frameHeight = Math.max(contentHeight + 60, 100);
     tocFrame.style.height = frameHeight + 'px';
     var side = document.getElementById('mySidenav');
     if (side) { side.style.height = ''; }
