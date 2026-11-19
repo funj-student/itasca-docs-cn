@@ -12,9 +12,17 @@ window.onload = function(){
 }
 
 window.onresize = function(){
-    if (isMobileNav()){ closeNav() };
-    if (window.innerWidth >= 721){ openNav() };
+    if (isMobileNav()) {
+      closeNav();
+      sizeMobileNav();
+    } else {
+      openNav();
+    }
 }
+window.addEventListener('orientationchange', function () {
+  closeNav();
+  setTimeout(sizeMobileNav, 300);
+});
 
 function toTop() {
    $('html, body').animate({ scrollTop: 0 }, 'fast');
