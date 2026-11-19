@@ -1,0 +1,1239 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>软黏结材料的生成与试验 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="../../../../docproject/source/manual/examples/examples/rblock_bbm/rblock_bbm.html" rel="next" title="Simple Rigid Block Bonded-Block Modeling (BBM)"/>
+<link href="../../../../docproject/source/manual/examples/examples/rockslide/rockslidedatafiles.html" rel="prev" title="Data Files for “Rockslide” Example"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="genesis-and-testing-of-a-soft-bonded-material">
+<span id="p3d-example-softbonded"></span><span id="exa-sbnd"></span><h1>软黏结材料的生成与试验</h1>
+<p class="h2 rubric">问题描述</p>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">本算例的项目文件可在 <span class="codename">PFC</span> 中查看或运行。<a class="footnote-reference" href="#id2" id="id1">[1]</a>所用的<a class="reference internal" href="#exa-sbnd-datafiles"><span class="std std-ref">数据文件</span>（data files）</a>列于本算例末尾。</p>
+</div>
+<p>以下示例说明使用 <a class="reference internal" href="../../../../../common/contactmodel/softbond/doc/manual/cmsoftbond.html#cmsoftbond">软粘结（<span class="std std-ref">Soft-Bond</span>）</a> 接触模型生成和试验黏结颗粒模型的过程。首先在周期性域中生成由球颗粒组成的系统，然后在低围压下使其固结。这是通过使用以 <span class="codename">FISH</span> 函数实现的伺服算法，使周期性域尺寸发生畸变以达到规定应力状态来实现的。随后在现有接触上安装软黏结接触模型，同时重置接触力。在这个初始无应力系统的基础上，进行以下试验：直接拉伸试验、无侧限压缩试验和有侧限压缩试验。文中讨论了建模过程各阶段所采用的方法，并研究了材料的响应。</p>
+<p class="h2 rubric">数值模型</p>
+<p class="h3 rubric">试样生成</p>
+<p>通过调用文件 <a class="reference internal" href="#exa-sbnd-makebrick"><span class="std std-ref">make_brick.dat</span></a> 生成初始堆积，该文件使用 <a class="reference internal" href="#exa-sbnd-servo"><span class="std std-ref">servo.fis</span></a> 中定义的 <span class="codename">FISH</span> 函数。试样在整个模型域内生成，所有方向均采用周期性边界条件，以避免边界效应。函数 <a class="reference internal" href="#exa-sbnd-servo">伺服域（<span class="std std-ref">servo_domain</span>）</a> 实现伺服控制算法，旨在更新各方向的域尺寸，以达到并维持规定应力。试样中的应力使用<a class="reference internal" href="../../../../docproject/source/manual/general_components/measure/measure.html#measure-manual"><span class="std std-ref">测量球</span>（measurement sphere）</a>监测。请注意，该球被扩展以涵盖整个域，其计算的应力值按域的实际体积进行缩放。</p>
+<p>本阶段的目标是生成致密、连接良好的堆积。由于接触模型和性质将在后续阶段被覆盖，因此采用简单的 <a class="reference internal" href="../../../../../common/contactmodel/linear/doc/manual/cmlinear.html#cmlinear"><span class="std std-ref">linear</span></a> 接触模型。摩擦系数设为零，接触变形参数相对于规定目标应力设置得足够大，以优化计算时间并防止出现较大重叠。请注意，增大目标应力或采用摩擦接触会改变堆积的几何形状，从而影响其后续行为。</p>
+<p>为方便起见，文件 <a class="reference internal" href="#exa-sbnd-makebrick"><span class="std std-ref">make_brick.dat</span></a> 进行了部分参数化。文件 <a class="reference internal" href="#exa-sbnd-doalla10"><span class="std std-ref">doall_A10.dat</span></a> 演示了如何执行该文件以及本例所选参数：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 生成堆积体</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+<span class="ni">[resolution </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">10</span><span class="ni">]</span><span class="n">   </span><span class="c">; 试样宽度方向上的球数近似值 </span>
+<span class="ni">[davg  </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2.5e-3</span><span class="ni">]</span><span class="n">    </span><span class="c">; 球平均直径 (m)</span>
+<span class="ni">[dratio </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.66</span><span class="ni">]</span><span class="n">     </span><span class="c">; 球最大/最小直径比 [-]</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A'</span><span class="o">+</span><span class="ni"> string</span><span class="p">(</span><span class="ni">resolution</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'make_brick.dat'</span><span class="n"> </span>
+</pre></div>
+</div>
+<p>平均球颗粒直径设为 2.5 mm，最大与最小直径比为 1.66，以防止球颗粒局部排列成晶体结构。本例中使用的参数 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">分辨率（<span class="varfishsym"><span class="null">resolution</span></span>）</a> 表示试样横向尺寸上的目标球颗粒数量；试样长宽比设为 2:1。</p>
+<p class="h3 rubric">接触模型与性质</p>
+<p>初始堆积生成后，使用文件 <a class="reference internal" href="#exa-sbnd-bond"><span class="std std-ref">bond_sb.dat</span></a> 安装 <a class="reference internal" href="../../../../../common/contactmodel/softbond/doc/manual/cmsoftbond.html#cmsoftbond">软粘结（<span class="std std-ref">soft-bond</span>）</a> 接触模型，并为后续试验准备试样。将接触力重置为零，同时将球颗粒的平动和转动速度及其累积力/力矩和位移重置，并将接触模型替换为 <a class="reference internal" href="../../../../../common/contactmodel/softbond/doc/manual/cmsoftbond.html#cmsoftbond">软粘结（<span class="std std-ref">soft-bond</span>）</a> 模型。有关该接触模型行为和性质的详细说明，请参阅其文档。</p>
+<p>为方便起见，文件 <a class="reference internal" href="#exa-sbnd-bond"><span class="std std-ref">bond_sb.dat</span></a> 进行了部分参数化。文件 <a class="reference internal" href="#exa-sbnd-doalla10"><span class="std std-ref">doall_A10.dat</span></a> 演示了如何执行该文件以及本例所选参数如下：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 安装接触模型</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-iso'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[igap     </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="o">*</span><span class="ni">davg ]</span><span class="n"> </span>
+<span class="ni">[emod     </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">50.0e9</span><span class="ni">   ]</span>
+<span class="ni">[kratio   </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2.5</span><span class="ni">      ]</span>
+<span class="ni">[fric     </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="ni">      ]</span>
+<span class="ni">[ten_mean </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">20.0e6</span><span class="ni">  ]</span>
+<span class="ni">[ten_std  </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0e6</span><span class="ni">    ]</span>
+<span class="ni">[coh_mean </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">100.0e6</span><span class="ni">  ]</span>
+<span class="ni">[coh_std  </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0e6</span><span class="ni">    ]</span>
+<span class="ni">[soft     </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">      ]</span>
+<span class="ni">[cut      </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">      ]</span>
+<span class="ni">[tag </span><span class="o">+=</span><span class="ni"> </span><span class="s">'_G0_E50_KR25_S0_C1'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'bond_sb.dat'</span><span class="n"> </span>
+</pre></div>
+</div>
+<p>接触有效模量设为 50 GPa，法向与剪切刚度比为 2.5，摩擦系数为 0.5。接触抗拉强度设为 20 MPa，黏聚力设为 100 MPa。请注意，尽管文件 <a class="reference internal" href="#exa-sbnd-bond"><span class="std std-ref">bond_sb.dat</span></a> 允许设置强度参数的正态分布，但本例未使用该功能，所有接触均赋予相同的强度参数。最后，软化系数设为 0.0，软化抗拉强度因子设为 1。采用这些值即禁止软化，模型在破坏方面的行为与 <a class="reference internal" href="../../../../../common/contactmodel/linearpbond/doc/manual/cmlinearpbond.html#cmlinearpbond">线性平行粘结（<span class="std std-ref">linear parallel-bond</span>）</a> 接触模型基本相同。</p>
+<p class="h3 rubric">直接拉伸试验</p>
+<p>下面描述并比较两种模拟直接拉伸试验的方法。第一种方法识别试样竖直方向两端的两层球颗粒，并固定其速度。第二种方法使域沿竖直方向向外畸变。</p>
+<p class="h4 rubric">方法 1：使用球颗粒固定</p>
+<p>文件 <a class="reference internal" href="#exa-sbnd-tt"><span class="std std-ref">tt.dat</span></a> 通过固定顶部和底部两层球颗粒的速度来执行直接拉伸试验。为方便起见，该文件进行了部分参数化，文件 <a class="reference internal" href="#exa-sbnd-doalla10"><span class="std std-ref">doall_A10.dat</span></a> 演示了如何执行该文件以及本例所选参数如下：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 进行直接拉伸试验</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A10_G0_E50_KR25_S0_C1'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-bonded'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[strain_rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="ni">[tag </span><span class="o">+=</span><span class="ni"> </span><span class="s">'_SR1'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'tt.dat'</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A10_G0_E50_KR25_S0_C1'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-bonded'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[strain_rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.1</span><span class="ni">]</span>
+<span class="ni">[tag </span><span class="o">+=</span><span class="ni"> </span><span class="s">'_SR01'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'tt.dat'</span>
+</pre></div>
+</div>
+<p>试验进行两次，采用不同的规定应变率（1.0 和 0.1）。应力—应变响应如下图所示。</p>
+<div class="figure" id="p3d-example-softbonded-tt1">
+<a class="reference internal image-reference" href="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-tt1.png"><img alt="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-tt1.png" src="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-tt1.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 1：应变率为 1.0 的直接拉伸试验的应力—应变曲线。</span></p>
+</div>
+<div class="figure" id="p3d-example-softbonded-tt2">
+<a class="reference internal image-reference" href="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-tt2.png"><img alt="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-tt2.png" src="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-tt2.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：应变率为 0.1 的直接拉伸试验的应力—应变曲线。</span></p>
+</div>
+<p>两条曲线均显示出脆性材料的典型响应，杨氏模量约为 29 GPa，两种情况下最大抗拉强度均约为 8 MPa。应变率对结果影响较小：应变率较大时，峰值强度略高，达到峰值时的应变略大，且试验初期的振荡更明显。</p>
+<p class="h4 rubric">方法 2：使用域畸变</p>
+<p>通过沿竖直方向扩展域尺寸进行类似试验。用于施加该试验的文件为 <a class="reference internal" href="#exa-sbnd-tt2"><span class="std std-ref">tt2.dat</span></a>，由 <a class="reference internal" href="#exa-sbnd-doalla10"><span class="std std-ref">doall_A10.dat</span></a> 调用：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 进行直接拉伸试验（采用域畸变）</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A10_G0_E50_KR25_S0_C1'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-bonded'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[strain_rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="ni">[tag </span><span class="o">+=</span><span class="ni"> </span><span class="s">'_SR1'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'tt2.dat'</span>
+</pre></div>
+</div>
+<p>本例（应变率 1.0）得到的应力—应变曲线如下图所示。其响应与第一种方法得到的结果（<a href=".html#exa-sbnd-tt1">图 （Figure）</a><code class="xref fnum docutils literal"><span class="pre">Figure</span> <span class="pre">#exa-sbnd-tt1</span></code>）在定量上吻合良好。</p>
+<div class="figure" id="exa-sbnd-tt3">
+<a class="reference internal image-reference" href="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-tt3.png"><img alt="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-tt3.png" src="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-tt3.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 3：应变率为 1.0 的直接拉伸试验（方法 2）的应力—应变曲线。</span></p>
+</div>
+<p class="h3 rubric">无侧限压缩试验</p>
+<p>下面描述并比较两种模拟无侧限压缩试验的方法。第一种方法使用试样竖直方向两端的墙，并固定其速度。第二种方法使域沿竖直方向以恒定速率向内畸变。</p>
+<p class="h4 rubric">方法 1：使用墙压板</p>
+<p>文件 <a class="reference internal" href="#exa-sbnd-ucs"><span class="std std-ref">ucs.dat</span></a> 用于使用墙压板执行无侧限压缩试验。为方便起见，该文件进行了部分参数化，文件 <a class="reference internal" href="#exa-sbnd-doalla10"><span class="std std-ref">doall_A10.dat</span></a> 演示了如何执行该文件以及本例所选参数如下：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 进行无侧限压缩试验</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A10_G0_E50_KR25_S0_C1'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-bonded'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[strain_rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="ni">[tag </span><span class="o">+=</span><span class="ni"> </span><span class="s">'_SR1'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'ucs.dat'</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A10_G0_E50_KR25_S0_C1'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-bonded'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[strain_rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.1</span><span class="ni">]</span>
+<span class="ni">[tag </span><span class="o">+=</span><span class="ni"> </span><span class="s">'_SR01'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'ucs.dat'</span>
+</pre></div>
+</div>
+<p>试验进行两次，采用不同的规定应变率（1.0 和 0.1）。应力—应变响应如下图所示。</p>
+<div class="figure" id="exa-sbnd-ucs1">
+<a class="reference internal image-reference" href="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-ucs1.png"><img alt="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-ucs1.png" src="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-ucs1.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 4：应变率为 1.0 的无侧限压缩试验的应力—应变曲线。</span></p>
+</div>
+<div class="figure" id="exa-sbnd-ucs2-fig">
+<a class="reference internal image-reference" href="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-ucs2.png"><img alt="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-ucs2.png" src="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-ucs2.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 5：应变率为 0.1 的无侧限压缩试验的应力—应变曲线。</span></p>
+</div>
+<p>峰值抗压强度约为 32 MPa，即约为抗拉峰值强度的 4 倍，这与线性平行黏结模型等通常观察到的结果一致。</p>
+<p class="h4 rubric">方法 2：使用域畸变</p>
+<p>通过沿竖直方向收缩域尺寸进行类似试验。用于施加该试验的文件为 <a class="reference internal" href="#exa-sbnd-ucs2"><span class="std std-ref">ucs2.dat</span></a>，由 <a class="reference internal" href="#exa-sbnd-doalla10"><span class="std std-ref">doall_A10.dat</span></a> 调用：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 进行无侧限压缩试验（采用域畸变）</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A10_G0_E50_KR25_S0_C1'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-bonded'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[strain_rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="ni">[tag </span><span class="o">+=</span><span class="ni"> </span><span class="s">'_SR1'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'ucs2.dat'</span>
+</pre></div>
+</div>
+<p>本例（应变率 1.0）得到的应力—应变曲线如下图所示。其响应与第一种方法得到的结果（<a href="#exa-sbnd-ucs1">图 4（Figure  4）</a>）在定量上吻合良好。</p>
+<div class="figure" id="exa-sbnd-ucs3">
+<a class="reference internal image-reference" href="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-ucs3.png"><img alt="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-ucs3.png" src="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-ucs3.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 6：应变率为 1.0 的无侧限压缩试验（方法 2）的应力—应变曲线。</span></p>
+</div>
+<p class="h3 rubric">有侧限压缩试验</p>
+<p>文件 <a class="reference internal" href="#exa-sbnd-triax"><span class="std std-ref">triax.dat</span></a> 用于在不同围压下进行有侧限压缩试验。该文件采用周期性边界条件运行，并使用上文介绍的伺服算法施加目标围压，然后在试样沿竖直方向以恒定应变率收缩时维持侧向应力。为方便起见，该文件进行了部分参数化，文件 <a class="reference internal" href="#exa-sbnd-doalla10"><span class="std std-ref">doall_A10.dat</span></a> 演示了如何执行该文件以及本例所选参数（应变率 1.0，围压 10 kPa、100 kPa、500 kPa、1 MPa 和 10 MPa）：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 进行有侧限压缩试验</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A10_G0_E50_KR25_S0_C1'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-bonded'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[pc </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">10.0e3</span><span class="ni">]</span>
+<span class="ni">[strain_rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> tag </span><span class="o">+</span><span class="ni"> </span><span class="s">'_P10_SR1'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'triax.dat'</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A10_G0_E50_KR25_S0_C1'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-bonded'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[pc </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">100.0e3</span><span class="ni">]</span>
+<span class="ni">[strain_rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> tag </span><span class="o">+</span><span class="ni"> </span><span class="s">'_P100_SR1'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'triax.dat'</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A10_G0_E50_KR25_S0_C1'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-bonded'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[pc </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">500.0e3</span><span class="ni">]</span>
+<span class="ni">[strain_rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> tag </span><span class="o">+</span><span class="ni"> </span><span class="s">'_P500_SR1'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'triax.dat'</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A10_G0_E50_KR25_S0_C1'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-bonded'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[pc </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">1000.0e3</span><span class="ni">]</span>
+<span class="ni">[strain_rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> tag </span><span class="o">+</span><span class="ni"> </span><span class="s">'_P1000_SR1'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'triax.dat'</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A10_G0_E50_KR25_S0_C1'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-bonded'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[pc </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">10000.0e3</span><span class="ni">]</span>
+<span class="ni">[strain_rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> tag </span><span class="o">+</span><span class="ni"> </span><span class="s">'_P10000_SR1'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'triax.dat'</span>
+</pre></div>
+</div>
+<p>所得应力—应变曲线如下图所示，可见在高围压下响应转变为更具延性的形式。</p>
+<div class="figure" id="exa-sbnd-triax-fig">
+<a class="reference internal image-reference" href="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-triax.png"><img alt="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-triax.png" src="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-triax.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 7：应变率为 1.0 且围压递增的有侧限压缩试验的应力—应变曲线。</span></p>
+</div>
+<p class="h2 rubric">结果与讨论</p>
+<p>上述文件展示了一套有效流程，可用于生成黏结颗粒模型，并进行直接拉伸、无侧限压缩和有侧限压缩试验。本例采用软黏结接触模型。上述结果均采用一组禁止软化的参数，所得行为表现为脆性材料，抗压与抗拉强度比约为 4.0，这是线性平行黏结材料通常得到的值，但通常远低于大多数岩石的比值。</p>
+<p>通过执行文件 <a class="reference internal" href="#exa-sbnd-doalla10s10c0"><span class="std std-ref">doall_A10_S10_C0.dat</span></a> 进行第二组试验。此时，通过将软化因子设为 10.0、抗拉强度软化因子设为 0.0 来激活软化。这意味着一旦某接触达到抗拉强度，该接触便进入软化阶段，其软化刚度为加载刚度的 1/10，并且仅在拉力达到 0.0 时断裂。直接拉伸和无侧限压缩试验得到的应力—应变曲线如下所示。</p>
+<div class="figure" id="exa-sbnd-s10-tt">
+<a class="reference internal image-reference" href="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-S10-tt.png"><img alt="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-S10-tt.png" src="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-S10-tt.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 8：软化参数为 10 的直接拉伸试验的应力—应变曲线。</span></p>
+</div>
+<div class="figure" id="exa-sbnd-s10-ucs">
+<a class="reference internal image-reference" href="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-S10-ucs.png"><img alt="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-S10-ucs.png" src="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-S10-ucs.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 9：软化参数为 10 的无侧限压缩试验的应力—应变曲线。</span></p>
+</div>
+<p>在直接拉伸下，应力—应变曲线在达到峰值强度前表现出明显的软化，峰值强度约为 14 MPa（无软化时为 8 MPa）。在压缩下，峰值强度约为 100 MPa，抗压与抗拉强度比约为 7。</p>
+<p>通过执行文件 <a class="reference internal" href="#exa-sbnd-doalla10s20c0coh1000"><span class="std std-ref">doall_A10_S20_C0_COH1000.dat</span></a> 进行第三组试验。此时，通过将软化因子设为 20.0、抗拉强度软化因子设为 0.0，并提高黏结黏聚力以禁止剪切破坏，来激活软化。</p>
+<div class="figure" id="exa-sbnd-s20-tt">
+<a class="reference internal image-reference" href="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-S20-tt.png"><img alt="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-S20-tt.png" src="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-S20-tt.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 10：软化参数为 20 且不允许剪切破坏的直接拉伸试验的应力—应变曲线。</span></p>
+</div>
+<div class="figure" id="exa-sbnd-s20-ucs">
+<a class="reference internal image-reference" href="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-S20-ucs.png"><img alt="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-S20-ucs.png" src="pfc/pfcmodule/test3d/example_applications/SoftBonded/p3d-example-softbonded-S20-ucs.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 11：软化参数为 20 且不允许剪切破坏的无侧限压缩试验的应力—应变曲线。</span></p>
+</div>
+<p>采用这些参数后，压缩峰值强度增至约 200 MPa，拉伸峰值强度增至约 17 MPa，抗压与抗拉强度比约为 12.0。</p>
+<p class="h2 rubric" id="exa-sbnd-datafiles">数据文件</p>
+<p class="h3 rubric" id="exa-sbnd-doalla10">doall_A10.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+
+<span class="c">; excerpt-zmwu-start</span>
+<span class="c">; 生成堆积体</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+<span class="ni">[resolution </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">10</span><span class="ni">]</span><span class="n">   </span><span class="c">; 试样宽度方向上的球数近似值 </span>
+<span class="ni">[davg  </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2.5e-3</span><span class="ni">]</span><span class="n">    </span><span class="c">; 球平均直径 (m)</span>
+<span class="ni">[dratio </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.66</span><span class="ni">]</span><span class="n">     </span><span class="c">; 球最大/最小直径比 [-]</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A'</span><span class="o">+</span><span class="ni"> string</span><span class="p">(</span><span class="ni">resolution</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'make_brick.dat'</span><span class="n"> </span>
+<span class="c">; excerpt-zmwu-end</span>
+
+<span class="c">; excerpt-webj-start</span>
+<span class="c">; 安装接触模型</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-iso'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[igap     </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="o">*</span><span class="ni">davg ]</span><span class="n"> </span>
+<span class="ni">[emod     </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">50.0e9</span><span class="ni">   ]</span>
+<span class="ni">[kratio   </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2.5</span><span class="ni">      ]</span>
+<span class="ni">[fric     </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="ni">      ]</span>
+<span class="ni">[ten_mean </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">20.0e6</span><span class="ni">  ]</span>
+<span class="ni">[ten_std  </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0e6</span><span class="ni">    ]</span>
+<span class="ni">[coh_mean </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">100.0e6</span><span class="ni">  ]</span>
+<span class="ni">[coh_std  </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0e6</span><span class="ni">    ]</span>
+<span class="ni">[soft     </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">      ]</span>
+<span class="ni">[cut      </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">      ]</span>
+<span class="ni">[tag </span><span class="o">+=</span><span class="ni"> </span><span class="s">'_G0_E50_KR25_S0_C1'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'bond_sb.dat'</span><span class="n"> </span>
+<span class="c">; excerpt-webj-end</span>
+
+<span class="c">; excerpt-ebnh-start</span>
+<span class="c">; 进行直接拉伸试验</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A10_G0_E50_KR25_S0_C1'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-bonded'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[strain_rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="ni">[tag </span><span class="o">+=</span><span class="ni"> </span><span class="s">'_SR1'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'tt.dat'</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A10_G0_E50_KR25_S0_C1'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-bonded'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[strain_rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.1</span><span class="ni">]</span>
+<span class="ni">[tag </span><span class="o">+=</span><span class="ni"> </span><span class="s">'_SR01'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'tt.dat'</span>
+<span class="c">; excerpt-ebnh-end</span>
+
+<span class="c">; excerpt-rfae-start</span>
+<span class="c">; 进行无侧限压缩试验</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A10_G0_E50_KR25_S0_C1'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-bonded'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[strain_rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="ni">[tag </span><span class="o">+=</span><span class="ni"> </span><span class="s">'_SR1'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'ucs.dat'</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A10_G0_E50_KR25_S0_C1'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-bonded'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[strain_rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.1</span><span class="ni">]</span>
+<span class="ni">[tag </span><span class="o">+=</span><span class="ni"> </span><span class="s">'_SR01'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'ucs.dat'</span>
+<span class="c">; excerpt-rfae-end</span>
+
+<span class="c">; excerpt-pjoz-start</span>
+<span class="c">; 进行直接拉伸试验（采用域畸变）</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A10_G0_E50_KR25_S0_C1'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-bonded'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[strain_rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="ni">[tag </span><span class="o">+=</span><span class="ni"> </span><span class="s">'_SR1'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'tt2.dat'</span>
+<span class="c">; excerpt-pjoz-end</span>
+
+<span class="c">; excerpt-kmps-start</span>
+<span class="c">; 进行无侧限压缩试验（采用域畸变）</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A10_G0_E50_KR25_S0_C1'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-bonded'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[strain_rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="ni">[tag </span><span class="o">+=</span><span class="ni"> </span><span class="s">'_SR1'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'ucs2.dat'</span>
+<span class="c">; excerpt-kmps-end</span>
+
+<span class="c">; excerpt-dbin-start</span>
+<span class="c">; 进行有侧限压缩试验</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A10_G0_E50_KR25_S0_C1'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-bonded'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[pc </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">10.0e3</span><span class="ni">]</span>
+<span class="ni">[strain_rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> tag </span><span class="o">+</span><span class="ni"> </span><span class="s">'_P10_SR1'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'triax.dat'</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A10_G0_E50_KR25_S0_C1'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-bonded'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[pc </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">100.0e3</span><span class="ni">]</span>
+<span class="ni">[strain_rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> tag </span><span class="o">+</span><span class="ni"> </span><span class="s">'_P100_SR1'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'triax.dat'</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A10_G0_E50_KR25_S0_C1'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-bonded'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[pc </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">500.0e3</span><span class="ni">]</span>
+<span class="ni">[strain_rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> tag </span><span class="o">+</span><span class="ni"> </span><span class="s">'_P500_SR1'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'triax.dat'</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A10_G0_E50_KR25_S0_C1'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-bonded'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[pc </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">1000.0e3</span><span class="ni">]</span>
+<span class="ni">[strain_rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> tag </span><span class="o">+</span><span class="ni"> </span><span class="s">'_P1000_SR1'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'triax.dat'</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A10_G0_E50_KR25_S0_C1'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-bonded'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[pc </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">10000.0e3</span><span class="ni">]</span>
+<span class="ni">[strain_rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> tag </span><span class="o">+</span><span class="ni"> </span><span class="s">'_P10000_SR1'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'triax.dat'</span>
+<span class="c">; excerpt-dbin-end</span>
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="exa-sbnd-doalla10s10c0">doall_A10_S10_C0.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A10'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-iso'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">; 安装接触模型</span>
+<span class="ni">[igap     </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="o">*</span><span class="ni">davg ]</span><span class="n"> </span>
+<span class="ni">[emod     </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">50.0e9</span><span class="ni">   ]</span>
+<span class="ni">[kratio   </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2.5</span><span class="ni">      ]</span>
+<span class="ni">[fric     </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="ni">      ]</span>
+<span class="ni">[ten_mean </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">20.0e6</span><span class="ni">  ]</span>
+<span class="ni">[ten_std  </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0e6</span><span class="ni">    ]</span>
+<span class="ni">[coh_mean </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">100.0e6</span><span class="ni">  ]</span>
+<span class="ni">[coh_std  </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0e6</span><span class="ni">    ]</span>
+<span class="ni">[soft     </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">10.0</span><span class="ni">     ]</span>
+<span class="ni">[cut      </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">      ]</span>
+<span class="ni">[tag </span><span class="o">+=</span><span class="ni"> </span><span class="s">'_G0_E50_KR25_S10_C0'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'bond_sb.dat'</span><span class="n"> </span>
+
+<span class="c">; 进行直接拉伸试验（采用域畸变）</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A10_G0_E50_KR25_S10_C0'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-bonded'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[strain_rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="ni">[tag </span><span class="o">+=</span><span class="ni"> </span><span class="s">'_SR1'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'tt2.dat'</span>
+<span class="c">; 进行无侧限压缩试验（采用域畸变）</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A10_G0_E50_KR25_S10_C0'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-bonded'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[strain_rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="ni">[tag </span><span class="o">+=</span><span class="ni"> </span><span class="s">'_SR1'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'ucs2.dat'</span>
+
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="exa-sbnd-doalla10s20c0coh1000">doall_A10_S20_C0_COH1000.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A10'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-iso'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">; 安装接触模型</span>
+<span class="ni">[igap     </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="o">*</span><span class="ni">davg ]</span><span class="n"> </span>
+<span class="ni">[emod     </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">50.0e9</span><span class="ni">   ]</span>
+<span class="ni">[kratio   </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2.5</span><span class="ni">      ]</span>
+<span class="ni">[fric     </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="ni">      ]</span>
+<span class="ni">[ten_mean </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">20.0e6</span><span class="ni">  ]</span>
+<span class="ni">[ten_std  </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0e6</span><span class="ni">    ]</span>
+<span class="ni">[coh_mean </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">100.0e7</span><span class="ni">  ]</span>
+<span class="ni">[coh_std  </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0e6</span><span class="ni">    ]</span>
+<span class="ni">[soft     </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">20.0</span><span class="ni">     ]</span>
+<span class="ni">[cut      </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">      ]</span>
+<span class="ni">[tag </span><span class="o">+=</span><span class="ni"> </span><span class="s">'_G0_E50_KR25_S20_C0_COH1000'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'bond_sb.dat'</span><span class="n"> </span>
+
+<span class="c">; 进行直接拉伸试验（采用域畸变）</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A10_G0_E50_KR25_S20_C0_COH1000'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-bonded'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[strain_rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="ni">[tag </span><span class="o">+=</span><span class="ni"> </span><span class="s">'_SR1'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'tt2.dat'</span>
+<span class="c">; 进行无侧限压缩试验（采用域畸变）</span>
+<span class="ni">[tag </span><span class="p">=</span><span class="ni"> </span><span class="s">'A10_G0_E50_KR25_S20_C0_COH1000'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-bonded'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[strain_rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="ni">[tag </span><span class="o">+=</span><span class="ni"> </span><span class="s">'_SR1'</span><span class="ni">]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'ucs2.dat'</span>
+
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="exa-sbnd-makebrick">make_brick.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：make_brick.dat</span>
+<span class="c">; </span>
+<span class="c">; 生成各向同性、均质的球集合体，采用周期性</span>
+<span class="c">; 边界条件，并在低各向同性围压下稳定 </span>
+<span class="c">; 使用伺服控制算法使周期域发生畸变 </span>
+<span class="c">;</span>
+<span class="c">; ===================================================================</span>
+
+<span class="c">; 设置域范围（长宽比 2:1）与边界条件</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">resolution</span><span class="o">*</span><span class="ni">davg]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">resolution</span><span class="o">*</span><span class="ni">davg]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                    </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">resolution</span><span class="o">*</span><span class="ni">davg]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">resolution</span><span class="o">*</span><span class="ni">davg]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                    </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">resolution</span><span class="o">*</span><span class="ni">davg]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">resolution</span><span class="o">*</span><span class="ni">davg]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                     condition periodic</span>
+<span class="n">                     </span>
+<span class="c">; 分布球至目标低孔隙率，并设置密度和 </span>
+<span class="c">; 局部阻尼属性</span>
+<span class="ni">[dmin </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2.0</span><span class="o">*</span><span class="ni">davg </span><span class="o">/</span><span class="ni"> </span><span class="p">(</span><span class="m m-Double">1.0</span><span class="ni"> </span><span class="o">+</span><span class="ni"> dratio</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[dmax </span><span class="p">=</span><span class="ni"> dmin </span><span class="o">*</span><span class="ni"> dratio]</span>
+<span class="nb">ball distribute</span><span class="n"> porosity </span><span class="m m-Double">0.36</span><span class="n"> radius </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">dmin]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">dmax]</span><span class="n"> </span>
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="m m-Double">2000.0</span><span class="n"> damp </span><span class="m m-Double">0.7</span>
+
+<span class="c">; 选择接触模型</span>
+<span class="nb">contact cmat</span><span class="n"> default model linear </span><span class="sx">...</span>
+<span class="n">                     method deformability emod </span><span class="m m-Double">1e8</span><span class="n"> kratio </span><span class="m m-Double">2.5</span>
+
+<span class="c">; 监测</span>
+<span class="nb">model history</span><span class="n"> name </span><span class="s">'ratio-average'</span><span class="n"> mechanical ratio</span><span class="o">-</span><span class="n">average</span>
+<span class="nb">model history</span><span class="n"> name </span><span class="s">'timestep'</span><span class="n"> timestep</span>
+
+<span class="c">; 执行若干初始循环，并定期将 </span>
+<span class="c">; 自旋和速度重置为零，以松弛初始重叠，</span>
+<span class="c">; 然后求解至平衡 </span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span><span class="n"> calm </span><span class="m m-Double">100</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">5e-3</span>
+<span class="nb">model save</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-pkg'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+
+<span class="c">; 使用伺服控制算法使集合体在</span>
+<span class="c">; 预定的低各向同性应力状态下稳定</span>
+
+<span class="c">; 加载工具函数</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'servo.fis'</span><span class="n"> suppress</span>
+
+<span class="c">; 参数定义（供伺服控制函数使用）</span>
+<span class="ni">[servo_do_z </span><span class="p">=</span><span class="ni"> </span><span class="sx">true</span><span class="ni">     ]</span><span class="n">  </span>
+<span class="ni">[servo_ts_xx </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">1.0e5</span><span class="ni">  ]</span>
+<span class="ni">[servo_ts_yy </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">1.0e5</span><span class="ni">  ]</span>
+<span class="ni">[servo_ts_zz </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">1.0e5</span><span class="ni">  ]</span>
+<span class="ni">[servo_gain  </span><span class="p">=</span><span class="ni">  </span><span class="m m-Double">1.0e-4</span><span class="ni"> ]</span>
+<span class="ni">[servo_tol </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1e-2</span><span class="ni">]</span>
+<span class="ni">[s_xx </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">]</span>
+<span class="ni">[s_yy </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">]</span>
+<span class="ni">[s_zz </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">]</span>
+
+<span class="ni">[Lx </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.x</span><span class="p">()</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">domain.min.x</span><span class="p">()</span><span class="ni">]</span>
+<span class="ni">[Ly </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.y</span><span class="p">()</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">domain.min.y</span><span class="p">()</span><span class="ni">]</span>
+<span class="ni">[Lz </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.z</span><span class="p">()</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">domain.min.z</span><span class="p">()</span><span class="ni">]</span>
+<span class="nb">measure create</span><span class="n"> id </span><span class="m m-Double">1</span><span class="n"> radius </span><span class="ni">[</span><span class="m m-Double">0.95</span><span class="o">*</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">Lx]</span>
+
+<span class="c">; 监测</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'s_xx'</span><span class="n"> s_xx</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'s_yy'</span><span class="n"> s_yy</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'s_zz'</span><span class="n"> s_zz</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'L_x'</span><span class="n">  Lx</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'L_y'</span><span class="n">  Ly</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'L_z'</span><span class="n">  Lz</span>
+
+<span class="nb">model domain</span><span class="n"> tolerance </span><span class="m m-Double">1e-3</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fish</span><span class="o">-</span><span class="n">call </span><span class="m m-Double">1.0</span><span class="n"> servo_domain </span><span class="sx">...</span>
+<span class="n">            fish</span><span class="o">-</span><span class="n">halt servo_halt </span><span class="sx">...</span>
+<span class="n">            ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-3</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">            cycles </span><span class="m m-Double">100</span><span class="n"> and</span>
+<span class="nb">model save</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-iso'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">; ===================================================================</span>
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">; 文件结束：make_brick.dat</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="exa-sbnd-servo">servo.fis</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：servo.fis</span>
+<span class="c">; </span>
+<span class="c">; 用于定义伺服控制算法的工具函数 </span>
+<span class="c">; 通过使周期域畸变来施加目标围压</span>
+<span class="c">;</span>
+<span class="c">; ===================================================================</span>
+
+<span class="nb">fish define</span><span class="ni"> servo_domain</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> Lx </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.x</span><span class="p">()</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">domain.min.x</span><span class="p">()</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> Ly </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.y</span><span class="p">()</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">domain.min.y</span><span class="p">()</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> Lz </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.z</span><span class="p">()</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">domain.min.z</span><span class="p">()</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> vol </span><span class="p">=</span><span class="ni"> Lx</span><span class="o">*</span><span class="ni">Ly</span><span class="o">*</span><span class="ni">Lz</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> m </span><span class="p">=</span><span class="ni"> </span><span class="k">measure.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> mr </span><span class="p">=</span><span class="ni"> </span><span class="k">math.sqrt</span><span class="p">((</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">Lx</span><span class="p">)</span><span class="o">^</span><span class="m m-Double">2</span><span class="o">+</span><span class="p">(</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">Ly</span><span class="p">)</span><span class="o">^</span><span class="m m-Double">2</span><span class="o">+</span><span class="p">(</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">Lz</span><span class="p">)</span><span class="o">^</span><span class="m m-Double">2</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> mv </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="m m-Double">4.0</span><span class="o">/</span><span class="m m-Double">3.0</span><span class="p">)</span><span class="o">*</span><span class="k">math.pi</span><span class="o">*</span><span class="ni">mr</span><span class="o">^</span><span class="m m-Double">3</span>
+<span class="ni">  </span><span class="k">measure.radius</span><span class="p">(</span><span class="ni">m</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> mr</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> stress </span><span class="p">=</span><span class="ni"> </span><span class="k">measure.stress</span><span class="p">(</span><span class="ni">m</span><span class="p">)</span><span class="ni"> </span><span class="o">*</span><span class="ni">mv</span><span class="o">/</span><span class="ni">vol</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> s_xx </span><span class="p">=</span><span class="ni"> stress</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> servo_xdiff </span><span class="p">=</span><span class="ni"> servo_ts_xx </span><span class="o">-</span><span class="ni"> s_xx</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> servo_xrate </span><span class="p">=</span><span class="ni"> servo_gain </span><span class="o">*</span><span class="ni">servo_xdiff </span>
+<span class="ni">  </span><span class="k">domain.strain.rate.xx</span><span class="ni"> </span><span class="p">=</span><span class="ni"> servo_xrate</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> s_yy </span><span class="p">=</span><span class="ni"> stress</span><span class="p">(</span><span class="m m-Double">2</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> servo_ydiff </span><span class="p">=</span><span class="ni"> servo_ts_yy </span><span class="o">-</span><span class="ni"> s_yy</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> servo_yrate </span><span class="p">=</span><span class="ni"> servo_gain </span><span class="o">*</span><span class="ni">servo_ydiff </span>
+<span class="ni">  </span><span class="k">domain.strain.rate.yy</span><span class="ni"> </span><span class="p">=</span><span class="ni"> servo_yrate</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> s_zz </span><span class="p">=</span><span class="ni"> stress</span><span class="p">(</span><span class="m m-Double">3</span><span class="p">,</span><span class="m m-Double">3</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> servo_do_z </span><span class="k">then</span><span class="ni"> </span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> servo_zdiff </span><span class="p">=</span><span class="ni"> servo_ts_zz </span><span class="o">-</span><span class="ni"> s_zz</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> servo_zrate </span><span class="p">=</span><span class="ni">  servo_gain </span><span class="o">*</span><span class="ni"> servo_zdiff</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">domain.strain.rate.zz</span><span class="ni"> </span><span class="p">=</span><span class="ni"> servo_zrate</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> servo_halt</span>
+<span class="ni">  servo_halt </span><span class="p">=</span><span class="ni"> </span><span class="sx">false</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> delta </span><span class="p">=</span><span class="ni"> </span><span class="k">math.max</span><span class="p">(</span><span class="k">math.abs</span><span class="p">(</span><span class="ni">servo_xdiff</span><span class="o">/</span><span class="ni">servo_ts_xx</span><span class="p">)</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">               </span><span class="p">,</span><span class="k">math.abs</span><span class="p">(</span><span class="ni">servo_ydiff</span><span class="o">/</span><span class="ni">servo_ts_yy</span><span class="p">))</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> servo_do_z </span><span class="k">then</span><span class="ni"> </span>
+<span class="ni">    delta </span><span class="p">=</span><span class="ni"> </span><span class="k">math.max</span><span class="p">(</span><span class="k">math.abs</span><span class="p">(</span><span class="ni">servo_zdiff</span><span class="o">/</span><span class="ni">servo_ts_zz</span><span class="p">),</span><span class="ni">delta</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> delta </span><span class="o">&lt;</span><span class="ni"> servo_tol </span><span class="k">then</span>
+<span class="ni">    servo_halt </span><span class="p">=</span><span class="ni"> </span><span class="sx">true</span>
+<span class="ni">    </span><span class="k">domain.strain.rate.xx</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">    </span><span class="k">domain.strain.rate.yy</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">    </span><span class="k">domain.strain.rate.zz</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="nb">end</span>
+<span class="c">; ===================================================================</span>
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">; 文件结束：servo.fis</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="exa-sbnd-bond">bond_sb.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">ball attribute</span><span class="n"> force</span><span class="o">-</span><span class="n">contact  multiply </span><span class="m m-Double">0.0</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">               moment</span><span class="o">-</span><span class="n">contact multiply </span><span class="m m-Double">0.0</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">               velocity multiply </span><span class="m m-Double">0.0</span><span class="n">        </span><span class="sx">...</span>
+<span class="n">               spin multiply </span><span class="m m-Double">0.0</span><span class="n">            </span><span class="sx">...</span>
+<span class="n">               displacement multiply </span><span class="m m-Double">0.0</span>
+<span class="nb">contact cmat</span><span class="n"> default model </span><span class="s">'softbond'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                   method deformability emod </span><span class="ni">[emod]</span><span class="n"> kratio </span><span class="ni">[kratio]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                   property fric </span><span class="ni">[fric]</span><span class="n">  sb_mode </span><span class="m m-Double">1</span><span class="n">                 </span><span class="sx">...</span>
+<span class="n">                            sb_soft </span><span class="ni">[soft]</span><span class="n"> sb_cut </span><span class="ni">[cut]</span><span class="n">             </span>
+<span class="nb">contact cmat</span><span class="n"> proximity </span><span class="ni">[igap]</span>
+<span class="nb">model clean</span><span class="n"> all</span>
+<span class="nb">contact cmat</span><span class="n"> apply</span>
+
+<span class="nb">fish define</span><span class="ni"> normal_dist</span><span class="p">(</span><span class="ni">c</span><span class="p">,</span><span class="ni">mean</span><span class="p">,</span><span class="ni">sdev</span><span class="p">)</span>
+<span class="c">; 从正态分布中计算一个非负值，其</span>
+<span class="c">; 均值和标准差为给定值。</span>
+<span class="c">;</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">while</span><span class="ni"> </span><span class="m m-Double">1</span><span class="ni"> # </span><span class="m m-Double">0</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> _val </span><span class="p">=</span><span class="ni"> mean </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="k">math.random.gauss</span><span class="ni"> </span><span class="o">*</span><span class="ni"> sdev</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> _val </span><span class="o">&gt;</span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">      normal_dist </span><span class="p">=</span><span class="ni"> _val</span>
+<span class="ni">      </span><span class="k">exit</span>
+<span class="ni">    </span><span class="k">end_if</span>
+<span class="ni">  </span><span class="k">end_loop</span>
+<span class="nb">end</span>
+
+<span class="nb">contact property</span><span class="n"> sb_coh </span><span class="ni">[normal_dist</span><span class="p">(</span><span class="ni">coh_mean</span><span class="p">,</span><span class="ni">coh_std</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">contact property</span><span class="n"> sb_ten </span><span class="ni">[normal_dist</span><span class="p">(</span><span class="ni">ten_mean</span><span class="p">,</span><span class="ni">ten_std</span><span class="p">)</span><span class="ni">]</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'brick_%1-bonded'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="exa-sbnd-tt">tt.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish define</span><span class="ni"> setup_tt</span>
+<span class="ni">  </span><span class="c">; 识别边界球</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> c </span><span class="k">contact.list.all</span>
+<span class="ni">      </span><span class="k">if</span><span class="ni"> </span><span class="k">contact.offset.z</span><span class="p">(</span><span class="ni">c</span><span class="p">)</span><span class="ni"> # </span><span class="m m-Double">0</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">          </span><span class="k">ball.group</span><span class="p">(</span><span class="k">contact.end1</span><span class="p">(</span><span class="ni">c</span><span class="p">))</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'boundary'</span>
+<span class="ni">          </span><span class="k">ball.group</span><span class="p">(</span><span class="k">contact.end2</span><span class="p">(</span><span class="ni">c</span><span class="p">))</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'boundary'</span>
+<span class="ni">      </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">endloop</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="c">; 安装量测球</span>
+<span class="ni">  Lx0 </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.x</span><span class="p">()</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">domain.min.x</span><span class="p">()</span>
+<span class="ni">  Ly0 </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.y</span><span class="p">()</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">domain.min.y</span><span class="p">()</span>
+<span class="ni">  Lz0 </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.z</span><span class="p">()</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">domain.min.z</span><span class="p">()</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> mr </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">math.min</span><span class="p">(</span><span class="ni">Lx0</span><span class="p">,</span><span class="ni">Ly0</span><span class="p">,</span><span class="ni">Lz0</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">measure.radius</span><span class="p">(</span><span class="k">measure.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">))</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.9</span><span class="o">*</span><span class="ni">mr  </span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> btop </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="k">domain.max.z</span><span class="p">())</span><span class="ni"> </span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> bbot </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="k">domain.min.z</span><span class="p">())</span><span class="ni"> </span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">btop</span><span class="p">,</span><span class="s">'gage'</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'top'</span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">bbot</span><span class="p">,</span><span class="s">'gage'</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'bot'</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> bright </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="k">domain.max.x</span><span class="p">(),</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> bleft  </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="k">domain.min.x</span><span class="p">(),</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> bfront </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="k">domain.max.y</span><span class="p">(),</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> bback  </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="k">domain.min.y</span><span class="p">(),</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">bright</span><span class="p">,</span><span class="s">'gage'</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'right'</span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">bleft</span><span class="p">,</span><span class="s">'gage'</span><span class="p">)</span><span class="ni">  </span><span class="p">=</span><span class="ni"> </span><span class="s">'left'</span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">bfront</span><span class="p">,</span><span class="s">'gage'</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'front'</span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">bback</span><span class="p">,</span><span class="s">'gage'</span><span class="p">)</span><span class="ni">  </span><span class="p">=</span><span class="ni"> </span><span class="s">'back'</span>
+<span class="ni">  Lx0 </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.x</span><span class="p">(</span><span class="ni">bright</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos.x</span><span class="p">(</span><span class="ni">bleft</span><span class="p">)</span>
+<span class="ni">  Ly0 </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.y</span><span class="p">(</span><span class="ni">bfront</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos.y</span><span class="p">(</span><span class="ni">bback</span><span class="p">)</span>
+<span class="ni">  Lz0 </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.z</span><span class="p">(</span><span class="ni">btop</span><span class="p">)</span><span class="ni">   </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos.z</span><span class="p">(</span><span class="ni">bbot</span><span class="p">)</span>
+<span class="ni">  </span><span class="c">; 扩大域范围</span>
+<span class="ni">  </span><span class="k">domain.min.x</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.5</span><span class="o">*</span><span class="k">domain.min.x</span>
+<span class="ni">  </span><span class="k">domain.max.x</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.5</span><span class="o">*</span><span class="k">domain.max.x</span>
+<span class="ni">  </span><span class="k">domain.min.y</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.5</span><span class="o">*</span><span class="k">domain.min.y</span>
+<span class="ni">  </span><span class="k">domain.max.y</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.5</span><span class="o">*</span><span class="k">domain.max.y</span>
+<span class="ni">  </span><span class="k">domain.min.z</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.5</span><span class="o">*</span><span class="k">domain.min.z</span>
+<span class="ni">  </span><span class="k">domain.max.z</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.5</span><span class="o">*</span><span class="k">domain.max.z</span><span class="ni">  </span>
+<span class="nb">end</span>
+<span class="ni">[setup_tt]</span>
+
+<span class="nb">model domain</span><span class="n"> condition stop</span>
+<span class="nb">model clean</span><span class="n"> all</span>
+<span class="nb">contact method</span><span class="n"> bond gap </span><span class="ni">[igap]</span><span class="n"> range contact all </span>
+
+<span class="c">; 重置邻近距离，删除非活动接触 </span>
+<span class="c">; 并清理模型以减少非活动接触的数量</span>
+<span class="nb">contact cmat</span><span class="n"> proximity </span><span class="m m-Double">0.0</span>
+<span class="nb">contact delete</span><span class="n"> range contact inactive</span>
+<span class="nb">model clean</span><span class="n"> all</span>
+
+<span class="nb">ball fix</span><span class="n"> velocity spin range group </span><span class="s">'boundary'</span>
+<span class="c">;contact property sb_ten 1e20 sb_coh 1e20 range group 'boundary' match 1</span>
+
+<span class="nb">fish define</span><span class="ni"> e_xx</span>
+<span class="ni">  Lx </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.x</span><span class="p">(</span><span class="ni">bright</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos.x</span><span class="p">(</span><span class="ni">bleft</span><span class="p">)</span>
+<span class="ni">  e_xx </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">Lx </span><span class="o">-</span><span class="ni"> Lx0</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> Lx0</span>
+<span class="nb">end</span>
+<span class="nb">fish define</span><span class="ni"> e_yy</span>
+<span class="ni">  Ly </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.y</span><span class="p">(</span><span class="ni">bfront</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos.y</span><span class="p">(</span><span class="ni">bback</span><span class="p">)</span>
+<span class="ni">  e_yy </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">Ly </span><span class="o">-</span><span class="ni"> Ly0</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> Ly0</span>
+<span class="nb">end</span>
+<span class="nb">fish define</span><span class="ni"> e_zz</span>
+<span class="ni">  Lz </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.z</span><span class="p">(</span><span class="ni">btop</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos.z</span><span class="p">(</span><span class="ni">bbot</span><span class="p">)</span>
+<span class="ni">  e_zz </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">Lz </span><span class="o">-</span><span class="ni"> Lz0</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> Lz0</span>
+<span class="nb">end</span>
+<span class="nb">fish define</span><span class="ni"> e_zz</span>
+<span class="ni">  Lz </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.z</span><span class="p">(</span><span class="ni">btop</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos.z</span><span class="p">(</span><span class="ni">bbot</span><span class="p">)</span>
+<span class="ni">  e_zz </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">Lz </span><span class="o">-</span><span class="ni"> Lz0</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> Lz0</span>
+<span class="nb">end</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="ni">[s_xx </span><span class="p">=</span><span class="ni"> </span><span class="k">measure.stress.xx</span><span class="p">(</span><span class="k">measure.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">))</span><span class="ni">]</span>
+<span class="ni">[s_yy </span><span class="p">=</span><span class="ni"> </span><span class="k">measure.stress.yy</span><span class="p">(</span><span class="k">measure.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">))</span><span class="ni">]</span>
+<span class="ni">[s_zz </span><span class="p">=</span><span class="ni"> </span><span class="k">measure.stress.zz</span><span class="p">(</span><span class="k">measure.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">))</span><span class="ni">]</span>
+
+<span class="nb">fish define</span><span class="ni"> s_zz</span>
+<span class="ni">  s_zz </span><span class="p">=</span><span class="ni"> </span><span class="k">measure.stress.zz</span><span class="p">(</span><span class="k">measure.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">))</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> poiss_ratio</span>
+<span class="ni">  poiss_ratio </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="p">(</span><span class="ni">e_xx</span><span class="o">+</span><span class="ni">e_yy</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> e_zz</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> emod_secant</span>
+<span class="ni">  emod_secant </span><span class="p">=</span><span class="ni"> s_zz </span><span class="o">/</span><span class="ni"> e_zz</span>
+<span class="nb">end</span>
+
+<span class="nb">history purge</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'e_xx'</span><span class="n"> e_xx </span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'e_yy'</span><span class="n"> e_yy </span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'e_zz'</span><span class="n"> e_zz </span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'emod_secant'</span><span class="n"> emod_secant</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'poiss_ratio'</span><span class="n"> poiss_ratio</span>
+
+<span class="nb">fish define</span><span class="ni"> halt</span>
+<span class="ni">  halt </span><span class="p">=</span><span class="ni"> </span><span class="sx">false</span>
+<span class="ni">  s_zz_max </span><span class="p">=</span><span class="ni"> </span><span class="k">math.max</span><span class="p">(</span><span class="ni">s_zz</span><span class="p">,</span><span class="ni">s_zz_max</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> s_zz </span><span class="o">&lt;</span><span class="ni"> peak_frac</span><span class="o">*</span><span class="ni">s_zz_max</span>
+<span class="ni">    halt </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="nb">end</span>
+
+<span class="nb">ball attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="ni">[ </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">strain_rate</span><span class="o">*</span><span class="ni">Lz0]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">    range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="ni">[Lz0]</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">          group </span><span class="s">'boundary'</span>
+<span class="nb">ball attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">strain_rate</span><span class="o">*</span><span class="ni">Lz0]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">    range position</span><span class="o">-</span><span class="n">z </span><span class="ni">[</span><span class="o">-</span><span class="ni">Lz0]</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">          group </span><span class="s">'boundary'</span>
+
+<span class="ni">[peak_frac </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="ni"> ]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'tt_%1-initial'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fish</span><span class="o">-</span><span class="n">halt </span><span class="ni">[halt]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">            cycles </span><span class="m m-Double">100</span><span class="n"> and</span>
+<span class="nb">model save</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'tt_%1-final'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+
+<span class="c">; ===================================================================</span>
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">;文件结束</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="exa-sbnd-ucs">ucs.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish define</span><span class="ni"> setup_ucs</span>
+<span class="ni">  </span><span class="c">; 识别边界球</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> c </span><span class="k">contact.list.all</span>
+<span class="ni">      </span><span class="k">if</span><span class="ni"> </span><span class="k">contact.offset.z</span><span class="p">(</span><span class="ni">c</span><span class="p">)</span><span class="ni"> # </span><span class="m m-Double">0</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">          </span><span class="k">ball.group</span><span class="p">(</span><span class="k">contact.end1</span><span class="p">(</span><span class="ni">c</span><span class="p">))</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'boundary'</span>
+<span class="ni">          </span><span class="k">ball.group</span><span class="p">(</span><span class="k">contact.end2</span><span class="p">(</span><span class="ni">c</span><span class="p">))</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'boundary'</span>
+<span class="ni">      </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">endloop</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> zmax </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> zmin </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> cntmax </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> cntmin </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> b </span><span class="k">ball.groupmap</span><span class="p">(</span><span class="s">'boundary'</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> z </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.z</span><span class="p">(</span><span class="ni">b</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> z </span><span class="o">&gt;</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">        zmax   </span><span class="o">+=</span><span class="ni"> z </span><span class="o">+</span><span class="ni"> </span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">b</span><span class="p">)</span>
+<span class="ni">        cntmax </span><span class="o">+=</span><span class="m m-Double">1</span>
+<span class="ni">    </span><span class="k">else</span>
+<span class="ni">        zmin   </span><span class="o">+=</span><span class="ni"> z </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">b</span><span class="p">)</span>
+<span class="ni">        cntmin </span><span class="o">+=</span><span class="m m-Double">1</span><span class="ni">    </span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">endloop</span>
+<span class="ni">  zmax </span><span class="o">/=</span><span class="ni"> cntmax</span>
+<span class="ni">  zmin </span><span class="o">/=</span><span class="ni"> cntmin</span>
+<span class="ni">    </span>
+<span class="ni">  </span><span class="c">; 安装量测球</span>
+<span class="ni">  Lx0 </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.x</span><span class="p">()</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">domain.min.x</span><span class="p">()</span>
+<span class="ni">  Ly0 </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.y</span><span class="p">()</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">domain.min.y</span><span class="p">()</span>
+<span class="ni">  Lz0 </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.z</span><span class="p">()</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">domain.min.z</span><span class="p">()</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> mr </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">math.min</span><span class="p">(</span><span class="ni">Lx0</span><span class="p">,</span><span class="ni">Ly0</span><span class="p">,</span><span class="ni">Lz0</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">measure.radius</span><span class="p">(</span><span class="k">measure.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">))</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.9</span><span class="o">*</span><span class="ni">mr</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> bright </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="k">domain.max.x</span><span class="p">(),</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> bleft  </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="k">domain.min.x</span><span class="p">(),</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> bfront </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="k">domain.max.y</span><span class="p">(),</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> bback  </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="k">domain.min.y</span><span class="p">(),</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">bright</span><span class="p">,</span><span class="s">'gage'</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'right'</span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">bleft</span><span class="p">,</span><span class="s">'gage'</span><span class="p">)</span><span class="ni">  </span><span class="p">=</span><span class="ni"> </span><span class="s">'left'</span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">bfront</span><span class="p">,</span><span class="s">'gage'</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'front'</span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">bback</span><span class="p">,</span><span class="s">'gage'</span><span class="p">)</span><span class="ni">  </span><span class="p">=</span><span class="ni"> </span><span class="s">'back'</span>
+<span class="ni">  Lx0 </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.x</span><span class="p">(</span><span class="ni">bright</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos.x</span><span class="p">(</span><span class="ni">bleft</span><span class="p">)</span>
+<span class="ni">  Ly0 </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.y</span><span class="p">(</span><span class="ni">bfront</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos.y</span><span class="p">(</span><span class="ni">bback</span><span class="p">)</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="c">; 扩大域范围</span>
+<span class="ni">  </span><span class="k">domain.min.x</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.5</span><span class="o">*</span><span class="k">domain.min.x</span>
+<span class="ni">  </span><span class="k">domain.max.x</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.5</span><span class="o">*</span><span class="k">domain.max.x</span>
+<span class="ni">  </span><span class="k">domain.min.y</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.5</span><span class="o">*</span><span class="k">domain.min.y</span>
+<span class="ni">  </span><span class="k">domain.max.y</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.5</span><span class="o">*</span><span class="k">domain.max.y</span>
+<span class="ni">  </span><span class="k">domain.min.z</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.5</span><span class="o">*</span><span class="k">domain.min.z</span>
+<span class="ni">  </span><span class="k">domain.max.z</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.5</span><span class="o">*</span><span class="k">domain.max.z</span>
+<span class="ni">  </span><span class="c">;</span>
+<span class="ni">  </span>
+<span class="nb">end</span>
+<span class="ni">[setup_ucs]</span>
+
+<span class="nb">model domain</span><span class="n"> condition stop</span>
+<span class="nb">model clean</span><span class="n"> all                           </span>
+<span class="nb">contact method</span><span class="n"> bond gap </span><span class="ni">[igap]</span><span class="n"> range contact all </span>
+
+<span class="c">; 重置邻近距离，删除非活动接触 </span>
+<span class="c">; 并清理模型以减少非活动接触的数量</span>
+<span class="nb">contact cmat</span><span class="n"> proximity </span><span class="m m-Double">0.0</span>
+<span class="nb">contact delete</span><span class="n"> range contact inactive</span>
+<span class="nb">model clean</span><span class="n"> all</span>
+
+<span class="nb">wall generate</span><span class="n"> name </span><span class="s">'box'</span><span class="n"> box </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">Lx0]</span><span class="n">  </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">Lx0]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                             </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">Ly0]</span><span class="n">  </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">Ly0]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                             </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">Lz0]</span><span class="n">  </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">Lz0]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                             expand </span><span class="m m-Double">1.25</span>
+<span class="nb">wall delete</span><span class="n"> range set name </span><span class="s">'boxLeft'</span><span class="n">                             </span>
+<span class="nb">wall delete</span><span class="n"> range set name </span><span class="s">'boxRight'</span><span class="n">                             </span>
+<span class="nb">wall delete</span><span class="n"> range set name </span><span class="s">'boxFront'</span><span class="n">                             </span>
+<span class="nb">wall delete</span><span class="n"> range set name </span><span class="s">'boxBack'</span><span class="n">                             </span>
+
+<span class="nb">contact cmat</span><span class="n"> default type </span><span class="s">'ball-facet'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                     model softbond </span><span class="sx">...</span>
+<span class="n">                     method deformability emod </span><span class="ni">[emod]</span><span class="n"> kratio </span><span class="ni">[kratio]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                     property sb_mode </span><span class="m m-Double">1</span><span class="n"> fric </span><span class="ni">[fric]</span>
+
+<span class="nb">model clean</span><span class="n"> all</span>
+
+<span class="ni">[wtop </span><span class="p">=</span><span class="ni"> </span><span class="k">wall.find</span><span class="p">(</span><span class="s">'boxTop'</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[wbot </span><span class="p">=</span><span class="ni"> </span><span class="k">wall.find</span><span class="p">(</span><span class="s">'boxBottom'</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[Lz0 </span><span class="p">=</span><span class="ni"> </span><span class="k">wall.pos.z</span><span class="p">(</span><span class="ni">wtop</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">wall.pos.z</span><span class="p">(</span><span class="ni">wbot</span><span class="p">)</span><span class="ni">]</span>
+
+<span class="nb">fish define</span><span class="ni"> e_xx</span>
+<span class="ni">  Lx </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.x</span><span class="p">(</span><span class="ni">bright</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos.x</span><span class="p">(</span><span class="ni">bleft</span><span class="p">)</span>
+<span class="ni">  e_xx </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">Lx </span><span class="o">-</span><span class="ni"> Lx0</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> Lx0</span>
+<span class="nb">end</span>
+<span class="nb">fish define</span><span class="ni"> e_yy</span>
+<span class="ni">  Ly </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.y</span><span class="p">(</span><span class="ni">bfront</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos.y</span><span class="p">(</span><span class="ni">bback</span><span class="p">)</span>
+<span class="ni">  e_yy </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">Ly </span><span class="o">-</span><span class="ni"> Ly0</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> Ly0</span>
+<span class="nb">end</span>
+<span class="nb">fish define</span><span class="ni"> e_zz</span>
+<span class="ni">  Lz </span><span class="p">=</span><span class="ni"> </span><span class="k">wall.pos.z</span><span class="p">(</span><span class="ni">wtop</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">wall.pos.z</span><span class="p">(</span><span class="ni">wbot</span><span class="p">)</span>
+<span class="ni">  e_zz </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">Lz </span><span class="o">-</span><span class="ni"> Lz0</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> Lz0</span>
+<span class="nb">end</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="ni">[s_xx </span><span class="p">=</span><span class="ni"> </span><span class="k">measure.stress.xx</span><span class="p">(</span><span class="k">measure.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">))</span><span class="ni">]</span>
+<span class="ni">[s_yy </span><span class="p">=</span><span class="ni"> </span><span class="k">measure.stress.yy</span><span class="p">(</span><span class="k">measure.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">))</span><span class="ni">]</span>
+<span class="ni">[s_zz </span><span class="p">=</span><span class="ni"> </span><span class="k">measure.stress.zz</span><span class="p">(</span><span class="k">measure.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">))</span><span class="ni">]</span>
+
+<span class="nb">fish define</span><span class="ni"> s_zz</span>
+<span class="ni">  s_zz </span><span class="p">=</span><span class="ni"> </span><span class="k">measure.stress.zz</span><span class="p">(</span><span class="k">measure.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">))</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> poiss_ratio</span>
+<span class="ni">  poiss_ratio </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="p">(</span><span class="ni">e_xx</span><span class="o">+</span><span class="ni">e_yy</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> e_zz</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> emod_secant</span>
+<span class="ni">  emod_secant </span><span class="p">=</span><span class="ni"> s_zz </span><span class="o">/</span><span class="ni"> e_zz</span>
+<span class="nb">end</span>
+
+<span class="nb">history purge</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'e_xx'</span><span class="n"> e_xx </span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'e_yy'</span><span class="n"> e_yy </span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'e_zz'</span><span class="n"> e_zz </span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'emod_secant'</span><span class="n"> emod_secant</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'poiss_ratio'</span><span class="n"> poiss_ratio </span>
+
+<span class="nb">fish define</span><span class="ni"> halt</span>
+<span class="ni">  halt </span><span class="p">=</span><span class="ni"> </span><span class="sx">false</span>
+<span class="ni">  s_zz_min </span><span class="p">=</span><span class="ni"> </span><span class="k">math.min</span><span class="p">(</span><span class="ni">s_zz</span><span class="p">,</span><span class="ni">s_zz_min</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> s_zz </span><span class="o">&gt;</span><span class="ni"> peak_frac</span><span class="o">*</span><span class="ni">s_zz_min</span>
+<span class="ni">    halt </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="nb">end</span>
+
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">strain_rate</span><span class="o">*</span><span class="ni">Lz0]</span><span class="n"> range set name </span><span class="s">'boxTop'</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="ni">[ </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">strain_rate</span><span class="o">*</span><span class="ni">Lz0]</span><span class="n"> range set name </span><span class="s">'boxBottom'</span>
+<span class="nb">model save</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'ucs_%1-initial'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[peak_frac </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.8</span><span class="ni"> ]</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fish</span><span class="o">-</span><span class="n">halt halt </span><span class="sx">...</span>
+<span class="n">            cycles </span><span class="m m-Double">100</span><span class="n"> and</span>
+<span class="nb">model save</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'ucs_%1-final'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+
+<span class="c">; ===================================================================</span>
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">;文件结束</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="exa-sbnd-tt2">tt2.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish define</span><span class="ni"> setup_tt</span>
+<span class="ni">  </span><span class="c">; 识别边界球</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> c </span><span class="k">contact.list.all</span>
+<span class="ni">      </span><span class="k">if</span><span class="ni"> </span><span class="k">contact.offset.z</span><span class="p">(</span><span class="ni">c</span><span class="p">)</span><span class="ni"> # </span><span class="m m-Double">0</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">          </span><span class="k">ball.group</span><span class="p">(</span><span class="k">contact.end1</span><span class="p">(</span><span class="ni">c</span><span class="p">))</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'boundary'</span>
+<span class="ni">          </span><span class="k">ball.group</span><span class="p">(</span><span class="k">contact.end2</span><span class="p">(</span><span class="ni">c</span><span class="p">))</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'boundary'</span>
+<span class="ni">      </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">endloop</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="c">; 安装量测球</span>
+<span class="ni">  Lx0 </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.x</span><span class="p">()</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">domain.min.x</span><span class="p">()</span>
+<span class="ni">  Ly0 </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.y</span><span class="p">()</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">domain.min.y</span><span class="p">()</span>
+<span class="ni">  Lz0 </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.z</span><span class="p">()</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">domain.min.z</span><span class="p">()</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> mr </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">math.min</span><span class="p">(</span><span class="ni">Lx0</span><span class="p">,</span><span class="ni">Ly0</span><span class="p">,</span><span class="ni">Lz0</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">measure.radius</span><span class="p">(</span><span class="k">measure.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">))</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.9</span><span class="o">*</span><span class="ni">mr</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> btop </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="k">domain.max.z</span><span class="p">())</span><span class="ni"> </span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> bbot </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="k">domain.min.z</span><span class="p">())</span><span class="ni"> </span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> bright </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="k">domain.max.x</span><span class="p">(),</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> bleft  </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="k">domain.min.x</span><span class="p">(),</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> bfront </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="k">domain.max.y</span><span class="p">(),</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> bback  </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="k">domain.min.y</span><span class="p">(),</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">bright</span><span class="p">,</span><span class="s">'gage'</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'right'</span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">bleft</span><span class="p">,</span><span class="s">'gage'</span><span class="p">)</span><span class="ni">  </span><span class="p">=</span><span class="ni"> </span><span class="s">'left'</span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">bfront</span><span class="p">,</span><span class="s">'gage'</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'front'</span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">bback</span><span class="p">,</span><span class="s">'gage'</span><span class="p">)</span><span class="ni">  </span><span class="p">=</span><span class="ni"> </span><span class="s">'back'</span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">btop</span><span class="p">,</span><span class="s">'gage'</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'top'</span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">bbot</span><span class="p">,</span><span class="s">'gage'</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'bot'</span>
+<span class="ni"> </span>
+<span class="ni">  Lx0 </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.x</span><span class="p">(</span><span class="ni">bright</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos.x</span><span class="p">(</span><span class="ni">bleft</span><span class="p">)</span>
+<span class="ni">  Ly0 </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.y</span><span class="p">(</span><span class="ni">bfront</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos.y</span><span class="p">(</span><span class="ni">bback</span><span class="p">)</span>
+<span class="ni">  Lz0 </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.z</span><span class="p">(</span><span class="ni">btop</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos.z</span><span class="p">(</span><span class="ni">bbot</span><span class="p">)</span>
+
+<span class="ni">  </span><span class="c">; 扩大域范围</span>
+<span class="ni">  </span><span class="k">domain.min.x</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.5</span><span class="o">*</span><span class="k">domain.min.x</span>
+<span class="ni">  </span><span class="k">domain.max.x</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.5</span><span class="o">*</span><span class="k">domain.max.x</span>
+<span class="ni">  </span><span class="k">domain.min.y</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.5</span><span class="o">*</span><span class="k">domain.min.y</span>
+<span class="ni">  </span><span class="k">domain.max.y</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.5</span><span class="o">*</span><span class="k">domain.max.y</span>
+<span class="ni">  </span><span class="k">domain.min.z</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.5</span><span class="o">*</span><span class="k">domain.min.z</span>
+<span class="ni">  </span><span class="k">domain.max.z</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.5</span><span class="o">*</span><span class="k">domain.max.z</span>
+<span class="ni">  </span>
+<span class="nb">end</span>
+<span class="ni">[setup_tt]</span>
+
+<span class="nb">model domain</span><span class="n"> condition stop</span>
+<span class="nb">model clean</span><span class="n"> all</span>
+
+<span class="nb">contact method</span><span class="n"> bond gap </span><span class="ni">[igap]</span><span class="n"> range contact all </span>
+
+<span class="c">; 重置邻近距离，删除非活动接触 </span>
+<span class="c">; 并清理模型以减少非活动接触的数量</span>
+<span class="nb">contact cmat</span><span class="n"> proximity </span><span class="m m-Double">0.0</span>
+<span class="nb">contact delete</span><span class="n"> range contact inactive</span>
+<span class="nb">model clean</span><span class="n"> all</span>
+
+<span class="nb">ball fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z range group </span><span class="s">'boundary'</span>
+
+<span class="nb">fish define</span><span class="ni"> e_xx</span>
+<span class="ni">  Lx </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.x</span><span class="p">(</span><span class="ni">bright</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos.x</span><span class="p">(</span><span class="ni">bleft</span><span class="p">)</span>
+<span class="ni">  e_xx </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">Lx </span><span class="o">-</span><span class="ni"> Lx0</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> Lx0</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> e_yy</span>
+<span class="ni">  Ly </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.y</span><span class="p">(</span><span class="ni">bfront</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos.y</span><span class="p">(</span><span class="ni">bback</span><span class="p">)</span>
+<span class="ni">  e_yy </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">Ly </span><span class="o">-</span><span class="ni"> Ly0</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> Ly0</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> e_zz</span>
+<span class="ni">  Lz </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.z</span><span class="p">(</span><span class="ni">btop</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos.z</span><span class="p">(</span><span class="ni">bbot</span><span class="p">)</span>
+<span class="ni">  e_zz </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">Lz </span><span class="o">-</span><span class="ni"> Lz0</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> Lz0</span>
+<span class="nb">end</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1</span>
+
+<span class="ni">[s_xx </span><span class="p">=</span><span class="ni"> </span><span class="k">measure.stress.xx</span><span class="p">(</span><span class="k">measure.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">))</span><span class="ni">]</span>
+<span class="ni">[s_yy </span><span class="p">=</span><span class="ni"> </span><span class="k">measure.stress.yy</span><span class="p">(</span><span class="k">measure.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">))</span><span class="ni">]</span>
+<span class="ni">[s_zz </span><span class="p">=</span><span class="ni"> </span><span class="k">measure.stress.zz</span><span class="p">(</span><span class="k">measure.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">))</span><span class="ni">]</span>
+
+<span class="nb">fish define</span><span class="ni"> s_zz</span>
+<span class="ni">  s_zz </span><span class="p">=</span><span class="ni"> </span><span class="k">measure.stress.zz</span><span class="p">(</span><span class="k">measure.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">))</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> poiss_ratio</span>
+<span class="ni">  poiss_ratio </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="p">(</span><span class="ni">e_xx</span><span class="o">+</span><span class="ni">e_yy</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> e_zz</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> emod_secant</span>
+<span class="ni">  emod_secant </span><span class="p">=</span><span class="ni"> s_zz </span><span class="o">/</span><span class="ni"> e_zz</span>
+<span class="nb">end</span>
+
+<span class="nb">history purge</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'e_xx'</span><span class="n"> e_xx </span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'e_yy'</span><span class="n"> e_yy </span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'e_zz'</span><span class="n"> e_zz </span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'emod_secant'</span><span class="n"> emod_secant</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'poiss_ratio'</span><span class="n"> poiss_ratio </span>
+
+<span class="nb">fish define</span><span class="ni"> halt</span>
+<span class="ni">  halt </span><span class="p">=</span><span class="ni"> </span><span class="sx">false</span>
+<span class="ni">  s_zz_max </span><span class="p">=</span><span class="ni"> </span><span class="k">math.max</span><span class="p">(</span><span class="ni">s_zz</span><span class="p">,</span><span class="ni">s_zz_max</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> s_zz </span><span class="o">&lt;</span><span class="ni"> peak_frac</span><span class="o">*</span><span class="ni">s_zz_max</span>
+<span class="ni">    halt </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="nb">end</span>
+
+<span class="nb">model domain</span><span class="n"> strain</span><span class="o">-</span><span class="n">rate</span><span class="o">-</span><span class="n">zz </span><span class="ni">[strain_rate]</span>
+
+<span class="ni">[peak_frac </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.8</span><span class="ni"> ]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'tt2_%1-initial'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fish</span><span class="o">-</span><span class="n">halt halt </span><span class="sx">...</span>
+<span class="n">            cycles </span><span class="m m-Double">100</span><span class="n"> and</span>
+<span class="nb">model save</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'tt2_%1-final'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+
+<span class="c">; ===================================================================</span>
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">;文件结束</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="exa-sbnd-ucs2">ucs2.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish define</span><span class="ni"> setup_tt</span>
+<span class="ni">  </span><span class="c">; 识别边界球</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> c </span><span class="k">contact.list.all</span>
+<span class="ni">      </span><span class="k">if</span><span class="ni"> </span><span class="k">contact.offset.z</span><span class="p">(</span><span class="ni">c</span><span class="p">)</span><span class="ni"> # </span><span class="m m-Double">0</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">          </span><span class="k">ball.group</span><span class="p">(</span><span class="k">contact.end1</span><span class="p">(</span><span class="ni">c</span><span class="p">))</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'boundary'</span>
+<span class="ni">          </span><span class="k">ball.group</span><span class="p">(</span><span class="k">contact.end2</span><span class="p">(</span><span class="ni">c</span><span class="p">))</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'boundary'</span>
+<span class="ni">      </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">endloop</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="c">; 安装量测球</span>
+<span class="ni">  Lx0 </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.x</span><span class="p">()</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">domain.min.x</span><span class="p">()</span>
+<span class="ni">  Ly0 </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.y</span><span class="p">()</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">domain.min.y</span><span class="p">()</span>
+<span class="ni">  Lz0 </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.z</span><span class="p">()</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">domain.min.z</span><span class="p">()</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> mr </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">math.min</span><span class="p">(</span><span class="ni">Lx0</span><span class="p">,</span><span class="ni">Ly0</span><span class="p">,</span><span class="ni">Lz0</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">measure.radius</span><span class="p">(</span><span class="k">measure.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">))</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.9</span><span class="o">*</span><span class="ni">mr</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> bright </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="k">domain.max.x</span><span class="p">(),</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> bleft  </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="k">domain.min.x</span><span class="p">(),</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> bfront </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="k">domain.max.y</span><span class="p">(),</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> bback  </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="k">domain.min.y</span><span class="p">(),</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> btop </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="k">domain.max.z</span><span class="p">())</span><span class="ni"> </span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> bbot </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="k">domain.min.z</span><span class="p">())</span><span class="ni"> </span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">bright </span><span class="p">,</span><span class="s">'gage'</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'right'</span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">bleft  </span><span class="p">,</span><span class="s">'gage'</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'left'</span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">bfront </span><span class="p">,</span><span class="s">'gage'</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'front'</span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">bback  </span><span class="p">,</span><span class="s">'gage'</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'back'</span><span class="ni">  </span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">btop   </span><span class="p">,</span><span class="s">'gage'</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'top'</span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">bbot   </span><span class="p">,</span><span class="s">'gage'</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'bot'</span>
+
+<span class="c">; 扩大域范围</span>
+<span class="ni">  </span><span class="k">domain.min.x</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.5</span><span class="o">*</span><span class="k">domain.min.x</span>
+<span class="ni">  </span><span class="k">domain.max.x</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.5</span><span class="o">*</span><span class="k">domain.max.x</span>
+<span class="ni">  </span><span class="k">domain.min.y</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.5</span><span class="o">*</span><span class="k">domain.min.y</span>
+<span class="ni">  </span><span class="k">domain.max.y</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.5</span><span class="o">*</span><span class="k">domain.max.y</span>
+<span class="ni">  </span><span class="k">domain.min.z</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.5</span><span class="o">*</span><span class="k">domain.min.z</span>
+<span class="ni">  </span><span class="k">domain.max.z</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.5</span><span class="o">*</span><span class="k">domain.max.z</span>
+<span class="ni">  </span><span class="c">;</span>
+<span class="ni">  Lx0 </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.x</span><span class="p">(</span><span class="ni">bright</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos.x</span><span class="p">(</span><span class="ni">bleft</span><span class="p">)</span>
+<span class="ni">  Ly0 </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.y</span><span class="p">(</span><span class="ni">bfront</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos.y</span><span class="p">(</span><span class="ni">bback</span><span class="p">)</span>
+<span class="ni">  Lz0 </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.z</span><span class="p">(</span><span class="ni">btop</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos.z</span><span class="p">(</span><span class="ni">bbot</span><span class="p">)</span><span class="ni">  </span>
+<span class="nb">end</span>
+<span class="ni">[setup_tt]</span>
+
+<span class="nb">model domain</span><span class="n"> condition stop</span>
+<span class="nb">model clean</span><span class="n"> all</span>
+
+<span class="nb">contact method</span><span class="n"> bond gap </span><span class="ni">[igap]</span><span class="n"> range contact all </span>
+
+<span class="c">; 重置邻近距离，删除非活动接触 </span>
+<span class="c">; 并清理模型以减少非活动接触的数量</span>
+<span class="nb">contact cmat</span><span class="n"> proximity </span><span class="m m-Double">0.0</span>
+<span class="nb">contact delete</span><span class="n"> range contact inactive</span>
+<span class="nb">model clean</span><span class="n"> all</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="ni">[s_xx </span><span class="p">=</span><span class="ni"> </span><span class="k">measure.stress.xx</span><span class="p">(</span><span class="k">measure.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">))</span><span class="ni">]</span>
+<span class="ni">[s_yy </span><span class="p">=</span><span class="ni"> </span><span class="k">measure.stress.yy</span><span class="p">(</span><span class="k">measure.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">))</span><span class="ni">]</span>
+<span class="ni">[s_zz </span><span class="p">=</span><span class="ni"> </span><span class="k">measure.stress.zz</span><span class="p">(</span><span class="k">measure.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">))</span><span class="ni">]</span>
+
+<span class="nb">ball fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z range group </span><span class="s">'boundary'</span>
+
+<span class="nb">fish define</span><span class="ni"> e_xx</span>
+<span class="ni">  Lx </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.x</span><span class="p">(</span><span class="ni">bright</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos.x</span><span class="p">(</span><span class="ni">bleft</span><span class="p">)</span>
+<span class="ni">  e_xx </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">Lx </span><span class="o">-</span><span class="ni"> Lx0</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> Lx0</span>
+<span class="nb">end</span>
+<span class="nb">fish define</span><span class="ni"> e_yy</span>
+<span class="ni">  Ly </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.y</span><span class="p">(</span><span class="ni">bfront</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos.y</span><span class="p">(</span><span class="ni">bback</span><span class="p">)</span>
+<span class="ni">  e_yy </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">Ly </span><span class="o">-</span><span class="ni"> Ly0</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> Ly0</span>
+<span class="nb">end</span>
+<span class="nb">fish define</span><span class="ni"> e_zz</span>
+<span class="ni">  Lz </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.z</span><span class="p">(</span><span class="ni">btop</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos.z</span><span class="p">(</span><span class="ni">bbot</span><span class="p">)</span>
+<span class="ni">  e_zz </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">Lz </span><span class="o">-</span><span class="ni"> Lz0</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> Lz0</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> poiss_ratio</span>
+<span class="ni">  poiss_ratio </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="p">(</span><span class="ni">e_xx</span><span class="o">+</span><span class="ni">e_yy</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> e_zz</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> emod_secant</span>
+<span class="ni">  emod_secant </span><span class="p">=</span><span class="ni"> s_zz </span><span class="o">/</span><span class="ni"> e_zz</span>
+<span class="nb">end</span>
+
+<span class="nb">history purge</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'e_xx'</span><span class="n"> e_xx </span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'e_yy'</span><span class="n"> e_yy </span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'e_zz'</span><span class="n"> e_zz </span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'emod_secant'</span><span class="n"> emod_secant</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'poiss_ratio'</span><span class="n"> poiss_ratio </span>
+
+<span class="nb">fish define</span><span class="ni"> s_zz</span>
+<span class="ni">  s_zz </span><span class="p">=</span><span class="ni"> </span><span class="k">measure.stress.zz</span><span class="p">(</span><span class="k">measure.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">))</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> halt</span>
+<span class="ni">  halt </span><span class="p">=</span><span class="ni"> </span><span class="sx">false</span>
+<span class="ni">  s_zz_min </span><span class="p">=</span><span class="ni"> </span><span class="k">math.min</span><span class="p">(</span><span class="ni">s_zz</span><span class="p">,</span><span class="ni">s_zz_min</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> s_zz </span><span class="o">&gt;</span><span class="ni"> peak_frac</span><span class="o">*</span><span class="ni">s_zz_min</span>
+<span class="ni">    halt </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="nb">end</span>
+
+<span class="nb">model domain</span><span class="n"> strain</span><span class="o">-</span><span class="n">rate</span><span class="o">-</span><span class="n">zz </span><span class="ni">[</span><span class="o">-</span><span class="ni">strain_rate]</span>
+
+<span class="ni">[peak_frac </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.8</span><span class="ni"> ]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'ucs2_%1-initial'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fish</span><span class="o">-</span><span class="n">halt halt </span><span class="sx">...</span>
+<span class="n">            cycles </span><span class="m m-Double">100</span><span class="n"> and</span>
+<span class="nb">model save</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'ucs2_%1-final'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+
+<span class="c">; ===================================================================</span>
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">;文件结束</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="exa-sbnd-triax">triax.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">contact method</span><span class="n"> bond gap </span><span class="ni">[igap]</span><span class="n"> range contact all </span>
+
+<span class="nb">contact cmat</span><span class="n"> proximity </span><span class="m m-Double">0.0</span>
+<span class="nb">contact delete</span><span class="n"> range contact inactive</span>
+<span class="nb">model clean</span><span class="n"> all</span>
+
+<span class="c">; 达到各向同性围压状态</span>
+<span class="ni">[Lx0 </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.x</span><span class="p">()</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">domain.min.x</span><span class="p">()</span><span class="ni">]</span>
+<span class="ni">[Ly0 </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.y</span><span class="p">()</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">domain.min.y</span><span class="p">()</span><span class="ni">]</span>
+<span class="ni">[Lz0 </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.z</span><span class="p">()</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">domain.min.z</span><span class="p">()</span><span class="ni">]</span>
+
+<span class="nb">fish define</span><span class="ni"> e_xx</span>
+<span class="ni">  Lx </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.x</span><span class="p">()</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">domain.min.x</span><span class="p">()</span>
+<span class="ni">  e_xx </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">Lx </span><span class="o">-</span><span class="ni"> Lx0</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> Lx0</span>
+<span class="nb">end</span>
+<span class="nb">fish define</span><span class="ni"> e_yy</span>
+<span class="ni">  Ly </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.y</span><span class="p">()</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">domain.min.y</span><span class="p">()</span>
+<span class="ni">  e_yy </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">Ly </span><span class="o">-</span><span class="ni"> Ly0</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> Ly0</span>
+<span class="nb">end</span>
+<span class="nb">fish define</span><span class="ni"> e_zz</span>
+<span class="ni">  Lz </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.z</span><span class="p">()</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">domain.min.z</span><span class="p">()</span>
+<span class="ni">  e_zz </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">Lz </span><span class="o">-</span><span class="ni"> Lz0</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> Lz0</span>
+<span class="nb">end</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">history purge</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'e_xx'</span><span class="n"> e_xx </span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'e_yy'</span><span class="n"> e_yy </span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'e_zz'</span><span class="n"> e_zz </span>
+
+<span class="ni">[servo_do_z  </span><span class="p">=</span><span class="ni"> </span><span class="sx">true</span><span class="ni">    ]</span>
+<span class="ni">[servo_ts_xx </span><span class="p">=</span><span class="ni"> pc      ]</span>
+<span class="ni">[servo_ts_yy </span><span class="p">=</span><span class="ni"> pc      ]</span>
+<span class="ni">[servo_ts_zz </span><span class="p">=</span><span class="ni"> pc      ]</span>
+<span class="ni">[servo_gain  </span><span class="p">=</span><span class="ni">  </span><span class="m m-Double">1.0e-5</span><span class="ni"> ]</span>
+<span class="ni">[servo_tol   </span><span class="p">=</span><span class="ni">  </span><span class="m m-Double">1.0e-5</span><span class="ni"> ]</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fish</span><span class="o">-</span><span class="n">call </span><span class="m m-Double">1.0</span><span class="n"> servo_domain </span><span class="sx">...</span>
+<span class="n">            fish</span><span class="o">-</span><span class="n">halt servo_halt </span><span class="sx">...</span>
+<span class="n">            ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">            cycles </span><span class="m m-Double">100</span><span class="n"> and</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'triax_%1-iso'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+
+<span class="c">; 进行压缩</span>
+<span class="nb">history purge</span>
+<span class="ni">[servo_do_z </span><span class="p">=</span><span class="ni"> </span><span class="sx">false</span><span class="ni">    ]</span>
+<span class="ni">[servo_zrate </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni">strain_rate]</span>
+<span class="ni">[servo_gain  </span><span class="p">=</span><span class="ni">  </span><span class="m m-Double">1.0e-5</span><span class="ni"> ]</span>
+<span class="ni">[Lx0 </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.x</span><span class="p">()</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">domain.min.x</span><span class="p">()</span><span class="ni">]</span>
+<span class="ni">[Ly0 </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.y</span><span class="p">()</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">domain.min.y</span><span class="p">()</span><span class="ni">]</span>
+<span class="ni">[Lz0 </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.z</span><span class="p">()</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">domain.min.z</span><span class="p">()</span><span class="ni">]</span>
+
+<span class="nb">fish define</span><span class="ni"> emod_secant</span>
+<span class="ni">  emod_secant </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">s_zz </span><span class="o">-</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="p">(</span><span class="ni">s_xx</span><span class="o">+</span><span class="ni">s_yy</span><span class="p">))</span><span class="ni"> </span><span class="o">/</span><span class="ni"> e_zz</span>
+<span class="nb">end</span>
+<span class="nb">fish define</span><span class="ni"> poiss_ratio</span>
+<span class="ni">  poiss_ratio </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="p">(</span><span class="ni">e_xx</span><span class="o">+</span><span class="ni">e_yy</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> e_zz</span>
+<span class="nb">end</span>
+
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'emod_secant'</span><span class="n"> emod_secant </span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'poiss_ratio'</span><span class="n"> poiss_ratio</span>
+
+<span class="nb">fish define</span><span class="ni"> halt</span>
+<span class="ni">  halt </span><span class="p">=</span><span class="ni"> </span><span class="sx">false</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> e_zz </span><span class="o">&lt;</span><span class="ni"> </span><span class="o">-</span><span class="ni">emax</span>
+<span class="ni">    halt </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="nb">end</span>
+
+<span class="ni">[emax </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2.0e-4</span><span class="ni">]</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fish</span><span class="o">-</span><span class="n">call </span><span class="m m-Double">1.0</span><span class="n"> servo_domain </span><span class="sx">...</span>
+<span class="n">            fish</span><span class="o">-</span><span class="n">halt halt </span><span class="sx">...</span>
+<span class="n">            cycles </span><span class="m m-Double">100</span><span class="n"> and</span>
+<span class="ni">[ymod  </span><span class="p">=</span><span class="ni">   </span><span class="p">(</span><span class="ni">s_zz </span><span class="o">-</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="p">(</span><span class="ni">s_xx</span><span class="o">+</span><span class="ni">s_yy</span><span class="p">))</span><span class="ni"> </span><span class="o">/</span><span class="ni"> e_zz]</span>
+<span class="ni">[poiss </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="p">(</span><span class="ni">e_xx</span><span class="o">+</span><span class="ni">e_yy</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> e_zz]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'triax_%1-elastic'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+
+<span class="nb">fish define</span><span class="ni"> halt</span>
+<span class="ni">  halt </span><span class="p">=</span><span class="ni"> </span><span class="sx">false</span>
+<span class="ni">  s_zz_min </span><span class="p">=</span><span class="ni"> </span><span class="k">math.min</span><span class="p">(</span><span class="ni">s_zz</span><span class="p">,</span><span class="ni">s_zz_min</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> s_zz </span><span class="o">&gt;</span><span class="ni"> peak_frac</span><span class="o">*</span><span class="ni">s_zz_min</span>
+<span class="ni">    halt </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">    </span><span class="k">exit</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> e_zz </span><span class="o">&lt;</span><span class="ni"> </span><span class="o">-</span><span class="ni">emax</span>
+<span class="ni">    halt </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">    </span><span class="k">exit</span>
+<span class="ni">  </span><span class="k">endif</span><span class="ni">  </span>
+<span class="nb">end</span>
+
+<span class="ni">[emax </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">15.0e-3</span><span class="ni">]</span>
+<span class="ni">[peak_frac </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.8</span><span class="ni"> ]</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fish</span><span class="o">-</span><span class="n">call </span><span class="m m-Double">1.0</span><span class="n"> servo_domain </span><span class="sx">...</span>
+<span class="n">            fish</span><span class="o">-</span><span class="n">halt halt </span><span class="sx">...</span>
+<span class="n">            cycles </span><span class="m m-Double">100</span><span class="n"> and</span>
+<span class="nb">model save</span><span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'triax_%1-final'</span><span class="p">,</span><span class="ni">tag</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">; ===================================================================</span>
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">;文件结束</span>
+</pre></div>
+</div>
+<p class="endnotesection rubric">尾注</p>
+<table class="docutils footnote" frame="void" id="id2" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><p class="first">要在 <span class="codename">PFC</span> 中查看本项目，请使用程序菜单。</p>
+<p><span class="menuselection">帮助 ▼ 算例…</span></p>
+<p class="last">  ⮡    PFC <br/>
+    ⮡    算例 <br/>
+      ⮡     <br/>
+        ⮡    SoftBonded.prj</p>
+</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../../docproject/source/manual/pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../../docproject/source/manual/pfc_model_components/pfc_examples.html">Examples</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../../../../docproject/source/manual/examples/examples/examples.html">Example Applications</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../../../../docproject/source/manual/examples/examples/rockslide/rockslidedatafiles.html" title="previous chapter"> Data Files for “Rockslide” <code class="docutils literal"><span class="pre">Example</span></code></a> |    
+       <a href="../../../../docproject/source/manual/examples/examples/rblock_bbm/rblock_bbm.html" title="next chapter">Simple Rigid Block Bonded-Block Modeling (BBM)</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Genesis and Testing of a Soft-Bonded Material" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

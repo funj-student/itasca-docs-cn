@@ -1,0 +1,424 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>恒定温度边界薄板的瞬态热响应 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../../search.html" rel="search" title="Search"/>
+<link href="../../../../../test3d/verification_problems/thermal_balls/free_expansion/doc/free_expansion.html" rel="next" title="Heated Specimen with Free Boundaries"/>
+<link href="../../../../../../docproject/source/manual/optional_features/thermal_option/verifications/verifications.html" rel="prev" title="Verification Problems"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="transient-thermal-response-of-sheet-with-constant-temperature-boundaries">
+<span id="pfc-thermal-verif-transient-sheet"></span><span id="ver-trsh"></span><h1>恒定温度边界薄板的瞬态热响应</h1>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">本算例的项目文件可在 <span class="codename">PFC</span> 中查看或运行。<a class="footnote-reference" href="#id4" id="id1">[1]</a>所用的<a class="reference internal" href="#ver-trsh-datafiles"><span class="std std-ref">数据文件</span>（data files）</a>列于本算例末尾。</p>
+</div>
+<p>一块宽度为 <span class="math">\(L\)</span> 的平面薄板初始温度为 0°C。薄板左侧暴露于 100°C 的恒定温度，右侧保持 0°C。薄板最终在恒定热流和不变温度分布下达到平衡状态。薄板内温度随距左侧距离 <span class="math">\(x\)</span> 和时间 <span class="math">\(t\)</span> 变化的解析解由 <a class="reference internal" href="#crank1975" id="id2">[Crank1975]</a> 给出</p>
+<div class="math" id="equation-ver-trsh-cranck">
+<span class="eqno">(1)</span>\[\frac{T(x,t)}{T_1}  = 1 - \frac{x}{L} - \frac{2}{\pi} \sum_{n=1}^{\infty} e^{- \kappa n^2 \pi^2 t / L^2} \left(\frac{\sin (n \pi x / L)}{n}\right)\]</div>
+<p>其中 <span class="math">\(T_1\)</span> 为薄板左侧温度（等于 100°C），<span class="math">\(\kappa\)</span> 为热扩散率，由下式给出</p>
+<div class="math" id="equation-ver-trsh-kappa">
+<span class="eqno">(2)</span>\[\kappa  = \frac{k}{\rho_t C_v}\]</div>
+<p>其中 <span class="math">\(k\)</span> 为导热系数，<span class="math">\(\rho_t\)</span> 为材料密度，<span class="math">\(C_v\)</span> 为定容比热。</p>
+<p class="h2 rubric" id="numericalmodel">数值模型</p>
+<p>该热学问题为一维问题，可建模为薄材料切片，其左右边界施加恒定温度，上下边界采用绝热条件以表示热对称面。</p>
+<p>对于本例，我们创建两个不同的 <span class="codename">PFC2D</span> 模型，分别由立方堆积和六边形堆积组成（见 <a href="#ver-trsh-cubic-system">图 1（Figures  1）</a> 和 <a href="#ver-trsh-hex-system">图 2</a>）。对于这两种均匀堆积，孔隙率和热阻可解析表示。孔隙率由 <a class="reference internal" href="#deresiewicz1958b" id="id3">[Deresiewicz1958b]</a> 给出：</p>
+<div class="math" id="equation-ver-trsh-poros">
+<span class="eqno">(3)</span>\[\begin{split}n = \begin{cases}
+      1 - \pi / 4  &amp; \mbox{ , (cubic pack)}
+    \\
+      1 - \pi / 2 \sqrt{3} &amp;\mbox{ , (hexagonal pack)}
+    \end{cases}\end{split}\]</div>
+<p>热阻通过将 <span class="codename">PFC</span> 热学公式一节的 <a class="reference internal" href="../../../../../../docproject/source/manual/optional_features/thermal_option/thermal_formulation.html#thermal-formulation-eqf28"><span class="std std-ref">式 (28)</span>（Equation (28)）</a> 应用于围绕一个颗粒的控制体求得，并注意到控制体内每根热管长度等于颗粒半径 <span class="math">\(R\)</span>，从而得到</p>
+<div class="math" id="equation-ver-trsh-thres">
+<span class="eqno">(4)</span>\[\begin{split}\eta = \frac{1}{kRt}  \begin{cases}
+                        \frac{1}{2} &amp; \mbox{ , (cubic pack)}
+                      \\
+                         \frac{3}{2 \sqrt{3}} &amp; \mbox{ , (hexagonal pack)}
+                      \end{cases}\end{split}\]</div>
+<p>其中 <span class="math">\(t\)</span> 为圆盘厚度（本例中等于 1）。用于执行模拟的数据文件为“<a class="reference internal" href="#ver-trsh-2dat"><span class="std std-ref">transient_sheet.dat</span></a>”。它使用“<a class="reference internal" href="#ver-trsh-utilsp2fis"><span class="std std-ref">transient_sheet-utils.p2fis</span></a>”中定义的 <span class="codename">FISH</span> 函数。指定热学性质和边界条件后，每个模型分别运行 50 和 200 个循环，直到达到热平衡状态（使用 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令）。立方堆积和六边形堆积试样在递增热学时间下的归一化温度分布与解析解一并绘制于 <a href="#ver-trsh-cubic-profile">图 3（Figures  3）</a> 和 <a href="#ver-trsh-hex-profile">图 4</a> 中。<span class="codename">PFC2D</span> 的响应与解析解吻合良好。</p>
+<div class="figure" id="ver-trsh-cubic-system">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d_transientsheet_ballcubic_system.png"><img alt="../../../../../../../_images/p2d_transientsheet_ballcubic_system.png" src="../../../../../../../_images/p2d_transientsheet_ballcubic_system.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 1：球颗粒温度等值线及热功率矢量场（<span class="codename">PFC2D</span> 立方堆积）。</span></p>
+</div>
+<div class="figure" id="ver-trsh-hex-system">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d_transientsheet_ballhexa_system.png"><img alt="../../../../../../../_images/p2d_transientsheet_ballhexa_system.png" src="../../../../../../../_images/p2d_transientsheet_ballhexa_system.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：球颗粒温度等值线及热功率矢量场（六边形堆积）。</span></p>
+</div>
+<div class="figure" id="ver-trsh-cubic-profile">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d_transientsheet_ballcubic_profile.png"><img alt="../../../../../../../_images/p2d_transientsheet_ballcubic_profile.png" src="../../../../../../../_images/p2d_transientsheet_ballcubic_profile.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 3：递增热学时间下立方堆积的模拟与解析归一化温度分布。</span></p>
+</div>
+<div class="figure" id="ver-trsh-hex-profile">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d_transientsheet_ballhexa_profile.png"><img alt="../../../../../../../_images/p2d_transientsheet_ballhexa_profile.png" src="../../../../../../../_images/p2d_transientsheet_ballhexa_profile.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 4：递增热学时间下六边形堆积的模拟与解析归一化温度分布。</span></p>
+</div>
+<p class="h2 rubric" id="references-transient-sheet">参考文献</p>
+<table class="docutils citation" frame="void" id="crank1975" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[Crank1975]</a></td><td>Crank, J. <strong>《扩散数学》（第 2 版）</strong>。牛津：牛津大学出版社，1975。</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="deresiewicz1958b" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[Deresiewicz1958b]</a></td><td>Deresiewicz, H.《颗粒材料力学》，载于 <span class="bi">《应用力学进展》</span>，第 5 卷，第 233-306 页。H. L. Dryden 和 Th. von Karman 编。纽约：Academic Press，1958。</td></tr>
+</tbody>
+</table>
+<p class="h2 rubric" id="ver-trsh-datafiles">数据文件</p>
+<p class="h3 rubric" id="ver-trsh-2dat">transient_sheet.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：transient_sheet.dat (2D)</span>
+<span class="c">;</span>
+<span class="c">; Itasca Consulting Group, Inc.</span>
+<span class="c">; ========================================================================</span>
+<span class="c">; 热学选项示例：</span>
+<span class="c">;        施加热流的半无限固体瞬态响应</span>
+<span class="c">;                           （立方和六方堆积）</span>
+<span class="c">;</span>
+<span class="c">; ========================================================================</span>
+<span class="nb">program log</span><span class="o">-</span><span class="n">file </span><span class="s">'transient_sheet.log'</span>
+<span class="nb">program log</span><span class="n"> </span><span class="sx">on</span>
+<span class="c">; ========================================================================</span>
+<span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">model configure</span><span class="n"> thermal</span>
+<span class="nb">model mechanical</span><span class="n"> </span><span class="sx">off</span><span class="n"> thermal </span><span class="sx">on</span>
+
+<span class="nb">program echo</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'transient_sheet-utils.p2fis'</span>
+<span class="nb">program echo</span><span class="n"> </span><span class="sx">on</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> t1 </span><span class="p">=</span><span class="ni"> </span><span class="s">'Transient Thermal Response of Sheet'</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> t2 </span><span class="p">=</span><span class="ni"> </span><span class="s">' with Constant Temperature Boundaries'</span><span class="ni">]</span>
+<span class="nb">model title</span><span class="n"> </span><span class="ni">[t1 </span><span class="o">+</span><span class="ni"> t2]</span>
+<span class="ni">[init_params]</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'transient_sheet-ini'</span>
+
+<span class="ni">[n_row </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">10</span><span class="ni">]</span>
+<span class="ni">[n_col </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">40</span><span class="ni">]</span>
+<span class="ni">[_pack_type </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span><span class="ni">]</span>
+<span class="ni">[close_pack</span><span class="p">(</span><span class="ni">n_row</span><span class="p">,</span><span class="ni">n_col</span><span class="p">,</span><span class="ni">_pack_type</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> thermal time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">600.0</span>
+<span class="ni">[num_soln]</span>
+<span class="ni">[ana_soln]</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> thermal time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">1200.0</span>
+<span class="ni">[num_soln]</span>
+<span class="ni">[ana_soln]</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> thermal unbalanced</span><span class="o">-</span><span class="n">maximum  </span><span class="m m-Double">1e-3</span>
+<span class="ni">[num_soln]</span>
+<span class="ni">[ana_soln]</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'transient_sheet-cubic'</span>
+
+<span class="n">model res </span><span class="s">'transient_sheet-ini'</span>
+<span class="ni">[n_row </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">10</span><span class="ni">]</span>
+<span class="ni">[n_col </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">40</span><span class="ni">]</span>
+<span class="ni">[_pack_type </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2</span><span class="ni">]</span>
+<span class="ni">[close_pack</span><span class="p">(</span><span class="ni">n_row</span><span class="p">,</span><span class="ni">n_col</span><span class="p">,</span><span class="ni">_pack_type</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model thermal</span><span class="n"> timestep max </span><span class="m m-Double">1.0e2</span><span class="n">  </span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> thermal time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">600.0</span>
+<span class="ni">[num_soln]</span>
+<span class="ni">[ana_soln]</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> thermal time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">1200.0</span>
+<span class="ni">[num_soln]</span>
+<span class="ni">[ana_soln]</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> thermal unbalanced</span><span class="o">-</span><span class="n">maximum  </span><span class="m m-Double">1e-3</span>
+<span class="ni">[num_soln]</span>
+<span class="ni">[ana_soln]</span>
+<span class="c">;</span>
+<span class="n">mode save </span><span class="s">'transient_sheet-hexa'</span>
+<span class="c">; ========================================================================</span>
+<span class="nb">program log</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">;文件结束：transient_sheet.dat (2D)</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="ver-trsh-utilsp2fis">transient_sheet-utils.p2fis</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;文件名：transient_sheet-utils.p2fis</span>
+<span class="c">;</span>
+<span class="c">; Itasca Consulting Group, Inc.</span>
+<span class="c">; ============================================================================</span>
+<span class="c">; 用于热学选项验证问题的工具函数                  </span>
+<span class="c">; ============================================================================</span>
+<span class="c">;                                                                             </span>
+<span class="c">; ----------------------------------------------------------------------------</span>
+<span class="nb">fish define</span><span class="ni"> init_params</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> id_start</span><span class="p">=</span><span class="m m-Double">1</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> x0 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> y0 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> radius  </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> epsilon </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0e-6</span>
+<span class="ni">  </span><span class="c">;</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> c_k </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.6</span><span class="ni">                      </span><span class="c">; 热导率</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> c_cv </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.2</span><span class="ni">                     </span><span class="c">; 比热容</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> c_dens </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1000.0</span><span class="ni">                </span><span class="c">; density</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> c_kappa </span><span class="p">=</span><span class="ni"> c_k </span><span class="o">/</span><span class="ni"> </span><span class="p">(</span><span class="ni">c_dens</span><span class="o">*</span><span class="ni">c_cv</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> t1 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">100.0</span><span class="ni">                     </span><span class="c">; 沿左侧的温度</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> tabn_start </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">10</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> tabe_start </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">11</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> tabn </span><span class="p">=</span><span class="ni"> tabn_start</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> tabe </span><span class="p">=</span><span class="ni"> tabe_start</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> n_row </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">10</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> n_col </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">50</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> _pack_type </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> n_tot </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">100</span><span class="ni">   </span><span class="c">; 所用的解析解项数</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> final_params</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> therm_props</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> therm_bcs</span>
+<span class="nb">end</span>
+<span class="c">; ----------------------------------------------------------------------------</span>
+<span class="nb">fish define</span><span class="ni"> close_pack</span><span class="p">(</span><span class="ni">nrow_</span><span class="p">,</span><span class="ni">ncol_</span><span class="p">,</span><span class="ni">type_</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> xc   </span><span class="p">=</span><span class="ni"> x0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> yc   </span><span class="p">=</span><span class="ni"> y0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> rc   </span><span class="p">=</span><span class="ni"> radius</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> idc  </span><span class="p">=</span><span class="ni"> id_start</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> r2   </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2.0</span><span class="ni"> </span><span class="o">*</span><span class="ni"> rc</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> dom_xmin </span><span class="p">=</span><span class="ni"> x0 </span><span class="o">-</span><span class="ni"> </span><span class="m m-Double">4.0</span><span class="ni"> </span><span class="o">*</span><span class="ni">r2</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> dom_xmax </span><span class="p">=</span><span class="ni"> x0 </span><span class="o">+</span><span class="ni"> ncol_</span><span class="o">*</span><span class="ni">r2 </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">4.0</span><span class="ni"> </span><span class="o">*</span><span class="ni">r2</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> dom_ymin </span><span class="p">=</span><span class="ni"> y0 </span><span class="o">-</span><span class="ni"> </span><span class="m m-Double">4.0</span><span class="ni"> </span><span class="o">*</span><span class="ni">r2</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> dom_ymax </span><span class="p">=</span><span class="ni"> y0 </span><span class="o">+</span><span class="ni"> nrow_</span><span class="o">*</span><span class="ni">r2 </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">4.0</span><span class="ni"> </span><span class="o">*</span><span class="ni">r2</span>
+<span class="ni">  </span>
+<span class="k">  command</span>
+<span class="nb">    model domain</span><span class="n"> extent </span><span class="ni">[dom_xmin]</span><span class="n"> </span><span class="ni">[dom_xmax]</span><span class="n"> </span><span class="ni">[dom_ymin]</span><span class="n"> </span><span class="ni">[dom_ymax]</span>
+<span class="k">  endcommand</span>
+<span class="ni">  </span>
+<span class="ni">  case_of type_</span>
+<span class="ni">    </span><span class="k">case</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">      yinc </span><span class="p">=</span><span class="ni"> radius </span><span class="o">*</span><span class="ni"> </span><span class="m m-Double">2.0</span>
+<span class="ni">    </span><span class="k">case</span><span class="ni"> </span><span class="m m-Double">2</span>
+<span class="ni">      yinc </span><span class="p">=</span><span class="ni"> radius </span><span class="o">*</span><span class="ni"> </span><span class="k">math.sqrt</span><span class="p">(</span><span class="m m-Double">3.0</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">end_case</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">local</span><span class="ni"> row </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="ni">nrow_</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">local</span><span class="ni"> col </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="ni">ncol_</span><span class="p">)</span>
+<span class="k">      command</span>
+<span class="nb">        ball create</span><span class="n"> id</span><span class="p">=</span><span class="ni">[idc]</span><span class="n"> position</span><span class="o">-</span><span class="n">x</span><span class="p">=</span><span class="ni">[xc]</span><span class="n"> position</span><span class="o">-</span><span class="n">y</span><span class="p">=</span><span class="ni">[yc]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                    radius</span><span class="p">=</span><span class="ni">[rc</span><span class="o">*</span><span class="p">(</span><span class="m m-Double">1</span><span class="ni"> </span><span class="o">+</span><span class="ni"> epsilon</span><span class="p">)</span><span class="ni">]</span>
+<span class="k">      end_command</span>
+<span class="ni">      idc </span><span class="p">=</span><span class="ni"> idc </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">      xc   </span><span class="p">=</span><span class="ni"> xc </span><span class="o">+</span><span class="ni"> r2</span>
+<span class="ni">    </span><span class="k">end_loop</span>
+<span class="ni">    yc </span><span class="p">=</span><span class="ni"> yc </span><span class="o">+</span><span class="ni"> yinc</span>
+<span class="ni">    case_of type_</span>
+<span class="ni">      </span><span class="k">case</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">        xc </span><span class="p">=</span><span class="ni"> x0</span>
+<span class="ni">      </span><span class="k">case</span><span class="ni"> </span><span class="m m-Double">2</span>
+<span class="ni">        xc </span><span class="p">=</span><span class="ni"> x0 </span><span class="o">+</span><span class="ni"> radius </span><span class="o">*</span><span class="ni"> </span><span class="p">(</span><span class="ni">row </span><span class="o">-</span><span class="ni"> </span><span class="p">(</span><span class="ni">row</span><span class="o">/</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni"> </span><span class="o">*</span><span class="ni"> </span><span class="m m-Double">2</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">end_case</span>
+<span class="ni">  </span><span class="k">end_loop</span>
+<span class="ni">  </span>
+<span class="ni">  final_params</span>
+<span class="ni">  therm_props</span>
+<span class="ni">  therm_bcs</span>
+<span class="nb">end</span>
+<span class="c">; ----------------------------------------------------------------------------</span>
+<span class="nb">fish define</span><span class="ni"> final_params</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> c_len </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">n_col</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="o">*</span><span class="m m-Double">2.0</span><span class="o">*</span><span class="ni">radius</span>
+<span class="nb">end</span>
+<span class="c">; ----------------------------------------------------------------------------</span>
+<span class="nb">fish define</span><span class="ni"> therm_props</span>
+<span class="c">;</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> _pack_type </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">    poros </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="p">(</span><span class="k">math.pi</span><span class="o">/</span><span class="m m-Double">4.0</span><span class="p">)</span>
+<span class="ni">    _eta </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni"> </span><span class="o">/</span><span class="ni"> </span><span class="p">(</span><span class="m m-Double">2.0</span><span class="ni"> </span><span class="o">*</span><span class="ni"> c_k </span><span class="o">*</span><span class="ni"> radius</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">else</span>
+<span class="ni">    poros </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">math.pi</span><span class="o">/</span><span class="p">(</span><span class="m m-Double">2.0</span><span class="o">*</span><span class="k">math.sqrt</span><span class="p">(</span><span class="m m-Double">3.0</span><span class="p">))</span>
+<span class="ni">    _eta </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">3.0</span><span class="ni"> </span><span class="o">/</span><span class="ni"> </span><span class="p">(</span><span class="m m-Double">2.0</span><span class="o">*</span><span class="k">math.sqrt</span><span class="p">(</span><span class="m m-Double">3.0</span><span class="p">)</span><span class="ni"> </span><span class="o">*</span><span class="ni"> c_k </span><span class="o">*</span><span class="ni"> radius</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">end_if</span>
+<span class="ni">  _dens </span><span class="p">=</span><span class="ni"> c_dens </span><span class="o">/</span><span class="ni"> </span><span class="p">(</span><span class="m m-Double">1.0</span><span class="ni"> </span><span class="o">-</span><span class="ni"> poros</span><span class="p">)</span>
+<span class="k">  command</span>
+<span class="nb">    contact cmat</span><span class="n"> default model Linear</span>
+<span class="nb">    contact cmat</span><span class="n"> thermal default model ThermalPipe property thres</span><span class="p">=</span><span class="ni">[_eta]</span>
+<span class="nb">    contact cmat</span><span class="n"> thermal default inherit thres </span><span class="sx">off</span>
+<span class="nb">    ball attribute</span><span class="n"> density</span><span class="p">=</span><span class="ni">[_dens]</span>
+<span class="n">    ball thermal attribute specific</span><span class="o">-</span><span class="n">heat</span><span class="p">=</span><span class="ni">[c_cv]</span>
+<span class="nb">    model clean</span>
+<span class="k">  end_command</span>
+<span class="nb">end</span>
+<span class="c">; ----------------------------------------------------------------------------</span>
+<span class="nb">fish define</span><span class="ni"> therm_bcs</span>
+<span class="c">;</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> _xl1 </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">0.01</span><span class="o">*</span><span class="ni">radius</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> _xr1 </span><span class="p">=</span><span class="ni"> _xl1 </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">1.01</span><span class="o">*</span><span class="ni">radius</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> _xl2 </span><span class="p">=</span><span class="ni"> c_len </span><span class="o">-</span><span class="ni"> </span><span class="m m-Double">0.01</span><span class="o">*</span><span class="ni">radius</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> _xr2 </span><span class="p">=</span><span class="ni"> _xl2 </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">1.01</span><span class="o">*</span><span class="ni">radius</span>
+<span class="k">  command</span>
+<span class="n">    ball thermal init temp </span><span class="m m-Double">0.0</span>
+<span class="n">    ball thermal init temp </span><span class="ni">[t1]</span><span class="n"> range position</span><span class="o">-</span><span class="n">x</span><span class="p">=(</span><span class="ni">[_xl1]</span><span class="p">,</span><span class="n"> </span><span class="ni">[_xr1]</span><span class="p">)</span><span class="n"> </span><span class="c">; 左侧</span>
+<span class="n">    ball thermal fix  range position</span><span class="o">-</span><span class="n">x</span><span class="p">=(</span><span class="ni">[_xl1]</span><span class="p">,</span><span class="n"> </span><span class="ni">[_xr1]</span><span class="p">)</span><span class="n"> </span><span class="c">; 左侧</span>
+<span class="n">    ball thermal fix  range position</span><span class="o">-</span><span class="n">x</span><span class="p">=(</span><span class="ni">[_xl2]</span><span class="p">,</span><span class="n"> </span><span class="ni">[_xr2]</span><span class="p">)</span><span class="n"> </span><span class="c">; 右侧</span>
+<span class="k">  end_command</span>
+<span class="nb">end</span>
+<span class="c">; ----------------------------------------------------------------------------</span>
+<span class="nb">fish define</span><span class="ni"> num_soln</span>
+<span class="c">;</span>
+<span class="c">; ----- 数值解（沿底部一排球）</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> tname </span><span class="p">=</span><span class="ni"> </span><span class="k">string.build</span><span class="p">(</span><span class="s">"Numerical sol. - age = %1"</span><span class="p">,</span><span class="k">thermal.time.total</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> t </span><span class="p">=</span><span class="ni"> </span><span class="k">table.create</span><span class="p">(</span><span class="ni">tabe</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">table.label</span><span class="p">(</span><span class="ni">t</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> tname</span>
+<span class="ni">  tabe </span><span class="o">+=</span><span class="m m-Double">2</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> btp </span><span class="k">ball.thermal.list</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> bp </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.thermal.ball</span><span class="p">(</span><span class="ni">btp</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">bp</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">      </span><span class="k">local</span><span class="ni"> _z </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">bp</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">      </span><span class="k">local</span><span class="ni"> _tz </span><span class="p">=</span><span class="ni"> _z </span><span class="o">/</span><span class="ni"> c_len</span>
+<span class="ni">      </span><span class="k">table</span><span class="p">(</span><span class="ni">t</span><span class="p">,</span><span class="ni"> _tz</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.thermal.temp</span><span class="p">(</span><span class="ni">btp</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> t1</span>
+<span class="ni">    </span><span class="k">end_if</span>
+<span class="ni">  </span><span class="k">end_loop</span>
+<span class="nb">end</span>
+<span class="c">; ----------------------------------------------------------------------------</span>
+<span class="nb">fish define</span><span class="ni"> ana_soln</span>
+<span class="c">;</span>
+<span class="c">; ----- 解析解（沿底部一排球）。</span>
+<span class="c">;       不进行收敛性检验，直接取前 [n_tot] 项。</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> tname </span><span class="p">=</span><span class="ni"> </span><span class="k">string.build</span><span class="p">(</span><span class="s">"Analytical sol. - age = %1"</span><span class="p">,</span><span class="k">thermal.time.total</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> t </span><span class="p">=</span><span class="ni"> </span><span class="k">table.create</span><span class="p">(</span><span class="ni">tabn</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">table.label</span><span class="p">(</span><span class="ni">t</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> tname</span>
+<span class="ni">  tabn </span><span class="o">+=</span><span class="m m-Double">2</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> btp </span><span class="k">ball.thermal.list</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> bp </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.thermal.ball</span><span class="p">(</span><span class="ni">btp</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">bp</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">      </span><span class="k">local</span><span class="ni"> _z </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">bp</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">      </span><span class="k">local</span><span class="ni"> n </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">      </span><span class="k">local</span><span class="ni"> tsum </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">      </span><span class="k">loop</span><span class="ni"> </span><span class="k">while</span><span class="ni"> n </span><span class="o">&lt;</span><span class="ni"> n_tot</span>
+<span class="ni">        n </span><span class="p">=</span><span class="ni"> n </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">        fn </span><span class="p">=</span><span class="ni"> float</span><span class="p">(</span><span class="ni">n</span><span class="p">)</span>
+<span class="ni">        </span><span class="k">local</span><span class="ni"> term </span><span class="p">=</span><span class="ni"> </span><span class="k">math.sin</span><span class="p">(</span><span class="k">math.pi</span><span class="o">*</span><span class="ni">_z</span><span class="o">*</span><span class="ni">fn</span><span class="o">/</span><span class="ni">c_len</span><span class="p">)</span>
+<span class="ni">        term </span><span class="p">=</span><span class="ni"> term </span><span class="o">*</span><span class="ni"> </span><span class="k">math.exp</span><span class="p">(</span><span class="o">-</span><span class="ni">c_kappa</span><span class="o">*</span><span class="ni">fn</span><span class="o">*</span><span class="ni">fn</span><span class="o">*</span><span class="k">math.pi</span><span class="o">*</span><span class="k">math.pi</span><span class="o">*</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">                      </span><span class="k">thermal.time.total</span><span class="o">/</span><span class="p">(</span><span class="ni">c_len</span><span class="o">*</span><span class="ni">c_len</span><span class="p">))</span><span class="o">/</span><span class="ni">fn</span>
+<span class="ni">        tsum </span><span class="p">=</span><span class="ni"> tsum </span><span class="o">+</span><span class="ni"> term</span>
+<span class="ni">      </span><span class="k">end_loop</span>
+<span class="ni">      _tz </span><span class="p">=</span><span class="ni"> _z </span><span class="o">/</span><span class="ni"> c_len</span>
+<span class="ni">      </span><span class="k">table</span><span class="p">(</span><span class="ni">t</span><span class="p">,</span><span class="ni"> _tz</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni"> </span><span class="o">-</span><span class="ni"> _z</span><span class="o">/</span><span class="ni">c_len </span><span class="o">-</span><span class="ni"> </span><span class="p">(</span><span class="m m-Double">2.0</span><span class="o">/</span><span class="k">math.pi</span><span class="p">)</span><span class="o">*</span><span class="ni">tsum</span>
+<span class="ni">    </span><span class="k">end_if</span>
+<span class="ni">  </span><span class="k">end_loop</span>
+<span class="nb">end</span>
+<span class="c">; ----------------------------------------------------------------------------</span>
+<span class="nb">fish define</span><span class="ni"> init_params</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> id_start</span><span class="p">=</span><span class="m m-Double">1</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> x0 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> y0 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> radius  </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> epsilon </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0e-6</span>
+<span class="ni">  </span><span class="c">;</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> c_k </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.6</span><span class="ni">                      </span><span class="c">; 热导率</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> c_cv </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.2</span><span class="ni">                     </span><span class="c">; 比热容</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> c_dens </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1000.0</span><span class="ni">                </span><span class="c">; density</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> c_kappa </span><span class="p">=</span><span class="ni"> c_k </span><span class="o">/</span><span class="ni"> </span><span class="p">(</span><span class="ni">c_dens</span><span class="o">*</span><span class="ni">c_cv</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> t1 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">100.0</span><span class="ni">                     </span><span class="c">; 沿左侧的温度</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> tabn_start </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">10</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> tabe_start </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">11</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> tabn </span><span class="p">=</span><span class="ni"> tabn_start</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> tabe </span><span class="p">=</span><span class="ni"> tabe_start</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> n_row </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">10</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> n_col </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">50</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> _pack_type </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> n_tot </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">100</span><span class="ni">   </span><span class="c">; 所用的解析解项数</span>
+<span class="nb">end</span>
+<span class="c">; ============================================================================</span>
+<span class="c">;文件结束：transient_sheet-utils.p2fis</span>
+</pre></div>
+</div>
+<p class="endnotesection rubric">尾注</p>
+<table class="docutils footnote" frame="void" id="id4" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><p class="first">要在 <span class="codename">PFC</span> 中查看本项目，请使用程序菜单。</p>
+<p><span class="menuselection">帮助 ▼ 算例…</span></p>
+<p class="last">  ⮡    PFC <br/>
+    ⮡    验证 <br/>
+      ⮡     <br/>
+        ⮡    TransientSheet.prj</p>
+</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../../../../docproject/source/manual/pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../../../../docproject/source/manual/optional_features/options.html">Additional Features</a> »</li>
+<li class="nav-item nav-item-3"><a href="../../../../../../docproject/source/manual/optional_features/thermal_option/thermal_option.html">Thermal Calculation</a> »</li>
+<li class="nav-item nav-item-4"><a accesskey="U" href="../../../../../../docproject/source/manual/optional_features/thermal_option/verifications/verifications.html">Verification Problems</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../../../../../../docproject/source/manual/optional_features/thermal_option/verifications/verifications.html" title="previous chapter"> Verification Problems</a> |    
+       <a href="../../../../../test3d/verification_problems/thermal_balls/free_expansion/doc/free_expansion.html" title="next chapter">Heated Specimen with Free Boundaries</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Transient Thermal Response of Sheet with Constant Temperature Boundaries" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>
