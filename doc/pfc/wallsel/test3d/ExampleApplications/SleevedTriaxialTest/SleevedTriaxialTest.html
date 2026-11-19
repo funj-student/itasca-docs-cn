@@ -1,0 +1,696 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>黏结材料的套筒三轴试验 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="../../../../../flac3d/docproject/source/elements/examples.html" rel="next" title="Index: Examples"/>
+<link href="../../../../../wad/wallzone/test3d/ExampleApplications/PunchIndentation/PunchIndentation.html" rel="prev" title="Punch Indentation of a Bonded Material"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="sleeved-triaxial-test-of-a-bonded-material">
+<span id="sleevedtriaxial"></span><h1>黏结材料的套筒三轴试验</h1>
+<p class="h2 rubric">问题描述</p>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">要查看此项目，请使用菜单命令 <span class="menuselection">Help ► Examples…</span>。选择“Example Applications/SleevedTriaxialTest”，然后选择“SleevedTriaxialTest.f3prj”加载。
+所用<a class="reference internal" href="#sleevedata"><span class="std std-ref">主数据文件</span>（main data files）</a>见本示例末尾。其余数据文件可在项目中找到。</p>
+</div>
+<p>本示例演示使用基于壳的结构单元对黏结颗粒模型（BPM）进行一组套筒三轴试验。此类模型也可仅用 <span class="codename">PFC</span> 研究。但那样需要相当多的 <span class="codename">FISH</span> 来使套筒壁模拟弹性膜的行为。此处，套筒由壳创建，BPM 在套筒内合成，如 <a href="#sleeve-problem">图 1（Figure  1）</a> 所示。如 <a class="reference internal" href="../../../../../common/docproject/source/manual/coupling/schemes/wallzone/wallzone.html#wallzone"><span class="std std-ref">墙—网格耦合方案</span>（Wall-Zone Coupling Scheme）</a> 一节详细所述，<span class="codename">PFC</span> 墙从属于基于壳的结构单元。<span class="codename">PFC</span> 球颗粒与墙面片之间存在接触；每个球颗粒—面片接触处的接触力和力矩用于确定等效力系，以施加到相应的壳节点。本模型中，为简单起见，试样在无初始应力下创建，压板以恒定速度位移。
+以本示例为基础，可方便地定义 BPM 的破坏包络线。</p>
+<div class="figure align-center" id="id1">
+<span id="sleeve-problem"></span><a class="reference internal image-reference" href="../../../../../_images/sleeve-initial-geom.png"><img alt="../../../../../_images/sleeve-initial-geom.png" src="../../../../../_images/sleeve-initial-geom.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 1：套筒三轴试验的几何形状。BPM 在套筒内创建。</span></p>
+</div>
+<p class="h2 rubric">耦合 <span class="codename">PFC</span>-<span class="codename">FLAC3D</span> 模型</p>
+<p>在创建耦合 <span class="codename">PFC</span>-<span class="codename">FLAC3D</span> 模型之前，必须先加载 <span class="codename">PFC</span> 模块。这些模块是
+包含用于实例化所有 <span class="codename">PFC</span> 相关模型组件的代码的 DLL。此外，还有一组模块用于将 <span class="codename">PFC</span> 墙与 <span class="codename">FLAC3D</span> 网格单元和基于壳的结构单元耦合。默认情况下，打开 <span class="codename">FLAC3D</span> 应用程序时不加载这些模块。可通过 <span class="menuselection">Tools ► Load PFC</span> 菜单项或以下命令加载这些模块：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">program load</span><span class="n"> module </span><span class="s">'contact'</span>
+<span class="nb">program load</span><span class="n"> module </span><span class="s">'pfc'</span>
+<span class="nb">program load</span><span class="n"> guimodule </span><span class="s">'pfc'</span>
+<span class="nb">program load</span><span class="n"> module </span><span class="s">'pfcthermal'</span>
+<span class="nb">program load</span><span class="n"> guimodule </span><span class="s">'pfcthermal'</span>
+<span class="nb">program load</span><span class="n"> module </span><span class="s">'ccfd'</span>
+<span class="nb">program load</span><span class="n"> guimodule </span><span class="s">'ccfd'</span>
+<span class="nb">program load</span><span class="n"> module </span><span class="s">'wallsel'</span>
+<span class="nb">program load</span><span class="n"> module </span><span class="s">'wallzone'</span>
+</pre></div>
+</div>
+<p>项目在加载任何附加模块后保存一次后，再次打开该项目时将自动加载这些模块。请注意，附加模块会保持加载状态，直到关闭 <span class="codename">FLAC3D</span> 应用程序。</p>
+<p><span class="codename">PFC</span> 球颗粒在由 <span class="codename">FLAC3D</span> 壳组成的圆柱套筒内创建。为使每次运行数据文件时创建相同的初始球颗粒云，使用 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.random.html#command:model.random" title="Set the seed for the random-number generator. By default  i  =  10,000 .
+The...">设置随机数种子命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">random</span></code>）</a> 命令将随机种子初始化为指定值。改变随机种子将得到不同的球颗粒实现，但统计上这些实现相同。与网格单元和结构单元不同，所有 <span class="codename">PFC</span> 模型组件（即球颗粒、刚性团簇、墙和接触）只能存在于用户指定的模型域内（见 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.domain.html#command:model.domain" title="Specify the domain boundaries and conditions.  DFN fractures only exist within
+the domain extent...">设置模型域命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">domain</span></code>）</a> 命令）。该限制使接触检测和空间搜索得以简化和优化。由于 <span class="codename">PFC</span> 始终在大应变模式下运行，必须为网格单元和结构单元显式激活大应变模式（见 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.largestrain.html#command:model.large-strain" title="Sets the program to use the numerical formulation for large-strain deformation.
+ The default is  off .  See the section ref-Large- and Small-Strain Modes
+&lt;largeandsmallstrainmodes&gt;- for discussion of the additional calculations done
+in this formulation.   [cs: has Common trouble]...">设置大变形模式命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">large-strain</span></code>）</a> 命令）。<span class="codename">PFC</span> 默认使用球颗粒和刚性团簇的真实惯性性质求解动力运动方程。本模型中，我们希望 <span class="codename">PFC</span> 采用时步缩放（见 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.mechanical.html#command:model.mechanical" title="Set parameters for a mechanical analysis. The activity can be directly specified
+by providing  b ...">设置力学分析参数命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">mechanical</span></code>）</a> 命令），该方法类似于 <span class="codename">FLAC3D</span> 的默认行为。</p>
+<p>完成这些准备步骤后，我们开始创建初始模型。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;定义圆柱的相关参数</span>
+<span class="ni">[rad </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="ni">[height </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">3.0</span><span class="ni">]</span>
+<span class="ni">[segments </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">6</span><span class="ni">]</span>
+<span class="ni">[halfLen </span><span class="p">=</span><span class="ni"> height</span><span class="o">/</span><span class="m m-Double">2.0</span><span class="ni">]</span>
+<span class="ni">[freeRegion </span><span class="p">=</span><span class="ni"> height</span><span class="o">/</span><span class="m m-Double">2.0</span><span class="o">*</span><span class="m m-Double">0.8</span><span class="ni">]</span>
+
+<span class="c">;用几何逻辑创建圆柱</span>
+<span class="c">;首先创建圆弧，构成一圈边</span>
+<span class="nb">geometry edge</span><span class="n"> create by</span><span class="o">-</span><span class="n">arc origin </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">   start </span><span class="p">(</span><span class="ni">[rad</span><span class="o">*</span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n"> end </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[rad</span><span class="o">*</span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">   segments </span><span class="ni">[segments]</span>
+<span class="nb">geometry edge</span><span class="n"> create by</span><span class="o">-</span><span class="n">arc origin </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">   start </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[rad</span><span class="o">*</span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n"> end </span><span class="p">(</span><span class="ni">[rad]</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">   segments </span><span class="ni">[segments]</span>
+<span class="nb">geometry edge</span><span class="n"> create by</span><span class="o">-</span><span class="n">arc origin </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">   start </span><span class="p">(</span><span class="ni">[rad]</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n"> end </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[rad]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">   segments </span><span class="ni">[segments]</span>
+<span class="nb">geometry edge</span><span class="n"> create by</span><span class="o">-</span><span class="n">arc origin </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">   start </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[rad]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n"> end </span><span class="p">(</span><span class="ni">[rad</span><span class="o">*</span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">   segments </span><span class="ni">[segments]</span>
+<span class="c">;拉伸这些边以形成圆柱</span>
+<span class="nb">geometry generate</span><span class="n"> from</span><span class="o">-</span><span class="n">edges extrude </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[height]</span><span class="p">)</span><span class="n"> segments </span><span class="ni">[segments</span><span class="o">*</span><span class="m m-Double">2</span><span class="ni">]</span>
+</pre></div>
+</div>
+<p>圆柱套筒在几何逻辑中创建，以便作为壳导入。圆弧创建为几何边并竖向拉伸，形成圆柱套筒。可使用方括号记法（即“[]”）而非“@”运算符来定义 <span class="codename">FISH</span> 变量，并在命令中使用这些值。</p>
+<p>几何体创建完成后，我们转而处理结构单元。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;从几何逻辑中将结构单元作为壳导入</span>
+<span class="c">;并赋予组和参数</span>
+<span class="nb">structure shell import</span><span class="n"> from</span><span class="o">-</span><span class="n">geometry </span><span class="s">'Default'</span><span class="n"> element</span><span class="o">-</span><span class="n">type dkt</span><span class="o">-</span><span class="n">cst </span>
+<span class="nb">structure node group</span><span class="n"> </span><span class="s">'middle'</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="ni">[</span><span class="o">-</span><span class="ni">freeRegion]</span><span class="n"> </span><span class="ni">[freeRegion]</span>
+<span class="nb">structure node group</span><span class="n"> </span><span class="s">'top'</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="ni">[freeRegion]</span><span class="n"> </span><span class="ni">[freeRegion</span><span class="o">+</span><span class="m m-Double">1</span><span class="ni">]</span>
+<span class="nb">structure node group</span><span class="n"> </span><span class="s">'bot'</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="ni">[</span><span class="o">-</span><span class="ni">freeRegion</span><span class="o">-</span><span class="m m-Double">1</span><span class="ni">]</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="ni">freeRegion]</span>
+<span class="nb">structure shell group</span><span class="n"> </span><span class="s">'middle'</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="ni">[</span><span class="o">-</span><span class="ni">freeRegion]</span><span class="n"> </span><span class="ni">[freeRegion]</span>
+<span class="nb">structure shell property</span><span class="n"> isotropic </span><span class="p">(</span><span class="m m-Double">1e6</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="p">)</span><span class="n"> thick </span><span class="m m-Double">0.25</span><span class="n"> density </span><span class="m m-Double">930.0</span>
+<span class="c">;初始化结构单元相关的数据结构 </span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="c">;为了使用 STRUCTURE APPLY 命令 </span>
+<span class="c">;将每个结构单元的局部坐标系</span>
+<span class="c">;设置为指向三轴压力室的中心</span>
+<span class="nb">fish define</span><span class="ni"> setLocalSystem</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> s </span><span class="k">struct.node.list</span><span class="p">()</span>
+<span class="ni">        </span><span class="k">local</span><span class="ni"> p </span><span class="p">=</span><span class="ni"> </span><span class="k">struct.node.pos</span><span class="p">(</span><span class="ni">s</span><span class="p">)</span>
+<span class="ni">        </span><span class="k">local</span><span class="ni"> nid </span><span class="p">=</span><span class="ni"> </span><span class="k">struct.node.id.component</span><span class="p">(</span><span class="ni">s</span><span class="p">)</span>
+<span class="ni">        </span><span class="k">local</span><span class="ni"> mvec </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="k">comp.z</span><span class="p">(</span><span class="ni">p</span><span class="p">))</span>
+<span class="ni">        zdir </span><span class="p">=</span><span class="ni"> </span><span class="k">math.unit</span><span class="p">(</span><span class="ni">p</span><span class="o">-</span><span class="ni">mvec</span><span class="p">)</span>
+<span class="ni">        ydir </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="k">        command</span>
+<span class="nb">            structure node system-local</span><span class="n"> z </span><span class="ni">[zdir]</span><span class="n"> y </span><span class="ni">[ydir]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                      range component</span><span class="o">-</span><span class="n">id </span><span class="ni">[nid]</span>
+<span class="k">        endcommand</span>
+<span class="ni">    </span><span class="k">endloop</span>
+<span class="k">   command</span>
+<span class="nb">     structure node fix</span><span class="n"> system</span><span class="o">-</span><span class="n">local</span>
+<span class="k">   endcommand</span>
+<span class="nb">end</span>
+<span class="ni">[setLocalSystem]</span>
+<span class="c">;确保结构单元已启用局部阻尼</span>
+<span class="nb">structure damp</span><span class="n"> local</span>
+<span class="c">;固定结构单元节点以生成试样</span>
+<span class="nb">structure node fix</span><span class="n"> velocity rotation</span>
+</pre></div>
+</div>
+<p>使用 <a class="reference internal" href="../../../../../common/sel/doc/manual/sel_manual/shells/commands/cmd_structure.shell.import.html#command:structure.shell.import" title="Create shell elements from an outside source..."><code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">shell</span> <span class="pre">import</span></code></a> 命令由所创建的几何体生成壳。
+同时赋予单元组和节点组，以简化边界条件赋值。代码片段还展示了一个 <span class="codename">FISH</span> 函数，用于将每个节点的局部轴系设置为指向圆柱中心，以便使用 <a class="reference internal" href="../../../../../common/sel/doc/manual/sel_manual/shells/commands/cmd_structure.shell.apply.html#command:structure.shell.apply" title="Assign uniform applied pressure  f  to all shell elements in the range.
+Positive pressure acts in the positive `z`\ -direction of the element system
+and maintains this orientation during large-strain motion..."><code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">shell</span> <span class="pre">apply</span></code></a> 命令对模型中部壳单元施加压力。z 方向直接指向圆柱中心，y 方向向上。固定节点的速度和转动，使球颗粒可在套筒内达到平衡。</p>
+<p>现在为套筒和压板创建墙。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;创建结构单元的墙表示</span>
+<span class="nb">wall-structure create</span>
+<span class="c">;用于设置压板宽度相对于圆柱半径之比的参数</span>
+<span class="ni">[rad2 </span><span class="p">=</span><span class="ni"> rad</span><span class="o">*</span><span class="m m-Double">1.3</span><span class="ni">]</span>
+<span class="c">;创建压板</span>
+<span class="nb">wall generate</span><span class="n"> name </span><span class="s">'platenTop'</span><span class="n"> polygon </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">rad2]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">rad2]</span><span class="p">,</span><span class="ni">[halfLen]</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                       </span><span class="p">(</span><span class="ni">[rad2]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">rad2]</span><span class="p">,</span><span class="ni">[halfLen]</span><span class="p">)</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">                                       </span><span class="p">(</span><span class="ni">[rad2]</span><span class="p">,</span><span class="ni">[rad2]</span><span class="p">,</span><span class="ni">[halfLen]</span><span class="p">)</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">                                       </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">rad2]</span><span class="p">,</span><span class="ni">[rad2]</span><span class="p">,</span><span class="ni">[halfLen]</span><span class="p">)</span>
+<span class="nb">wall generate</span><span class="n"> name </span><span class="s">'platenBottom'</span><span class="n"> polygon </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">rad2]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">rad2]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                          </span><span class="p">(</span><span class="ni">[rad2]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">rad2]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">                                          </span><span class="p">(</span><span class="ni">[rad2]</span><span class="p">,</span><span class="ni">[rad2]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">                                          </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">rad2]</span><span class="p">,</span><span class="ni">[rad2]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span>
+<span class="c">;将墙的分辨率策略设为 full，并设置截断角用于 </span>
+<span class="c">;邻近接触                                          </span>
+<span class="nb">wall resolution</span><span class="n"> full</span>
+<span class="nb">wall attribute</span><span class="n"> cutoff</span><span class="o">-</span><span class="n">angle </span><span class="m m-Double">20</span>
+</pre></div>
+</div>
+<p>套筒使用 <a class="reference internal" href="../../../../../common/docproject/source/manual/coupling/schemes/wallzone/commands/wallsel/cmd_wallsel.create.html#command:wall-structure.create" title="Wrap |flac3d| structural elements with |pfc| walls. |pfc| walls are, by definition,
+edge-connected..."><code class="xref fish fish-cmd docutils literal"><span class="pre">wall-structure</span> <span class="pre">create</span></code></a> 命令创建。此时为每个壳面创建墙面片，墙面片顶点的速度和位置从属于相应的壳节点。顶、底压板使用 <a class="reference internal" href="../../../../pfcmodule/doc/manual/wall_manual/wall_commands/cmd_wall_generate.html#command:wall.generate" title="Generate walls with specified shapes. The wall shapes include: {box, circle,
+and point in 2D; box, cone, cylinder, disk, line, plane, point, polygon, and
+sphere in 3D}..."><code class="xref fish fish-cmd docutils literal"><span class="pre">wall</span> <span class="pre">generate</span></code></a> 命令创建，并使用 <a class="reference internal" href="../../../../pfcmodule/doc/manual/wall_manual/wall_commands/cmd_wall_resolution.html#command:wall.resolution" title='Modify the contact-resolution strategy as outlined in the " wall_faceted "
+section. By default, the resolution strategy is set to the  reduced  state.
+In all cases, contact activity based on contact with active/inactive facet sides
+(see  wall.active-sides ) is determined...'><code class="xref fish fish-cmd docutils literal"><span class="pre">wall</span> <span class="pre">resolution</span></code></a> 命令将墙解析模式设置为 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">full</span></span></a>。一般而言，接触存在于 <span class="codename">PFC</span> 球颗粒与墙面片之间。若将解析模式设置为 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">none</span></span></a>，则面片与球颗粒之间的所有接触都会被界定，并影响球颗粒的力—位移响应。但当墙面片尺寸接近球颗粒尺寸时，这可能产生比将墙理想化为无面片的完美表面时多得多的接触。<a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">full</span></span></a> 方案用于缓解这种情况，<a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">cutoff-angle</span></span></a> 用于控制墙的“平滑度”。墙解析详见 <a class="reference internal" href="../../../../docproject/source/manual/pfc_model_components/walls/wall_faceted.html#wall-faceted"><span class="std std-ref">PFC 中的面片墙</span>（Faceted Walls in PFC）</a> 主题。</p>
+<p>墙创建完成后，在套筒内创建 BPM。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;设置球体模量并生成任意重叠的球体集合</span>
+<span class="ni">[ballemod </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0e8</span><span class="ni">]</span>
+<span class="nb">ball distribute</span><span class="n"> box </span><span class="ni">[</span><span class="o">-</span><span class="ni">rad]</span><span class="n"> </span><span class="ni">[rad]</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="ni">rad]</span><span class="n"> </span><span class="ni">[rad]</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="n"> </span><span class="ni">[halfLen]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                porosity </span><span class="m m-Double">0.3</span><span class="n"> radius </span><span class="m m-Double">0.05</span><span class="n"> </span><span class="m m-Double">0.1</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                range cylinder end</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n"> end</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[height]</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                      radius </span><span class="ni">[rad</span><span class="o">*</span><span class="m m-Double">0.95</span><span class="ni">]</span>
+
+<span class="c">;设置球体属性</span>
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="m m-Double">2600</span><span class="n"> damp </span><span class="m m-Double">0.8</span>
+<span class="c">;设置默认接触行为 - </span>
+<span class="c">;deformability 法用于设置 </span>
+<span class="c">;接触模型线性部分的参数</span>
+<span class="nb">contact cmat</span><span class="n"> default model linearpbond method deformability </span><span class="sx">...</span>
+<span class="n">                   emod </span><span class="ni">[ballemod]</span><span class="n"> kratio </span><span class="m m-Double">1.0</span><span class="n"> </span>
+<span class="c">;允许球体重新排列， </span>
+<span class="c">;每 100 个循环将线速度与角速度清零</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span><span class="n"> calm </span><span class="m m-Double">100</span>
+
+<span class="c">;提供一定摩擦以耗散额外能量 </span>
+<span class="c">;并将其应用于所有接触</span>
+<span class="nb">contact cmat</span><span class="n"> default model linearpbond method deformability </span><span class="sx">...</span>
+<span class="n">                   emod </span><span class="ni">[ballemod]</span><span class="n"> kratio </span><span class="m m-Double">1.0</span><span class="n"> property fric </span><span class="m m-Double">0.3</span>
+<span class="nb">contact cmat</span><span class="n"> apply</span>
+<span class="c">;求解至较小的平均比率</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-8</span>
+
+<span class="c">;对球-球接触进行黏结</span>
+<span class="nb">contact method</span><span class="n"> bond gap </span><span class="m m-Double">1.0e-2</span><span class="n"> range contact type </span><span class="s">'ball-ball'</span>
+<span class="c">;修改现有接触参数 </span>
+<span class="c">;使线性力按增量方式计算并</span>
+<span class="c">;提供强度</span>
+<span class="nb">contact property</span><span class="n"> lin_mode </span><span class="m m-Double">1</span><span class="n"> lin_force </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> pb_ten </span><span class="m m-Double">2e5</span><span class="n"> pb_coh </span><span class="m m-Double">2e6</span>
+<span class="c">;设置接触模型中平行黏结部分的刚度 </span>
+<span class="nb">contact method</span><span class="n"> pb_deformability emod </span><span class="ni">[ballemod]</span><span class="n"> kratio </span><span class="m m-Double">1.0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">        range contact type </span><span class="s">'ball-ball'</span>
+
+<span class="c">;这一组操作将清除所有球体速度 </span>
+<span class="c">;以及模型中的所有接触力</span>
+<span class="c">;从而使试样完全无应力并保持黏结</span>
+<span class="nb">model calm</span>
+<span class="nb">ball fix</span><span class="n"> velocity spin</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">2</span>
+<span class="nb">ball free</span><span class="n"> velocity spin</span>
+
+<span class="c">;释放套筒中段的节点 </span>
+<span class="c">;同时保持顶部与底部边缘固定</span>
+<span class="nb">structure node free</span><span class="n"> velocity rotation range group </span><span class="s">'middle'</span>
+</pre></div>
+</div>
+<p><span class="codename">PFC</span> 球颗粒和刚性团簇既可在无初始重叠下创建，也可在任意初始重叠下创建。
+本例中，使用 <a class="reference internal" href="../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.distribute.html#command:ball.distribute" title="Distribute balls with overlaps..."><code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">distribute</span></code></a> 命令在平行六面体体积内按指定体积分数创建具有任意重叠的球颗粒云。随后赋予球颗粒属性，并使用 <code class="xref fish fish-cmd docutils literal"><span class="pre">contact</span> <span class="pre">cmat</span></code> 命令指定接触模型行为。完成这些步骤后，允许球颗粒重新排列。<a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.cycle.html#command:model.cycle" title="Execute timesteps. The synonym  model.step  may also be used.  This is
+the equivalent of calling  model.solve  with the  cycles  keyword
+set to  i ...">执行计算时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">cycle</span></code>）</a> 命令中的 <span class="cmdkey">calm</span> 关键字用于定期移除系统的所有动能。随后给出 <code class="xref fish fish-cmd docutils literal"><span class="pre">contact</span> <span class="pre">cmat</span></code> 命令以修改接触模型分配表，并将该更改应用于所有接触。施加一定摩擦以移除额外能量，然后将球颗粒系统循环至较小平均比率。给出 <a class="reference internal" href="../../../../../common/contact/doc/contact_manual/contact_commands/cmd_contact.method.html#command:contact.method" title="Call a contact method. The method, along with its specific list of pairs of
+argument names and values, is invoked..."><code class="xref fish fish-cmd docutils literal"><span class="pre">contact</span> <span class="pre">method</span></code></a> <span class="cmdkey">bond</span> 命令，通过在所有间隙小于或等于指定值的球颗粒—球颗粒接触处安装平行黏结来创建 BPM。接触方法是一组对接触执行任务的操作，可能修改多个接触属性。黏结安装后，指定平行黏结强度，并通过设置 <span class="cmdkey">lin_mode</span> = 1，将 <a class="reference internal" href="../../../../../common/contactmodel/linearpbond/doc/manual/cmlinearpbond.html#cmlinearpbond">线性平行黏结（<span class="std std-ref">linear parallel bond</span>）</a> 接触模型线性部分的法向力计算设置为增量模式。这样可快速生成无内应力的 BPM。此外，设置平行黏结组分的刚度。通过移除所有速度并固定球颗粒速度和自旋，若干循环后所有接触力归零。结果是 BPM 处于无内应力的平衡状态。最后，释放套筒中部的壳节点，为三轴试验做准备。无应力 BPM 的初始接触如下图所示。</p>
+<div class="figure align-center" id="id2">
+<span id="sleeve-initial-contact"></span><a class="reference internal image-reference" href="../../../../../_images/sleeve-initial-contact.png"><img alt="../../../../../_images/sleeve-initial-contact.png" src="../../../../../_images/sleeve-initial-contact.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 2：无应力 BPM 的初始接触力。</span></p>
+</div>
+<p>无应力 BPM 创建后，还需做一些额外工作来构建进行三轴试验的环境。首先是用于根据压板计算应力和应变的 <span class="codename">FISH</span> 函数。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;定义 stress FISH 函数以测量应力与应变</span>
+<span class="nb">fish define</span><span class="ni"> stress</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> topForce </span><span class="p">=</span><span class="ni"> </span><span class="k">math.abs</span><span class="p">(</span><span class="k">comp.z</span><span class="p">(</span><span class="k">wall.force.contact</span><span class="p">(</span><span class="ni">platenTop</span><span class="p">)))</span><span class="ni"> </span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> botForce </span><span class="p">=</span><span class="ni"> </span><span class="k">math.abs</span><span class="p">(</span><span class="k">comp.z</span><span class="p">(</span><span class="k">wall.force.contact</span><span class="p">(</span><span class="ni">platenBottom</span><span class="p">)))</span>
+<span class="ni">    currentStress </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="p">(</span><span class="ni">topForce</span><span class="o">+</span><span class="ni">botForce</span><span class="p">)</span><span class="o">/</span><span class="ni">area</span>
+<span class="ni">    stress </span><span class="p">=</span><span class="ni"> currentStress</span>
+<span class="ni">    strain </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">height </span><span class="o">-</span><span class="ni"> </span><span class="p">(</span><span class="k">comp.z</span><span class="p">(</span><span class="k">wall.pos</span><span class="p">(</span><span class="ni">platenTop</span><span class="p">))</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">              </span><span class="k">comp.z</span><span class="p">(</span><span class="k">wall.pos</span><span class="p">(</span><span class="ni">platenBottom</span><span class="p">))))</span><span class="o">/</span><span class="ni">height </span><span class="o">*</span><span class="ni"> </span><span class="m m-Double">100</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> failureStress </span><span class="o">&lt;</span><span class="p">=</span><span class="ni"> currentStress</span>
+<span class="ni">        failureStress </span><span class="p">=</span><span class="ni"> currentStress</span>
+<span class="ni">        failureStrain </span><span class="p">=</span><span class="ni"> strain</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+<p>此处利用压板在 z 方向上的力计算压板上的平均应力。应变也根据试样高度计算。<span class="codename">FISH</span> 参数
+<a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">破坏应力（<span class="varfishsym"><span class="null">failureStress</span></span>）</a> 和 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">破坏应变（<span class="varfishsym"><span class="null">failureStrain</span></span>）</a> 用于记录峰值应力和应变。该信息在下面的 <span class="codename">FISH</span> 函数中用于终止循环。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;定义 halt FISH 函数以停止循环 </span>
+<span class="c">;在压板位移且材料发生破坏时</span>
+<span class="nb">fish define</span><span class="ni"> halt</span>
+<span class="ni">    halt </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> currentStress </span><span class="o">&lt;</span><span class="ni"> failureStress </span><span class="o">*</span><span class="ni"> </span><span class="m m-Double">0.85</span>
+<span class="ni">        halt </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+<p>一旦当前应力水平低于最大应力的 85%，循环将停止。可使用 <span class="codename">FISH</span>
+函数配合 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#kwd:model.solve.fish-halt" title="The |FISH| function  s  is called during every cycle to determine whether
+cycling should continue. If  s  returns  false , cycling continues;
+otherwise, cycling terminates...">模型求解 FISH 停止命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span> <span class="pre">fish-halt</span></code>）</a> 命令终止循环。函数 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">停止（<span class="varfishsym"><span class="null">halt</span></span>）</a> 返回值为 1 时循环终止。</p>
+<p>以下 <span class="codename">FISH</span> 函数用于逐步增加试样上的围压：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;定义 FISH 函数以增大各向同性围压 </span>
+<span class="c">;分级施加，使黏结材料在加载过程中不发生破坏</span>
+<span class="nb">fish define</span><span class="ni"> rampUp</span><span class="p">(</span><span class="ni">beginIn</span><span class="p">,</span><span class="ni">ending</span><span class="p">,</span><span class="ni">increment</span><span class="p">)</span>
+<span class="k">    command</span>
+<span class="nb">        ball attribute</span><span class="n"> displacement </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="nb">        structure node initialize</span><span class="n"> displacement </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="k">    endcommand</span>
+<span class="ni">    begin </span><span class="p">=</span><span class="ni"> beginIn</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">while</span><span class="ni"> </span><span class="p">(</span><span class="k">math.abs</span><span class="p">(</span><span class="ni">begin</span><span class="p">)</span><span class="ni"> </span><span class="o">&lt;</span><span class="ni"> </span><span class="k">math.abs</span><span class="p">(</span><span class="ni">ending</span><span class="p">))</span>
+<span class="ni">        begin </span><span class="p">=</span><span class="ni"> begin </span><span class="o">+</span><span class="ni"> increment</span>
+<span class="k">        command</span>
+<span class="n">            </span><span class="c">;施加围压</span>
+<span class="nb">            structure shell apply</span><span class="n"> </span><span class="ni">[begin]</span><span class="n"> range group </span><span class="s">'middle'</span>
+<span class="n">            </span><span class="c">;在压板上施加相同的围压</span>
+<span class="nb">            wall servo</span><span class="n"> force </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[begin</span><span class="o">*</span><span class="ni">area]</span><span class="p">)</span><span class="n"> activate </span><span class="sx">true</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                 range name </span><span class="s">'platenTop'</span>
+<span class="nb">            wall servo</span><span class="n"> force </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">begin</span><span class="o">*</span><span class="ni">area]</span><span class="p">)</span><span class="n"> activate </span><span class="sx">true</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                 range name </span><span class="s">'platenBottom'</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">200</span>
+<span class="nb">            model calm</span>
+<span class="k">        endcommand</span>
+<span class="ni">    </span><span class="k">endloop</span>
+<span class="k">    command</span>
+<span class="n">        </span><span class="c">;应力状态建立后循环并关闭 </span>
+<span class="n">        </span><span class="c">;墙体上的伺服机制</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span>
+<span class="nb">        wall servo</span><span class="n"> activate </span><span class="sx">false</span>
+<span class="nb">        wall attribute</span><span class="n"> velocity </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> range name </span><span class="s">'platenTop'</span>
+<span class="nb">        wall attribute</span><span class="n"> velocity </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> range name </span><span class="s">'platenBottom'</span>
+<span class="k">    endcommand</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+<p>该函数的核心是逐步增加压板和套筒上的围压。由于已为壳指定局部坐标系，使用 <a class="reference internal" href="../../../../../common/sel/doc/manual/sel_manual/shells/commands/cmd_structure.shell.apply.html#command:structure.shell.apply" title="Assign uniform applied pressure  f  to all shell elements in the range.
+Positive pressure acts in the positive `z`\ -direction of the element system
+and maintains this orientation during large-strain motion..."><code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">shell</span> <span class="pre">apply</span></code></a> 命令施加围压很简单。此外，使用内置墙伺服机构和 <a class="reference internal" href="../../../../pfcmodule/doc/manual/wall_manual/wall_commands/cmd_wall_servo.html#command:wall.servo" title="The  wall.servo  provides the ability to control the translational velocity
+of select walls using a servo-mechanism in order to..."><code class="xref fish fish-cmd docutils literal"><span class="pre">wall</span> <span class="pre">servo</span></code></a> 命令对压板施加应力。现在可以压缩一些合成材料了。</p>
+<p class="h2 rubric">结果与讨论</p>
+<p>首先进行无侧限压缩（UCS）试验：移除套筒并固定压板速度。试验结果如下图所示。还显示了断裂的黏结，以展示 BPM 破坏时的广泛损伤。请注意，响应直至破坏都相当线性，且试验在峰值应力的 85% 处自动停止。该 BPM 的峰值 UCS 为 2.20e+06 Pa，对应应变 1.13%。</p>
+<div class="figure align-center" id="id3">
+<span id="sleeve-ucs-results"></span><a class="reference internal image-reference" href="../../../../../_images/sleeve-ucs-results.png"><img alt="../../../../../_images/sleeve-ucs-results.png" src="../../../../../_images/sleeve-ucs-results.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 3：BPM 在 UCS 试验中的应力—应变响应及断裂的接触黏结。</span></p>
+</div>
+<p>为进行第一次三轴试验，加载原始 BPM，并将应力从 1e3 Pa 起以 1e3 Pa 增量升至 1e4 Pa。接触见 <a href="#sleeve-1e4-contact">图 4（Figure  4）</a>。请注意，应力为各向同性，因为接触几乎保持原始构型。这可以通过接触按力矢量方向而非连接球颗粒的方向绘制来判断。</p>
+<div class="figure align-center" id="id4">
+<span id="sleeve-1e4-contact"></span><a class="reference internal image-reference" href="../../../../../_images/sleeve-1e4-contact.png"><img alt="../../../../../_images/sleeve-1e4-contact.png" src="../../../../../_images/sleeve-1e4-contact.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 4：应力施加后按力方向绘制的接触力。</span></p>
+</div>
+<p>围压为 1e4 Pa 的试验结果见 <a href="#sleeve-1e4-results">图 5（Figure  5）</a>。试样在应变 1.15% 处破坏，峰值应力为 2.16e+06 Pa。<a href="#sleeve-5e4-results">图 6（Figure  6）</a> 和 <a href="#sleeve-1e5-results">图 7（Figure  7）</a> 分别给出 5e4 Pa 和 1e5 Pa 下的应力—应变响应及断裂接触黏结。下表列出各围压水平下 BPM 破坏时的峰值应力。请注意，与真实材料一样，峰值强度随围压增大而提高。此外，随围压增加，应力—应变曲线保持线性且斜率相近。低围压下应力的轻微下降可归因于使用墙测量应力以及球颗粒数量相对较少。</p>
+<table border="1" class="colwidths-given icg1 docutils" id="id5">
+<caption><span class="caption-text">表 1：BPM 峰值强度随围压的变化</span></caption>
+<colgroup>
+<col width="33%"/>
+<col width="33%"/>
+<col width="33%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">围压（Pa）</th>
+<th class="head">峰值强度（Pa）</th>
+<th class="head">应变（%）</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>0</td>
+<td>2.20e+06</td>
+<td>1.13</td>
+</tr>
+<tr class="row-odd"><td>1e4</td>
+<td>2.16e+06</td>
+<td>1.15</td>
+</tr>
+<tr class="row-even"><td>5e4</td>
+<td>2.60e+06</td>
+<td>1.37</td>
+</tr>
+<tr class="row-odd"><td>1e5</td>
+<td>2.96e+06</td>
+<td>1.54</td>
+</tr>
+</tbody>
+</table>
+<div class="figure align-center" id="id6">
+<span id="sleeve-1e4-results"></span><a class="reference internal image-reference" href="../../../../../_images/sleeve-1e4-results.png"><img alt="../../../../../_images/sleeve-1e4-results.png" src="../../../../../_images/sleeve-1e4-results.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 5：围压 1e4 下 BPM 三轴试验的应力—应变响应及断裂接触黏结。</span></p>
+</div>
+<div class="figure align-center" id="id7">
+<span id="sleeve-5e4-results"></span><a class="reference internal image-reference" href="../../../../../_images/sleeve-5e4-results.png"><img alt="../../../../../_images/sleeve-5e4-results.png" src="../../../../../_images/sleeve-5e4-results.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 6：围压 5e4 下 BPM 三轴试验的应力—应变响应及断裂接触黏结。</span></p>
+</div>
+<div class="figure align-center" id="id8">
+<span id="sleeve-1e5-results"></span><a class="reference internal image-reference" href="../../../../../_images/sleeve-1e5-results.png"><img alt="../../../../../_images/sleeve-1e5-results.png" src="../../../../../_images/sleeve-1e5-results.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 7：围压 1e5 下 BPM 三轴试验的应力—应变响应及断裂接触黏结。</span></p>
+</div>
+<p>以本示例为起点，可在真实三轴条件下有效确定 BPM 的破坏包络线。</p>
+<p class="h2 rubric" id="sleevedata">数据文件</p>
+<p>SleevedTriaxialTest.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;-------------------------------------------------------------------</span>
+<span class="c">;                黏结材料的套筒 </span>
+<span class="c">;                三轴试验</span>
+<span class="c">;-------------------------------------------------------------------</span>
+<span class="nb">model new</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'Sleeved Triaxial Test of a Bonded Material'</span>
+<span class="c">;通过设置随机数种子使结果可重复 </span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+<span class="c">;设置 PFC 球体与墙体的模型域</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">2</span><span class="n"> condition destroy</span>
+<span class="c">;耦合模拟中必须始终开启大应变模式</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="c">;施加时间步缩放，使 PFC 时间步为 1</span>
+<span class="nb">model mechanical</span><span class="n"> timestep scale</span>
+
+<span class="c">;定义圆柱的相关参数</span>
+<span class="ni">[rad </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="ni">[height </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">3.0</span><span class="ni">]</span>
+<span class="ni">[segments </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">6</span><span class="ni">]</span>
+<span class="ni">[halfLen </span><span class="p">=</span><span class="ni"> height</span><span class="o">/</span><span class="m m-Double">2.0</span><span class="ni">]</span>
+<span class="ni">[freeRegion </span><span class="p">=</span><span class="ni"> height</span><span class="o">/</span><span class="m m-Double">2.0</span><span class="o">*</span><span class="m m-Double">0.8</span><span class="ni">]</span>
+
+<span class="c">;用几何逻辑创建圆柱</span>
+<span class="c">;首先创建圆弧，构成一圈边</span>
+<span class="nb">geometry edge</span><span class="n"> create by</span><span class="o">-</span><span class="n">arc origin </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">   start </span><span class="p">(</span><span class="ni">[rad</span><span class="o">*</span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n"> end </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[rad</span><span class="o">*</span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">   segments </span><span class="ni">[segments]</span>
+<span class="nb">geometry edge</span><span class="n"> create by</span><span class="o">-</span><span class="n">arc origin </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">   start </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[rad</span><span class="o">*</span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n"> end </span><span class="p">(</span><span class="ni">[rad]</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">   segments </span><span class="ni">[segments]</span>
+<span class="nb">geometry edge</span><span class="n"> create by</span><span class="o">-</span><span class="n">arc origin </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">   start </span><span class="p">(</span><span class="ni">[rad]</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n"> end </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[rad]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">   segments </span><span class="ni">[segments]</span>
+<span class="nb">geometry edge</span><span class="n"> create by</span><span class="o">-</span><span class="n">arc origin </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">   start </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[rad]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n"> end </span><span class="p">(</span><span class="ni">[rad</span><span class="o">*</span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">   segments </span><span class="ni">[segments]</span>
+<span class="c">;拉伸这些边以形成圆柱</span>
+<span class="nb">geometry generate</span><span class="n"> from</span><span class="o">-</span><span class="n">edges extrude </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[height]</span><span class="p">)</span><span class="n"> segments </span><span class="ni">[segments</span><span class="o">*</span><span class="m m-Double">2</span><span class="ni">]</span>
+
+<span class="c">;从几何逻辑中将结构单元作为壳导入</span>
+<span class="c">;并赋予组和参数</span>
+<span class="nb">structure shell import</span><span class="n"> from</span><span class="o">-</span><span class="n">geometry </span><span class="s">'Default'</span><span class="n"> element</span><span class="o">-</span><span class="n">type dkt</span><span class="o">-</span><span class="n">cst </span>
+<span class="nb">structure node group</span><span class="n"> </span><span class="s">'middle'</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="ni">[</span><span class="o">-</span><span class="ni">freeRegion]</span><span class="n"> </span><span class="ni">[freeRegion]</span>
+<span class="nb">structure node group</span><span class="n"> </span><span class="s">'top'</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="ni">[freeRegion]</span><span class="n"> </span><span class="ni">[freeRegion</span><span class="o">+</span><span class="m m-Double">1</span><span class="ni">]</span>
+<span class="nb">structure node group</span><span class="n"> </span><span class="s">'bot'</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="ni">[</span><span class="o">-</span><span class="ni">freeRegion</span><span class="o">-</span><span class="m m-Double">1</span><span class="ni">]</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="ni">freeRegion]</span>
+<span class="nb">structure shell group</span><span class="n"> </span><span class="s">'middle'</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="ni">[</span><span class="o">-</span><span class="ni">freeRegion]</span><span class="n"> </span><span class="ni">[freeRegion]</span>
+<span class="nb">structure shell property</span><span class="n"> isotropic </span><span class="p">(</span><span class="m m-Double">1e6</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="p">)</span><span class="n"> thick </span><span class="m m-Double">0.25</span><span class="n"> density </span><span class="m m-Double">930.0</span>
+<span class="c">;初始化结构单元相关的数据结构 </span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="c">;为了使用 STRUCTURE APPLY 命令 </span>
+<span class="c">;将每个结构单元的局部坐标系</span>
+<span class="c">;设置为指向三轴压力室的中心</span>
+<span class="nb">fish define</span><span class="ni"> setLocalSystem</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> s </span><span class="k">struct.node.list</span><span class="p">()</span>
+<span class="ni">        </span><span class="k">local</span><span class="ni"> p </span><span class="p">=</span><span class="ni"> </span><span class="k">struct.node.pos</span><span class="p">(</span><span class="ni">s</span><span class="p">)</span>
+<span class="ni">        </span><span class="k">local</span><span class="ni"> nid </span><span class="p">=</span><span class="ni"> </span><span class="k">struct.node.id.component</span><span class="p">(</span><span class="ni">s</span><span class="p">)</span>
+<span class="ni">        </span><span class="k">local</span><span class="ni"> mvec </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="k">comp.z</span><span class="p">(</span><span class="ni">p</span><span class="p">))</span>
+<span class="ni">        zdir </span><span class="p">=</span><span class="ni"> </span><span class="k">math.unit</span><span class="p">(</span><span class="ni">p</span><span class="o">-</span><span class="ni">mvec</span><span class="p">)</span>
+<span class="ni">        ydir </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="k">        command</span>
+<span class="nb">            structure node system-local</span><span class="n"> z </span><span class="ni">[zdir]</span><span class="n"> y </span><span class="ni">[ydir]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                      range component</span><span class="o">-</span><span class="n">id </span><span class="ni">[nid]</span>
+<span class="k">        endcommand</span>
+<span class="ni">    </span><span class="k">endloop</span>
+<span class="k">   command</span>
+<span class="nb">     structure node fix</span><span class="n"> system</span><span class="o">-</span><span class="n">local</span>
+<span class="k">   endcommand</span>
+<span class="nb">end</span>
+<span class="ni">[setLocalSystem]</span>
+<span class="c">;确保结构单元已启用局部阻尼</span>
+<span class="nb">structure damp</span><span class="n"> local</span>
+<span class="c">;固定结构单元节点以生成试样</span>
+<span class="nb">structure node fix</span><span class="n"> velocity rotation</span>
+
+<span class="c">;创建结构单元的墙表示</span>
+<span class="nb">wall-structure create</span>
+<span class="c">;用于设置压板宽度相对于圆柱半径之比的参数</span>
+<span class="ni">[rad2 </span><span class="p">=</span><span class="ni"> rad</span><span class="o">*</span><span class="m m-Double">1.3</span><span class="ni">]</span>
+<span class="c">;创建压板</span>
+<span class="nb">wall generate</span><span class="n"> name </span><span class="s">'platenTop'</span><span class="n"> polygon </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">rad2]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">rad2]</span><span class="p">,</span><span class="ni">[halfLen]</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                       </span><span class="p">(</span><span class="ni">[rad2]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">rad2]</span><span class="p">,</span><span class="ni">[halfLen]</span><span class="p">)</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">                                       </span><span class="p">(</span><span class="ni">[rad2]</span><span class="p">,</span><span class="ni">[rad2]</span><span class="p">,</span><span class="ni">[halfLen]</span><span class="p">)</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">                                       </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">rad2]</span><span class="p">,</span><span class="ni">[rad2]</span><span class="p">,</span><span class="ni">[halfLen]</span><span class="p">)</span>
+<span class="nb">wall generate</span><span class="n"> name </span><span class="s">'platenBottom'</span><span class="n"> polygon </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">rad2]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">rad2]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                          </span><span class="p">(</span><span class="ni">[rad2]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">rad2]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">                                          </span><span class="p">(</span><span class="ni">[rad2]</span><span class="p">,</span><span class="ni">[rad2]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">                                          </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">rad2]</span><span class="p">,</span><span class="ni">[rad2]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span>
+<span class="c">;将墙的分辨率策略设为 full，并设置截断角用于 </span>
+<span class="c">;邻近接触                                          </span>
+<span class="nb">wall resolution</span><span class="n"> full</span>
+<span class="nb">wall attribute</span><span class="n"> cutoff</span><span class="o">-</span><span class="n">angle </span><span class="m m-Double">20</span>
+
+<span class="c">;设置球体模量并生成任意重叠的球体集合</span>
+<span class="ni">[ballemod </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0e8</span><span class="ni">]</span>
+<span class="nb">ball distribute</span><span class="n"> box </span><span class="ni">[</span><span class="o">-</span><span class="ni">rad]</span><span class="n"> </span><span class="ni">[rad]</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="ni">rad]</span><span class="n"> </span><span class="ni">[rad]</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="n"> </span><span class="ni">[halfLen]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                porosity </span><span class="m m-Double">0.3</span><span class="n"> radius </span><span class="m m-Double">0.05</span><span class="n"> </span><span class="m m-Double">0.1</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                range cylinder end</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">halfLen]</span><span class="p">)</span><span class="n"> end</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[height]</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                      radius </span><span class="ni">[rad</span><span class="o">*</span><span class="m m-Double">0.95</span><span class="ni">]</span>
+
+<span class="c">;设置球体属性</span>
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="m m-Double">2600</span><span class="n"> damp </span><span class="m m-Double">0.8</span>
+<span class="c">;设置默认接触行为 - </span>
+<span class="c">;deformability 法用于设置 </span>
+<span class="c">;接触模型线性部分的参数</span>
+<span class="nb">contact cmat</span><span class="n"> default model linearpbond method deformability </span><span class="sx">...</span>
+<span class="n">                   emod </span><span class="ni">[ballemod]</span><span class="n"> kratio </span><span class="m m-Double">1.0</span><span class="n"> </span>
+<span class="c">;允许球体重新排列， </span>
+<span class="c">;每 100 个循环将线速度与角速度清零</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span><span class="n"> calm </span><span class="m m-Double">100</span>
+
+<span class="c">;提供一定摩擦以耗散额外能量 </span>
+<span class="c">;并将其应用于所有接触</span>
+<span class="nb">contact cmat</span><span class="n"> default model linearpbond method deformability </span><span class="sx">...</span>
+<span class="n">                   emod </span><span class="ni">[ballemod]</span><span class="n"> kratio </span><span class="m m-Double">1.0</span><span class="n"> property fric </span><span class="m m-Double">0.3</span>
+<span class="nb">contact cmat</span><span class="n"> apply</span>
+<span class="c">;求解至较小的平均比率</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-8</span>
+
+<span class="c">;对球-球接触进行黏结</span>
+<span class="nb">contact method</span><span class="n"> bond gap </span><span class="m m-Double">1.0e-2</span><span class="n"> range contact type </span><span class="s">'ball-ball'</span>
+<span class="c">;修改现有接触参数 </span>
+<span class="c">;使线性力按增量方式计算并</span>
+<span class="c">;提供强度</span>
+<span class="nb">contact property</span><span class="n"> lin_mode </span><span class="m m-Double">1</span><span class="n"> lin_force </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> pb_ten </span><span class="m m-Double">2e5</span><span class="n"> pb_coh </span><span class="m m-Double">2e6</span>
+<span class="c">;设置接触模型中平行黏结部分的刚度 </span>
+<span class="nb">contact method</span><span class="n"> pb_deformability emod </span><span class="ni">[ballemod]</span><span class="n"> kratio </span><span class="m m-Double">1.0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">        range contact type </span><span class="s">'ball-ball'</span>
+
+<span class="c">;这一组操作将清除所有球体速度 </span>
+<span class="c">;以及模型中的所有接触力</span>
+<span class="c">;从而使试样完全无应力并保持黏结</span>
+<span class="nb">model calm</span>
+<span class="nb">ball fix</span><span class="n"> velocity spin</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">2</span>
+<span class="nb">ball free</span><span class="n"> velocity spin</span>
+
+<span class="c">;释放套筒中段的节点 </span>
+<span class="c">;同时保持顶部与底部边缘固定</span>
+<span class="nb">structure node free</span><span class="n"> velocity rotation range group </span><span class="s">'middle'</span>
+
+<span class="c">;用于在压板位移过程中计算应力与应变的函数</span>
+<span class="c">;这些值将记录为历程</span>
+<span class="c">;首先找到顶部与底部压板 </span>
+<span class="ni">[platenTop </span><span class="p">=</span><span class="ni"> </span><span class="k">wall.find</span><span class="p">(</span><span class="s">'platenTop'</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[platenBottom </span><span class="p">=</span><span class="ni"> </span><span class="k">wall.find</span><span class="p">(</span><span class="s">'platenBottom'</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;定义计算所需的若干变量</span>
+<span class="ni">[failureStress </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span><span class="ni">]</span>
+<span class="ni">[currentStress </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span><span class="ni">]</span>
+<span class="ni">[failureStrain </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span><span class="ni">]</span>
+<span class="ni">[area </span><span class="p">=</span><span class="ni"> </span><span class="k">math.pi</span><span class="p">()</span><span class="o">*</span><span class="ni">rad</span><span class="o">^</span><span class="m m-Double">2.0</span><span class="ni">]</span>
+<span class="c">;定义 stress FISH 函数以测量应力与应变</span>
+<span class="nb">fish define</span><span class="ni"> stress</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> topForce </span><span class="p">=</span><span class="ni"> </span><span class="k">math.abs</span><span class="p">(</span><span class="k">comp.z</span><span class="p">(</span><span class="k">wall.force.contact</span><span class="p">(</span><span class="ni">platenTop</span><span class="p">)))</span><span class="ni"> </span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> botForce </span><span class="p">=</span><span class="ni"> </span><span class="k">math.abs</span><span class="p">(</span><span class="k">comp.z</span><span class="p">(</span><span class="k">wall.force.contact</span><span class="p">(</span><span class="ni">platenBottom</span><span class="p">)))</span>
+<span class="ni">    currentStress </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="p">(</span><span class="ni">topForce</span><span class="o">+</span><span class="ni">botForce</span><span class="p">)</span><span class="o">/</span><span class="ni">area</span>
+<span class="ni">    stress </span><span class="p">=</span><span class="ni"> currentStress</span>
+<span class="ni">    strain </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">height </span><span class="o">-</span><span class="ni"> </span><span class="p">(</span><span class="k">comp.z</span><span class="p">(</span><span class="k">wall.pos</span><span class="p">(</span><span class="ni">platenTop</span><span class="p">))</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">              </span><span class="k">comp.z</span><span class="p">(</span><span class="k">wall.pos</span><span class="p">(</span><span class="ni">platenBottom</span><span class="p">))))</span><span class="o">/</span><span class="ni">height </span><span class="o">*</span><span class="ni"> </span><span class="m m-Double">100</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> failureStress </span><span class="o">&lt;</span><span class="p">=</span><span class="ni"> currentStress</span>
+<span class="ni">        failureStress </span><span class="p">=</span><span class="ni"> currentStress</span>
+<span class="ni">        failureStrain </span><span class="p">=</span><span class="ni"> strain</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="nb">end</span>
+
+<span class="c">;定义 halt FISH 函数以停止循环 </span>
+<span class="c">;在压板位移且材料发生破坏时</span>
+<span class="nb">fish define</span><span class="ni"> halt</span>
+<span class="ni">    halt </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> currentStress </span><span class="o">&lt;</span><span class="ni"> failureStress </span><span class="o">*</span><span class="ni"> </span><span class="m m-Double">0.85</span>
+<span class="ni">        halt </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="nb">end</span>
+
+<span class="c">;定义 FISH 函数以增大各向同性围压 </span>
+<span class="c">;分级施加，使黏结材料在加载过程中不发生破坏</span>
+<span class="nb">fish define</span><span class="ni"> rampUp</span><span class="p">(</span><span class="ni">beginIn</span><span class="p">,</span><span class="ni">ending</span><span class="p">,</span><span class="ni">increment</span><span class="p">)</span>
+<span class="k">    command</span>
+<span class="nb">        ball attribute</span><span class="n"> displacement </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="nb">        structure node initialize</span><span class="n"> displacement </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="k">    endcommand</span>
+<span class="ni">    begin </span><span class="p">=</span><span class="ni"> beginIn</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">while</span><span class="ni"> </span><span class="p">(</span><span class="k">math.abs</span><span class="p">(</span><span class="ni">begin</span><span class="p">)</span><span class="ni"> </span><span class="o">&lt;</span><span class="ni"> </span><span class="k">math.abs</span><span class="p">(</span><span class="ni">ending</span><span class="p">))</span>
+<span class="ni">        begin </span><span class="p">=</span><span class="ni"> begin </span><span class="o">+</span><span class="ni"> increment</span>
+<span class="k">        command</span>
+<span class="n">            </span><span class="c">;施加围压</span>
+<span class="nb">            structure shell apply</span><span class="n"> </span><span class="ni">[begin]</span><span class="n"> range group </span><span class="s">'middle'</span>
+<span class="n">            </span><span class="c">;在压板上施加相同的围压</span>
+<span class="nb">            wall servo</span><span class="n"> force </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[begin</span><span class="o">*</span><span class="ni">area]</span><span class="p">)</span><span class="n"> activate </span><span class="sx">true</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                 range name </span><span class="s">'platenTop'</span>
+<span class="nb">            wall servo</span><span class="n"> force </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">begin</span><span class="o">*</span><span class="ni">area]</span><span class="p">)</span><span class="n"> activate </span><span class="sx">true</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                 range name </span><span class="s">'platenBottom'</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">200</span>
+<span class="nb">            model calm</span>
+<span class="k">        endcommand</span>
+<span class="ni">    </span><span class="k">endloop</span>
+<span class="k">    command</span>
+<span class="n">        </span><span class="c">;应力状态建立后循环并关闭 </span>
+<span class="n">        </span><span class="c">;墙体上的伺服机制</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span>
+<span class="nb">        wall servo</span><span class="n"> activate </span><span class="sx">false</span>
+<span class="nb">        wall attribute</span><span class="n"> velocity </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> range name </span><span class="s">'platenTop'</span>
+<span class="nb">        wall attribute</span><span class="n"> velocity </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> range name </span><span class="s">'platenBottom'</span>
+<span class="k">    endcommand</span>
+<span class="nb">end</span>
+<span class="c">;设置压板速度</span>
+<span class="ni">[platenVel </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.000003</span><span class="ni">]</span>
+
+<span class="c">;保存模型以备后用（包含这些 FISH 工具函数），此时</span>
+<span class="c">;尚未施加任何围压</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'beforeApplication'</span>
+
+<span class="c">;-------------------------------------------------------------------</span>
+<span class="c">;试验 1：对试样进行 UCS 试验</span>
+<span class="nb">structure shell delete</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="ni">[</span><span class="o">-</span><span class="ni">platenVel]</span><span class="n"> range name </span><span class="s">'platenTop'</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="ni">[platenVel]</span><span class="n"> range name </span><span class="s">'platenBottom'</span>
+<span class="nb">ball attribute</span><span class="n"> displacement </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="nb">fish history</span><span class="n"> stress</span>
+<span class="nb">fish history</span><span class="n"> strain</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fish</span><span class="o">-</span><span class="n">halt halt</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'ucs'</span>
+<span class="ni">[</span><span class="k">io.out</span><span class="p">(</span><span class="ni">string</span><span class="p">(</span><span class="ni">failureStress</span><span class="p">)</span><span class="ni"> </span><span class="o">+</span><span class="ni"> </span><span class="s">'Pa '</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">io.out</span><span class="p">(</span><span class="s">'at'</span><span class="ni"> </span><span class="o">+</span><span class="ni"> string</span><span class="p">(</span><span class="ni">failureStrain</span><span class="p">)</span><span class="ni"> </span><span class="o">+</span><span class="ni"> </span><span class="s">'% strain'</span><span class="p">)</span><span class="ni">]</span>
+
+<span class="c">;-------------------------------------------------------------------</span>
+<span class="c">;试验 2：进行各向同性围压 1e4 的三轴试验</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'beforeApplication'</span>
+<span class="ni">[rampUp</span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1e4</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1e3</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'to1e4'</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="ni">[</span><span class="o">-</span><span class="ni">platenVel]</span><span class="n"> range name </span><span class="s">'platenTop'</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="ni">[platenVel]</span><span class="n"> range name </span><span class="s">'platenBottom'</span>
+<span class="nb">ball attribute</span><span class="n"> displacement </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="nb">structure node initialize</span><span class="n"> displacement </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="nb">fish history</span><span class="n"> stress</span>
+<span class="nb">fish history</span><span class="n"> strain</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fish</span><span class="o">-</span><span class="n">halt halt</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'triaxial1e4'</span>
+<span class="ni">[</span><span class="k">io.out</span><span class="p">(</span><span class="ni">string</span><span class="p">(</span><span class="ni">failureStress</span><span class="p">)</span><span class="ni"> </span><span class="o">+</span><span class="ni"> </span><span class="s">'Pa '</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">io.out</span><span class="p">(</span><span class="s">'at'</span><span class="ni"> </span><span class="o">+</span><span class="ni"> string</span><span class="p">(</span><span class="ni">failureStrain</span><span class="p">)</span><span class="ni"> </span><span class="o">+</span><span class="ni"> </span><span class="s">'% strain'</span><span class="p">)</span><span class="ni">]</span>
+
+<span class="c">;-------------------------------------------------------------------</span>
+<span class="c">;试验 3：进行各向同性围压 5e4 的三轴试验</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'to1e4'</span>
+<span class="ni">[rampUp</span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1e4</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">5e4</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1e3</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'to5e4'</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="ni">[</span><span class="o">-</span><span class="ni">platenVel]</span><span class="n"> range name </span><span class="s">'platenTop'</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="ni">[platenVel]</span><span class="n"> range name </span><span class="s">'platenBottom'</span>
+<span class="nb">ball attribute</span><span class="n"> displacement </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="nb">structure node initialize</span><span class="n"> displacement </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="nb">fish history</span><span class="n"> stress</span>
+<span class="nb">fish history</span><span class="n"> strain</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fish</span><span class="o">-</span><span class="n">halt halt</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'triaxial5e4'</span>
+<span class="ni">[</span><span class="k">io.out</span><span class="p">(</span><span class="ni">string</span><span class="p">(</span><span class="ni">failureStress</span><span class="p">)</span><span class="ni"> </span><span class="o">+</span><span class="ni"> </span><span class="s">'Pa '</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">io.out</span><span class="p">(</span><span class="s">'at'</span><span class="ni"> </span><span class="o">+</span><span class="ni"> string</span><span class="p">(</span><span class="ni">failureStrain</span><span class="p">)</span><span class="ni"> </span><span class="o">+</span><span class="ni"> </span><span class="s">'% strain'</span><span class="p">)</span><span class="ni">]</span>
+
+<span class="c">;-------------------------------------------------------------------</span>
+<span class="c">;试验 4：进行各向同性围压 1e5 的三轴试验</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'to5e4'</span>
+<span class="ni">[rampUp</span><span class="p">(</span><span class="o">-</span><span class="m m-Double">5e4</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1e5</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1e3</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'to1e5'</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="ni">[</span><span class="o">-</span><span class="ni">platenVel]</span><span class="n"> range name </span><span class="s">'platenTop'</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="ni">[platenVel]</span><span class="n"> range name </span><span class="s">'platenBottom'</span>
+<span class="nb">ball attribute</span><span class="n"> displacement </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="nb">structure node initialize</span><span class="n"> displacement </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="nb">fish history</span><span class="n"> stress</span>
+<span class="nb">fish history</span><span class="n"> strain</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fish</span><span class="o">-</span><span class="n">halt halt</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'triaxial1e5'</span>
+<span class="ni">[</span><span class="k">io.out</span><span class="p">(</span><span class="ni">string</span><span class="p">(</span><span class="ni">failureStress</span><span class="p">)</span><span class="ni"> </span><span class="o">+</span><span class="ni"> </span><span class="s">'Pa '</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">io.out</span><span class="p">(</span><span class="s">'at'</span><span class="ni"> </span><span class="o">+</span><span class="ni"> string</span><span class="p">(</span><span class="ni">failureStrain</span><span class="p">)</span><span class="ni"> </span><span class="o">+</span><span class="ni"> </span><span class="s">'% strain'</span><span class="p">)</span><span class="ni">]</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../../../flac3d/docproject/source/flac3dhome.html"><span class="codename">FLAC3D</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../../../flac3d/docproject/source/projects/projects.html">Examples</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../../../../../flac3d/docproject/source/projects/examples/examples.html">Example Applications</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../../../../../wad/wallzone/test3d/ExampleApplications/PunchIndentation/PunchIndentation.html" title="previous chapter"> Punch Indentation of a Bonded Material</a> |    
+       <a href="../../../../../flac3d/docproject/source/elements/examples.html" title="next chapter">Index: Examples</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Sleeved Triaxial Test of a Bonded Material" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>
