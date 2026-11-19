@@ -94,7 +94,7 @@ function sizeMobileNav() {
     } catch (e) {}
     var contentHeight = doc.body ? doc.body.scrollHeight : 0;
     var frameHeight = Math.max(contentHeight + 60, 100);
-    tocFrame.style.height = frameHeight + 'px';
+    tocFrame.style.setProperty('height', frameHeight + 'px', 'important');
     var side = document.getElementById('mySidenav');
     if (side) { side.style.height = ''; }
   } catch (e) {}
@@ -108,6 +108,42 @@ if (tocFrame) {
     setTimeout(sizeMobileNav, 900);
   });
   setTimeout(sizeMobileNav, 100);
+}
+
+function enableTouchScroll(el, getScroller) {
+  if (!el) { return; }
+  var startY = 0, startTop = 0;
+  el.addEventListener('touchstart', function (e) {
+    if (e.touches && e.touches.length) {
+      startY = e.touches[0].clientY;
+      var sc = getScroller();
+      startTop = sc ? sc.scrollTop : 0;
+    }
+  }, {passive: true});
+  el.addEventListener('touchmove', function (e) {
+    if (!e.touches || !e.touches.length) { return; }
+    var sc = getScroller();
+    if (!sc) { return; }
+    var dy = e.touches[0].clientY - startY;
+    var max = Math.max(0, sc.scrollHeight - sc.clientHeight);
+    if (max > 0) {
+      sc.scrollTop = Math.max(0, Math.min(max, startTop - dy));
+      e.preventDefault();
+    }
+  }, {passive: false});
+}
+
+var sideEl = document.getElementById('mySidenav');
+enableTouchScroll(sideEl, function () { return sideEl; });
+if (tocFrame) {
+  try {
+    var tdoc = tocFrame.contentDocument || tocFrame.contentWindow.document;
+    if (tdoc) {
+      enableTouchScroll(tdoc, function () {
+        return tdoc.scrollingElement || tdoc.documentElement || tdoc.body;
+      });
+    }
+  } catch (e) {}
 }
 
 var f = document.getElementById('toctobj2');
