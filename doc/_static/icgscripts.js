@@ -1,15 +1,18 @@
+function isMobileNav() {
+   return window.innerWidth <= 720;
+}
+
 window.onload = function(){
-   if (window.innerWidth <= 720){ 
+   if (isMobileNav()) {
+      closeNav();
    } else {
-   //document.getElementById("totopbutton").style.marginLeft = "350px";
-   document.getElementById("navbutton").style.marginLeft = "350px";
-   document.getElementById("mySidenav").style.width = "350px";
-   $('#navbutton').css({opacity: 0}).animate({opacity: 1}, 2800);
+      openNav();
+      $('#navbutton').css({opacity: 0}).animate({opacity: 1}, 2800);
    }
 }
 
 window.onresize = function(){
-    if (window.innerWidth <= 720){ closeNav() };
+    if (isMobileNav()){ closeNav() };
     if (window.innerWidth >= 721){ openNav() };
 }
 
@@ -19,26 +22,24 @@ function toTop() {
 
 function doNav() {
   var x = document.getElementById("mySidenav").style.width;
-  if (x == "350px") {
-  closeNav();
-  }
-  else {
-  openNav();
+  if (x === "0" || x === "0px" || x === "") {
+    openNav();
+  } else {
+    closeNav();
   }
 }
 
 function openNav() {
-    document.getElementById("mySidenav").style.width = "350px";
-    document.getElementById("main").style.marginLeft = "350px";
-    document.getElementById("navbutton").style.marginLeft = "350px";
-    //document.getElementById("totopbutton").style.marginLeft = "350px";
+    var w = isMobileNav() ? "85vw" : "350px";
+    document.getElementById("mySidenav").style.width = w;
+    document.getElementById("main").style.marginLeft = isMobileNav() ? "0" : w;
+    document.getElementById("navbutton").style.marginLeft = isMobileNav() ? "0" : w;
 }
 
 function closeNav() {
     document.getElementById("mySidenav").style.width = "0";
-    document.getElementById("main").style.marginLeft= "0";
-    //document.getElementById("totopbutton").style.marginLeft= "0";
-    document.getElementById("navbutton").style.marginLeft= "0";
+    document.getElementById("main").style.marginLeft = "0";
+    document.getElementById("navbutton").style.marginLeft = "0";
 }
 
 var f = document.getElementById('toctobj2');
