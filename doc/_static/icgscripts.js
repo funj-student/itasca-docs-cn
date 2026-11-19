@@ -59,17 +59,21 @@ function closeNav() {
 
 var tocFrame = document.getElementById('toctobj2');
 if (tocFrame) {
-  tocFrame.addEventListener('load', function () {
+  function sizeMobileNav() {
     if (!isMobileNav()) { return; }
     try {
       var doc = tocFrame.contentDocument || tocFrame.contentWindow.document;
-      var h = doc.body ? doc.body.scrollHeight : 0;
-      if (h > 0) {
-        tocFrame.style.height = h + 'px';
-        var side = document.getElementById('mySidenav');
-        if (side) { side.style.height = (h + 32) + 'px'; }
-      }
+      var contentHeight = doc.body ? doc.body.scrollHeight : 0;
+      var minHeight = Math.round(window.innerHeight * 0.6);
+      var h = Math.max(contentHeight, minHeight);
+      tocFrame.style.height = h + 'px';
+      var side = document.getElementById('mySidenav');
+      if (side) { side.style.height = (h + 32) + 'px'; }
     } catch (e) {}
+  }
+  tocFrame.addEventListener('load', function () {
+    sizeMobileNav();
+    setTimeout(sizeMobileNav, 800);
   });
 }
 
