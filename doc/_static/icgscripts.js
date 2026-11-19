@@ -73,13 +73,12 @@ function sizeMobileNav() {
   if (!tocFrame) { return; }
   try {
     var doc = tocFrame.contentDocument || tocFrame.contentWindow.document;
-    // Keep the iframe viewport within the screen so the tree can scroll inside it.
-    var minHeight = window.innerHeight <= 500
-      ? window.innerHeight
-      : Math.round(window.innerHeight * 0.8);
-    tocFrame.style.height = minHeight + 'px';
+    // Let the iframe grow to its content; the sidebar itself scrolls.
+    var contentHeight = doc.body ? doc.body.scrollHeight : 0;
+    var frameHeight = Math.max(contentHeight, 100);
+    tocFrame.style.height = frameHeight + 'px';
     var side = document.getElementById('mySidenav');
-    if (side) { side.style.height = (minHeight + 32) + 'px'; }
+    if (side) { side.style.height = ''; }
   } catch (e) {}
 }
 
