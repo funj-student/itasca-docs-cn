@@ -57,24 +57,29 @@ function closeNav() {
   document.getElementById("navbutton").style.marginLeft = "0";
 }
 
+function sizeMobileNav() {
+  if (!isMobileNav()) { return; }
+  var tocFrame = document.getElementById('toctobj2');
+  if (!tocFrame) { return; }
+  try {
+    var doc = tocFrame.contentDocument || tocFrame.contentWindow.document;
+    var contentHeight = doc.body ? doc.body.scrollHeight : 0;
+    var minHeight = Math.round(window.innerHeight * 0.8);
+    var h = Math.max(contentHeight, minHeight);
+    tocFrame.style.height = h + 'px';
+    var side = document.getElementById('mySidenav');
+    if (side) { side.style.height = (h + 32) + 'px'; }
+  } catch (e) {}
+}
+
 var tocFrame = document.getElementById('toctobj2');
 if (tocFrame) {
-  function sizeMobileNav() {
-    if (!isMobileNav()) { return; }
-    try {
-      var doc = tocFrame.contentDocument || tocFrame.contentWindow.document;
-      var contentHeight = doc.body ? doc.body.scrollHeight : 0;
-      var minHeight = Math.round(window.innerHeight * 0.6);
-      var h = Math.max(contentHeight, minHeight);
-      tocFrame.style.height = h + 'px';
-      var side = document.getElementById('mySidenav');
-      if (side) { side.style.height = (h + 32) + 'px'; }
-    } catch (e) {}
-  }
   tocFrame.addEventListener('load', function () {
     sizeMobileNav();
-    setTimeout(sizeMobileNav, 800);
+    setTimeout(sizeMobileNav, 300);
+    setTimeout(sizeMobileNav, 900);
   });
+  setTimeout(sizeMobileNav, 100);
 }
 
 var f = document.getElementById('toctobj2');
