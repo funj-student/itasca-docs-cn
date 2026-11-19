@@ -1,0 +1,178 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>编写新的节理本构模型 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="methodology.html" rel="next" title="Methodology"/>
+<link href="cppplugin.html" rel="prev" title="C++ Option"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="writing-new-joint-constitutive-models">
+<span id="modelswriting-3dec"></span><h1>编写新的节理本构模型</h1>
+<p class="h2 rubric">引言</p>
+<p>用户可为 <span class="codename">3DEC</span> 创建自己的节理本构模型。该模型必须用 C++ 编写并编译为 DLL 文件（动态链接库），并可在需要时加载。模型的主要功能是根据法向和剪切位移返回新的法向力和剪切力。不过，模型还必须提供其他信息（例如模型名称和材料属性名称），并说明模型与程序代码交互方式的某些细节。</p>
+<p>在 C++ 语言中，重点是采用<em>面向对象</em>的程序结构方法，即用类来表示对象。与对象关联的数据由对象封装，在对象外部不可见。与对象之间的通信通过成员函数完成，这些函数对封装的数据进行操作。此外，C++ 对对象层次结构提供了强有力的支持：新的对象类型可从基对象派生，基对象的成员函数可被派生对象提供的类似函数取代。这种安排对程序的模块化有明显好处。例如，主程序可能需要在代码的许多不同部分访问许多不同种类的派生对象，但只需引用基对象，而无须引用派生对象。运行时系统会自动调用相应派生对象的成员函数。Stevens（1994）对 C++ 编程作了很好的介绍；这里假定读者已具备该语言的实用知识。</p>
+<p>关于用 C++ 编写可在 <span class="codename">3DEC</span> 中运行的节理本构模型的方法，见 <a class="reference internal" href="methodology.html#modelswritingmethodology-3dec"><span class="std std-ref">方法</span>（Methodology）</a>。其中包括基类、成员函数、模型注册、模型与 <span class="codename">3DEC</span> 之间传递的信息以及模型状态指示变量的说明。DLL 模型的实现及示例见 <a class="reference internal" href="implementation.html#modelswritingimplementation-3dec"><span class="std std-ref">实现</span>（Implementation）</a>。其中包括模型所用支持函数的说明、一个示例模型的源代码、对用户自定义模型的 <span class="codename">FISH</span> 支持，以及创建和加载 DLL 的机制。本节引用的所有文件都位于 “\pluginfiles\jmodels\src” 目录中。</p>
+<p>注意，DLL <em>必须</em>使用 Microsoft Visual Studio 2017 或 2019 编译，才能在 <span class="codename">3DEC</span> 中运行。</p>
+<p id="modelswriting-template">为快速入门并提供一个可供检查的项目，请执行以下步骤。</p>
+<blockquote>
+<div><ol class="arabic">
+<li><p class="first">假定已安装 <span class="codename">3DEC</span> 7.0 以及 Visual Studio 2017 或 2019，在 <span class="codename">3DEC</span> 7.00 安装目录的 PluginFiles 目录中找到文件 “ItascaProjectTemplates.vsix”。</p>
+</li>
+<li><p class="first">双击该安装文件即可执行安装。
+（为此，您可能需要拥有该计算机的管理员权限。）
+按提示完成安装。</p>
+</li>
+<li><p class="first">启动 Visual Studio 2017 或 2019。</p>
+<p>若使用 Visual Studio 2017：</p>
+<blockquote>
+<div><ol class="loweralpha simple">
+<li>从菜单中选择 <span class="menuselection">文件 ‣ 新建 ‣ 项目</span>。</li>
+<li>从“已安装”部分中选择“Visual C++”类别。</li>
+<li>您应能看到 “Itasca 本构模型” 选项。</li>
+<li>在下方为项目指定名称。
+您也可以选择新项目和新解决方案的存放位置。
+然后按下 “确定”。</li>
+</ol>
+</div></blockquote>
+<p>若使用 Visual Studio 2019：</p>
+<blockquote>
+<div><ol class="loweralpha simple">
+<li>在启动对话框右侧的选项中，选择“创建新项目”。</li>
+<li>在 “搜索项目模板” 字段中键入 ‘itasca’。</li>
+<li>选择 “Itasca 本构模型” 选项并按下 “下一步”。</li>
+<li>为项目指定名称。
+您也可以选择新项目和新解决方案的存放位置。
+然后按下 “创建”。</li>
+</ol>
+</div></blockquote>
+</li>
+<li><p class="first">将出现一个对话框，要求您为新本构模型命名。该名称将作为类的名称，也是代码中引用该模型时使用的名称。之后可通过直接编辑源代码更改此名称。若您安装了多个兼容版本的 Itasca 程序，请先选择计划使用该本构模型的那个版本。
+按下 “接受并关闭”。</p>
+</li>
+<li><p class="first">系统将为您创建一个项目，并以内部莫尔-库仑模型的源代码作为起点。
+您可以自由修改该项目，以匹配您特定的模型行为。</p>
+</li>
+<li><p class="first">您应更新解决方案，使其使用最新版本的 Windows SDK 和运行时库。
+方法是右击“解决方案资源管理器”中的解决方案行，然后选择“重定目标项目”。</p>
+</li>
+</ol>
+</div></blockquote>
+<p class="h3 rubric">参考文献</p>
+<p>Stevens, A. <span class="bi">Teach Yourself C++</span>, 4th Ed. New York: MIS Press (1994).</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p class="h3 rubric">本节内容</p>
+<div class="docutils container">
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="methodology.html">方法（Methodology）</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="methodology.html#base-class-for-joint-constitutive-models">节理本构模型的基类（Base Class for Joint Constitutive Models）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="methodology.html#member-functions">成员函数（Member Functions）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="methodology.html#registration-of-models">模型注册（Registration of Models）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="methodology.html#information-passed-between-model-and-program-during-cycling">循环计算过程中模型与程序之间传递的信息（Information Passed between Model and Program during Cycling）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="methodology.html#state-indicators-of-subcontacts">子接触状态指示器（State Indicators of Subcontacts）</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="implementation.html">实现（Implementation）</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="implementation.html#utility-structures">实用结构（Utility Structures）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="implementation.html#example-constitutive-model">本构模型示例（Example Constitutive Model）</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="implementation.html#initialize-and-run-functions"><code class="docutils literal"><span class="pre">initialize()</span></code> 和 <code class="docutils literal"><span class="pre">run()</span></code> 函数（initialize() and run() functions）</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="implementation.html#fish-support-for-constitutive-models">本构模型的 <span class="codename">FISH</span> 支持（FISH Support for Constitutive Models）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="implementation.html#creating-user-written-model-dlls">创建用户编写的模型 DLL（Creating User-Written Model DLLs）</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="implementation.html#using-the-template">使用模板（Using the Template）</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="implementation.html#loading-and-running-user-written-model-dlls">加载和运行用户编写的模型 DLL（Loading and Running User-Written Model DLLs）</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../3dechome.html"><span class="codename">3DEC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../options.html">Options</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="cppplugin.html">C++ Option</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="cppplugin.html" title="previous chapter"> C++ Option</a> |    
+       <a href="methodology.html" title="next chapter">Methodology</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Writing New Joint Constitutive Models" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

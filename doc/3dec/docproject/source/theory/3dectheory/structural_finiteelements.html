@@ -1,0 +1,852 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>结构有限元 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="../../commandsandfish/3deccommandsandfish.html" rel="next" title="3DEC Commands and FISH"/>
+<link href="isolatedblock.html" rel="prev" title="Isolated Block Stability Method"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="structural-finite-elements">
+<span id="structural-finiteelements"></span><h1>结构有限元</h1>
+<p>本节介绍一种有限元计算形式，可用于模拟隧道衬砌及其他与 <span class="codename">3DEC</span> 块体连接的结构，例如坝。还介绍它在 <span class="codename">3DEC</span> 显式求解方案中的实现，以及为处理特殊有限元块体与标准 <span class="codename">3DEC</span> 块体之间接触而开发的计算逻辑。并解释为读取或生成有限元块体网格、赋予材料模型与属性而添加到 <span class="codename">3DEC</span> 的输入命令和关键字。</p>
+<div class="section" id="element-formulation">
+<h2>单元公式</h2>
+<p>新增模块创建可加入 <span class="codename">3DEC</span> 模型的特殊有限元块体，原模型由标准多面体可变形块体组成。新有限元块体的网格采用三维 20 节点六面体单元。本节给出的单元公式遵循有限元教材中的标准方法（Hughes 1987）。</p>
+<p>等参有限元的几何，通过将标准立方体单元映射到实际单元形状来描述，如<span class="flag2">图 3.5</span> 所示。<span class="flag3">← 此图似乎从未存在</span>。该图还标明所用节点编号约定。对于 20 节点六面体单元，各边由抛物线段定义。</p>
+<div class="section" id="notation-conventions">
+<h3>符号约定</h3>
+<p>大写下标，例如 <span class="math">\(I\)</span>，表示单元节点，范围为 1 至 20。小写下标，例如 <span class="math">\(j\)</span>、<span class="math">\(k\)</span> 和 <span class="math">\(m\)</span>，表示坐标方向，范围为 1 至 3。重复下标表示求和。</p>
+</div>
+<div class="section" id="geometry-mapping">
+<h3>几何映射</h3>
+<p>标准单元为立方体，8 个节点位于角点，12 个节点位于边中点，其几何在 <span class="math">\(y\)</span> 坐标系中定义，取值范围为 −1 至 1，如<a href="#fem-3dec">图 1（Figure  1）</a> 所示。</p>
+<div class="figure" id="fem-3dec">
+<a class="reference internal image-reference" href="../../../../../_images/fem-3dec.png"><img alt="../../../../../_images/fem-3dec.png" src="../../../../../_images/fem-3dec.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 1：局部坐标系（左）和全局坐标系（右）中的 20 节点有限元</span></p>
+</div>
+<p>标准单元任意点坐标记为</p>
+<div class="math" id="equation-sel-fees-jypf">
+<span class="eqno">(1)</span>\[y = \{y_1\ y_2\ y_3\}^T\]</div>
+<p>变换后单元中的对应点为</p>
+<div class="math">
+\[x = \{x_1\ x_2\ x_3\}^T\]</div>
+<p>单元节点 <span class="math">\(I\)</span> 的坐标为</p>
+<div class="math">
+\[x_I = \{x_{I1}\ x_{I2}\ x_{I3}\}^T\]</div>
+<p>单元几何映射由以下关系控制：</p>
+<div class="math">
+\[x_k = N_I \ (y) \ x_{Ik}\]</div>
+<p>它将任意点坐标 <span class="math">\(x\)</span> 表示为节点形函数 <span class="math">\(N_I\)</span> 与节点坐标 <span class="math">\(x_I\)</span> 乘积的总和，其中形函数是自然坐标 <span class="math">\(y\)</span> 的函数。</p>
+<p>该变换的雅可比矩阵为</p>
+<div class="math">
+\[[J_{km}] = {{\partial x_k} \over {\partial y_m}} = {{\partial N_I (y)} \over {\partial y_m}} x_{Ik}\]</div>
+<p>数值计算其逆矩阵为</p>
+<div class="math">
+\[[Y_{mk}] = {{\partial y_m} \over {\partial x_k}} = ([J_{km}])^{-1}\]</div>
+<p>形函数 <span class="math">\(N_I\)</span> 及其对标准单元坐标 <span class="math">\(\partial/\partial y_m (N_I)\)</span> 的导数表达式见后文讨论，即“<a class="reference internal" href="#shapefunctionsand"><span class="std std-ref">形函数及其导数</span>（Shape Functions and Derivatives）</a>”主题。</p>
+</div>
+<div class="section" id="displacements-and-strains">
+<h3>位移与应变</h3>
+<p>等参单元位移场由类似几何映射式 <a class="reference internal" href="#equation-sel-fees-jypf">(1)</a> 的表达式控制。</p>
+<div class="math" id="equation-sel-fees-soia">
+<span class="eqno">(2)</span>\[u_k = N_I \ (y) \ u_{Ik}\]</div>
+<p>其中，点 <span class="math">\(y\)</span> 处一般位移矢量为</p>
+<div class="math">
+\[u = \{u_1\ u_2\ u_3\}^T\]</div>
+<p>单元节点 <span class="math">\(I\)</span> 的位移矢量为</p>
+<div class="math">
+\[u_I = \{u_{I1}\ u_{I2}\ u_{I3}\}^T\]</div>
+<p>为推导定义如下的应变表达式，</p>
+<div class="math" id="equation-sel-fees-eqwi">
+<span class="eqno">(3)</span>\[{\varepsilon_{km}} = {1 \over 2} ({{\partial u_{k}} \over {\partial x_{m}}} + {{\partial u_m} \over {\partial x_k}})\]</div>
+<p>必须根据式 <a class="reference internal" href="#equation-sel-fees-soia">(2)</a> 计算位移场导数，</p>
+<div class="math" id="equation-sel-fees-pjnz">
+<span class="eqno">(4)</span>\[{{\partial u_k} \over {\partial x_m}} = {{\partial N_I} \over {\partial x_m}} u_{Ik}\]</div>
+<p>应用链式法则，可获得形函数对全局坐标的导数：</p>
+<div class="math" id="equation-sel-fees-ftpi">
+<span class="eqno">(5)</span>\[{{\partial N_I} \over {\partial x_m}} = N_Im = {{\partial N_I} \over {\partial y_j}} {{\partial y_j} \over {\partial x_m}} = {{\partial N_I} \over {\partial y_j}} Y_{jm}\]</div>
+<p>为方便起见，将应变张量各分量组合为矢量形式：</p>
+<div class="math">
+\[\varepsilon = \{\varepsilon_{11}\ \varepsilon_{22}\ \varepsilon_{33}\ 2_{\varepsilon23}\ 2_{\varepsilon31}\ 2_{\varepsilon12}\}^T\]</div>
+<p>将式 <a class="reference internal" href="#equation-sel-fees-eqwi">(3)</a> 和 <a class="reference internal" href="#equation-sel-fees-pjnz">(4)</a> 代入式 <a class="reference internal" href="#equation-sel-fees-ftpi">(5)</a>，并将结果写成矩阵形式，可将应变表示为</p>
+<div class="math" id="equation-sel-fees-iqmq">
+<span class="eqno">(6)</span>\[\varepsilon = B_I \ u_I\]</div>
+<p>其中，节点 <span class="math">\(I\)</span> 的应变—位移矩阵为</p>
+<div class="math">
+\[\begin{split}\begin{bmatrix}
+   B_1
+\end{bmatrix} = \begin{bmatrix}
+   N_{I1} &amp;0 &amp;0 \\
+   0 &amp;N_{I2} &amp;0 \\
+   0 &amp;0 &amp;N_{I3} \\
+   0 &amp;N_{I3} &amp;N_{I2} \\
+   N_{I3} &amp;0 &amp;N_{I1} \\
+   N_{I2} &amp;N_{I1} &amp;0
+\end{bmatrix}\end{split}\]</div>
+</div>
+<div class="section" id="stresses-and-nodal-forces">
+<h3>应力与节点力</h3>
+<p>由于单元力—位移关系不能表示为闭式形式，必须采用数值积分。单元应变和应力在单元高斯积分点处计算。根据式 <a class="reference internal" href="#equation-sel-fees-iqmq">(6)</a> 获得应变及应变增量后，应用所假定的本构模型，得到新应力。形式上写为，</p>
+<div class="math">
+\[\sigma = f \ (\varepsilon)\]</div>
+<p>其中，应力排列为矢量形式，</p>
+<div class="math">
+\[\sigma = \{\sigma_{11}\ \sigma_{22}\ \sigma_{33}\ \sigma_{23}\ \sigma_{31}, \sigma_{12}\}^T\]</div>
+<p>与给定应力状态等效的节点 <span class="math">\(I\)</span> 处节点力矢量为</p>
+<div class="math">
+\[{F_I}^S = \{F_{I1}\ F_{I2}\ F_{I3}\}^T\]</div>
+<p>并计算为</p>
+<div class="math">
+\[{F_I}^S = \int\limits_v {B_I}^T \sigma d V\]</div>
+<p>在单元体积上的积分，通过对各高斯点处被积函数值求和进行数值计算，即</p>
+<div class="math" id="equation-sel-fees-oooi">
+<span class="eqno">(7)</span>\[{F_I}^S = \sum_G {B_I}^T \sigma W_G V_G\]</div>
+<p>其中，<span class="math">\(V_G\)</span> 为根据几何变换雅可比矩阵得到的微元体积项，<span class="math">\(W_G\)</span> 为标准高斯点权重（Hughes 1987）。目前实现可使用 2 × 2 × 2 或 3 × 3 × 3 个高斯点。前者对应减缩积分，在某些无约束系统中可能允许虚假机制。但由于其速度较快，而且 2 × 2 × 2 高斯点位置的应力通常更准确，因此将其作为默认选项。</p>
+</div>
+<div class="section" id="gravity-forces">
+<h3>重力</h3>
+<p>与体积力等效的节点力，体积力为</p>
+<div class="math">
+\[g = \{g_1\ g_2\ g_3\}^T\]</div>
+<p>，由以下表达式给出：</p>
+<div class="math" id="equation-sel-fees-iuew">
+<span class="eqno">(8)</span>\[{F_I}^G = \int\limits_V N_I \ g \ dV\]</div>
+<p>这些量也采用数值计算。</p>
+</div>
+<div class="section" id="concentrated-forces">
+<h3>集中力</h3>
+<p>集中力，例如施加在单元面上的点接触力，会产生节点力，对于节点 <span class="math">\(I\)</span> 为</p>
+<div class="math" id="equation-sel-fees-xxkl">
+<span class="eqno">(9)</span>\[{F_I}^P = N_I \ P\]</div>
+<p>其中，形函数在力的作用点处取值。</p>
+<div class="math">
+\[P = \{P_1\ P_2\ P_3\}^T\]</div>
+</div>
+</div>
+<div class="section" id="element-implementation-in-3dec">
+<h2>单元在 <span class="codename">3DEC</span> 中的实现</h2>
+<p>20 节点六面体单元的实现，旨在使特殊块体顺利融入 <span class="codename">3DEC</span> 计算逻辑。尤其要求新块体与接触逻辑、求解算法和图形程序的关键部分兼容，如后续各节所述。</p>
+<p><span class="codename">3DEC</span> 标准可变形块体为多面体，内部采用四面体网格，因此外表面由三角形面定义。接触逻辑和图形表示均基于三角剖分表面。20 节点六面体表面通常为曲面，其几何接触计算需要不同且昂贵得多的处理。因此，为使特殊有限元块体可由相同程序处理，采用三角形组成的多面体表面近似其外边界。如<a href="#fem-nodes">图 2（Figure  2）</a> 所示，六面体每个面均采用八个三角形面近似。</p>
+<p>在 <span class="codename">3DEC</span> 中，块体剖面位移和应力的图形表示，假定已离散为四面体网格单元。为使这些程序可用于 20 节点六面体，设计了一种简单方案，将每个单元虚拟离散为四面体。利用面中心的附加节点（如<a href="#fem-nodes">图 2（Figure  2）</a> 所示）及单元中心的另一个节点，将每个单元分成 8 个子六面体。再按与上述三角面近似一致的方式，将每个子六面体分成 6 个四面体。为便于绘图，四面体网格单元赋予最接近高斯点的应力状态。</p>
+<p>该方案需要在单元中增加六个面中心节点和一个中心节点。这些节点作为从属节点处理，利用假定变形场（见式 <a class="reference internal" href="#equation-sel-fees-jypf">(1)</a>），由 20 个主节点获得其速度和位移。从属节点的 <span class="math">\(y\)</span> 坐标列于“<a class="reference internal" href="#shapefunctionsand"><span class="std std-ref">形函数及其导数</span>（Shape Functions and Derivatives）</a>”。</p>
+<div class="figure" id="fem-nodes">
+<a class="reference internal image-reference" href="../../../../../_images/fem-nodes.png"><img alt="../../../../../_images/fem-nodes.png" src="../../../../../_images/fem-nodes.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：20 节点有限元，显示用于面三角剖分的从属节点（浅蓝色）。</span></p>
+</div>
+</div>
+<div class="section" id="contact-forces">
+<h2>接触力</h2>
+<p>单元节点无论为主节点还是从属节点，都执行与网格单元网格点相同的功能；接触计算中也同样作为顶点处理。因此，可以使用标准 <span class="codename">3DEC</span> 接触逻辑，其子接触位于顶点—面和边—边相互作用位置。</p>
+<p>假定采用近似三角剖分表面来计算有限元块体子接触处的位移，因此与多面体块体相同，由网格点位移获得。施加于六面体面中心从属节点的接触力，必须通过式 <a class="reference internal" href="#equation-sel-fees-xxkl">(9)</a> 传递给主节点。</p>
+<p><span class="codename">3DEC</span> 接触检测程序所用公共平面逻辑假定块体为凸体。如果有限元块体非凸，则其表面凹陷部分检测不到接触。如果凹面必须与其他块体接触，就必须将该有限元块体分成凸块体；这些块体可像常规块体一样连接，使其表现为整体块体。</p>
+</div>
+<div class="section" id="application-of-boundary-loads-and-velocities">
+<h2>边界荷载与速度的施加</h2>
+<p>使用 <span class="fishcmd">boundary</span> 命令施加的外荷载，也会依据三角剖分边界施加到有限元块体。施加于从属节点的荷载，将像接触力一样通过式 <a class="reference internal" href="#equation-sel-fees-xxkl">(9)</a> 自动传递给主节点。与常规块体相比，唯一区别是重力荷载的处理，必须通过式 <a class="reference internal" href="#equation-sel-fees-ftpi">(5)</a> 引入。</p>
+<p>在 <span class="codename">3DEC</span> 中，通过 <span class="fishcmd">boundary</span> 命令规定网格点速度，施加固定位移条件。有限元节点也采用这一过程。</p>
+</div>
+<div class="section" id="solution-algorithm">
+<h2>求解算法</h2>
+<p><span class="codename">3DEC</span> 求解过程基于显式时间步进算法，对节点运动方程积分。动力和准静力分析采用同一过程。对于后者，引入较高阻尼，使其收敛到静力平衡或某种破坏机制。可变形块体离散为网格单元或有限元后，对每个网格点的运动方程积分。有限元块体同样处理，即对于给定节点 <span class="math">\(I\)</span>，运动方程可表示为</p>
+<div class="math">
+\[m \ddot u_I + \alpha m \dot u_I = F_I\]</div>
+<p>其中，<span class="math">\(m\)</span> 为节点质量，<span class="math">\(\alpha\)</span> 为黏性阻尼参数，<span class="math">\(F_I\)</span> 为节点力矢量。节点力由四个分量求和计算：</p>
+<div class="math">
+\[F_I = {F_I}^S + {F_I}^C + {F_I}^B + {F_I}^G\]</div>
+<p>其中：</p>
+<blockquote>
+<div><p><span class="math">\({F_I}^S\)</span> 为与单元应力等效的力，由式 <a class="reference internal" href="#equation-sel-fees-oooi">(7)</a> 计算；</p>
+<p><span class="math">\({F_I}^C\)</span> 通过式 <a class="reference internal" href="#equation-sel-fees-xxkl">(9)</a> 由接触力获得；</p>
+<p><span class="math">\({F_I}^B\)</span> 通过式 <a class="reference internal" href="#equation-sel-fees-xxkl">(9)</a> 由所施加边界力获得；</p>
+<p><span class="math">\({F_I}^G\)</span> 为重力，由式 <a class="reference internal" href="#equation-sel-fees-iuew">(8)</a> 给出。</p>
+</div></blockquote>
+<p>数值稳定所需时间步长的计算，基于将有限元虚拟离散为网格单元。由于已知这些网格单元组合后的表现比实际 20 节点六面体更刚硬，因此这种近似给出安全估计。静力分析中，通过质量缩放过程确定网格点质量。动力分析中，仍用四面体网格确定网格点质量，并保持单元总质量不变。对于这类等参单元，还存在提供对角质量矩阵的更准确方案（Hughes 1987），因为显式求解方法不允许使用标准单元公式导出的一致质量矩阵。</p>
+</div>
+<div class="section" id="generation-and-use-of-fe-blocks">
+<h2>有限元块体的生成与使用</h2>
+<p>为在 <span class="codename">3DEC</span> 模型中使用有限元块体，必须通过 <span class="fishcmd">config feblock</span> 命令选择配置选项，以分配所需附加存储。多数涉及特殊块体的操作均使用 <span class="fishcmd">feblock</span> 命令，并通过具体关键字调用。有两种方式将特殊块体引入模型：</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>从文件读取预先生成的有限元网格；以及</li>
+<li>在砖形块体内部自动生成网格。</li>
+</ol>
+</div></blockquote>
+<p>第一种方式通过 <span class="fishcmd">feblock</span> 命令的 <span class="cmdkey">read</span> 关键字调用，必须创建 ASCII 文件，按有限元程序典型格式描述网格：</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>标题；</li>
+<li>包含节点数 NN 和单元数 NE 的头行；</li>
+<li>节点坐标：共 NN 行，每行给出一个节点的 <span class="math">\(x y z\)</span> 坐标；以及</li>
+<li>单元定义：共 NE 行，每行列出一个单元的节点。</li>
+</ol>
+</div></blockquote>
+<p>更多详情见<a class="reference internal" href="#commandsforfeblocks"><span class="std std-ref">有限元块体的命令与关键字</span>（Commands and Keywords for Finite Element Blocks）</a>。由于 <span class="codename">3DEC</span> 的求解过程，节点编号顺序不影响求解。可以为每个单元提供完整的 20 节点列表，也可读入 8 节点六面体单元网格，即仅含角点。程序会自动插入边中附加节点，将这些单元转为 20 节点单元。</p>
+<p>只有 8 顶点砖形块体内部才能自动生成有限元网格。可使用 <span class="codename">3DEC</span> 任意块体生成和切割命令创建这些块体，再通过 <span class="fishcmd">feblock gen</span> 创建规则 20 节点单元网格，将它们转为有限元块体。用户只需指定块体三个轴向上所需的单元尺寸。</p>
+<p>有限元块体的力学行为可由 <span class="codename">3DEC</span> 任意常规本构模型控制。通过 <span class="fishcmd">feblock change</span> 赋予材料编号和本构编号。同一块体中不同单元可采用不同材料。</p>
+<p>为应用于拱坝，开发了专用程序，使混凝土结构与地基岩体在几何上适当吻合，前者由一个或多个有限元块体表示，后者由常规多面体块体表示。通常使用面向坝工程的前处理软件生成混凝土壳体有限元网格，并从文件读入 <span class="codename">3DEC</span>。随后调用新程序，创建与地基表面吻合的一组常规块体。将这些块体全部连接后，再通过切割命令引入岩体不连续面。</p>
+<p>第一步是定义有限元网格的地基表面。通过 <span class="fishcmd">feblock mark sregion</span> 赋予块体面的表面区域编号，可用于此目的。由于地基表面的面通常可能弯曲，提供 <span class="fishcmd">linearize</span> 关键字，将这些面各边上的节点准确置于边中点，使其与多面体地基块体吻合。随后使用 <span class="cmdkey">base</span> 关键字并给出合适几何参数，创建直接位于地基面下方的块体，以及向上游、下游延伸的块体。</p>
+</div>
+<div class="section" id="shape-functions-and-derivatives">
+<span id="shapefunctionsand"></span><h2>形函数及其导数</h2>
+<p>等参 20 节点六面体单元由 <span class="math">\(y\)</span> 坐标系中定义的标准立方体单元推导，见<span class="flag2">图 3.5</span>。标准单元节点位置列于下表。节点 1 至 8 位于角点，节点 9 至 20 位于边中点。</p>
+<table border="1" class="colwidths-given blank docutils" id="sel-fees-rmpp">
+<caption><span class="caption-text">表 1：标准单元节点坐标</span></caption>
+<colgroup>
+<col width="25%"/>
+<col width="25%"/>
+<col width="25%"/>
+<col width="25%"/>
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>节点</td>
+<td><span class="math">\(y_1\)</span></td>
+<td><span class="math">\(y_2\)</span></td>
+<td><span class="math">\(y_3\)</span></td>
+</tr>
+<tr class="row-even"><td>1</td>
+<td>-1</td>
+<td>-1</td>
+<td>-1</td>
+</tr>
+<tr class="row-odd"><td>2</td>
+<td>1</td>
+<td>-1</td>
+<td>-1</td>
+</tr>
+<tr class="row-even"><td>3</td>
+<td>1</td>
+<td>1</td>
+<td>-1</td>
+</tr>
+<tr class="row-odd"><td>4</td>
+<td>-1</td>
+<td>1</td>
+<td>-1</td>
+</tr>
+<tr class="row-even"><td>5</td>
+<td>-1</td>
+<td>-1</td>
+<td>1</td>
+</tr>
+<tr class="row-odd"><td>6</td>
+<td>1</td>
+<td>-1</td>
+<td>1</td>
+</tr>
+<tr class="row-even"><td>7</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr class="row-odd"><td>8</td>
+<td>-1</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr class="row-even"><td>9</td>
+<td>0</td>
+<td>-1</td>
+<td>-1</td>
+</tr>
+<tr class="row-odd"><td>10</td>
+<td>1</td>
+<td>0</td>
+<td>-1</td>
+</tr>
+<tr class="row-even"><td>11</td>
+<td>0</td>
+<td>1</td>
+<td>-1</td>
+</tr>
+<tr class="row-odd"><td>12</td>
+<td>-1</td>
+<td>0</td>
+<td>-1</td>
+</tr>
+<tr class="row-even"><td>13</td>
+<td>-1</td>
+<td>-1</td>
+<td>1</td>
+</tr>
+<tr class="row-odd"><td>14</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr class="row-even"><td>15</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+</tr>
+<tr class="row-odd"><td>16</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr class="row-even"><td>17</td>
+<td>-1</td>
+<td>-1</td>
+<td>0</td>
+</tr>
+<tr class="row-odd"><td>18</td>
+<td>1</td>
+<td>-1</td>
+<td>0</td>
+</tr>
+<tr class="row-even"><td>19</td>
+<td>1</td>
+<td>1</td>
+<td>0</td>
+</tr>
+<tr class="row-odd"><td>20</td>
+<td>-1</td>
+<td>1</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p>用于面三角剖分、编号为 21 至 27 的从属节点坐标列于下表。节点 21 至 26 位于面中心，节点 27 位于单元中心。</p>
+<table border="1" class="colwidths-given blank docutils" id="id2">
+<caption><span class="caption-text">表 2：标准单元从属节点坐标</span></caption>
+<colgroup>
+<col width="25%"/>
+<col width="25%"/>
+<col width="25%"/>
+<col width="25%"/>
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>节点</td>
+<td><span class="math">\(y_1\)</span></td>
+<td><span class="math">\(y_2\)</span></td>
+<td><span class="math">\(y_3\)</span></td>
+</tr>
+<tr class="row-even"><td>21</td>
+<td>0</td>
+<td>0</td>
+<td>-1</td>
+</tr>
+<tr class="row-odd"><td>22</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+</tr>
+<tr class="row-even"><td>23</td>
+<td>0</td>
+<td>-1</td>
+<td>0</td>
+</tr>
+<tr class="row-odd"><td>24</td>
+<td>0</td>
+<td>1</td>
+<td>0</td>
+</tr>
+<tr class="row-even"><td>25</td>
+<td>-1</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr class="row-odd"><td>26</td>
+<td>1</td>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr class="row-even"><td>27</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p>单元六个面的节点定义如下。前四个节点为角点，接下来的四个为边中点，最后一项为面中心的从属节点。</p>
+<table border="1" class="colwidths-given docutils" id="id3">
+<caption><span class="caption-text">表 3：单元面的定义</span></caption>
+<colgroup>
+<col width="4%"/>
+<col width="17%"/>
+<col width="9%"/>
+<col width="9%"/>
+<col width="9%"/>
+<col width="9%"/>
+<col width="9%"/>
+<col width="9%"/>
+<col width="9%"/>
+<col width="9%"/>
+<col width="9%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head"> </th>
+<th class="head">面</th>
+<th class="head"> </th>
+<th class="head"> </th>
+<th class="head"> </th>
+<th class="head"> </th>
+<th class="head">节点</th>
+<th class="head"> </th>
+<th class="head"> </th>
+<th class="head"> </th>
+<th class="head"> </th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td> </td>
+<td> </td>
+<td>1</td>
+<td>2</td>
+<td>3</td>
+<td>4</td>
+<td>5</td>
+<td>6</td>
+<td>7</td>
+<td>8</td>
+<td>9</td>
+</tr>
+<tr class="row-odd"><td>1</td>
+<td><span class="math">\(y_3\)</span> = -1</td>
+<td>2</td>
+<td>1</td>
+<td>4</td>
+<td>3</td>
+<td>9</td>
+<td>12</td>
+<td>11</td>
+<td>10</td>
+<td>21</td>
+</tr>
+<tr class="row-even"><td>2</td>
+<td><span class="math">\(y_3\)</span> = 1</td>
+<td>5</td>
+<td>6</td>
+<td>7</td>
+<td>8</td>
+<td>13</td>
+<td>14</td>
+<td>15</td>
+<td>16</td>
+<td>22</td>
+</tr>
+<tr class="row-odd"><td>3</td>
+<td><span class="math">\(y_2\)</span> = -1</td>
+<td>1</td>
+<td>2</td>
+<td>6</td>
+<td>5</td>
+<td>9</td>
+<td>18</td>
+<td>13</td>
+<td>17</td>
+<td>23</td>
+</tr>
+<tr class="row-even"><td>4</td>
+<td><span class="math">\(y_2\)</span> = 1</td>
+<td>3</td>
+<td>4</td>
+<td>8</td>
+<td>7</td>
+<td>11</td>
+<td>20</td>
+<td>15</td>
+<td>19</td>
+<td>24</td>
+</tr>
+<tr class="row-odd"><td>5</td>
+<td><span class="math">\(y_1\)</span> = -1</td>
+<td>4</td>
+<td>1</td>
+<td>5</td>
+<td>8</td>
+<td>12</td>
+<td>17</td>
+<td>16</td>
+<td>20</td>
+<td>25</td>
+</tr>
+<tr class="row-even"><td>6</td>
+<td><span class="math">\(y_1\)</span> = 1</td>
+<td>2</td>
+<td>3</td>
+<td>7</td>
+<td>6</td>
+<td>10</td>
+<td>19</td>
+<td>14</td>
+<td>18</td>
+<td>26</td>
+</tr>
+</tbody>
+</table>
+<p>20 节点六面体单元形函数基于 <span class="math">\(y\)</span> 参考系中的二次多项式。其表达式及对 <span class="math">\(y\)</span> 坐标的导数列于下文。常数 <span class="math">\(y_{Ik}\)</span> 表示节点 <span class="math">\(I\)</span> 的坐标，见<a href="#sel-fees-rmpp">表 1（Table  1）</a>。</p>
+<p><em>角点节点：I = 1 至 8</em></p>
+<div class="math">
+\[N_I = {1 \over 8} (1 + y_{I1} y_1) (1 + y_{I2} y_2) (1 + y_{I3} y_3) (y_{I1} y_1 + y_{I2} y_2 + y_{I3} y_3 -2)\]</div>
+<div class="math">
+\[{{\partial N_I} \over {\partial y_1}} = {1 \over 8} y_{I1} (1 + y_{I2} y_2) (1+ y_{I3} y_3) ( -2 y_{I1} y_1 + y_{I2} y_2 + y_{I3} y_3 -1)\]</div>
+<div class="math">
+\[{{\partial N_I} \over {\partial y_2}} = {1 \over 8} y_{I2} (1 + y_{I3} y_3) (1+ y_{I1} y_1) ( -2 y_{I2} y_2 + y_{I1} y_1 + y_{I3} y_3 -1)\]</div>
+<div class="math">
+\[{{\partial N_I} \over {\partial y_3}} = {1 \over 8} y_{I3} (1 + y_{I1} y_1) (1+ y_{I2} y_2) ( -2 y_{I3} y_3 + y_{I1} y_1 + y_{I2} y_2 -1)\]</div>
+<p><em>边中节点：I = 9, 11, 13, 15</em></p>
+<div class="math">
+\[N_I = {1 \over 4} (1 - y_1^2) (1 + y_{I2} y_2) (1+ y_{I3} y_3)\]</div>
+<div class="math">
+\[{{\partial N_I} \over {\partial y_1}} = - {1 \over 2} y_1 (1 + y_{I2} y_2) (1 + y_{I3} y_3)\]</div>
+<div class="math">
+\[{{\partial N_I} \over {\partial y_2}} = {1 \over 4} y_{I2} (1 - y_1^2) (1 + y_{I3} y_3)\]</div>
+<div class="math">
+\[{{\partial N_I} \over {\partial y_3}} = {1 \over 4} y_{I3} (1 - y_1^2) (1 + y_{I2} y_2 )\]</div>
+<p><em>边中节点：I = 10, 12, 14, 16</em></p>
+<div class="math">
+\[N_I = {1 \over 4} (1 - y_2^2) (1 + y_{I3} y_3) ( 1 + y_{I1} y_1)\]</div>
+<div class="math">
+\[{{\partial N_I} \over {\partial y_1}} = {1 \over 4} y_{I1} (1 - y_2^2) (1 + y_{I3} y_3)\]</div>
+<div class="math">
+\[{{\partial N_I} \over {\partial y_2}} = - {1 \over 2} y_{2} (1 + y_{I3} y_3) (1 + y_{I1} y_1)\]</div>
+<div class="math">
+\[{{\partial N_I} \over {\partial y_3}} = {1 \over 4} y_{I3} (1 - y_2^2) (1 + y_{I1} y_1)\]</div>
+<p><em>边中节点：I = 17, 18, 19, 20</em></p>
+<div class="math">
+\[N_I = {1 \over 4} (1 - y_3^2) (1 + y_{I1} y_1) (1 + y_{I2} y_2)\]</div>
+<div class="math">
+\[{{\partial N_I} \over {\partial y_1}} = {1 \over 4} y_{I1} (1 - y_3^2) (1 + y_{I2} y_2)\]</div>
+<div class="math">
+\[{{\partial N_I} \over {\partial y_2}} = {1 \over 4} y_{I2} (1 - y_3^2) (1 + y_{I1} y_1)\]</div>
+<div class="math">
+\[{{\partial N_I} \over {\partial y_2}} = - {1 \over 2} y_{3} (1 + y_{I1} y_1) (1 + y_{I2} y_2)\]</div>
+</div>
+<div class="section" id="commands-and-keywords-for-finite-element-blocks">
+<span id="commandsforfeblocks"></span><h2>有限元块体的命令与关键字</h2>
+<p><span class="codename">3DEC</span> 中以下命令用于有限元块体：</p>
+<table border="1" class="blank docutils">
+<colgroup>
+<col width="100%"/>
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.feblock" title="Finite element blocks in |3dec|...">模型配置有限元区块命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">feblock</span></code>）</a></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="../../../../block/doc/manual/feblock_manual/feblock_commands/cmd_feblock.generate.html#command:feblock.generate" title="Generates an FE mesh inside an 8-vertex brick block..."><code class="xref fish fish-cmd docutils literal"><span class="pre">feblock</span> <span class="pre">generate</span></code></a></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="../../../../block/doc/manual/feblock_manual/feblock_commands/cmd_feblock.gravity.html#command:feblock.gravity" title="Applies gravity loads to FE blocks. Gravity values are specified by the GRAVITY
+command..."><code class="xref fish fish-cmd docutils literal"><span class="pre">feblock</span> <span class="pre">gravity</span></code></a></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="../../../../block/doc/manual/feblock_manual/feblock_commands/cmd_feblock.list.html#command:feblock.list" title="Print information to the screen regarding FE blocks.  Output is limited to block
+that fall within the given range, if specified..."><code class="xref fish fish-cmd docutils literal"><span class="pre">feblock</span> <span class="pre">list</span></code></a></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="verification-cantilever-beam">
+<h2>验证：悬臂梁</h2>
+<p>二次有限元的一项优点，是能够准确表示弯曲。为检验这一点，建立一个简单悬臂梁模型。</p>
+<p>一端固定弹性梁的挠度为</p>
+<div class="math">
+\[u = { {W L^3} \over {3 E I } }\]</div>
+<p>其中：</p>
+<blockquote>
+<div><p><span class="math">\(W\)</span> 为施加于自由端的力；</p>
+<p><span class="math">\(L\)</span> 为长度；</p>
+<p><span class="math">\(E\)</span> 为杨氏模量；以及</p>
+<p><span class="math">\(I\)</span> 为截面惯性矩。</p>
+</div></blockquote>
+<p>对于尺寸为 1x1x10 m、杨氏模量 1 MPa、施加荷载 100 N 的梁，挠度应为 0.4 m。</p>
+<p>若沿梁长采用 10 个六面体网格单元建模，所得位移见<a href="#beam-hex">图 3（Figure  3）</a>。该情况下误差超过 50%。</p>
+<p>若同一梁采用 10 个有限元建模，结果见<a href=".html#fbeam-fem">图 （Figure）</a><code class="xref fnum docutils literal"><span class="pre">Figure</span> <span class="pre">#fbeam-fem</span></code>。此时误差小于 1%。</p>
+<div class="figure" id="beam-hex">
+<a class="reference internal image-reference" href="../../../../../_images/beam-hex.png"><img alt="../../../../../_images/beam-hex.png" src="../../../../../_images/beam-hex.png" style="width: 90%;"/></a>
+<p class="caption"><span class="caption-text">图 3：采用六面体网格单元模拟的悬臂梁位移。</span></p>
+</div>
+<div class="figure" id="id1">
+<a class="reference internal image-reference" href="../../../../../_images/beam-fem.png"><img alt="../../../../../_images/beam-fem.png" src="../../../../../_images/beam-fem.png" style="width: 90%;"/></a>
+<p class="caption"><span class="caption-text">图 4：采用有限元模拟的悬臂梁位移。</span></p>
+</div>
+<p><strong>fem_beam.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model config</span><span class="n"> feblock</span>
+
+<span class="ni">[a </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="ni">[force </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">100.0</span><span class="ni">]</span>
+<span class="ni">[E </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1e6</span><span class="ni">]</span>
+<span class="ni">[L </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">10.0</span><span class="ni">]</span>
+
+<span class="nb">block create</span><span class="n"> brick </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[L]</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[a]</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[a]</span>
+
+<span class="n">feblock generate </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span>
+
+<span class="nb">block zone cmodel</span><span class="n"> assign el</span>
+<span class="nb">block zone prop</span><span class="n"> dens </span><span class="m m-Double">2000</span><span class="n"> young </span><span class="ni">[E]</span><span class="n"> poiss </span><span class="m m-Double">0.2</span>
+
+<span class="nb">block gridpoint apply</span><span class="n"> vel </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span>
+
+<span class="c">; 将力除以 3，因为它施加在三个网格点上</span>
+<span class="nb">block gridpoint apply</span><span class="n"> force</span><span class="o">-</span><span class="n">z </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">force</span><span class="o">/</span><span class="m m-Double">3.0</span><span class="ni">]</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="ni">[L]</span><span class="n"> pos</span><span class="o">-</span><span class="n">z </span><span class="ni">[a]</span>
+
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">model </span><span class="ss">solve</span>
+
+<span class="nb">fish def</span><span class="ni"> solution</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> moi </span><span class="p">=</span><span class="ni"> a</span><span class="o">*</span><span class="ni">a</span><span class="o">/</span><span class="m m-Double">12.0</span>
+<span class="ni">  deflection_analytical </span><span class="p">=</span><span class="ni"> force</span><span class="o">*</span><span class="ni">L</span><span class="o">*</span><span class="ni">L</span><span class="o">*</span><span class="ni">L</span><span class="o">/</span><span class="p">(</span><span class="m m-Double">3</span><span class="o">*</span><span class="ni">E</span><span class="o">*</span><span class="ni">moi</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> gp </span><span class="p">=</span><span class="ni"> </span><span class="k">block.gp.near</span><span class="p">(</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">  deflection_3dec </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="k">block.gp.disp.z</span><span class="p">(</span><span class="ni">gp</span><span class="p">)</span>
+<span class="ni">  error_ </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">100.0</span><span class="o">*</span><span class="k">math.abs</span><span class="p">(</span><span class="ni">deflection_3dec </span><span class="o">-</span><span class="ni"> deflection_analytical</span><span class="p">)</span><span class="o">/</span><span class="ni">deflection_analytical</span>
+<span class="ni">  </span><span class="k">io.out</span><span class="p">(</span><span class="s">"Error: "</span><span class="o">+</span><span class="ni">string</span><span class="p">(</span><span class="ni">error_</span><span class="p">)</span><span class="o">+</span><span class="s">"%"</span><span class="p">)</span>
+<span class="nb">end</span>
+<span class="ni">[solution]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="example-tunnel-liner">
+<h2>示例：隧道衬砌</h2>
+<p>如上所示，20 节点有限元在模拟弯曲方面明显优于常规六面体有限体积网格单元。因此，一项应用是用它们模拟隧道衬砌。</p>
+<p>重建<a class="reference internal" href="../../modeling/problemsolving/loading3dec.html#loading3dec"><span class="std std-ref">用户指南中的简单隧道示例</span>（simple tunnel example from the User’s Guide）</a>，并采用有限元模拟衬砌。隧道构建及达到初始平衡的过程，与用户指南完全相同，唯一区别是必须在创建块体之前发出 <code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">config</span> <span class="pre">feblock</span></code>。随后开挖隧道，像用户指南示例一样将反力降至 50%。接着，按下列数据文件在隧道表面周围创建块体，表示厚度为 0.2 m 的衬砌。块体创建后，使用 <a class="reference internal" href="../../../../block/doc/manual/feblock_manual/feblock_commands/cmd_feblock.generate.html#command:feblock.generate" title="Generates an FE mesh inside an 8-vertex brick block..."><code class="xref fish fish-cmd docutils literal"><span class="pre">feblock</span> <span class="pre">generate</span></code></a> 命令将其转为有限元。为衬砌单元及衬砌与岩石之间接触赋予属性。循环计算模型，直到位移不再变化（<a href="#disp-his-roof-femliner">图 5（Figure  5）</a>）。衬砌位移见<a href="#femliner-disp">图 6（Figure  6）</a>。</p>
+<div class="figure" id="disp-his-roof-femliner">
+<a class="reference internal image-reference" href="../../../../../_images/disp-his-roof-femliner.png"><img alt="../../../../../_images/disp-his-roof-femliner.png" src="../../../../../_images/disp-his-roof-femliner.png" style="width: 90%;"/></a>
+<p class="caption"><span class="caption-text">图 5：安装有限元衬砌后楔形体的竖直位移。</span></p>
+</div>
+<div class="figure" id="femliner-disp">
+<a class="reference internal image-reference" href="../../../../../_images/femliner-disp.png"><img alt="../../../../../_images/femliner-disp.png" src="../../../../../_images/femliner-disp.png" style="width: 90%;"/></a>
+<p class="caption"><span class="caption-text">图 6：有限元衬砌中的位移。</span></p>
+</div>
+<p><strong>tunnel_linerblocks-fem.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="n">model rest </span><span class="s">'tunnel_ini'</span>
+
+<span class="nb">block gridpoint ini</span><span class="n"> disp </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="n">model mech time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">0</span>
+
+<span class="c">; 标记边界面</span>
+<span class="nb">block face group</span><span class="n"> </span><span class="s">'surface'</span><span class="n"> range group</span><span class="o">-</span><span class="n">int </span><span class="s">'rock'</span><span class="n"> </span><span class="s">'exc'</span>
+
+<span class="c">; 删除内部块体</span>
+<span class="nb">block delete</span><span class="n"> range group </span><span class="s">'exc'</span>
+
+<span class="c">; 施加 50% 应力</span>
+<span class="nb">block face apply</span><span class="n"> stress </span><span class="o">-</span><span class="m m-Double">1.35</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1.35</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2.7</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'surface'</span><span class="n"> </span>
+
+<span class="c">; 重新施加前后边界约束</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">10.0</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">y  </span><span class="m m-Double">10.0</span>
+
+<span class="c">; 楔体内某点的历程</span>
+<span class="nb">history delete</span>
+<span class="nb">block hist</span><span class="n"> name </span><span class="s">'Vertical Displacement'</span><span class="n"> dis</span><span class="o">-</span><span class="n">z pos </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.2</span><span class="n"> </span><span class="m m-Double">4.3</span>
+<span class="nb">model </span><span class="ss">cyc</span><span class="n"> </span><span class="m m-Double">2000</span>
+
+<span class="c">; 移除荷载</span>
+<span class="nb">block face apply-remove</span><span class="n"> stress range group </span><span class="s">'surface'</span>
+
+<span class="c">; 创建用于定义衬砌块体的棱柱</span>
+<span class="nb">fish define</span><span class="ni"> make_liner</span>
+<span class="ni">  </span>
+<span class="ni">  thick </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.2</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="c">; 左下</span>
+<span class="ni">  p1 </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="o">-</span><span class="m m-Double">4</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">10</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">4</span><span class="p">)</span>
+<span class="ni">  p2 </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="o">-</span><span class="m m-Double">4</span><span class="o">+</span><span class="ni">thick</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">10</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">4</span><span class="o">+</span><span class="ni">thick</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">  p3 </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="o">-</span><span class="m m-Double">4</span><span class="o">+</span><span class="ni">thick</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="ni">  p4 </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="o">-</span><span class="m m-Double">4</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="ni">  </span>
+<span class="ni">  p1b </span><span class="p">=</span><span class="ni"> p1 </span><span class="o">+</span><span class="ni"> vector</span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">20</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="ni">  p2b </span><span class="p">=</span><span class="ni"> p2 </span><span class="o">+</span><span class="ni"> vector</span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">20</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="ni">  p3b </span><span class="p">=</span><span class="ni"> p3 </span><span class="o">+</span><span class="ni"> vector</span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">20</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="ni">  p4b </span><span class="p">=</span><span class="ni"> p4 </span><span class="o">+</span><span class="ni"> vector</span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">20</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="ni">  </span>
+<span class="k">  command</span>
+<span class="nb">    block create</span><span class="n"> prism face</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="ni">[p1]</span><span class="n"> </span><span class="ni">[p2]</span><span class="n"> </span><span class="ni">[p3]</span><span class="n"> </span><span class="ni">[p4]</span><span class="n"> </span><span class="o">&amp;</span>
+<span class="n">           face</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="ni">[p1b]</span><span class="n"> </span><span class="ni">[p2b]</span><span class="n"> </span><span class="ni">[p3b]</span><span class="n"> </span><span class="ni">[p4b]</span><span class="n"> </span><span class="o">&amp;</span>
+<span class="n">           group </span><span class="s">'liner'</span>
+<span class="k">  end_command</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="c">; 底部</span>
+<span class="ni">  p4 </span><span class="p">=</span><span class="ni"> p2</span>
+<span class="ni">  p4b </span><span class="p">=</span><span class="ni"> p2b</span>
+<span class="ni">  </span>
+<span class="ni">  p2 </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="m m-Double">4</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">10</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">4</span><span class="p">)</span>
+<span class="ni">  p3 </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="m m-Double">4</span><span class="o">-</span><span class="ni">thick</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">10</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">4</span><span class="o">+</span><span class="ni">thick</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">  p2b </span><span class="p">=</span><span class="ni"> p2 </span><span class="o">+</span><span class="ni"> vector</span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">20</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="ni">  p3b </span><span class="p">=</span><span class="ni"> p3 </span><span class="o">+</span><span class="ni"> vector</span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">20</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="ni">  </span>
+<span class="k">  command</span>
+<span class="nb">    block create</span><span class="n"> prism face</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="ni">[p1]</span><span class="n"> </span><span class="ni">[p2]</span><span class="n"> </span><span class="ni">[p3]</span><span class="n"> </span><span class="ni">[p4]</span><span class="n"> </span><span class="o">&amp;</span>
+<span class="n">           face</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="ni">[p1b]</span><span class="n"> </span><span class="ni">[p2b]</span><span class="n"> </span><span class="ni">[p3b]</span><span class="n"> </span><span class="ni">[p4b]</span><span class="n"> </span><span class="o">&amp;</span>
+<span class="n">           group </span><span class="s">'liner'</span>
+<span class="k">  end_command</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="c">; 右下</span>
+<span class="ni">  p1 </span><span class="p">=</span><span class="ni"> p2</span>
+<span class="ni">  p4 </span><span class="p">=</span><span class="ni"> p3</span>
+<span class="ni">  p1b </span><span class="p">=</span><span class="ni"> p2b</span>
+<span class="ni">  p4b </span><span class="p">=</span><span class="ni"> p3b</span>
+<span class="ni">  </span>
+<span class="ni">  p2 </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="m m-Double">4</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="ni">  p3 </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="m m-Double">4</span><span class="o">-</span><span class="ni">thick</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">  p2b </span><span class="p">=</span><span class="ni"> p2 </span><span class="o">+</span><span class="ni"> vector</span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">20</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="ni">  p3b </span><span class="p">=</span><span class="ni"> p3 </span><span class="o">+</span><span class="ni"> vector</span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">20</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="ni">  </span>
+<span class="k">  command</span>
+<span class="nb">    block create</span><span class="n"> prism face</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="ni">[p1]</span><span class="n"> </span><span class="ni">[p2]</span><span class="n"> </span><span class="ni">[p3]</span><span class="n"> </span><span class="ni">[p4]</span><span class="n"> </span><span class="o">&amp;</span>
+<span class="n">           face</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="ni">[p1b]</span><span class="n"> </span><span class="ni">[p2b]</span><span class="n"> </span><span class="ni">[p3b]</span><span class="n"> </span><span class="ni">[p4b]</span><span class="n"> </span><span class="o">&amp;</span>
+<span class="n">           group </span><span class="s">'liner'</span>
+<span class="k">  end_command</span>
+<span class="c">;</span>
+<span class="ni">  </span><span class="c">; 圆弧的圆心和半径</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> txc </span><span class="p">=</span><span class="ni">  </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> tzc </span><span class="p">=</span><span class="ni">  </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> tr  </span><span class="p">=</span><span class="ni">  </span><span class="m m-Double">4.0</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="c">; 8 段</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> seg </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">8</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> i </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="ni">seg</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> theta </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">180.0</span><span class="o">/</span><span class="p">(</span><span class="ni">seg</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="ni">i</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="o">*</span><span class="k">math.degrad</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> px1 </span><span class="p">=</span><span class="ni"> txc </span><span class="o">+</span><span class="ni"> tr</span><span class="o">*</span><span class="k">math.cos</span><span class="p">(</span><span class="ni">theta</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> pz1 </span><span class="p">=</span><span class="ni"> tzc </span><span class="o">+</span><span class="ni"> tr</span><span class="o">*</span><span class="k">math.sin</span><span class="p">(</span><span class="ni">theta</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> theta2 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">180.0</span><span class="o">/</span><span class="p">(</span><span class="ni">seg</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="ni">i</span><span class="p">)</span><span class="o">*</span><span class="k">math.degrad</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> px2 </span><span class="p">=</span><span class="ni"> txc </span><span class="o">+</span><span class="ni"> tr</span><span class="o">*</span><span class="k">math.cos</span><span class="p">(</span><span class="ni">theta2</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> pz2 </span><span class="p">=</span><span class="ni"> tzc </span><span class="o">+</span><span class="ni"> tr</span><span class="o">*</span><span class="k">math.sin</span><span class="p">(</span><span class="ni">theta2</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> px3 </span><span class="p">=</span><span class="ni"> txc </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="ni">tr</span><span class="o">-</span><span class="ni">thick</span><span class="p">)</span><span class="o">*</span><span class="k">math.cos</span><span class="p">(</span><span class="ni">theta2</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> pz3 </span><span class="p">=</span><span class="ni"> tzc </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="ni">tr</span><span class="o">-</span><span class="ni">thick</span><span class="p">)</span><span class="o">*</span><span class="k">math.sin</span><span class="p">(</span><span class="ni">theta2</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> px4 </span><span class="p">=</span><span class="ni"> txc </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="ni">tr</span><span class="o">-</span><span class="ni">thick</span><span class="p">)</span><span class="o">*</span><span class="k">math.cos</span><span class="p">(</span><span class="ni">theta</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> pz4 </span><span class="p">=</span><span class="ni"> tzc </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="ni">tr</span><span class="o">-</span><span class="ni">thick</span><span class="p">)</span><span class="o">*</span><span class="k">math.sin</span><span class="p">(</span><span class="ni">theta</span><span class="p">)</span>
+<span class="k">    command</span>
+<span class="nb">      block create</span><span class="n"> prism face</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="ni">[px1]</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">10</span><span class="n"> </span><span class="ni">[pz1]</span><span class="n">  </span><span class="ni">[px2]</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">10</span><span class="n"> </span><span class="ni">[pz2]</span><span class="n">  </span><span class="ni">[px3]</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">10</span><span class="n"> </span><span class="ni">[pz3]</span><span class="n">  </span><span class="ni">[px4]</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">10</span><span class="n"> </span><span class="ni">[pz4]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">        face</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="ni">[px1]</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> </span><span class="ni">[pz1]</span><span class="n">  </span><span class="ni">[px2]</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> </span><span class="ni">[pz2]</span><span class="n">  </span><span class="ni">[px3]</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> </span><span class="ni">[pz3]</span><span class="n">  </span><span class="ni">[px4]</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> </span><span class="ni">[pz4]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">        group </span><span class="s">'liner'</span>
+<span class="k">    end_command</span>
+<span class="ni">  </span><span class="k">end_loop</span>
+<span class="nb">end</span>
+
+<span class="ni">[make_liner]</span>
+
+<span class="c">;</span>
+<span class="nb">block hide</span><span class="n"> range group </span><span class="s">'liner'</span><span class="n"> not</span>
+
+<span class="c">; 生成有限元单元</span>
+<span class="c">;在 x、z 方向指定较大尺寸，使衬砌厚度方向仅有一层单元</span>
+<span class="n">feblock generate </span><span class="m m-Double">20</span><span class="n"> </span><span class="m m-Double">2.5</span><span class="n"> </span><span class="m m-Double">20</span>
+<span class="c">;</span>
+<span class="c">; 混凝土衬砌参数</span>
+<span class="nb">block zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">block zone prop</span><span class="n"> density </span><span class="m m-Double">0.0024</span><span class="n"> young </span><span class="m m-Double">30000</span><span class="n"> poiss </span><span class="m m-Double">0.2</span>
+
+<span class="c">; 混凝土与岩石接触面</span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+
+<span class="nb">block contact gen-sub</span>
+
+<span class="nb">block contact jmodel</span><span class="n"> assign mohr range group</span><span class="o">-</span><span class="n">intersect </span><span class="s">'liner'</span><span class="n"> </span><span class="s">'rock'</span>
+<span class="nb">block contact prop</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">10000</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">2000</span><span class="n"> friction </span><span class="m m-Double">35</span><span class="n"> range group</span><span class="o">-</span><span class="n">intersect </span><span class="s">'liner'</span><span class="n"> </span><span class="s">'rock'</span>
+
+<span class="c">; 为衬砌施加前后边界约束</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">10.0</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">y  </span><span class="m m-Double">10.0</span>
+<span class="c">;</span>
+<span class="c">; ---------------------------------------------------------------------</span>
+<span class="c">;</span>
+<span class="c">;</span>
+<span class="c">; 运行一个计算循环，以强制计算接触法向</span>
+<span class="nb">model </span><span class="ss">cyc</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">2000</span><span class="n"> </span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'tunnel_linerblocks_fem'</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="example-of-creating-a-finite-element-base-model-of-a-dam-in-3dec">
+<h2>在 <span class="codename">3DEC</span> 中创建坝有限元基础模型的示例</h2>
+<p>该示例见<a class="reference internal" href="../../examples/FiniteElementDam.html#dec-dam"><span class="std std-ref">有限元坝</span>（Finite Element Dam）</a>。</p>
+</div>
+</div>
+<div class="section" id="references">
+<h1>参考文献</h1>
+<p>Brierley, G.《大型浅埋岩石地下洞室衬砌施工期间的性能》。博士学位论文，伊利诺伊大学厄巴纳—香槟分校（1975）。</p>
+<p>Cheung, Y. K., I. P. King and O. C. Zienkiewicz.《任意形状和支承条件的板桥——基于有限元的一般分析方法》，<em>Proc. Inst. Civ. Eng.</em>，<span class="bi">40</span>，9-36（1968）。</p>
+<p>Desai, C. S., and J. F. Abel.《<span class="bi">有限元法导论——工程分析的数值方法</span>》。纽约：Van Nostrand Reinhold Company（1972）。</p>
+<p>Dixon, J. D.《考虑支护—岩石相互作用的隧道支护结构分析》，美国内政部矿务局研究报告 RI7526（1971 年 6 月）。</p>
+<p>Hughes, T. J. R.《<span class="bi">有限元法：线性静力与动力有限元分析</span>》。Prentice Hall（1987）。</p>
+<p>Lemos, J. V.《节理岩石地基上拱坝的建模》，载于<span class="bi">《岩石力学与岩石工程中的预测及性能》（ISRM 国际研讨会 EUROCK ’96 论文集，意大利都灵，1996 年 9 月）</span>，第 1 卷，第 519-526 页。G. Barla 主编。鹿特丹：A. A. Balkema（1996）。</p>
+<p>Lemos, J. V. 等。《节理地基上拱坝的试验研究》，载于<span class="bi">第八届国际岩石力学大会论文集（日本东京，1995 年 9 月）</span>，第 3 卷，第 1263-1266 页。T. Fujii 主编。鹿特丹：A. A. Balkema（1995）。</p>
+<p>Lorig, L. J.《用于节理介质开挖和支护设计的混合计算模型》。博士学位论文，明尼苏达大学（1984）。</p>
+<p>Monsees, J. E.《华盛顿地铁系统的车站设计》，载于<span class="bi">工程基金会会议论文集——喷射混凝土支护</span>。ACI 出版物 SP-54（1977）。</p>
+<p>Paul, S. L. 等。《混凝土隧道衬砌设计建议》，伊利诺伊大学，交通部报告 DOT-TSC-UMTA-83-16（1983）。</p>
+<p>Zienkiewicz, O. C.《<span class="bi">有限元法</span>》。伦敦：McGraw-Hill Book Company (UK) Limited（1977）。</p>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../3dechome.html"><span class="codename">3DEC</span></a> »</li>
+<li class="nav-item nav-item-2"><a accesskey="U" href="../theory.html"><span class="codename">3DEC</span> Theory and Background</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="isolatedblock.html" title="previous chapter"> Isolated Block Stability Method</a> |    
+       <a href="../../commandsandfish/3deccommandsandfish.html" title="next chapter"><span class="codename">3DEC</span> Commands and <span class="codename">FISH</span></a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Structural Finite Elements" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

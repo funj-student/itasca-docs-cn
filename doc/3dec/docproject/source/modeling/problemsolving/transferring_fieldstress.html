@@ -1,0 +1,137 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>将现场应力转换为模型应力 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="equilibrium-3dec.html" rel="next" title="Reaching Equilibrium"/>
+<link href="pore_pressure.html" rel="prev" title="Specifying Initial Pore Pressure"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="transferring-field-stresses-to-model-stresses">
+<span id="transferring-fieldstress"></span><h1>将现场应力转换为模型应力</h1>
+<p>应力通常通过以下三种方式之一获得：</p>
+<ul class="simple">
+<li>假定重力加载，并根据场地或邻近场地的既有经验确定水平应力比；</li>
+<li>使用应力图确定水平应力，例如 <a class="reference external" href="http://www.world-stress-map.org/">世界应力图网站（http://www.world-stress-map.org/）</a>；</li>
+<li>获得原位应力测量结果。</li>
+</ul>
+<p>对于前两种方法，通常可通过一条或多条 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block/cmd_block.insitu.html#kwd:block.insitu.topography" title="Initialize in situ stresses based on the density of overburden. This command
+is used in models where the top surface is irregular, giving rise to significant
+variation in stress due to overburden...">按地形设置初始应力命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">insitu</span> <span class="pre">topography</span></code>）</a> 命令赋予应力。获得一项或多项实际测量结果时，问题更具挑战性。测量通常只反映单点应力，而应力很可能在整个模型体积内变化。此时 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block/cmd_block.insitu.html#kwd:block.insitu.principal" title="Initialize insitu stresses in deformable blocks.  An optional gradient and measurement
+point may also be specified...">按主应力设置初始应力命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">insitu</span> <span class="pre">principal</span></code>）</a> 可能很有用。该命令允许指定某位置的主应力（关键字 <code class="xref fish fish-kwd docutils literal"><span class="pre">origin</span></code>），再提供 <span class="math">\(z\)</span> 方向的梯度。与 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block/cmd_block.insitu.html#kwd:block.insitu.stress" title="Initialize in situ stresses in deformable blocks by specifying a complete stress
+tensor with optional gradients in the x, y and z directions.  If gradients are
+provided, the input stress is assumed to be the stress at 0,0,0 and gradients
+are applied accordingly.  For example, at point x,y,z, the xx stress will be
+sxx = `sxx0` + `sxxx`\*x + `sxxy`\*y + `sxxz`\*z...">区块初始应力命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">insitu</span> <span class="pre">stress</span></code>）</a> 命令不同，此处只提供一个梯度值，即 <span class="math">\(z\)</span> 方向单位长度的应力变化。随后自动计算全部应力分量的变化，确保整个模型的主应力方向不发生旋转。下例给出说明。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10000</span>
+
+<span class="nb">block create</span><span class="n"> brick </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">100</span><span class="n">  </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">100</span><span class="n">  </span><span class="o">-</span><span class="m m-Double">650</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">550</span>
+<span class="c">;</span>
+<span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="m m-Double">10</span>
+
+<span class="nb">block zone cmodel</span><span class="n"> assign el</span>
+<span class="nb">block zone prop</span><span class="n">  dens </span><span class="m m-Double">2500</span><span class="n"> bulk </span><span class="m m-Double">8e9</span><span class="n"> shear </span><span class="m m-Double">5e9</span>
+
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">10</span>
+
+<span class="c">; 注意，“minimum”表示最大压应力</span>
+<span class="nb">block insitu</span><span class="n"> principal minimum </span><span class="o">-</span><span class="m m-Double">60e6</span><span class="n"> dip</span><span class="o">-</span><span class="n">minimum </span><span class="m m-Double">11</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction</span><span class="o">-</span><span class="n">minimum </span><span class="m m-Double">270</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  maximum </span><span class="o">-</span><span class="m m-Double">15e6</span><span class="n"> dip</span><span class="o">-</span><span class="n">maximum </span><span class="m m-Double">79</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction</span><span class="o">-</span><span class="n">maximum </span><span class="m m-Double">90</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  intermediate </span><span class="o">-</span><span class="m m-Double">44e6</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  origin </span><span class="m m-Double">50</span><span class="n"> </span><span class="m m-Double">50</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">600</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  gradient</span><span class="o">-</span><span class="n">z </span><span class="ni">[</span><span class="m m-Double">2500</span><span class="o">*</span><span class="m m-Double">10</span><span class="ni">]</span>
+<span class="c">;</span>
+</pre></div>
+</div>
+<div class="figure" id="id1">
+<a class="reference internal image-reference" href="../../../../../_images/principal.png"><img alt="../../../../../_images/principal.png" src="../../../../../_images/principal.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 1：赋予主应力的模型剖面，显示 zz 应力等值线和应力张量。</span></p>
+</div>
+<p>也可使用 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block.face/cmd_block.face.apply.html#kwd:block.face.apply.stress-principal" title="Apply stress on block faces within the range...">施加面主应力命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">face</span> <span class="pre">apply</span> <span class="pre">stress-principal</span></code>）</a> 赋予与初始应力匹配的应力边界条件。不建议所有边界都这样处理，因为主应力很可能不与边界方向一致，从而使整个模型旋转。至少应固定一个边界。</p>
+<p>运行此类模型时，通常会固定所有边界。假设边界不与主应力方向一致，这会使剪应力在边界附近积累。用户应仔细确保固定边界距关注区域足够远，使这些虚假剪应力不影响结果。</p>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../3dechome.html"><span class="codename">3DEC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../modeling3dec.html"><span class="codename">3DEC</span> Modeling</a> »</li>
+<li class="nav-item nav-item-3"><a href="problemsolving.html">Problem Solving with <span class="codename">3DEC</span></a> »</li>
+<li class="nav-item nav-item-4"><a accesskey="U" href="initialconditions3dec.html">Initial Conditions</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="pore_pressure.html" title="previous chapter"> Specifying Initial Pore Pressure</a> |    
+       <a href="equilibrium-3dec.html" title="next chapter">Reaching Equilibrium</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Transferring Field Stresses to Model Stresses" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

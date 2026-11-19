@@ -1,0 +1,364 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>切割块体 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="generation-additional.html" rel="next" title="Block Generation: Densify and Octree"/>
+<link href="generatingblockassemblies.html" rel="prev" title="Generating Block Assemblies"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="cutting-blocks">
+<span id="cuttingblocks"></span><h1>切割块体</h1>
+<p><a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block/cmd_block.cut.html#command:block.cut" title="Cut a block.  This command generates one set of discontinuities, according to
+the parameters specified by the following keywords. Blocks are split completely
+(i.e., no partial cracks are allowed)..."><code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">cut</span></code></a> 命令用于进一步切割由 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block/cmd_block.create.html#command:block.create" title="Create a block. The method for block creation is determined by the first keyword
+used. The keywords  brick ,  drum ,  prism ,  tetrahedron 
+or  tunnel  will create a block from a bounding-region shape.  The  polyhedron 
+keyword may be used to create a block from four or more faces of a polyhedron..."><code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">create</span></code></a> 或 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block/cmd_block.generate.html#command:block.generate" title="Generate an assembly of blocks. The method for block creation is determined
+by the first keyword used..."><code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">generate</span></code></a> 命令创建的实体，以定义节理、断层、孔洞或开挖区。BLOCK CUT 命令可创建单个断层、节理组或离散裂隙网络。此外，还可利用切割逻辑，按导入的几何曲面或隧道进行切割，创建不同块体几何形状。后续各小节分别介绍这些功能。</p>
+<p class="h2 rubric" id="jointsandjointsets">节理与节理组</p>
+<p><a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block/cmd_block.cut.html#kwd:block.cut.joint-set" title="Cut blocks by a joint set described by the keywords supplied.  Defaults for
+these parameters, if not given, are zero, except for  persistence  and
+ number , which both default to 1...">按节理组切割命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">cut</span> <span class="pre">joint-set</span></code>）</a> 命令可进行单次切割或多次平行切割。可以使用统计参数改变方位、间距和延续性，以匹配记录的节理数据。</p>
+<p>本节首先演示使用 BLOCK CUT JOINT-SET 命令进行单次切割。应事先规划，以优化节理创建顺序。通常先切割界定开挖几何形状的节理（见<a class="reference internal" href="#internalboundaryshapes"><span class="std std-ref">内部边界形状</span>（Internal Boundary Shapes）</a>），再创建次要节理或节理组。贯通断层通常最后定义。</p>
+<p>BLOCK CUT JOINT-SET 命令的主要关键字是 <code class="xref fish fish-kwd docutils literal"><span class="pre">dip</span></code>、<code class="xref fish fish-kwd docutils literal"><span class="pre">dip-direction</span></code> 和 <code class="xref fish fish-kwd docutils literal"><span class="pre">origin</span></code>。如果不使用其他关键字，该命令将按指定方位创建一个贯穿模型的平面。原点可以是平面上的任意一点。<a href="#inclinedplane">图 1（Figure  1）</a> 展示了倾角和倾向与 <span class="codename">3DEC</span> 坐标轴的关系。倾角范围为 0 至 90◦，倾向范围为 0 至 360º。</p>
+<div class="figure" id="inclinedplane">
+<a class="reference internal image-reference" href="../../../../../_images/inclinedplanediagram.png"><img alt="../../../../../_images/inclinedplanediagram.png" src="../../../../../_images/inclinedplanediagram.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 1：描述倾斜平面产状的术语：倾角 α 从水平（xy）平面向下量取为正；倾向 β 从北向（y）顺时针量取为正</span></p>
+</div>
+<p>通过 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block/cmd_block.hide.html#command:block.hide" title="Hide/show blocks in the range. All blocks with centroids in the range are hidden
+with  block hide   on ; they can be recalled later using  block
+hide   off . When blocks are hidden, they are not split by  block
+cut  operations; in this way, discontinuous joints may be made. However, hidden
+blocks interact normally with other blocks, and are remembered on restart. In
+general, hidden blocks are unaffected by most commands that change something..."><code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">hide</span></code></a> 命令，可控制 BLOCK CUT JOINT-SET 命令所形成切面的连续性。BLOCK CUT JOINT-SET 命令只会切割当前可见的块体。</p>
+<p>下例演示创建非贯通节理。</p>
+<p><strong>创建非贯通竖直节理</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+
+<span class="c">; 创建一个块体</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">1</span><span class="n">   </span>
+
+<span class="c">; 进行水平切割</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">0</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">0</span><span class="n"> origin </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">.5</span><span class="n">  </span>
+
+<span class="c">; 隐藏底部块体</span>
+<span class="nb">block hide</span><span class="n"> range plane dip </span><span class="m m-Double">0</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">0</span><span class="n"> origin </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">.5</span><span class="n"> below </span>
+
+<span class="c">; 仅对顶部块体进行竖直切割</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">90</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">90</span><span class="n"> origin </span><span class="m m-Double">.5</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="n"> </span>
+
+<span class="c">; 显示所有块体</span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span><span class="n">                                 </span>
+</pre></div>
+</div>
+<p><a href="#joint-blocks">图 2（Figure  2）</a> 显示了本例的完整模型和节理结构图。注意，竖直节理没有穿透底部块体。<span class="codename">3DEC</span> 自动为水平节理分配节理 ID 2，为竖直节理分配节理 ID 3。如有需要，可以通过 <code class="xref fish fish-kwd docutils literal"><span class="pre">jointset-id</span></code> 关键字控制节理 ID。例如：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">block cut</span><span class="n"> dip </span><span class="m m-Double">0</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">0</span><span class="n"> origin </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">.5</span><span class="p">,</span><span class="m m-Double">0</span><span class="n"> jointset</span><span class="o">-</span><span class="n">id </span><span class="p">=</span><span class="n"> </span><span class="m m-Double">1000</span>
+</pre></div>
+</div>
+<p>将创建 ID 为 1000 的水平节理。</p>
+<p>节理面和接触的 ID 按创建顺序依次赋予。因此，如果定义两个相交断层，其交线上的边—边接触将采用后定义断层的节理 ID。如果要为不同断层赋予不同属性，定义顺序就十分重要。构成节理大部分面积的面—面接触，其属性可使用 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block.contact/cmd_block.contact.property.html#command:block.contact.property" title="Assign joint constitutive model properties to subcontacts.  The possible properties
+depend on the constitutive model assigned to the contact...">设置块体接触属性（<code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">contact</span> <span class="pre">property</span></code>）</a> 命令赋予，并通过节理 ID 或方位识别需要改变的节理。难点在于为节理和断层交线处产生的边—边接触赋予属性编号。使用节理 ID 为边—边接触赋予属性编号很容易；按方位赋予则很困难，因为这些接触的方位与形成它们的两个相交平面都不同。程序有一个 PLOT 选项，可绘制节理材料属性。该图可用于检查边—边接触是否赋予了正确属性。</p>
+<div class="figure" id="joint-blocks">
+<a class="reference internal image-reference" href="../../../../../_images/joint-blocks.png"><img alt="../../../../../_images/joint-blocks.png" src="../../../../../_images/joint-blocks.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 2：使用 BLOCK CUT 和 BLOCK HIDE 命令创建的模型：完整实体视图</span></p>
+</div>
+<div class="figure" id="id3">
+<a class="reference internal image-reference" href="../../../../../_images/joints1.png"><img alt="../../../../../_images/joints1.png" src="../../../../../_images/joints1.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 3：使用 BLOCK CUT 和 BLOCK HIDE 命令创建的模型：节理结构视图</span></p>
+</div>
+<p>可使用 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block/cmd_block.join.html#command:block.join" title='Join adjacent blocks in the range.  Adjacent blocks within an optional range
+can be joined into one block ( on ) or or unjoined ( off ). Joined
+blocks act as one block with a common centroid and volume calculated for all
+blocks joined together. A joined block group consists of one "master" block
+and one or more "slave" blocks. Use the  block.list.information  command
+to identify master and slave blocks in a block group. Note: only visible blocks...'><code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">join</span></code></a> 命令形成凹块体。被连接的各块体本身仍为凸块体，但连接逻辑会锁定它们之间的接触面。例如，在前述示例末尾添加以下命令：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">block hide</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x  </span><span class="m m-Double">0.5</span><span class="n"> </span><span class="m m-Double">1.0</span><span class="n"> pos</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> pos</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.5</span><span class="n"> </span><span class="m m-Double">1.0</span>
+<span class="nb">block join</span><span class="n"> </span><span class="sx">on</span>
+</pre></div>
+</div>
+<p><a href="#joinedblocks">图 4（Figure  4）</a> 显示了所创建的凹块体。注意，只能连接可见块体。</p>
+<div class="figure" id="joinedblocks">
+<a class="reference internal image-reference" href="../../../../../_images/joint-blocks2.png"><img alt="../../../../../_images/joint-blocks2.png" src="../../../../../_images/joint-blocks2.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 4：使用 BLOCK JOIN 命令创建的凹块体</span></p>
+</div>
+<p>图形屏幕上，连接块体采用相同颜色显示。此外，连接块体之间的接触被标识为主—从（m-s）接触。输入 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block.contact/cmd_block.contact.list.html#command:block.contact.list" title="List information about block contact(s)..."><code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">contact</span> <span class="pre">list</span></code></a> 可检查接触类型。注意，如果“从属”块体与同一“主”块体连接，它们之间会自动连接。例如，若块体 A 与块体 B 已连接，块体 A 与块体 C 也已连接，则块体 B 将自动与块体 C 连接。</p>
+<p>BLOCK CUT JOINT-SET 命令还可根据实测参数（即节理倾角、倾向、间距和延续性）自动生成一组节理。通过隐藏选定块体，可以生成一组非贯通节理。下例创建一个同时包含缓倾和陡倾节理组的节理岩质边坡，还创建两条非贯通裂隙，在边坡中界定一个岩石楔形体（见<a href="#jointedslope">图 5（Figure  5）</a>）。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">80</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">30</span><span class="n"> </span><span class="m m-Double">80</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">50</span>
+
+<span class="c">; 缓倾裂隙面，连续分布</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">2.45</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">235</span><span class="n"> ori </span><span class="m m-Double">30</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">12.5</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">2.45</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">315</span><span class="n"> ori </span><span class="m m-Double">35</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">30</span>
+
+<span class="c">; 大倾角片理面，连续分布</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">76</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">270</span><span class="n"> spac </span><span class="m m-Double">16</span><span class="n"> num </span><span class="m m-Double">3</span><span class="n"> ori </span><span class="m m-Double">30</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">12.5</span>
+
+<span class="c">; 相交不连续面，非连续分布</span>
+<span class="nb">block hide</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">80</span><span class="n">  pos</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">50</span><span class="n"> pos</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">10</span>
+<span class="nb">block hide</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">55</span><span class="p">,</span><span class="m m-Double">80</span><span class="n"> pos</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">50</span><span class="n"> pos</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">50</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">70</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">200</span><span class="n"> ori </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">35</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">60</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">330</span><span class="n"> ori </span><span class="m m-Double">50</span><span class="n"> </span><span class="m m-Double">15</span><span class="n"> </span><span class="m m-Double">50</span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">block hide</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">30</span><span class="n"> pos</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">30</span><span class="p">,</span><span class="m m-Double">80</span><span class="n"> pos</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">13</span><span class="p">,</span><span class="m m-Double">50</span>
+</pre></div>
+</div>
+<div class="figure" id="jointedslope">
+<a class="reference internal image-reference" href="../../../../../_images/slope.png"><img alt="../../../../../_images/slope.png" src="../../../../../_images/slope.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 5：含贯通和非贯通节理的岩质边坡</span></p>
+</div>
+<p>请记住，节理在 <span class="codename">3DEC</span> 模型中显示为平面片段；拟合不规则节理结构可能需要许多片段。建模人员必须选择 <span class="codename">3DEC</span> 节理几何与实际节理分布相匹配的细化程度。也可通过节理材料模型考虑几何不规则性对节理响应的影响（例如沿节理改变属性）。</p>
+<p>关于节理生成，最后还需说明一点：使用连续介质程序时，通常可利用开挖形状的对称条件来减小模型尺寸。而非连续介质程序中不易施加对称条件，因为除特殊情况外，不连续特征的存在会破坏对称性。例如，不能在<a href="#jointedslope">图 5（Figure  5）</a> 所示模型中施加竖直对称平面，因为模型中的节理并不与竖直轴平行。</p>
+<p class="h2 rubric">离散裂隙网络</p>
+<p>使用 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block/cmd_block.cut.html#kwd:block.cut.joint-set" title="Cut blocks by a joint set described by the keywords supplied.  Defaults for
+these parameters, if not given, are zero, except for  persistence  and
+ number , which both default to 1...">按节理组切割命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">cut</span> <span class="pre">joint-set</span></code>）</a> 命令创建节理时，可以为节理间距和方位指定一定统计变异。若先生成离散裂隙网络（DFN），再用它切割 <span class="codename">3DEC</span> 块体，就可以模拟复杂得多的裂隙集合。</p>
+<p>通过 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block/cmd_block.cut.html#kwd:block.cut.joint-set" title="Cut blocks by a joint set described by the keywords supplied.  Defaults for
+these parameters, if not given, are zero, except for  persistence  and
+ number , which both default to 1...">按节理组切割命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">cut</span> <span class="pre">joint-set</span></code>）</a> 命令建模的断层，通常表示确定性断层，即已测绘的断层或裂隙，并通过指定位置、倾角和倾向，在模型中显式表示。另一种方法是随机表示断层。采用这种方法时，不显式模拟特定断层，而是定义一组统计参数，并根据这些统计输入生成节理组。这样，节理不代表某条具体测绘节理，而且节理组不是唯一的——不同随机实现均可满足统计准则。</p>
+<p>离散裂隙网络（DFN）模型是对节理的统计描述。一个 DFN 模型可以有多个随机实现。一个 DFN 随机实现是一组裂隙，其特征服从该 DFN 模型的统计描述。随后，可使用 <span class="codename">3DEC</span> 模拟单个随机实现。建议使用不同随机实现运行多个 <span class="codename">3DEC</span> 模型，以检验模型对不同随机 DFN 可能产生的完整响应范围。</p>
+<p>与离散裂隙网络有关的命令、<span class="codename">FISH</span> 和理论，见<a class="reference internal" href="../../../../../common/dfn/doc/dfn_manual/dfn.html#dfn-manual"><span class="std std-ref">本文档的 DFN 部分</span>（DFN section of this documentation）</a>。</p>
+<p>下面介绍一个简单示例，说明如何创建 DFN 并用它切割 <span class="codename">3DEC</span> 模型。</p>
+<p>更高级的示例／教程见<a class="reference internal" href="../../examples/dfn_advanced.html#advanced-dfn"><span class="std std-ref">离散裂隙网络（高级）</span>（Discrete Fracture Network (Advanced)）</a>示例。</p>
+<p class="h3 rubric">DFN 示例</p>
+<p>本例首先创建 DFN。创建 DFN 之前必须指定模型域。本例通过 <code class="xref fish fish-kwd docutils literal"><span class="pre">model</span> <span class="pre">domain</span> <span class="pre">extent</span> <span class="pre">-50</span> <span class="pre">50</span></code> 命令，将 DFN 域设为在正负两个方向上各延伸 50 个单位（边长 100 个单位）。如果只提供两个数值，则假定模型域在 x、y 和 z 方向的尺寸相同。</p>
+<p>在 <span class="codename">3DEC</span> 中创建 DFN 最简单的方法，是先生成一个模板。DFN 模板是一组用于生成随机离散裂隙网络的统计参数，包括尺寸分布、位置分布和方位分布。默认情况下，DFN 模板采用以下属性：裂隙位置均匀分布，方位均匀分布（倾角介于 0^{circ} 与 180^{circ} 之间，倾向介于 0^{circ} 与 360^{circ} 之间），尺寸服从指数为 4 的负幂律分布。如果不指定尺寸限制，裂隙尺寸范围为 1.0 至 infty。</p>
+<p>本例指定一个模板名称，采用指数为 3 的幂律分布，并将裂隙尺寸（圆盘直径）限制为 1 至 100。同时将位置和方位设为均匀分布。通过以下命令完成：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fracture template</span><span class="n"> create </span><span class="s">'dfn_template'</span><span class="n"> size power</span><span class="o">-</span><span class="n">law </span><span class="m m-Double">3</span><span class="n"> size</span><span class="o">-</span><span class="n">limits </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">20</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  position uniform orientation uniform</span>
+</pre></div>
+</div>
+<p>使用之前创建的 DFN 模板，可以在先前指定的域内生成一组裂隙。生成过程持续到满足预定终止准则。本例采用密度（P32 值）0.1 作为终止准则。有关 DFN 密度的更多信息，请参阅<a class="reference internal" href="../../../../../common/dfn/doc/dfn_manual/dfn_overview.html#dfn-description"><span class="std std-ref">DFN 概述</span>（DFN Overview）</a>。生成的 DFN 见<a href="#dfn2">图 6（Figure  6）</a>。</p>
+<p>最后，将近乎平行且相距很近的裂隙合并为单个较大裂隙。这有助于在利用 DFN 切割块体模型中的节理时，避免 <span class="codename">3DEC</span> 形成很薄的块体。</p>
+<div class="figure align-center" id="dfn2">
+<a class="reference internal image-reference" href="../../../../../_images/dfn1.png"><img alt="../../../../../_images/dfn1.png" src="../../../../../_images/dfn1.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 6：生成的 DFN</span></p>
+</div>
+<p>创建块体模型之前，必须使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">02</span></code> 命令设置容差。受影响的容差包括：（1）网格点之间的最小距离；（2）子接触的最小面积（tolxtol）；（3）连接已连接块体网格点的容差；（4）选择公共平面附近顶点的容差。atol 的默认设置为模型在 x、y 和 z 方向平均尺寸的 0.0012 倍。本例中，该默认值过大，因此需要更小的值。</p>
+<p>然后创建一个 10x10x10 的块体。通常认为，DFN 域的尺寸应大于所关注岩体的尺寸。这是因为某些裂隙的质心虽位于岩体之外，但裂隙仍会延伸入岩体。如果 DFN 域与岩体尺寸相同，就会遗漏这些裂隙片段。为考虑这一点，本例将 DFN 域在 x、y 和 z 方向的范围设为正负 50。</p>
+<p>现在可使用以下命令，根据先前创建的 DFN 生成一组不连续面（节理）：<code class="xref fish fish-kwd docutils literal"><span class="pre">block</span> <span class="pre">cut</span> <span class="pre">dfn</span> <span class="pre">name</span> <span class="pre">'my_dfn'</span></code>。块体使用名称为 <code class="xref fish fish-kwd docutils literal"><span class="pre">my_dfn</span></code> 的 DFN 切割。生成的 <span class="codename">3DEC</span> 模型见<a href="#dfn1">图 7（Figure  7）</a>。</p>
+<div class="figure align-center" id="dfn1">
+<a class="reference internal image-reference" href="../../../../../_images/dfn-blocks.png"><img alt="../../../../../_images/dfn-blocks.png" src="../../../../../_images/dfn-blocks.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 7：切割后的块体</span></p>
+</div>
+<p>在 <span class="codename">3DEC</span> 中，节理必须将块体切分为两部分，不能只切入块体的一部分。因此，利用 DFN 切割节理时按以下方式进行：</p>
+<ul class="simple">
+<li>将 DFN 中的节理按尺寸从大到小排序</li>
+<li>对于每条节理，隐藏所有不与该节理接触的块体</li>
+<li>使用该节理切割其余块体</li>
+</ul>
+<p>这一流程可尽量减少不必要的切割；不过，由于切面必须完全切分块体，<span class="codename">3DEC</span> 模型中的许多节理会大于 DFN 中相应的节理。可以通过为节理的不同部分指定不同节理属性，解决这一问题。</p>
+<p>指定节理属性之前，需要将块体离散为网格单元。这也会离散节理表面，从而可以为每个节理面的不同部分赋予不同属性。使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">0</span></code> 命令生成边长为 1 个单位的四面体网格单元。</p>
+<p>现在可以赋予节理材料属性。使用专门的 DFN 命令，可以区分 DFN 圆盘内部与外部的节理材料。下图说明了这一思路。</p>
+<div class="figure align-center" id="dfn3">
+<a class="reference internal image-reference" href="../../../../../_images/dfn_fig3.png"><img alt="../../../../../_images/dfn_fig3.png" src="../../../../../_images/dfn_fig3.png" style="width: 80%;"/></a>
+</div>
+<p>每个 <span class="codename">3DEC</span> 节理在划分网格后均由子接触构成。如图所示，子接触可能位于 DFN 圆盘内部或外部。使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">range</span> <span class="pre">dfn-3dec</span></code>，可以为内部子接触赋予不同的材料属性。</p>
+<p>在图中添加节理平面（Joint Plane）绘图项，即可方便地绘制节理。如果只希望查看 <span class="codename">3DEC</span> 节理中与实际 DFN 对应的部分，可以在绘图项列表（Plot Item List）中右键单击 Joint Plane 绘图项，选择“添加范围元素…（Add Range Element …）”，然后从左侧的“可视（Visual）”列表选择“DFN 距离（DFN Distance）”。取消勾选“非（Not）”，勾选 my_dfn，并输入一个略大于 0 的距离（Distance）（例如 0.01）。所得 DFN 节理图应与<a href="#dfn4">图 9（Figure  9）</a> 相似。</p>
+<div class="figure align-center" id="dfn4">
+<a class="reference internal image-reference" href="../../../../../_images/dfn-joints.png"><img alt="../../../../../_images/dfn-joints.png" src="../../../../../_images/dfn-joints.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 9：切割后模型中的节理</span></p>
+</div>
+<p class="rubric" id="dfn-dat"><strong>dfn.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; -- 展示如何在 3DEC 中利用 DFN 切割节理的算例</span>
+<span class="c">;</span>
+<span class="nb">model new</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10000</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">50</span><span class="n"> </span><span class="m m-Double">50</span>
+<span class="c">;</span>
+<span class="c">; -- 生成 DFN --</span>
+<span class="nb">fracture template</span><span class="n"> create </span><span class="s">'dfn_template'</span><span class="n"> size power</span><span class="o">-</span><span class="n">law </span><span class="m m-Double">3</span><span class="n"> size</span><span class="o">-</span><span class="n">limits </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">20</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  position uniform orientation uniform</span>
+<span class="c">;</span>
+<span class="nb">fracture generate</span><span class="n"> dfn </span><span class="s">'my_dfn'</span><span class="n"> template </span><span class="s">'dfn_template'</span><span class="n"> mass</span><span class="o">-</span><span class="n">density </span><span class="m m-Double">0.1</span>
+<span class="c">;</span>
+<span class="c">; 合并距离较近的近似平行裂隙</span>
+<span class="nb">fracture combine</span><span class="n"> angle </span><span class="m m-Double">5</span><span class="n"> distance </span><span class="m m-Double">0.1</span><span class="n"> merge</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'dfn'</span>
+<span class="c">;</span>
+<span class="p">===============================================</span>
+
+<span class="nb">block tolerance</span><span class="n"> </span><span class="m m-Double">0.02</span>
+<span class="c">;</span>
+<span class="c">; 创建块体</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="o">-</span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="c">;</span>
+<span class="c">; 添加与 id 为 1 的 DFN 对应的节理</span>
+<span class="nb">block cut</span><span class="n"> dfn name </span><span class="s">'my_dfn'</span>
+<span class="c">;</span>
+<span class="c">; 将块体离散为边长为 1 的四面体网格单元。</span>
+
+<span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="m m-Double">1</span>
+
+<span class="c">;</span>
+<span class="c">; 设置节理材料参数</span>
+<span class="nb">block contact property</span><span class="n"> friction </span><span class="m m-Double">30</span><span class="n"> cohesion </span><span class="m m-Double">1000</span><span class="n"> </span>
+<span class="nb">block contact property</span><span class="n"> cohesion </span><span class="m m-Double">0</span><span class="n"> range dfn</span><span class="o">-</span><span class="m m-Double">3</span><span class="n">dec </span><span class="s">'my_dfn'</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'blocks'</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="internalboundaryshapes">创建内部边界形状</p>
+<p>使 <span class="codename">3DEC</span> 模型与问题区域相匹配时，还必须定义与实际问题边界形状一致的多面体边界。这些边界可以是表示开挖区或孔洞的内部边界，也可以是表示土坝等人工结构或山坡等自然特征的外部边界。如果实际问题的边界复杂，必须评估简化是否会影响需要回答的问题，即较简单的几何形状是否足以再现重要机制。</p>
+<p>模型模拟中需要表示的全部实际边界（包括稍后阶段将添加的区域或创建的开挖区），都必须在求解过程开始之前定义。顺序分析中后续添加的结构，其形状必须预先定义，然后通过 BLOCK EXCAVATE 命令“移除”。使用 BLOCK FILL 命令可重新添加已开挖块体。注意，只有可变形块体能够开挖和填充。</p>
+<p>使用以下命令切割边界形状：</p>
+<p>BLOCK CUT JOINT-SET</p>
+<p>BLOCK CUT TUNNEL</p>
+<p>BLOCK CUT GEOMETRY</p>
+<p>每条命令将多面体切割为一个或多个片段，这些片段共同组成所需形状。<a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block/cmd_block.cut.html#kwd:block.cut.joint-set" title="Cut blocks by a joint set described by the keywords supplied.  Defaults for
+these parameters, if not given, are zero, except for  persistence  and
+ number , which both default to 1...">按节理组切割命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">cut</span> <span class="pre">joint-set</span></code>）</a> 命令创建平面节理片段，详见<a class="reference internal" href="#jointsandjointsets"><span class="std std-ref">节理与节理组</span>（Joints and Joint Sets）</a>。<a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block/cmd_block.cut.html#kwd:block.cut.tunnel" title="Method 1: Create a tunnel between the two faces defined by the keywords  face-1 
+and  face-2 .  The shape of the tunnel face is prescribed by an arbitrary
+number of vertices with coordinates  va1 ,  va2 ,  va3 , etc.
+Straight lines between the vertices (in their respective order as listed) connect
+the two faces to define the tunnel boundary. The same number of vertices must
+exist on both faces, which may be positioned either inside or outside...">切割隧道命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">cut</span> <span class="pre">tunnel</span></code>）</a> 命令在块体中切割由前后两个端面定义的形状。<a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block/cmd_block.cut.html#kwd:block.cut.geometry" title="Cut using the geometry set with the given name `s`.  WARNING: a cut will be
+made for every polygon in the surface geometry, therefore to minimum the number
+of blocks created it is recommended to simplify the geometry as much as possible
+to reduce the number of polygons...">按几何切割区块命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">cut</span> <span class="pre">geometry</span></code>）</a> 命令根据导入的几何曲面切割块体。</p>
+<p class="h3 rubric">Block Cut Tunnel 命令</p>
+<p><a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block/cmd_block.cut.html#kwd:block.cut.tunnel" title="Method 1: Create a tunnel between the two faces defined by the keywords  face-1 
+and  face-2 .  The shape of the tunnel face is prescribed by an arbitrary
+number of vertices with coordinates  va1 ,  va2 ,  va3 , etc.
+Straight lines between the vertices (in their respective order as listed) connect
+the two faces to define the tunnel boundary. The same number of vertices must
+exist on both faces, which may be positioned either inside or outside...">切割隧道命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">cut</span> <span class="pre">tunnel</span></code>）</a> 命令创建隧道，其边界由连接两个端面（指定为 face-1 和 face-2）的平面片段构成。隧道端面形状由任意数量的顶点规定，坐标依次为 (x1,y1,z1)、(x2,y2,z2)、(x3,y3,z3) 等。两个端面必须具有相同数量的顶点；端面可以位于模型内部或外部。</p>
+<p>下例给出创建马蹄形隧道的简单示例。使用 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block/cmd_block.delete.html#command:block.delete" title="Delete blocks. All blocks with centroids in the optional range are deleted.
+If no range is specified, all blocks are deleted. *Only visible blocks are deleted.*
+Deleted blocks cannot be plotted or backfilled ( block.fill ). If the voids
+will eventually be filled, use the  block.excavate  command..."><code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">delete</span></code></a> 命令删除隧道区域（定义为分组“exc”）。生成的隧道见<a href="#cuttunnel">图 10（Figure  10）</a>。</p>
+<p><strong>使用 TUNNEL 命令创建的隧道</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+
+<span class="nb">block create</span><span class="n"> tunnel radius</span><span class="p">=</span><span class="m m-Double">2</span><span class="n"> length</span><span class="p">=</span><span class="o">-</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">10</span><span class="n"> radius</span><span class="o">-</span><span class="n">ratio</span><span class="p">=</span><span class="m m-Double">3.0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n"> dip</span><span class="p">=</span><span class="m m-Double">0</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction</span><span class="p">=</span><span class="m m-Double">0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n"> block</span><span class="o">-</span><span class="n">radial</span><span class="p">=</span><span class="m m-Double">2</span><span class="n"> block</span><span class="o">-</span><span class="n">tangential</span><span class="p">=</span><span class="m m-Double">1</span><span class="n"> block</span><span class="o">-</span><span class="n">axial</span><span class="p">=</span><span class="m m-Double">3</span>
+
+<span class="nb">block delete</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">2</span><span class="p">,</span><span class="m m-Double">2</span><span class="n"> pos</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">10</span><span class="n"> pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">2</span><span class="p">,</span><span class="m m-Double">2</span>
+</pre></div>
+</div>
+<div class="figure" id="cuttunnel">
+<a class="reference internal image-reference" href="../../../../../_images/tunnel2.png"><img alt="../../../../../_images/tunnel2.png" src="../../../../../_images/tunnel2.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 10：使用 TUNNEL 命令创建的隧道</span></p>
+</div>
+<p>通常，应在开挖隧道之前使模型达到平衡。用户必须注意，初始平衡计算期间，隧道边界上的虚拟节理不应影响模型响应。如果使用 BLOCK CUT TUNNEL 命令，虚拟节理处的块体会自动连接。如果通过 BLOCK CUT JOINT-SET 命令创建虚拟节理，则建议使用 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block/cmd_block.join.html#command:block.join" title='Join adjacent blocks in the range.  Adjacent blocks within an optional range
+can be joined into one block ( on ) or or unjoined ( off ). Joined
+blocks act as one block with a common centroid and volume calculated for all
+blocks joined together. A joined block group consists of one "master" block
+and one or more "slave" blocks. Use the  block.list.information  command
+to identify master and slave blocks in a block group. Note: only visible blocks...'><code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">join</span></code></a> 命令，连接由虚拟节理分隔的块体。使用 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block.contact/cmd_block.contact.list.html#command:block.contact.list" title="List information about block contact(s)..."><code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">contact</span> <span class="pre">list</span></code></a> 可识别接触是否为连接块体之间的主—从（m-s）接触。</p>
+<p class="h3 rubric">Block Cut Geometry 命令</p>
+<p><a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block/cmd_block.cut.html#kwd:block.cut.geometry" title="Cut using the geometry set with the given name `s`.  WARNING: a cut will be
+made for every polygon in the surface geometry, therefore to minimum the number
+of blocks created it is recommended to simplify the geometry as much as possible
+to reduce the number of polygons...">按几何切割区块命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">cut</span> <span class="pre">geometry</span></code>）</a> 命令可用于切出更复杂的形状。通常先使用第三方程序（例如 Rhino3D 或 Autocad）创建几何曲面，再导入 <span class="codename">3DEC</span>。几何曲面通常是定义某个连续三维表面的三角形或四边形集合。<span class="codename">3DEC</span> 接受的文件格式为 .dxf 和 .stl。也可以在 <span class="codename">3DEC</span> 内部使用命令和 <span class="codename">FISH</span> 创建几何曲面。更多详情见程序指南中的 :ref:<a href="#id1"><span class="problematic" id="id2">`</span></a>几何体 &lt;geometry&gt; 部分。</p>
+<p>几何体导入或创建后，可用于切割 <span class="codename">3DEC</span> 块体。几何曲面的每个面片都代表一条“节理”，并切割其接触到的所有块体。通过这种方式，几乎可以在 <span class="codename">3DEC</span> 模型中切出任意几何形状。</p>
+<p>警告：含有大量近乎平行面的复杂几何体，会产生大量切割，并可能形成许多薄片状块体，导致模型运行时出现数值问题。建议在用几何曲面切割 <span class="codename">3DEC</span> 模型之前，尽量简化曲面。</p>
+<p>与 tunnel 命令不同，使用 BLOCK CUT GEOMETRY 命令切割的块体不会自动连接。用户需要在切割后自行连接“构造”节理。</p>
+<p>下例演示 BLOCK CUT GEOMETRY 命令的使用。使用该命令之前，用户必须先通过 <a class="reference internal" href="../../../../../common/kernel/doc/manual/domain_manual/command_reference/cmd_domain/cmd_domain.extent.html#command:domain.extent" title="Specify the locations of the sides of the domain. Each set of values applies
+to the lower and upper bound of that dimension of the domain. If only  fxl 
+and  fxu  are specified, then the domain is a cube...">设置域范围命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">domain</span> <span class="pre">extent</span></code>）</a> 命令指定模型域。命令后跟模型在 x、y 和 z 方向的上下界。如果只给出两个数值，则假设 y 和 z 方向范围与 x 方向相同。模型域只需大于模型即可；设置模型域是为了提高切割算法的效率。本例还使用 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block/cmd_block.tolerance.html#command:block.tolerance" title="Sets general model tolerance.  It is used for:..."><code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">tolerance</span></code></a> 命令。<span class="codename">3DEC</span> 通过容差判断哪些块体可以切割、哪些不能切割。如果两个切面间距小于容差，就不执行切割，以避免形成极小块体。默认容差为块体尺寸的 1%。但对于此类复杂形状，往往必须减小容差，才能完成全部切割。本例采用 0.001（容差的单位为长度）。需要切出的几何体是一个椭球，如<a href="#ellipsoid-1">图 11（Figure  11）</a> 所示。剖面视图（<a href="#ellipsoid-2">图 12（Figure  12）</a>）显示切割成功完成。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">geometry import</span><span class="n"> </span><span class="s">'ellipsoid.stl'</span>
+
+<span class="nb">block tolerance</span><span class="n"> </span><span class="m m-Double">1e-3</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">2</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">2</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">6</span>
+
+<span class="nb">block cut</span><span class="n"> geometry </span><span class="s">'ellipsoid'</span>
+</pre></div>
+</div>
+<div class="figure" id="ellipsoid-1">
+<a class="reference internal image-reference" href="../../../../../_images/ellipsoid-1.png"><img alt="../../../../../_images/ellipsoid-1.png" src="../../../../../_images/ellipsoid-1.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 11：导入的几何体与切割前的块体</span></p>
+</div>
+<div class="figure" id="ellipsoid-2">
+<a class="reference internal image-reference" href="../../../../../_images/ellipsoid-2.png"><img alt="../../../../../_images/ellipsoid-2.png" src="../../../../../_images/ellipsoid-2.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 12：导入的几何体与切割后的块体剖面</span></p>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../3dechome.html"><span class="codename">3DEC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../modeling3dec.html"><span class="codename">3DEC</span> Modeling</a> »</li>
+<li class="nav-item nav-item-3"><a href="problemsolving.html">Problem Solving with <span class="codename">3DEC</span></a> »</li>
+<li class="nav-item nav-item-4"><a accesskey="U" href="modelgeneration.html">Model Generation</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="generatingblockassemblies.html" title="previous chapter"> Generating Block Assemblies</a> |    
+       <a href="generation-additional.html" title="next chapter">Block Generation: Densify and Octree</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Cutting Blocks" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

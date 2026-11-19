@@ -1,0 +1,282 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>固有频率与振型的计算 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="dynamic_examples.html" rel="next" title="Verification Examples"/>
+<link href="dynamic_dynamicinput.html" rel="prev" title="Application of Dynamic Input"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="calculation-of-natural-frequencies-and-modes-of-vibration">
+<span id="dynamic-calculations"></span><h1>固有频率与振型的计算</h1>
+<p><span class="codename">3DEC</span> 主要旨在模拟结构破坏。然而，为了满足完整的实际应用，<span class="codename">3DEC</span> 还应能够准确模拟结构在弹性范围内的动力反应。<span class="codename">3DEC</span> 块体模型在弹性范围内受动力激振时的性能，可通过计算小振幅振动的固有频率和振型来证明。</p>
+<p><span class="codename">3DEC</span> 中包含 <span class="fishcmd">block dynamic eigen modes</span> 命令，执行该命令可计算块体系统中不同振动模态的固有频率。该命令仅适用于刚性块体模型。固有频率和振型的计算假定结构体系是弹性的。刚性块体体系的运动学变量是每个块体的 6 个自由度，即 3 个平动和 3 个转动。在刚性块体模型中，可变形性由节理刚度给出。组装刚性块体体系的整体刚度矩阵，它将相邻块体施加于某块体的力和力矩与该块体的位移和转角联系起来。质量矩阵假定为对角矩阵，对每个块体由 3 个等于块体质量的元素和 3 个沿坐标方向的惯性矩组成。这一假定包含近似，因为沿坐标方向的惯性矩一般并不是块体的主惯性矩。</p>
+<p>整体刚度矩阵通过组装每个子接触的单元刚度矩阵形成。假定位移很小，对接触的两个块体分别考虑单位平动位移和单位转角。对于这 12 种位形中的每一种，根据法向刚度、剪切刚度和子接触面积计算子接触的法向力和剪切力。由此在每个块体质心处产生的力和力矩，构成 12 种位形下接触刚度矩阵的各列。将各子接触单元矩阵相加，即得到两个块体之间接触的刚度矩阵。组装所有接触矩阵即可得到整体刚度矩阵。</p>
+<p>采用简单的向量迭代过程计算特征值。该算法给出所要求的前 N 个特征值，但其排序不一定总是准确的，例如在存在重特征值时（如对称结构）。必须至少固定一个块体，且体系中不能有完全孤立的块体。动力（未缩放）质量必须已经计算。因此，必须先给出 <span class="fishcmd">model dynamic active on</span> 命令，随后给出 <span class="fishcmd">model cycle 0</span> 命令以强制计算动力质量。刚度矩阵需要较大的存储空间。因此，建议在特征值计算之后不要继续运行（即在其之前保存状态，并从该保存文件继续动力分析）。</p>
+<p><span class="codename">3DEC</span> 块体模型在低幅振动下的反应，可通过柱体和墙体的弯曲分析进行验证。Lemos（2007）给出了两个验证算例：方形柱的弹性振动模态和变厚度墙体的弹性振动模态。此处给出方形柱算例的一个版本。验证对象为一个高 10 m、截面为 1 × 1 m 的方形柱。</p>
+<div class="section" id="rigid-block-example">
+<h2>刚性块体示例</h2>
+<p>该柱由 10 个块体组成，并假定底部固定，见 <a href="3dec/docproject/source/options/dynamic/dynamic_calculations.html">图 dyn-clcs-pqqm（Figure dyn-clcs-pqqm）</a><code class="xref fnum docutils literal"><span class="pre">Figure</span> <span class="pre">dyn-clcs-pqqm</span></code>。</p>
+<p>柱体材料的质量密度为 2500 kg/m<sup>3</sup>。块体为刚性，法向刚度和剪切刚度分别为 1.0 GPa/m 和 0.4 GPa/m。<span class="codename">3DEC</span> 模型的数据文件列于 :ref:` SquarePillar.dat &lt;DynamicElasticVibration&gt;`。执行 <span class="fishcmd">block dynamic eigen modes 6</span> 命令计算前六个振型。在 <span class="codename">3DEC</span> 中计算得到的这些模态的描述如下：</p>
+<blockquote>
+<div><p>模态 1 —— 第 1 阶弯曲模态</p>
+<p>模态 2 —— 与模态 1 正交的振型</p>
+<p>模态 3 —— 第 2 阶弯曲模态</p>
+<p>模态 4 —— 与模态 2 正交的振型</p>
+<p>模态 5 —— 第 1 阶扭转模态</p>
+<p>模态 6 —— 第 3 阶弯曲模态</p>
+</div></blockquote>
+<p>请注意，为更准确地表示弯曲行为，本模型在刚性块体之间增设了接触。这通过 <span class="fishcmd">block face triangulate radial-8</span> 命令实现：该命令在两个刚性块体之间添加 1 个中心顶点和 4 个边中点，从而形成共 9 个点接触。这可改善弯矩的计算（见 Lemos 2007）。</p>
+<div class="figure align-center" id="dyn-clcs-pqqm">
+<a class="reference internal image-reference" href="../../../../../_images/blocks_mode1.png"><img alt="../../../../../_images/blocks_mode1.png" src="../../../../../_images/blocks_mode1.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 1：具有模态 1 变形的刚性块体方形柱模型。</span></p>
+</div>
+<p>将该柱前三个弯曲模态的固有频率与由 Timoshenko 梁理论计算得到的值进行比较（Chopra，1995；Ferreira 和 Fasshauer，2006）。前三个弯曲模态的固有频率列于下文。这些值与 Timoshenko 梁理论的值比较接近。</p>
+<table border="1" class="col1center col2center col3center docutils" id="id1">
+<caption><span class="caption-text">表 1：方形柱弯曲模态的固有频率（Hz）</span></caption>
+<colgroup>
+<col width="33%"/>
+<col width="33%"/>
+<col width="33%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">弯曲 <br/> 模态</th>
+<th class="head"><span class="codename">3DEC</span> 刚性块体 <br/> 模型</th>
+<th class="head">Timoshenko <br/> 梁理论</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>第 1 阶</td>
+<td>1.07</td>
+<td>1.02</td>
+</tr>
+<tr class="row-odd"><td>第 2 阶</td>
+<td>6.56</td>
+<td>6.09</td>
+</tr>
+<tr class="row-even"><td>第 3 阶</td>
+<td>14.8     </td>
+<td>16.1     </td>
+</tr>
+</tbody>
+</table>
+<p class="h2 rubric" id="dynamicelasticvibration">数据文件 - SquarePillar.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">program log</span><span class="o">-</span><span class="n">file </span><span class="s">"Rigid.log"</span>
+<span class="nb">program log</span><span class="n"> </span><span class="sx">on</span>
+
+<span class="nb">model new</span>
+<span class="nb">model title</span>
+<span class="n">Elastic vibration modes of a square pillar</span>
+<span class="c">;</span>
+<span class="nb">model config</span><span class="n"> dyn</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">;</span>
+
+<span class="c">; --- 几何形状 ---</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">10</span>
+
+<span class="nb">block cut</span><span class="n"> j</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">0</span><span class="n"> dip</span><span class="o">-</span><span class="n">dir </span><span class="m m-Double">0</span><span class="n"> origin </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">block cut</span><span class="n"> j</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">0</span><span class="n"> dip</span><span class="o">-</span><span class="n">dir </span><span class="m m-Double">0</span><span class="n"> origin </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">2</span>
+<span class="nb">block cut</span><span class="n"> j</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">0</span><span class="n"> dip</span><span class="o">-</span><span class="n">dir </span><span class="m m-Double">0</span><span class="n"> origin </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">3</span>
+<span class="nb">block cut</span><span class="n"> j</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">0</span><span class="n"> dip</span><span class="o">-</span><span class="n">dir </span><span class="m m-Double">0</span><span class="n"> origin </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">4</span>
+<span class="nb">block cut</span><span class="n"> j</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">0</span><span class="n"> dip</span><span class="o">-</span><span class="n">dir </span><span class="m m-Double">0</span><span class="n"> origin </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">5</span>
+<span class="nb">block cut</span><span class="n"> j</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">0</span><span class="n"> dip</span><span class="o">-</span><span class="n">dir </span><span class="m m-Double">0</span><span class="n"> origin </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">6</span>
+<span class="nb">block cut</span><span class="n"> j</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">0</span><span class="n"> dip</span><span class="o">-</span><span class="n">dir </span><span class="m m-Double">0</span><span class="n"> origin </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">7</span>
+<span class="nb">block cut</span><span class="n"> j</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">0</span><span class="n"> dip</span><span class="o">-</span><span class="n">dir </span><span class="m m-Double">0</span><span class="n"> origin </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">8</span>
+<span class="nb">block cut</span><span class="n"> j</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">0</span><span class="n"> dip</span><span class="o">-</span><span class="n">dir </span><span class="m m-Double">0</span><span class="n"> origin </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">9</span>
+
+<span class="nb">block create</span><span class="n"> brick </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">2</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">2</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> group </span><span class="s">'base'</span>
+
+<span class="c">; --- 生成子接触 ---</span>
+<span class="nb">block face triangulate</span><span class="n"> radial</span><span class="o">-</span><span class="m m-Double">8</span>
+<span class="nb">block contact gen-sub</span>
+
+<span class="c">; --- 参数 ---</span>
+<span class="nb">block prop</span><span class="n"> dens </span><span class="m m-Double">2500</span>
+<span class="nb">block contact jmodel</span><span class="n"> assign el</span>
+<span class="nb">block contact prop</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1e9</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">.4e9</span>
+<span class="nb">block contact material-table</span><span class="n"> default prop stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1e9</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                          stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">.4e9</span>
+
+<span class="nb">block fix</span><span class="n"> range group </span><span class="s">'base'</span>
+
+<span class="c">;</span>
+<span class="c">; 计算前六阶模态的特征值</span>
+<span class="nb">model </span><span class="ss">cyc</span><span class="n"> </span><span class="m m-Double">1</span>
+
+<span class="nb">block dynamic</span><span class="n"> eigen modes </span><span class="m m-Double">6</span>
+
+<span class="nb">program log</span><span class="n"> </span><span class="sx">off</span>
+
+<span class="c">; 绘制第一阶模态</span>
+<span class="nb">block dyn</span><span class="n"> eigen setm </span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">"sqpmodes"</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="deformable-block-example">
+<h2>可变形块体示例</h2>
+<p>该柱由 1 个块体组成，网格单元尺寸为 0.25 m。底部边界固定，如 <a href="3dec/docproject/source/options/dynamic/dynamic_calculations.html">图 dyn-clcs-pqqd（Figure dyn-clcs-pqqd）</a><code class="xref fnum docutils literal"><span class="pre">Figure</span> <span class="pre">dyn-clcs-pqqd</span></code> 所示。</p>
+<p>柱体材料的质量密度为 2500 kg/m<sup>3</sup>。杨氏模量和泊松比分别为 1.0 GPa 和 0.25。<span class="codename">3DEC</span> 模型的数据文件列于 :ref:` SquarePillarDeformable.dat &lt;DynamicElasticVibration2&gt;`。与上述刚性块体示例相同，执行 <span class="fishcmd">block dynamic eigen modes 6</span> 命令计算前六个振型。</p>
+<div class="figure align-center" id="dyn-clcs-pqqd">
+<a class="reference internal image-reference" href="../../../../../_images/block_mode1_def.png"><img alt="../../../../../_images/block_mode1_def.png" src="../../../../../_images/block_mode1_def.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：具有模态 1 变形的可变形块体方形柱模型。</span></p>
+</div>
+<p>将该柱前三个弯曲模态的固有频率与由 Timoshenko 梁理论计算得到的值进行比较（Chopra，1995；Ferreira 和 Fasshauer，2006）。前三个弯曲模态的固有频率列于下文。这些值与 Timoshenko 梁理论的值比较接近。</p>
+<table border="1" class="col1center col2center col3center docutils" id="id2">
+<caption><span class="caption-text">表 2：方形柱弯曲模态的固有频率（Hz）</span></caption>
+<colgroup>
+<col width="33%"/>
+<col width="33%"/>
+<col width="33%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">弯曲 <br/> 模态</th>
+<th class="head"><span class="codename">3DEC</span> 可变形块体 <br/> 模型</th>
+<th class="head">Timoshenko <br/> 梁理论</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>第 1 阶</td>
+<td>1.09</td>
+<td>1.02</td>
+</tr>
+<tr class="row-odd"><td>第 2 阶</td>
+<td>6.51</td>
+<td>6.09</td>
+</tr>
+<tr class="row-even"><td>第 3 阶</td>
+<td>15.8     </td>
+<td>16.1     </td>
+</tr>
+</tbody>
+</table>
+<p class="h2 rubric" id="dynamicelasticvibration2">数据文件 - SquarePillarDeformable.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">program log</span><span class="o">-</span><span class="n">file </span><span class="s">"Deformable.log"</span>
+<span class="nb">program log</span><span class="n"> </span><span class="sx">on</span>
+
+<span class="nb">model new</span>
+<span class="nb">model title</span>
+<span class="n">Elastic vibration modes of a square pillar</span>
+<span class="c">;</span>
+<span class="c">; 需要启用动力和有限元配置</span>
+<span class="nb">model config</span><span class="n"> dyn</span>
+<span class="nb">model config</span><span class="n"> fe</span>
+
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10000</span>
+<span class="c">;</span>
+
+<span class="c">; --- 几何形状 ---</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">10</span>
+
+<span class="c">; --- 生成网格单元 ---</span>
+<span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="m m-Double">0.25</span>
+
+<span class="c">; --- 参数 ---</span>
+<span class="nb">block prop</span><span class="n"> dens </span><span class="m m-Double">2500</span>
+<span class="nb">block zone cmodel</span><span class="n"> assign el</span>
+<span class="nb">block zone prop</span><span class="n"> dens </span><span class="m m-Double">2500</span><span class="n"> young </span><span class="m m-Double">1e9</span><span class="n"> poiss </span><span class="m m-Double">0.25</span>
+
+<span class="nb">block gridpoint apply</span><span class="n"> vel </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span>
+
+<span class="c">;</span>
+<span class="c">; 计算前六阶模态的特征值</span>
+<span class="nb">model </span><span class="ss">cyc</span><span class="n"> </span><span class="m m-Double">1</span>
+
+<span class="nb">block dynamic</span><span class="n"> eigen modes </span><span class="m m-Double">6</span>
+
+<span class="nb">program log</span><span class="n"> </span><span class="sx">off</span>
+
+<span class="c">; 绘制第一阶模态 </span>
+<span class="nb">block dyn</span><span class="n"> eigen setm</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">"sqpmodes-deformable"</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../3dechome.html"><span class="codename">3DEC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../options.html">Options</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="dynamic.html">Dynamic Analysis</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="dynamic_dynamicinput.html" title="previous chapter"> Application of Dynamic Input</a> |    
+       <a href="dynamic_examples.html" title="next chapter">Verification Examples</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Calculation of Natural Frequencies and Modes of Vibration" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

@@ -1,0 +1,400 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>加载与顺序建模 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="workingwithgeometricdata.html" rel="next" title="Working with Geometric Data"/>
+<link href="equilibrium-3dec.html" rel="prev" title="Reaching Equilibrium"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="loading-and-sequential-modeling">
+<span id="loading3dec"></span><h1>加载与顺序建模</h1>
+<p>在分析不同阶段施加不同的模型加载条件，可以模拟实际荷载的变化，例如开挖和施工顺序。加载变化可以通过多种方式指定，例如施加新的应力或位移边界、将块体材料模型改为空材料或其他材料模型，或改变材料属性。</p>
+<p>必须认识到，顺序建模遵循工程施工的阶段。大多数分析中，每个施工阶段对应荷载变化后的一个静力解，即物理时间不是参数。<span class="codename">3DEC</span> 还可进行传热和动力力学分析（见<a class="reference internal" href="../../options/dynamic/dynamic.html#dynamic-3dec"><span class="std std-ref">动力分析</span>（Dynamic Analysis）</a>和<a class="reference internal" href="../../options/thermal/thermal.html#thermal-option"><span class="std std-ref">热分析选项</span>（Thermal Option）</a>）。在这些情况下，例如可以先求得平衡应力状态的静力解，随后针对施加的爆炸激励进行动力计算，或对节理中的流动进行瞬态计算。</p>
+<p>另一方面，不能直接模拟时间相关行为。必须运用一定工程判断估计时间效应。例如，可以在发生预定量的位移或应变后改变模型参数，并估计该位移发生于某一给定时段内。</p>
+<p>加载变化必须产生不平衡力，才能改变模型响应。因此，改变弹性属性不会产生影响；改变强度属性则可能产生影响，条件是这种变化使当前应力状态超出破坏极限。</p>
+<p>下例演示推荐的顺序建模方法。该问题分析节理岩体中地下洞室的稳定性，并评估不同类型的支护措施。需要分析的阶段包括：</p>
+<ol class="arabic simple">
+<li>在原位应力状态下达到平衡；</li>
+<li>开挖隧道；以及</li>
+<li>施加隧道支护。</li>
+</ol>
+<p>目的是研究原位条件下开挖的稳定性，并评估支护措施的作用。评估两类支护：锚索和连续混凝土衬砌。注意，该模型为快速运行而作了大幅简化，但仍能展示加载与顺序建模的推荐步骤。</p>
+<p>隧道所在岩体包含三条主要断层：第一条倾角 65◦、倾向 40◦；第二条倾角 70◦、倾向 270◦；第三条倾角 60◦、倾向 130◦。隧道为马蹄形，其中心沿模型 y 轴布置。隧道通过 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block/cmd_block.cut.html#kwd:block.cut.tunnel" title="Method 1: Create a tunnel between the two faces defined by the keywords  face-1 
+and  face-2 .  The shape of the tunnel face is prescribed by an arbitrary
+number of vertices with coordinates  va1 ,  va2 ,  va3 , etc.
+Straight lines between the vertices (in their respective order as listed) connect
+the two faces to define the tunnel boundary. The same number of vertices must
+exist on both faces, which may be positioned either inside or outside...">切割隧道命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">cut</span> <span class="pre">tunnel</span></code>）</a> 命令创建。使用以下一系列命令建立模型：</p>
+<p class="rubric" id="tunnel-geom-dat"><strong>tunnel_geom.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10000</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+
+<span class="c">; ---- 设置隧道几何形状 ----</span>
+
+<span class="nb">block create</span><span class="n"> brick </span><span class="o">-</span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">10</span><span class="n">  </span><span class="o">-</span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">10</span><span class="n">  </span><span class="o">-</span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">10</span>
+
+<span class="c">; --- tunz：定义隧道几何参数的 FISH 函数 --------</span>
+<span class="c">; ... 隧道沿 Y 轴延伸</span>
+<span class="c">; ... 半圆形拱顶，圆心位于 (0,0)</span>
+<span class="c">;</span>
+<span class="nb">fish define</span><span class="ni"> tunz</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="c">; 将切割隧道所需的 x、z 坐标填入数据表</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> tab </span><span class="p">=</span><span class="ni"> </span><span class="k">table.create</span><span class="p">(</span><span class="s">'tunnel'</span><span class="p">)</span>
+<span class="ni">  </span>
+<span class="c">; --- 底部坐标 ---</span>
+<span class="c">; 从左下角开始，沿逆时针方向依次排列</span>
+<span class="ni">  </span><span class="k">table.x</span><span class="p">(</span><span class="ni">tab</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">4</span>
+<span class="ni">  </span><span class="k">table.y</span><span class="p">(</span><span class="ni">tab</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">4</span>
+<span class="ni">  </span><span class="k">table.x</span><span class="p">(</span><span class="ni">tab</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">4</span>
+<span class="ni">  </span><span class="k">table.y</span><span class="p">(</span><span class="ni">tab</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">4</span>
+<span class="c">;</span>
+<span class="ni">  </span><span class="c">; 圆弧的圆心和半径</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> txc </span><span class="p">=</span><span class="ni">  </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> tzc </span><span class="p">=</span><span class="ni">  </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> tr  </span><span class="p">=</span><span class="ni">  </span><span class="m m-Double">4.0</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="c">; 8 段</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> seg </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">8</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> i </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="ni">seg</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> theta </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">180.0</span><span class="o">/</span><span class="p">(</span><span class="ni">seg</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="ni">i</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="o">*</span><span class="k">math.degrad</span>
+<span class="ni">    </span><span class="k">table.x</span><span class="p">(</span><span class="ni">tab</span><span class="p">,</span><span class="ni">i</span><span class="o">+</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> txc </span><span class="o">+</span><span class="ni"> tr</span><span class="o">*</span><span class="k">math.cos</span><span class="p">(</span><span class="ni">theta</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">table.y</span><span class="p">(</span><span class="ni">tab</span><span class="p">,</span><span class="ni">i</span><span class="o">+</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> tzc </span><span class="o">+</span><span class="ni"> tr</span><span class="o">*</span><span class="k">math.sin</span><span class="p">(</span><span class="ni">theta</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">end_loop</span>
+
+<span class="nb">end</span>
+<span class="c">;</span>
+<span class="c">; ---------------------------------------------------------------------</span>
+<span class="c">; 执行函数</span>
+<span class="ni">[tunz]</span>
+<span class="c">;</span>
+<span class="nb">block group</span><span class="n"> </span><span class="s">'rock'</span>
+<span class="c">;</span>
+<span class="c">; 创建外表面</span>
+<span class="nb">block cut</span><span class="n"> tunnel  radial </span><span class="sx">...</span>
+<span class="n">        table</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="s">'tunnel'</span><span class="n"> axis </span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">0</span><span class="n"> group </span><span class="s">'exc'</span>
+<span class="c">;</span>
+<span class="c">; --- 节理 --- 三条节理在拱顶形成楔体</span>
+<span class="c">;</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">270</span><span class="n"> dip </span><span class="m m-Double">70</span><span class="n"> origin </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">5.7</span><span class="n">  jointset</span><span class="o">-</span><span class="n">id </span><span class="m m-Double">10</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">40</span><span class="n">  dip </span><span class="m m-Double">65</span><span class="n"> origin </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">5.7</span><span class="n">  jointset</span><span class="o">-</span><span class="n">id </span><span class="m m-Double">10</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">130</span><span class="n"> dip </span><span class="m m-Double">60</span><span class="n"> origin </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">5.7</span><span class="n">  jointset</span><span class="o">-</span><span class="n">id </span><span class="m m-Double">10</span>
+<span class="c">;</span>
+<span class="c">; --- 网格生成 ---</span>
+<span class="c">; 岩体块体</span>
+<span class="nb">block hide</span><span class="n"> range group </span><span class="s">'exc'</span>
+<span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="m m-Double">2.5</span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">;</span>
+<span class="c">; 隧道</span>
+<span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="m m-Double">1</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'tunnel_zoned'</span>
+</pre></div>
+</div>
+<p><a href="#tunnel-blocks1">图 1（Figure  1）</a> 显示生成的模型布置。隧道几何参数在 <span class="codename">FISH</span> 函数 <code class="xref fish fish-kwd docutils literal"><span class="pre">tunz</span></code> 中定义。隧道内部区域赋予分组 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information...">分组名 sexc（<span class="varstring"><span class="null">sexc</span></span>）</a>。注意，先创建隧道，再生成实际节理组。使用 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block/cmd_block.cut.html#kwd:block.cut.tunnel" title="Method 1: Create a tunnel between the two faces defined by the keywords  face-1 
+and  face-2 .  The shape of the tunnel face is prescribed by an arbitrary
+number of vertices with coordinates  va1 ,  va2 ,  va3 , etc.
+Straight lines between the vertices (in their respective order as listed) connect
+the two faces to define the tunnel boundary. The same number of vertices must
+exist on both faces, which may be positioned either inside or outside...">切割隧道命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">cut</span> <span class="pre">tunnel</span></code>）</a> 命令时，块体会自动连接。分别对岩石块体和隧道内部区域生成网格，以在关注区域（隧道内部及周边）创建较小网格单元。</p>
+<div class="figure" id="tunnel-blocks1">
+<a class="reference internal image-reference" href="../../../../../_images/blocks11.png"><img alt="../../../../../_images/blocks11.png" src="../../../../../_images/blocks11.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 1：隧道区域的 <span class="codename">3DEC</span> 模型。</span></p>
+</div>
+<p>接下来，为网格单元和节理赋予本构模型及材料属性。注意，应力／刚度采用 MPa 单位，因此以 kg/m^3 表示的密度必须除以 1e6。</p>
+<p>施加原位应力状态和边界条件，假设隧道深度为 200 m，水平与竖直应力之比为 0.5。注意，对于实际模拟，边界距隧道开挖面过近，应将边界移至更远处，以尽量减小其对模型结果的影响。</p>
+<p>最后，启用重力并求解，使模型达到初始平衡。赋予材料属性并建立初始应力状态的命令如下。</p>
+<p class="rubric" id="tunnel-ini-dat"><strong>tunnel_ini.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; ---- 达到初始应力状态 ----</span>
+<span class="c">;</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'tunnel_zoned'</span>
+<span class="c">;</span>
+<span class="c">; --- 参数，应力单位为 MPa ---</span>
+<span class="c">;</span>
+<span class="c">; --- 岩石 ---</span>
+<span class="c">; 密度 = 2700 kg/m3 -&gt; 0.0027 </span>
+<span class="c">; E=50 GPa，泊松比=0.2</span>
+<span class="nb">block zone cmodel</span><span class="n"> assign el</span>
+<span class="nb">block zone prop</span><span class="n"> dens </span><span class="m m-Double">0.0027</span><span class="n"> young </span><span class="m m-Double">50000</span><span class="n"> poiss </span><span class="m m-Double">0.2</span>
+<span class="c">;</span>
+<span class="c">; --- 节理 ---</span>
+<span class="nb">block contact jmodel</span><span class="n"> assign mohr</span>
+<span class="nb">block contact prop</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">10000</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">2000</span><span class="n"> fric </span><span class="m m-Double">25</span>
+<span class="nb">block contact material-table</span><span class="n"> default prop stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">10000</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">2000</span><span class="n"> fric </span><span class="m m-Double">25</span>
+
+<span class="c">; 重力</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">10</span>
+<span class="c">;</span>
+<span class="c">; --- 原位应力状态 ---</span>
+<span class="c">; 假设隧道中心埋深为 200 m，模型顶部埋深为 190 m</span>
+<span class="nb">block insitu</span><span class="n"> topography ratio</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0.5</span><span class="n"> ratio</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0.5</span><span class="n"> overburden </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">190</span><span class="o">*</span><span class="m m-Double">0.0027</span><span class="o">*</span><span class="m m-Double">9.81</span><span class="ni">]</span>
+<span class="c">;</span>
+<span class="c">; --- 原位应力状态的边界条件 ---</span>
+<span class="nb">block face apply</span><span class="n"> stress </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">190</span><span class="o">*</span><span class="m m-Double">0.0027</span><span class="o">*</span><span class="m m-Double">10</span><span class="ni">]</span><span class="n">  </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">10.0</span>
+<span class="c">; 底部</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">10.0</span>
+<span class="c">; 侧面</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">10.0</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x  </span><span class="m m-Double">10.0</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">10.0</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">y  </span><span class="m m-Double">10.0</span>
+<span class="c">;</span>
+<span class="c">; --- 用于监测收敛的历程 ---</span>
+<span class="n">hist interval</span><span class="p">=</span><span class="m m-Double">1</span>
+<span class="n">model his mechanical unbal</span><span class="o">-</span><span class="n">max</span>
+<span class="c">; 模型顶部</span>
+<span class="nb">block hist</span><span class="n"> dis</span><span class="o">-</span><span class="n">x pos </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">block hist</span><span class="n"> dis</span><span class="o">-</span><span class="n">y pos </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">block hist</span><span class="n"> dis</span><span class="o">-</span><span class="n">z pos </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="c">;</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'tunnel_ini'</span>
+</pre></div>
+</div>
+<p>监测模型中的最大不平衡力和顶部边界位移，有助于确认是否在 1000 个循环内达到初始平衡应力状态。<a href="#tunnel-disphis1">图 2（Figure  2）</a> 显示模型顶部网格点 (x = 0, y = 0, z = 10) 的 x、y 和 z 位移历程。</p>
+<p class="rubric" id="tunnel-exc-dat"><strong>tunnel_exc.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model restore</span><span class="n"> </span><span class="s">'tunnel_ini'</span>
+
+<span class="c">; 开挖内部块体</span>
+<span class="nb">block excavate</span><span class="n"> range group </span><span class="s">'exc'</span>
+<span class="c">;</span>
+<span class="c">; 隧道拱顶处的历程监测点</span>
+<span class="nb">block gridpoint ini</span><span class="n"> disp </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="n">model mech time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">0</span>
+<span class="nb">history delete</span>
+
+<span class="c">; 楔体内某点的历程</span>
+<span class="nb">block hist</span><span class="n"> name </span><span class="s">'Vertical Displacement'</span><span class="n"> dis</span><span class="o">-</span><span class="n">z pos </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.2</span><span class="n"> </span><span class="m m-Double">4.3</span>
+
+<span class="c">;</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">5000</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'tunnel_exc'</span>
+<span class="n"> </span>
+<span class="nb">block hide</span><span class="n"> range plane dip </span><span class="m m-Double">60</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">130</span><span class="n"> or </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">5.7</span><span class="n"> above</span>
+</pre></div>
+</div>
+<div class="figure" id="tunnel-disphis1">
+<a class="reference internal image-reference" href="../../../../../_images/disp-his1.png"><img alt="../../../../../_images/disp-his1.png" src="../../../../../_images/disp-his1.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 2：模型顶部位移历程。</span></p>
+</div>
+<p>若在无支护情况下开挖隧道，一个岩石楔形体会从顶板分离并掉落。运行 <a class="reference internal" href="#tunnel-exc-dat"><span class="std std-ref">tunnel_exc.dat</span></a> 可演示该现象；通过 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block/cmd_block.excavate.html#command:block.excavate" title="All blocks within the range are excavated. Excavated blocks are assigned a constitutive
+model and model properties the same as adjacent non-excavated blocks.  However,
+the excavated blocks transmit no forces to the un-excavated grid.  Only displacements
+are calculated in the excavated blocks to enable future filling. The blocks
+can be replaced later with the  block.fill  command. This command can only
+be used with deformable blocks; use  block.delete  for rigid blocks..."><code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">excavate</span></code></a> 命令开挖隧道，并在循环计算时监测顶板某位置的 z 位移。<a href="#tunnel-disphisroof1">图 3（Figure  3）</a> 绘出 z 位移历程，表明该位置正在向下运动。<a href="#tunnel-blocks2">图 4（Figure  4）</a> 是分离楔形体的局部放大视图，为便于观察已隐藏周围块体。</p>
+<div class="figure" id="tunnel-disphisroof1">
+<a class="reference internal image-reference" href="../../../../../_images/disp-his-roof1.png"><img alt="../../../../../_images/disp-his-roof1.png" src="../../../../../_images/disp-his-roof1.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 3：隧道顶板竖直位移历程。</span></p>
+</div>
+<div class="figure" id="tunnel-blocks2">
+<a class="reference internal image-reference" href="../../../../../_images/blocks21.png"><img alt="../../../../../_images/blocks21.png" src="../../../../../_images/blocks21.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 4：顶板楔形体局部放大视图（周围块体已隐藏）。</span></p>
+</div>
+<p>接下来评估锚杆支护的效果。使用 <code class="xref fish fish-cmd docutils literal"><span class="pre">struct</span> <span class="pre">cable</span> <span class="pre">create</span></code> 命令安装全长黏结锚索单元。有关这类结构支护的详细说明，请参阅<a class="reference internal" href="../../../../../common/sel/doc/manual/sel_manual/cables/cables.html#cable-structural-elements"><span class="std std-ref">锚索结构单元</span>（Cable Structural Elements）</a>。</p>
+<p><a class="reference internal" href="#tunnel-cables-dat"><span class="std std-ref">tunnel_cables.dat</span></a> 列出开挖隧道和安装锚索单元的命令。注意，这里使用 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block/cmd_block.excavate.html#command:block.excavate" title="All blocks within the range are excavated. Excavated blocks are assigned a constitutive
+model and model properties the same as adjacent non-excavated blocks.  However,
+the excavated blocks transmit no forces to the un-excavated grid.  Only displacements
+are calculated in the excavated blocks to enable future filling. The blocks
+can be replaced later with the  block.fill  command. This command can only
+be used with deformable blocks; use  block.delete  for rigid blocks..."><code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">excavate</span></code></a> 命令，而不是 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block/cmd_block.delete.html#command:block.delete" title="Delete blocks. All blocks with centroids in the optional range are deleted.
+If no range is specified, all blocks are deleted. *Only visible blocks are deleted.*
+Deleted blocks cannot be plotted or backfilled ( block.fill ). If the voids
+will eventually be filled, use the  block.excavate  command..."><code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">delete</span></code></a> 命令，以便查看已开挖区域。<a href="#tunnel-cables">图 5（Figure  5）</a> 显示开挖周边锚索单元的位置。</p>
+<p class="rubric" id="tunnel-cables-dat"><strong>tunnel_cables.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model restore</span><span class="n"> </span><span class="s">'tunnel_ini'</span>
+<span class="c">;</span>
+<span class="c">; 删除内部块体</span>
+<span class="nb">block excavate</span><span class="n"> range group </span><span class="s">'exc'</span>
+<span class="c">;</span>
+<span class="c">;</span>
+<span class="c">; --- 安装锚索单元 ---</span>
+<span class="nb">struct cable create</span><span class="n">  by</span><span class="o">-</span><span class="n">line </span><span class="o">-</span><span class="m m-Double">8</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2</span><span class="n">   </span><span class="o">-</span><span class="m m-Double">4.05</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2</span><span class="n">  seg </span><span class="m m-Double">4</span>
+<span class="nb">struct cable create</span><span class="n">  by</span><span class="o">-</span><span class="n">line </span><span class="o">-</span><span class="m m-Double">8</span><span class="n">  </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2</span><span class="n">   </span><span class="o">-</span><span class="m m-Double">4.05</span><span class="n">  </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2</span><span class="n">  seg </span><span class="m m-Double">4</span>
+<span class="nb">struct cable create</span><span class="n">  by</span><span class="o">-</span><span class="n">line </span><span class="o">-</span><span class="m m-Double">8</span><span class="n">  </span><span class="m m-Double">5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2</span><span class="n">   </span><span class="o">-</span><span class="m m-Double">4.05</span><span class="n">  </span><span class="m m-Double">5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2</span><span class="n">  seg </span><span class="m m-Double">4</span>
+<span class="nb">struct cable create</span><span class="n">  by</span><span class="o">-</span><span class="n">line </span><span class="o">-</span><span class="m m-Double">6.8</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5</span><span class="n">  </span><span class="m m-Double">6.8</span><span class="n">   </span><span class="o">-</span><span class="m m-Double">2.85</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5</span><span class="n">  </span><span class="m m-Double">2.85</span><span class="n">  seg </span><span class="m m-Double">4</span>
+<span class="nb">struct cable create</span><span class="n">  by</span><span class="o">-</span><span class="n">line </span><span class="o">-</span><span class="m m-Double">6.8</span><span class="n">  </span><span class="m m-Double">0</span><span class="n">  </span><span class="m m-Double">6.8</span><span class="n">   </span><span class="o">-</span><span class="m m-Double">2.85</span><span class="n">  </span><span class="m m-Double">0</span><span class="n">  </span><span class="m m-Double">2.85</span><span class="n">  seg </span><span class="m m-Double">4</span>
+<span class="nb">struct cable create</span><span class="n">  by</span><span class="o">-</span><span class="n">line </span><span class="o">-</span><span class="m m-Double">6.8</span><span class="n">  </span><span class="m m-Double">5</span><span class="n">  </span><span class="m m-Double">6.8</span><span class="n">   </span><span class="o">-</span><span class="m m-Double">2.85</span><span class="n">  </span><span class="m m-Double">5</span><span class="n">  </span><span class="m m-Double">2.85</span><span class="n">  seg </span><span class="m m-Double">4</span>
+<span class="c">;</span>
+<span class="nb">struct cable create</span><span class="n">  by</span><span class="o">-</span><span class="n">line </span><span class="m m-Double">8</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2</span><span class="n">   </span><span class="m m-Double">4.05</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2</span><span class="n">  seg </span><span class="m m-Double">4</span>
+<span class="nb">struct cable create</span><span class="n">  by</span><span class="o">-</span><span class="n">line </span><span class="m m-Double">8</span><span class="n">  </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2</span><span class="n">   </span><span class="m m-Double">4.05</span><span class="n">  </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2</span><span class="n">  seg </span><span class="m m-Double">4</span>
+<span class="nb">struct cable create</span><span class="n">  by</span><span class="o">-</span><span class="n">line </span><span class="m m-Double">8</span><span class="n">  </span><span class="m m-Double">5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2</span><span class="n">   </span><span class="m m-Double">4.05</span><span class="n">  </span><span class="m m-Double">5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2</span><span class="n">  seg </span><span class="m m-Double">4</span>
+<span class="nb">struct cable create</span><span class="n">  by</span><span class="o">-</span><span class="n">line </span><span class="m m-Double">6.8</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5</span><span class="n">  </span><span class="m m-Double">6.8</span><span class="n">   </span><span class="m m-Double">2.85</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5</span><span class="n">  </span><span class="m m-Double">2.85</span><span class="n">  seg </span><span class="m m-Double">4</span>
+<span class="nb">struct cable create</span><span class="n">  by</span><span class="o">-</span><span class="n">line </span><span class="m m-Double">6.8</span><span class="n">  </span><span class="m m-Double">0</span><span class="n">  </span><span class="m m-Double">6.8</span><span class="n">   </span><span class="m m-Double">2.85</span><span class="n">  </span><span class="m m-Double">0</span><span class="n">  </span><span class="m m-Double">2.85</span><span class="n">  seg </span><span class="m m-Double">4</span>
+<span class="nb">struct cable create</span><span class="n">  by</span><span class="o">-</span><span class="n">line </span><span class="m m-Double">6.8</span><span class="n">  </span><span class="m m-Double">5</span><span class="n">  </span><span class="m m-Double">6.8</span><span class="n">   </span><span class="m m-Double">2.85</span><span class="n">  </span><span class="m m-Double">5</span><span class="n">  </span><span class="m m-Double">2.85</span><span class="n">  seg </span><span class="m m-Double">4</span>
+<span class="c">;</span>
+<span class="nb">struct cable create</span><span class="n"> by</span><span class="o">-</span><span class="n">line </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">4.1</span><span class="n">   </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">8</span><span class="n">  seg </span><span class="m m-Double">4</span>
+<span class="nb">struct cable create</span><span class="n"> by</span><span class="o">-</span><span class="n">line </span><span class="m m-Double">0</span><span class="n">  </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">4.1</span><span class="n">   </span><span class="m m-Double">0</span><span class="n">  </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">8</span><span class="n">  seg </span><span class="m m-Double">4</span>
+<span class="nb">struct cable create</span><span class="n"> by</span><span class="o">-</span><span class="n">line </span><span class="m m-Double">0</span><span class="n">  </span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">4.1</span><span class="n">   </span><span class="m m-Double">0</span><span class="n">  </span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">8</span><span class="n">  seg </span><span class="m m-Double">4</span>
+<span class="c">;</span>
+<span class="c">; 初始采用较大的浆体强度</span>
+<span class="nb">struct cable prop</span><span class="n"> cross</span><span class="o">-</span><span class="n">sectional</span><span class="o">-</span><span class="n">area </span><span class="m m-Double">5e-4</span><span class="n"> young </span><span class="m m-Double">100000</span><span class="n"> yield</span><span class="o">-</span><span class="n">tension </span><span class="m m-Double">0.55</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  grout</span><span class="o">-</span><span class="n">stiffness </span><span class="m m-Double">15e4</span><span class="n"> grout</span><span class="o">-</span><span class="n">cohesion </span><span class="m m-Double">1e6</span>
+<span class="c">;</span>
+<span class="nb">history delete</span>
+<span class="nb">block gridpoint ini</span><span class="n"> disp </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+
+<span class="c">; 楔体内某点的历程</span>
+<span class="nb">block hist</span><span class="n"> name </span><span class="s">'Vertical Displacement'</span><span class="n"> dis</span><span class="o">-</span><span class="n">z pos </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.2</span><span class="n"> </span><span class="m m-Double">4.3</span>
+<span class="c">;</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">500</span>
+<span class="c">;</span>
+<span class="c">; 设置真实浆体强度</span>
+<span class="nb">struct cable prop</span><span class="n"> grout</span><span class="o">-</span><span class="n">cohesion </span><span class="m m-Double">0.8</span>
+<span class="c">;</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1500</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'tunnel_cables'</span>
+</pre></div>
+</div>
+<div class="figure" id="tunnel-cables">
+<a class="reference internal image-reference" href="../../../../../_images/cables.png"><img alt="../../../../../_images/cables.png" src="../../../../../_images/cables.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 5：布置于隧道开挖周边、按轴力等值着色的锚索。</span></p>
+</div>
+<p>加入锚索后，顶板得到稳定。z 位移历程现表明，楔形体运动在约 28 mm 位移处停止（见<a href="#tunnel-disphisroofcable">图 6（Figure  6）</a>）。如<a href="#tunnel-cables">图 5（Figure  5）</a> 所示，支护中产生的轴力以顶板单元最大。</p>
+<div class="figure" id="tunnel-disphisroofcable">
+<a class="reference internal image-reference" href="../../../../../_images/disp-his-roof-cable.png"><img alt="../../../../../_images/disp-his-roof-cable.png" src="../../../../../_images/disp-his-roof-cable.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 6：采用锚索支护时隧道顶板的竖直位移历程。</span></p>
+</div>
+<p>隧道开挖与支护顺序模型，应模拟隧道支护安装之前、开挖推进过程中周围应力的变化。可在 <span class="codename">3DEC</span> 模型中分段开挖隧道，并在每段开挖后安装支护。这是模拟隧道推进引起支护荷载变化的推荐方法。</p>
+<p>另一种方法是在本简化模型中分级降低隧道周边面力，并在面力完全移除前安装衬砌，以模拟隧道推进的影响。这展示了渐进开挖某一隧道断面的模拟方法。下列数据文件给出了这一方法。</p>
+<p class="rubric" id="tunnel-liner-dat"><strong>tunnel_liner.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="n">model rest </span><span class="s">'tunnel_ini'</span>
+
+<span class="c">; 标记边界面</span>
+<span class="nb">block face group</span><span class="n"> </span><span class="s">'surface'</span><span class="n"> range group</span><span class="o">-</span><span class="n">int </span><span class="s">'rock'</span><span class="n"> </span><span class="s">'exc'</span>
+
+<span class="c">; 删除内部块体</span>
+<span class="nb">block delete</span><span class="n"> range group </span><span class="s">'exc'</span>
+
+<span class="c">; 施加 50% 应力</span>
+<span class="nb">block face apply</span><span class="n"> stress </span><span class="o">-</span><span class="m m-Double">1.35</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1.35</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2.7</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'surface'</span><span class="n"> </span>
+
+<span class="c">; 重新施加前后边界约束</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">10.0</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">y  </span><span class="m m-Double">10.0</span>
+
+<span class="c">; 楔体内某点的历程</span>
+<span class="nb">block hist</span><span class="n"> name </span><span class="s">'Vertical Displacement'</span><span class="n"> dis</span><span class="o">-</span><span class="n">z pos </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.2</span><span class="n"> </span><span class="m m-Double">4.3</span>
+<span class="nb">model </span><span class="ss">cyc</span><span class="n"> </span><span class="m m-Double">2000</span>
+
+<span class="c">; 移除荷载</span>
+<span class="nb">block face apply-remove</span><span class="n"> stress range group </span><span class="s">'surface'</span>
+
+<span class="c">; 重新施加前后边界约束</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">10.0</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">y  </span><span class="m m-Double">10.0</span>
+
+<span class="c">; 添加衬砌</span>
+<span class="c">; 需要设置容差，因为初始开挖时块体已发生少量位移</span>
+<span class="nb">struct liner create</span><span class="n"> by</span><span class="o">-</span><span class="n">block</span><span class="o">-</span><span class="n">face tolerance </span><span class="m m-Double">1e-3</span><span class="n"> range group </span><span class="s">'surface'</span>
+
+<span class="nb">struct liner prop</span><span class="n"> coupling</span><span class="o">-</span><span class="n">fric</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">60</span><span class="n"> coupling</span><span class="o">-</span><span class="n">coh</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">.5e6</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  coupling</span><span class="o">-</span><span class="n">stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1e9</span><span class="n"> coupling</span><span class="o">-</span><span class="n">stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1e9</span>
+<span class="nb">struct liner prop</span><span class="n"> isotropic </span><span class="m m-Double">15e9</span><span class="n"> </span><span class="m m-Double">.15</span><span class="n"> thick </span><span class="m m-Double">.20</span><span class="n"> coupling</span><span class="o">-</span><span class="n">yield</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">.3e6</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">2000</span><span class="n"> </span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'tunnel_liner'</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block.face/cmd_block.face.apply.html#command:block.face.apply" title="Apply a condition at block faces within the range..."><code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">face</span> <span class="pre">apply</span></code></a> 命令将原位应力状态的 50% 施加到衬砌—岩石接触面上，范围覆盖隧道表面全部面。在隧道面力降低 50% 的情况下，循环计算至平衡状态。然后完全移除面力，并通过 <code class="xref fish fish-cmd docutils literal"><span class="pre">struct</span> <span class="pre">liner</span> <span class="pre">create</span></code> 命令安装衬砌。<a href=".html#tunnel-liner">图 （Figure）</a><code class="xref fnum docutils literal"><span class="pre">Figure</span> <span class="pre">#tunnel-liner</span></code> 显示为本模型创建的衬砌单元。继续循环，使模型达到新的平衡状态。衬砌中产生的荷载来自面力从 50% 降至零的过程。</p>
+<div class="figure" id="id1">
+<a class="reference internal image-reference" href="../../../../../_images/liner-moment1.png"><img alt="../../../../../_images/liner-moment1.png" src="../../../../../_images/liner-moment1.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 7：隧道周边按最大弯矩等值着色的衬砌单元。</span></p>
+</div>
+<p>注意，本例选择将隧道面力降低 50% 是任意的，仅用于演示。如果需要模拟渐进开挖，可能必须采用更小增量降低面力，以尽量减小瞬态应力波对模型响应的影响。</p>
+<p>顶板位移见<a href="#tunnel-disphisroofliner">图 8（Figure  8）</a>。面力降低 50% 时产生约 1 mm 竖直位移；隧道面力完全移除并安装衬砌后，又产生约 0.1 mm 位移。</p>
+<div class="figure" id="tunnel-disphisroofliner">
+<a class="reference internal image-reference" href="../../../../../_images/disp-his-roof-liner.png"><img alt="../../../../../_images/disp-his-roof-liner.png" src="../../../../../_images/disp-his-roof-liner.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 8：采用衬砌支护时隧道顶板的竖直位移历程。</span></p>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../3dechome.html"><span class="codename">3DEC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../modeling3dec.html"><span class="codename">3DEC</span> Modeling</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="problemsolving.html">Problem Solving with <span class="codename">3DEC</span></a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="equilibrium-3dec.html" title="previous chapter"> Reaching Equilibrium</a> |    
+       <a href="workingwithgeometricdata.html" title="next chapter">Working with Geometric Data</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Loading and Sequential Modeling" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

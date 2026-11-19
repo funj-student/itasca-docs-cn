@@ -1,0 +1,1185 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>节理流体流动 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="fluid_proppant.html" rel="next" title="Proppant"/>
+<link href="fluid_matrix.html" rel="prev" title="Matrix Fluid Flow"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="joint-fluid-flow">
+<span id="fluid-joint"></span><h1>节理流体流动</h1>
+<div class="section" id="introduction">
+<h2>引言</h2>
+<p>由于岩石节理影响岩体整体力学和水力行为，人们已进行了广泛试验与分析研究。节理是两个岩石表面之间的接触面，其水力—力学行为主要由两表面粗糙度控制。粗糙度取决于节理成因，例如张裂面比经历过一定剪切变形的裂面更粗糙。节理紧邻的狭窄岩石区域，包括节理本身，其水力—力学行为显著不同于远离节理的“完整”岩石。因此：</p>
+<ol class="arabic simple">
+<li>按单位节理“厚度”计，节理变形性远大于完整岩石。两个接触表面的粗糙度，使实际接触面积远小于二者的交叠面积。</li>
+<li>岩体沿节理平面的抗剪强度远小于完整岩石。节理是材料中的不连续面，抵抗剪切变形主要依靠摩擦和接触表面粗糙度。</li>
+<li>节理横截面积远大于完整岩石孔隙的横截面积，因此通过节理的流量比通过完整岩石孔隙的流量高数个数量级。然而，未破裂块体的孔隙分布于整个岩体，因此基质孔隙率远大于节理贡献的岩体孔隙率。于是，岩体流动受节理控制，而大部分流体存储在完整岩石孔隙中。</li>
+</ol>
+<div class="figure" id="jnt-fld3-yfrl">
+<img alt="../../../../../_images/jointflow-length.png" src="../../../../../_images/jointflow-length.png"/>
+<p class="caption"><span class="caption-text">图 1：岩体模型中的长度尺度。</span></p>
+</div>
+<p>节理粗糙度的长度尺度，远小于节理和工程结构的长度尺度，见上图：</p>
+<div class="math" id="equation-jnt-fld3-zoyy">
+<span class="eqno">(1)</span>\[\begin{split}\begin{align}
+   l_{roughness} &amp; &lt;&lt; l_{rock\ block} \\ \\
+   l_{roughness} &amp; &lt;&lt; l_{structure}
+\end{align}\end{split}\]</div>
+<p>分析满足式 <a class="reference internal" href="#equation-jnt-fld3-zoyy">(1)</a> 关系等条件的实际问题时，若在工程结构尺度上显式表示节理粗糙度几何，效率会极低；应尽可能忽略粗糙度细节。在岩石块体和／或工程结构尺度的模型中，应将节理视为二维<a class="footnote-reference" href="#id4" id="id1">[1]</a>不连续面，二维模型中则为一维，并以宏观本构关系及相关属性描述，例如法向和剪切刚度、摩擦、剪胀、水力开度。节理宏观属性对应一个“点”，但该点实际代表一块称为“代表性基本面积”（REA）的节理区域。其特征长度远大于节理表面粗糙度特征长度 <span class="math">\(l_{roughness}\)</span>，远小于模型特征长度 <span class="math">\(l_{rock\ block}\)</span> 或 <span class="math">\(l_{structure}\)</span>。REA 层面定义的宏观属性和变量，即微观效应积分结果，将节理参数非均匀性表示为节理平面位置 <span class="math">\(x_{i}\)</span> 的平滑变化函数，见<a href="#jnt-fld3-drxc">图 2（Figure  2）</a>。</p>
+<div class="figure" id="jnt-fld3-drxc">
+<img alt="../../../../../_images/jointflow-rea.png" src="../../../../../_images/jointflow-rea.png"/>
+<p class="caption"><span class="caption-text">图 2：节理平面中的代表性基本面积与非均匀性。</span></p>
+</div>
+</div>
+<div class="section" id="joint-hydraulics-and-parallel-plate-model-for-incompressible-flow">
+<h2>节理水力学与不可压缩流动的平行板模型</h2>
+<p>节理流动的控制方程来自简化形式的 Navier-Stokes 方程。将两近乎平行、不透水边界之间的流动 Navier-Stokes 方程，与流体不可压缩条件结合，可简化为 Reynolds 方程（Batchelor 1967）：</p>
+<div class="math" id="equation-jnt-fld3-maii">
+<span class="eqno">(2)</span>\[\Bigl({{u^3 \rho g} \over {12 \mu}} \phi, _i \Bigr), _i = 0\]</div>
+<p>其中，<span class="math">\(u = (x_i)\)</span> 为平面内某点 <span class="math">\(x_i\)</span>（<span class="math">\(i = 1,2\)</span>）处两不透水边界间距；<span class="math">\(\phi = z + p/\rho g\)</span> 为水头；<span class="math">\(g\)</span> 为重力加速度；<span class="math">\(\rho\)</span> 为流体密度；<span class="math">\(\mu\)</span> 为流体黏度；<span class="math">\(z\)</span> 为高程；<span class="math">\(p\)</span> 为流体压力。式 <a class="reference internal" href="#equation-jnt-fld3-maii">(2)</a> 沿两不透水边界间距离积分。对于岩石块体间的节理表面，式 <a class="reference internal" href="#equation-jnt-fld3-maii">(2)</a> 沿分隔两块体的薄平面接触面厚度积分。</p>
+<p>式 <a class="reference internal" href="#equation-jnt-fld3-maii">(2)</a> 成立要求流动为层流，即流体以平行层流动。Reynolds 数是描述流动条件会产生层流还是湍流的无量纲数：</p>
+<div class="math" id="equation-jnt-fld3-awim">
+<span class="eqno">(3)</span>\[Re = {{\rho u_c v_{\rm max}} \over {\mu}}\]</div>
+<p>其中，<span class="math">\(u_c\)</span> 为特征横截面尺寸，<span class="math">\(v_{\rm max}\)</span> 为流体最大速度。Reynolds 数衡量惯性力与黏性力之比，从而量化给定流动条件下两类力的相对重要性。</p>
+<p>只要满足式 <a class="reference internal" href="#equation-jnt-fld3-uyyt">(4)</a> 的不等式，式 <a class="reference internal" href="#equation-jnt-fld3-maii">(2)</a> 就有效。</p>
+<div class="math" id="equation-jnt-fld3-uyyt">
+<span class="eqno">(4)</span>\[\alpha {{\rho u_c v_{max}} \over {\mu}} &lt;&lt; 1\]</div>
+<p>其中，<span class="math">\(\alpha\)</span> 为包围流体的两表面夹角。式 <a class="reference internal" href="#equation-jnt-fld3-uyyt">(4)</a> 本质上保证流动保持层流。根据式 <a class="reference internal" href="#equation-jnt-fld3-maii">(2)</a>，单位板宽的流量可写为</p>
+<div class="math" id="equation-jnt-fld3-qoop">
+<span class="eqno">(5)</span>\[q_i = - {{u^3 \rho g} \over {12 \mu}} \phi, _i = - k_H \phi, _i\]</div>
+<p>其中，单条裂隙的渗透率为 <span class="math">\(u^2/12\)</span>，水力传导系数为 <span class="math">\(k_H = \rho gu^3/12 \mu\)</span>。</p>
+<p>注意，式 <a class="reference internal" href="#equation-jnt-fld3-qoop">(5)</a> 适用于流动主要发生在裂隙或厚度很小的平面通道中的情况。如果流体在固体块体间不规则三维形状的大空隙中流动，则不再适用。</p>
+<div class="section" id="range-of-validity-of-parallel-plate-model-hydraulic-aperture-and-mechanical-aperture">
+<span id="fluid-joint-range"></span><h3>平行板模型的适用范围、水力开度与力学开度</h3>
+<p>式 <a class="reference internal" href="#equation-jnt-fld3-maii">(2)</a> 中，<span class="math">\(u(x_i)\)</span> 是 xi 点处节理两粗糙表面间实际距离。通常，边值问题中节理开度变化尺度远小于模型特征长度，例如块体尺寸或工程结构特征长度。因此，最好建立宏观尺度适用的 <span class="math">\(q_i\)</span> 与 <span class="math">\(\phi, _i\)</span> 关系，同时尽可能忽略局部开度变化。初步可采用与式 <a class="reference internal" href="#equation-jnt-fld3-maii">(2)</a> 相同形式的关系，但将 uh 视为与节理表面 REA 相关的宏观参数，即</p>
+<div class="math" id="equation-jnt-fld3-pxfv">
+<span class="eqno">(6)</span>\[q_i =  {{u^3_h \rho g} \over {12 \mu}} \phi, _i\]</div>
+<p>其中，<span class="math">\(u_h(x_i)\)</span> 为与 REA 对应的节理水力开度。然而，许多研究者质疑将式 <a class="reference internal" href="#equation-jnt-fld3-pxfv">(6)</a> 作为岩石节理流动模型的有效性。普遍认为，式 <a class="reference internal" href="#equation-jnt-fld3-pxfv">(6)</a> 仅在一定 <span class="math">\(u_h\)</span> 范围有效。因此：</p>
+<ol class="arabic simple">
+<li><em>上限</em>：<span class="math">\(u_{h}\)</span> 增大，使 Reynolds 数超过某个临界值后，流动变为湍流。Iwai（1976）确定岩石节理临界 Reynolds 数为 <span class="math">\(Re\)</span> = 100，而 Louis（1974）得到 <span class="math">\(Re\)</span> = 2300。</li>
+<li><em>下限</em>：节理水力开度 <span class="math">\(u_{h}\)</span> 不能通过力学作用降为零，即即使在极高应力下，节理仍有残余流动。不匹配节理闭合时，两表面实际接触面积增加，但不会等于名义节理面积。高压应力下，不匹配粗糙度在节理平面形成通道；流动局部化，并强烈依赖宏观 REA 表述中被抽象掉的粗糙度细节。实际上，此时甚至无法定义 REA。这对建模造成严重问题：模型响应由特征长度远小于模型特征长度的几何细节控制，见<a href="#jnt-fld3-yfrl">图 1（Figure  1）</a>。</li>
+</ol>
+<p>反对式 <a class="reference internal" href="#equation-jnt-fld3-pxfv">(6)</a> 在上述上下限内有效的主要理由，是难以确定水力开度 <span class="math">\(u_h\)</span>。水力开度 <span class="math">\(u_h\)</span> 是力学开度 <span class="math">\(u_m\)</span> 的函数，后者定义为节理表面平均间距。力学开度难以直接测量，多数作者假设 <span class="math">\(u_h = u_m\)</span>。Alvarez 等（1995）汇总了已发表的节理导流试验结果。初始开度 <span class="math">\(u_{m0}\)</span> 是加载循环开始时的开度。有的作者将它等同于压缩过程中的最大节理位移；另一些作者测量最大闭合时的残余流量，再根据式 <a class="reference internal" href="#equation-jnt-fld3-pxfv">(6)</a> 计算残余开度，将其加到最大闭合量上，得到初始力学和水力开度。用计算所得、作为力学开度函数的水力开度代入式 <a class="reference internal" href="#equation-jnt-fld3-pxfv">(6)</a>，将预测流量与实测比较，往往差异显著。Witherspoon（1980）提出以下形式的“立方定律”：</p>
+<div class="math" id="equation-jnt-fld3-rdlt">
+<span class="eqno">(7)</span>\[q_i = - {{u^3_m \rho g} \over {12 \mu F}} \phi, _i\]</div>
+<p>其中，<span class="math">\(F\)</span> 为修正系数。比较式 <a class="reference internal" href="#equation-jnt-fld3-pxfv">(6)</a> 与 <a class="reference internal" href="#equation-jnt-fld3-rdlt">(7)</a>，得到：</p>
+<div class="math">
+\[u_h = f u_m\]</div>
+<div class="math">
+\[f = {1 \over {F^{1/3}}}\]</div>
+<p>Detournay（1980）提出水力开度 <span class="math">\(u_h\)</span> 与节理变形 <span class="math">\(\Delta u_m\)</span> 的关系：</p>
+<div class="math" id="equation-jnt-fld3-bpjo">
+<span class="eqno">(8)</span>\[u_h = f u_m = u_{h0} + f \Delta u_m\]</div>
+<p>这使“立方定律”能更普遍地拟合试验结果。假定一维流动，节理导流系数 <span class="math">\(k_H\)</span> 定义为：</p>
+<div class="math" id="equation-jnt-fld3-fpfe">
+<span class="eqno">(9)</span>\[k_H = - {q \over {d \phi/dx}}\]</div>
+<p>假定节理导流系数与水力开度的关系如下：</p>
+<div class="math" id="equation-jnt-fld3-rrbr">
+<span class="eqno">(10)</span>\[k_H =  {{\rho g} \over {12 \mu}} (u_{h0} + f \Delta u_m)^3\]</div>
+<p>可得</p>
+<div class="math" id="equation-jnt-fld3-divl">
+<span class="eqno">(11)</span>\[u_{h0} + f \Delta u_m = - \Bigl({{12 \mu} \over {\rho g}} {{q} \over {d \phi/dx}} \Bigr)^{1/3}\]</div>
+<p>未知参数 <span class="math">\(u_h0\)</span> 和 <span class="math">\(f\)</span> 可通过试验结果线性回归求得。也可通过线性回归检验式 <a class="reference internal" href="#equation-jnt-fld3-rdlt">(7)</a> 和 <a class="reference internal" href="#equation-jnt-fld3-divl">(11)</a> 对特定数据集的适用性。Alvarez 等（1995）重新分析部分已发表节理导流数据，证实式 <a class="reference internal" href="#equation-jnt-fld3-divl">(11)</a> 所给“修正立方定律”的有效性。</p>
+<p>流量随节理闭合变化，有两个原因：</p>
+<ol class="arabic simple">
+<li>节理闭合使流体通过的横截面积减小；以及</li>
+<li>两节理表面实际接触面积增加，使流动路径更曲折。</li>
+</ol>
+<p>参数 <span class="math">\(f\)</span> 反映粗糙度对流动曲折度的影响。对于光滑或咬合节理，<span class="math">\(f\)</span> 约为 1.0；对于跨度与粗糙度高度之比较小的不匹配节理，<span class="math">\(f\)</span> 小于 1.0。</p>
+</div>
+</div>
+<div class="section" id="hydromechanically-coupled-fluid-flow-formulation-in-rock-masses">
+<h2>岩体中水力—力学耦合流动公式</h2>
+<p>岩体流体流动是水力—力学耦合问题，即流体压力影响力学变形，力学变形也影响压力。裂隙岩体水力—力学耦合包含三个方面：</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>孔隙压力对裂隙岩体变形和强度的影响；</li>
+<li>力学变形对渗透性的影响；以及</li>
+<li>力学变形对孔隙压力的影响。</li>
+</ol>
+</div></blockquote>
+<p>离散裂隙网络水力—力学耦合公式中，力学变形通过改变裂隙开度，影响渗透性。</p>
+<div class="section" id="effect-of-pore-pressure-on-deformation-and-strength">
+<h3>孔隙压力对变形和强度的影响</h3>
+<p>裂隙内流体压力影响法向变形。当岩石裂隙充满一定压力的流体时（<a href="#jnt-fld3-lkyk">图 3（Figure  3）</a>），裂隙法向变形是岩石围压或总法向应力 <span class="math">\(\sigma_n\)</span> 与流体压力 <span class="math">\(p_p\)</span> 某种线性组合的函数。任何能产生相同裂隙变形的 <span class="math">\(\sigma_n\)</span> 与 <span class="math">\(p_p\)</span> 线性组合，都称为裂隙“有效应力” <span class="math">\(\sigma'_n\)</span>。Walsh（1981）由孔隙空间体积在法向应力和孔隙压力作用下不变的条件，推导有效应力表达式：</p>
+<div class="math" id="equation-jnt-fld3-rmle">
+<span class="eqno">(12)</span>\[dv_p = -{{\delta v_p} \over {\delta p}} (d \sigma_n + d p_p) + v_p \beta_s dp_p = 0\]</div>
+<p>其中，<span class="math">\(v_p\)</span> 为孔隙空间体积，<span class="math">\(\beta_s\)</span> 为裂隙周围岩石可压缩性。式 <a class="reference internal" href="#equation-jnt-fld3-rmle">(12)</a> 第一项为干裂隙在等于 <span class="math">\(d \sigma_n + d p_p\)</span> 的“围压”下的变形，压应力为负、流体压力为正；第二项为等于 <span class="math">\(d p_p\)</span> 的静水压力导致裂隙孔隙空间增加量（<a href="#jnt-fld3-lkyk">图 3（Figure  3）</a>）。可由式 <a class="reference internal" href="#equation-jnt-fld3-rmle">(12)</a> 得到有效应力表达式（Walsh 1981）：</p>
+<div class="math" id="equation-jnt-fld3-vztr">
+<span class="eqno">(13)</span>\[d \sigma'_n = d \sigma_n + (1 - {{v_p \beta_s} \over {\delta v_p / \delta p}}) d p_p\]</div>
+<p>或简写为，</p>
+<div class="math" id="equation-jnt-fld3-tvob">
+<span class="eqno">(14)</span>\[\sigma'_n = \sigma_n + \alpha p_p\]</div>
+<p>试验测得有效应力系数 <span class="math">\(\alpha\)</span> 范围为 0.5 &lt; <span class="math">\(\alpha\)</span> &lt; 1.0。粗糙表面张裂隙的 <span class="math">\(\alpha \sim\)</span> 较小，约为 0.5；表面光滑裂隙的值较大，即 <span class="math">\(\alpha \sim\)</span> 约为 1.0。</p>
+<div class="figure" id="jnt-fld3-lkyk">
+<img alt="../../../../../_images/jointflow-fracturedef.png" src="../../../../../_images/jointflow-fracturedef.png"/>
+<p class="caption"><span class="caption-text">图 3：裂隙法向变形。</span></p>
+</div>
+<p>孔隙压力也通过有效应力原理影响岩石裂隙强度。裂隙拉伸与剪切破坏条件均以有效应力而非总应力表示。不过，评估岩石裂隙法向或剪切强度时，有效应力始终定义为 <span class="math">\(\sigma'_n = \sigma_n + p\)</span>，即有效应力系数始终为 1。</p>
+</div>
+<div class="section" id="effect-of-mechanical-deformation-on-permeability">
+<h3>力学变形对渗透性的影响</h3>
+<p>力学开度 <span class="math">\(u_m\)</span> 定义为裂隙表面平均间距，是力学变形的函数。显然，式 <a class="reference internal" href="#equation-jnt-fld3-pxfv">(6)</a> 计算岩石裂隙流量所用水力开度 <span class="math">\(u_h\)</span>，是力学开度 <span class="math">\(u_m\)</span> 的函数。但假设二者相等时，将式 <a class="reference internal" href="#equation-jnt-fld3-pxfv">(6)</a> 预测流量与实测比较，往往差异显著。水力开度与力学开度关系，以及它们对渗透性变化的影响，见<a class="reference internal" href="#fluid-joint-range"><span class="std std-ref">平行板模型的适用范围、水力开度与力学开度</span>（Range of Validity of Parallel Plate Model, Hydraulic Aperture, and Mechanical Aperture）</a>。</p>
+</div>
+<div class="section" id="effect-of-deformation-on-pore-pressures">
+<h3>变形对孔隙压力的影响</h3>
+<p>可变形岩石裂隙中微可压缩流体的连续性方程为：</p>
+<div class="math" id="equation-jnt-fld3-psmo">
+<span class="eqno">(15)</span>\[q_{i,i} = - {{\delta u} \over {\delta t}} - {{u} \over {K_w}} {{\delta p} \over {\delta t}}\]</div>
+<p>结合式 <a class="reference internal" href="#equation-jnt-fld3-qoop">(5)</a> 与 <a class="reference internal" href="#equation-jnt-fld3-psmo">(15)</a>，假定 <span class="math">\(u = u_m = u_h\)</span>，且 <span class="math">\(u\)</span> 不随位置变化，可得</p>
+<div class="math" id="equation-Eq 4.16">
+<span class="eqno">(16)</span>\[{{\delta p } \over {\delta t}} = {{u^2 K_w} \over {12 \mu}} p_{i,i} - {K_w \over u} {{\delta u} \over {\delta t}}\]</div>
+<p>这是裂隙内部压力的扩散方程。一般而言，裂隙开度 <span class="math">\(u\)</span> 不仅取决于局部裂隙刚度和流体压力，还取决于更大体积岩体的力学响应。因此，式 <a class="reference internal" href="#equation-jnt-fld3-tvob">(14)</a> 的 <span class="math">\((K_w / u)(\delta u / \delta t)\)</span> 项为外部“源”项，由流动与固体模型力学变形的耦合确定。该项表示由于岩体、特别是裂隙变形，导致岩石裂隙内被“困住”的水，即不排水条件下的水产生的压力变化。</p>
+</div>
+</div>
+<div class="section" id="dec-joint-model">
+<h2><span class="codename">3DEC</span> 节理模型</h2>
+<div class="section" id="constitutive-model-and-relevant-properties">
+<h3>本构模型与相关属性</h3>
+<p>如前述，描述节理本构响应的模型可能很复杂。但 <span class="codename">3DEC</span> 实现的模型采用简单的节理行为近似。</p>
+<p>在 <span class="codename">3DEC</span> 中，节理法向和剪切刚度由线弹性弹簧表示，抗剪阻力通常由库仑滑移定律描述。指定剪胀角即可表示剪胀响应。</p>
+<p>模拟节理流动时，用户还必须定义三个附加参数，表示节理开度对有效应力的本构响应。<span class="codename">3DEC</span> 实现的开度—有效应力关系相对简单，示意见<a href="#jnt-fld3-vyqg">图 4（Figure  4）</a>。水力开度与有效应力基本呈双线性关系，并假定式 <a class="reference internal" href="#equation-jnt-fld3-tvob">(14)</a> 的有效应力系数 <span class="math">\(\alpha\)</span> 为 1.0。</p>
+<p>水力开度一般为</p>
+<div class="math" id="equation-Eq 4.17">
+<span class="eqno">(17)</span>\[u_h = u_{h0} + \Delta u_n\]</div>
+<p>其中，<span class="math">\(u_{h0}\)</span> 为零法向应力时的节理开度，<span class="math">\(\Delta u_n\)</span> 为节理法向位移，正值表示张开。节理开度还受下限 <span class="math">\(u_{res}\)</span> 限制，即最小残余开度；低于该值，力学闭合不再影响接触渗透性。用户必须定义零应力开度 <span class="math">\(u_{h0}\)</span> 和残余水力开度 <span class="math">\(u_{res}\)</span>。注意，如果 <span class="fishcmd">block insitu</span> 命令采用 <span class="cmdkey">nodisplacements</span> 关键字，或施加原位应力时将残余开度 <span class="math">\(u_{res}\)</span> 设为等于 <span class="math">\(u_{h0}\)</span>，则 <span class="math">\(u_{h0}\)</span> 也可表示原位应力状态的节理开度。</p>
+<p>除零应力和残余水力开度外，为提高显式计算效率，还可假定最大值 <span class="math">\(u_{max}\)</span>，作为流量计算采用的开度上限。但<em>力学</em>开度始终由零应力开度加上差动法向位移得到，即 <span class="math">\(u_m = u_{h0} + \Delta u_n\)</span>，可大于 <span class="math">\(u_{max}\)</span>。定义节理导流系数与水力开度关系时，见式 <a class="reference internal" href="#equation-jnt-fld3-rrbr">(10)</a>，假定 <span class="math">\(f\)</span> = 1.0。这意味着，除力学开度超过 <span class="math">\(u_{max}\)</span> 时外，力学开度等于水力开度。</p>
+<div class="figure" id="jnt-fld3-vyqg">
+<img alt="../../../../../_images/jointflow-appvstress.png" src="../../../../../_images/jointflow-appvstress.png"/>
+<p class="caption"><span class="caption-text">图 4：岩石节理水力开度与有效法向应力的理想化关系。本图有效压应力为正。</span></p>
+</div>
+<p>求解过程中，<span class="codename">3DEC</span> 每个力学时间步都会更新系统几何，获得全部接触的新开度，参阅“<a class="reference internal" href="../3dectheory/theory_background.html#the-bg3d-mcfm"><span class="std std-ref">三维运动与相互作用的力学计算</span>（Mechanical Calculations for Motion and Interaction in 3D）</a>”。考虑开度上限 <span class="math">\(u_{max}\)</span> 后，通过式 <a class="reference internal" href="#equation-jnt-fld3-pxfv">(6)</a> 计算接触流量。</p>
+<p>压力计算后存入称为流动节点的数据结构，见<a class="reference internal" href="#fluid-joint-geometrical-topological"><span class="std std-ref">裂隙岩体的几何与拓扑模型</span>（Geometrical and Topological Model of a Fractured Rock Mass）</a>。计算流量后，考虑流入节点的净流量，以及周围块体增量运动可能引起的节点体积变化，更新节点压力。新压力为</p>
+<div class="math" id="equation-jnt-fld3-ieee">
+<span class="eqno">(18)</span>\[p = p_0 + K_w Q {{\Delta t} \over {V}} - K_w {{\Delta V} \over {V_m}}\]</div>
+<p>其中：</p>
+<blockquote>
+<div><p><span class="math">\(p_0\)</span> 为前一时间步的流动节点压力；</p>
+<p><span class="math">\(Q\)</span> 为周围全部接触流入该流动节点的流量之和；</p>
+<p><span class="math">\(K_w\)</span> 为流体体积模量；</p>
+<p><span class="math">\(\Delta V = V - V_0\)</span>；以及</p>
+<p><span class="math">\(V_m = (V + V_0) / 2\)</span>，其中 <span class="math">\(V\)</span> 和 <span class="math">\(V_0\)</span> 分别为新、旧流动节点体积。</p>
+</div></blockquote>
+<p>如果式 <a class="reference internal" href="#equation-jnt-fld3-ieee">(18)</a> 计算的新域压力为负，则将其设为零，即不允许存在负压力。</p>
+</div>
+<div class="section" id="degree-of-saturation">
+<h3>饱和度</h3>
+<p>当前 <span class="codename">3DEC</span> 版本假定节理完全饱和，饱和度始终为一（1）。孔隙压力可为正或零（0），不允许负孔隙压力。</p>
+</div>
+<div class="section" id="fluid-timestep-size-and-numerical-stability">
+<h3>流体时间步长与数值稳定性</h3>
+<p>显式时间积分中，时间步长不能超过临界值。当前显式流动算法的数值稳定性，要求将流体时间步长 <span class="math">\(\Delta t_f\)</span> 限制为</p>
+<div class="math" id="equation-jnt-fld3-uxzv">
+<span class="eqno">(19)</span>\[\Delta t_f = {\rm min} [{{V} \over {K_w \Sigma_i k_i}}]\]</div>
+<p>其中，<span class="math">\(V\)</span> 为流动节点体积，渗透性因子 <span class="math">\(k_i\)</span> 的求和覆盖其周围全部接触。</p>
+<p>所有流动节点 <span class="math">\(\Delta t_f\)</span> 的最小值，就是分析的临界时间步长。瞬态流动分析的数值稳定要求可能相当严格，使某些分析耗时过长或难以实施，尤其接触开度较大、流动节点体积很小时。此外，节理内流体还会使表观节理刚度增加 <span class="math">\(K_w / u_h\)</span>，因而可能需要减小力学计算时间步长。对于显式算法，这意味着必须缩短力学时间步长。</p>
+<p>式 <a class="reference internal" href="#equation-jnt-fld3-uxzv">(19)</a> 计算的流体时间步长，与流体体积模量和节理导水能力成反比，而导水能力又与开度立方成正比。典型节理开度下，所得流体时间步长约为毫秒量级，因此该算法在实际问题中只能用于短历时模拟。实际分析中增大时间步长的讨论，见<a class="reference internal" href="#fluid-joint-tips"><span class="std std-ref">加快耦合模拟的建议</span>（Tips for Speeding Up Coupled Simulations）</a>。</p>
+</div>
+</div>
+<div class="section" id="calculation-modes-and-commands-for-fluid-flow-analysis">
+<h2>流动分析的计算模式与命令</h2>
+<div class="section" id="fluid-only-analysis">
+<span id="fluid-joint-analysis"></span><h3>仅流体分析</h3>
+<p>可以模拟节理流动，同时不考虑流体压力对岩石变形的影响，以及岩体变形对流体扩散率的影响。这种分析称为“非耦合”或“仅流体”分析，因为比贮水量仅由流体可压缩性控制，假定岩体刚度为无穷大。</p>
+<p>流动分析可以为瞬态，即时间重要，也可以为稳态，即仅需极长时间后的压力。在 <span class="codename">3DEC</span> 中，求解始终为瞬态。若需要稳态解，就持续运行瞬态问题，直到孔隙压力不再变化，此时认为达到稳态。注意，降低仅流动分析的流体体积模量不会加快计算；它虽增大时间步长，也会延长达到稳态所需时间。因此，对于稳态分析，<span class="math">\(K_w\)</span> 的选择不重要。</p>
+<p>瞬态分析中，选择 <span class="math">\(K_w\)</span> 对获得正确时间尺度很重要。若采用真实流体体积模量，意味着岩体为刚性，完全忽略其变形性对扩散过程时间尺度的影响。但一定条件下，可通过降低流体体积模量，在仅流动模拟中考虑岩体变形性，即岩石变形对应的储水效应。这样无须运行有时很耗时的耦合模拟，也能得到正确时间尺度。饱和介质中压力传播速率由扩散率决定：</p>
+<div class="math" id="equation-jnt-fld3-rwkm">
+<span class="eqno">(20)</span>\[c = {{k_H} \over S}\]</div>
+<p>其中，<span class="math">\(k_H\)</span> 为水力传导系数，单位为长度／时间；<span class="math">\(S\)</span> 为贮水量，单位为 1／长度。忽略节理刚度时，节理饱和材料的贮水量可表示为</p>
+<div class="math" id="equation-jnt-fld3-gaxp">
+<span class="eqno">(21)</span>\[S = \rho_w g \Bigl({{u_h / s} \over {K_w}} + {{1} \over {K + 4/3 G}}\Bigr)\]</div>
+<p>其中，<span class="math">\(u_h\)</span> 为水力开度，<span class="math">\(s\)</span> 为节理间距，<span class="math">\(K_w\)</span> 为真实流体体积模量，<span class="math">\(K\)</span> 和 <span class="math">\(G\)</span> 分别为岩石体积模量和剪切模量。仅流体分析假定岩石刚性，因此式 <a class="reference internal" href="#equation-jnt-fld3-gaxp">(21)</a> 第二项为零。为考虑岩石变形，可采用如下表观流体体积模量：</p>
+<div class="math" id="equation-jnt-fld3-fbzq">
+<span class="eqno">(22)</span>\[K^{a_w} = {{u_h / s} \over {{u_h / s} \over {K_w}} + {{1} \over {K + 4/3 G}}}\]</div>
+<p>在仅流体分析中使用该值，可获得正确的贮水量式 <a class="reference internal" href="#equation-jnt-fld3-gaxp">(21)</a>，从而获得正确扩散率式 <a class="reference internal" href="#equation-jnt-fld3-rwkm">(20)</a> 和时间尺度。</p>
+<p>要用 <span class="codename">3DEC</span> 求解流动问题，首先必须在模型设置开始时开启流动分析，以创建流动所需的附加数据结构；即流动配置命令 <span class="fishcmd">model config fluid</span> 应先于全部其他命令。仅流体分析必须激活流体分析、停用力学分析（<span class="fishcmd">model fluid active on</span> 和 <span class="fishcmd">model mechanical active off</span>）。流体材料属性需给出密度、黏度和体积模量。节理材料属性仅需初始开度（<span class="math">\(u_{h0}\)</span>），因为不进行力学计算，开度不会变化。但用户仍必须指定残余和最大开度，否则默认为零；可将二者设为与 <span class="math">\(u_{h0}\)</span> 相同。单节理仅流动示例见 <a class="reference internal" href="#jnt-fld3-exxx"><span class="std std-ref">flow_only.3ddat</span></a>。假定真实流体体积模量 2 GPa、节理间距 2 m，由式 <a class="reference internal" href="#equation-jnt-fld3-fbzq">(22)</a> 计算表观流体模量。</p>
+<p>节理流体压力与流量见<a href="#jnt-fld3-nwrp">图 5（Figure  5）</a>。创建该图时，添加<span class="menuselection">流动平面（Flow Planes）</span>／<span class="menuselection">等值线（Contours）</span>／<span class="menuselection">孔隙压力（Pore Pressure）</span>，以及<span class="menuselection">流体矢量（Fluid Vectors）</span>／<span class="menuselection">流量（Discharge）</span>绘图项，再旋转视图查看节理平面。<a href="#jnt-fld3-gklm">图 6（Figure  6）</a> 显示节理中部压力演化，可见约 12 s 后达到稳态。</p>
+<p class="h3 rubric" id="jnt-fld3-exxx">flow_only.3ddat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model config</span><span class="n"> fluid</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+
+<span class="nb">block create</span><span class="n"> brick </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">0</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">90</span>
+
+<span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="m m-Double">0.25</span>
+<span class="nb">block zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">block zone property</span><span class="n"> density </span><span class="m m-Double">2500</span><span class="n"> shear </span><span class="m m-Double">2e9</span><span class="n"> bulk </span><span class="m m-Double">5e9</span><span class="n"> </span>
+
+<span class="nb">block contact jmodel</span><span class="n"> assign mohr</span>
+<span class="nb">block contact property</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1e10</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1e10</span>
+
+<span class="nb">block fluid</span><span class="n"> property bulk </span><span class="m m-Double">3.8e5</span>
+<span class="nb">block fluid</span><span class="n"> property density </span><span class="m m-Double">1000</span>
+<span class="nb">block fluid</span><span class="n"> property viscosity </span><span class="m m-Double">1e-3</span>
+
+<span class="nb">flowplane vertex property</span><span class="n"> aperture</span><span class="o">-</span><span class="n">initial </span><span class="m m-Double">1e-4</span><span class="n"> aperture</span><span class="o">-</span><span class="n">minimum </span><span class="m m-Double">1e-4</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                          aperture</span><span class="o">-</span><span class="n">maximum </span><span class="m m-Double">1e-4</span><span class="n"> </span>
+
+<span class="nb">flowknot apply pore-pressure</span><span class="n"> </span><span class="m m-Double">5.0e6</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="nb">flowknot apply pore-pressure</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">1</span>
+<span class="c">;</span>
+<span class="n">model his fluid time</span><span class="o">-</span><span class="n">total</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="c">;</span>
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">on</span>
+<span class="nb">model mechanical</span><span class="n"> active </span><span class="sx">off</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span>
+<span class="c">;</span>
+</pre></div>
+</div>
+<div class="figure" id="jnt-fld3-nwrp">
+<a class="reference internal image-reference" href="../../../../../_images/flowonly_pressure.png"><img alt="../../../../../_images/flowonly_pressure.png" src="../../../../../_images/flowonly_pressure.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 5：节理上的流体压力与流量矢量。</span></p>
+</div>
+<div class="figure" id="jnt-fld3-gklm">
+<a class="reference internal image-reference" href="../../../../../_images/flowonly_history.png"><img alt="../../../../../_images/flowonly_history.png" src="../../../../../_images/flowonly_history.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 6：节理中部压力历程。</span></p>
+</div>
+</div>
+<div class="section" id="one-way-coupling">
+<h3>单向耦合</h3>
+<p>如果压力变化与力学变形弱耦合，即压力变化不会导致显著开度变化，尤其当不关注瞬态响应时，可依次执行仅流动和仅力学模拟，将问题视为单向耦合。</p>
+<p>完成仅流动分析（<a class="reference internal" href="#fluid-joint-analysis"><span class="std std-ref">仅流体分析</span>（Fluid-Only Analysis）</a>）后，可开展流体压力变化影响力学行为的力学分析。流体压力变化改变节理有效应力，引起固体模型弹性和／或非弹性变形。有效应力用于计算节理破坏条件，因此流体压力改变导致的法向有效应力变化，会使节理应力状态相对于破坏面移动，如<a href="#jnt-fld3-vkcu">图 7（Figure  7）</a> 所示。</p>
+<div class="figure" id="jnt-fld3-vkcu">
+<img alt="../../../../../_images/coupled_relation.png" src="../../../../../_images/coupled_relation.png"/>
+<p class="caption"><span class="caption-text">图 7：流体压力对具有黏聚力 <span class="math">\(c\)</span> 和摩擦角 <span class="math">\(\varphi\)</span> 的节理破坏包络线滑移条件的影响。</span></p>
+</div>
+<p>单向耦合分析需要与仅流体分析相同的属性，即流体体积模量、黏度和密度。与仅流动分析相同，残余和最大开度不重要，可设为与 <span class="math">\(u_{h0}\)</span> 相同。</p>
+<p>单向耦合分析需要以下步骤：</p>
+<ol class="arabic simple">
+<li>指定地应力状态与孔隙压力，并求解初始力学应力状态。为此需要令 <span class="math">\(K_w\)</span> = 0，使流体压力不因岩石变形而改变。仅力学计算通过 <span class="fishcmd">model fluid active off' and :lcmd:`model mechanical active on</span> 完成。</li>
+<li>使用 <span class="cmdkey">flowknot apply pore-pressure</span>、<span class="cmdkey">flowknot apply discharge</span> 和 <span class="cmdkey">flowplane edge apply discharge</span> 设置流体边界条件。默认边界不透水。</li>
+<li>按<a class="reference internal" href="#fluid-joint-analysis"><span class="std std-ref">仅流体分析</span>（Fluid-Only Analysis）</a>求解流体压力。使用 <span class="fishcmd">model fluid active on' and :lcmd:`model mechanical active off</span>，并将流体体积模量设为式 <a class="reference internal" href="#equation-jnt-fld3-fbzq">(22)</a> 的 <span class="math">\(K_w^a\)</span>。</li>
+<li>再次用 <span class="fishcmd">model fluid active off' and :lcmd:`model mechanical active on</span>，并令 <span class="math">\(K_w\)</span> = 0，求解流体压力对固体的作用。</li>
+</ol>
+<p>下例中没有初始化孔隙压力。通常应初始化，且一般根据地下水位位置确定。示例创建含单条节理的模型，并在块体中建立 10 MPa 初始各向同性应力。随后左侧施加 11 MPa 流体压力，右侧压力保持零。压力变化引起的位移等值线见<a href="#jnt-fld3-sfge">图 8（Figure  8）</a>。</p>
+<p class="h2 rubric" id="jnt-fld3-ormm">one_way.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="c">; 单向耦合模拟</span>
+<span class="nb">model config</span><span class="n"> fluid</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+
+<span class="nb">block create</span><span class="n"> brick </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">0</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">90</span>
+
+<span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="m m-Double">0.25</span>
+<span class="nb">block zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">block zone property</span><span class="n"> density </span><span class="m m-Double">2500</span><span class="n"> shear </span><span class="m m-Double">2e9</span><span class="n"> bulk </span><span class="m m-Double">5e9</span><span class="n"> </span>
+
+<span class="nb">block contact jmodel</span><span class="n"> assign mohr</span>
+<span class="nb">block contact property</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1e10</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1e10</span><span class="n"> </span>
+
+<span class="nb">block fluid</span><span class="n"> property bulk </span><span class="m m-Double">3.8e5</span>
+<span class="nb">block fluid</span><span class="n"> property density </span><span class="m m-Double">1000</span>
+<span class="nb">block fluid</span><span class="n"> property viscosity </span><span class="m m-Double">1e-3</span>
+
+<span class="nb">flowplane vertex property</span><span class="n"> aperture</span><span class="o">-</span><span class="n">initial </span><span class="m m-Double">1e-4</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                          aperture</span><span class="o">-</span><span class="n">minimum </span><span class="m m-Double">1e-4</span><span class="n"> aperture</span><span class="o">-</span><span class="n">maximum </span><span class="m m-Double">1e-4</span><span class="n"> </span>
+
+<span class="c">;</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">1</span>
+<span class="c">;</span>
+<span class="nb">block insitu</span><span class="n"> stress </span><span class="o">-</span><span class="m m-Double">1e7</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1e7</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1e7</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">off</span>
+<span class="nb">model mechanical</span><span class="n"> active </span><span class="sx">on</span>
+<span class="nb">block fluid</span><span class="n"> property bulk </span><span class="m m-Double">0.0</span>
+
+<span class="nb">model history</span><span class="n"> mechanical unbalanced</span><span class="o">-</span><span class="n">maximum</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">100</span>
+
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">on</span>
+<span class="nb">model mechanical</span><span class="n"> active </span><span class="sx">off</span>
+<span class="c">;</span>
+<span class="nb">flowknot apply pore-pressure</span><span class="n"> </span><span class="m m-Double">1.1e7</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="nb">flowknot apply pore-pressure</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">1</span>
+<span class="c">;</span>
+<span class="nb">block fluid</span><span class="n"> property bulk </span><span class="m m-Double">3.8e5</span>
+
+<span class="nb">history delete</span>
+<span class="n">model his fluid time</span><span class="o">-</span><span class="n">total</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span>
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">off</span>
+<span class="nb">model mechanical</span><span class="n"> active </span><span class="sx">on</span>
+<span class="nb">block fluid</span><span class="n"> property bulk </span><span class="m m-Double">0.0</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span>
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+<div class="figure" id="jnt-fld3-sfge">
+<a class="reference internal image-reference" href="../../../../../_images/coupled_zdisp.png"><img alt="../../../../../_images/coupled_zdisp.png" src="../../../../../_images/coupled_zdisp.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 8：单向耦合分析后块体中的 <span class="math">\(z\)</span> 位移。</span></p>
+</div>
+</div>
+<div class="section" id="undrained">
+<h3>不排水</h3>
+<p>前例为单向耦合，因为流体压力影响变形，但初始应力设置后，固体位移不影响流体压力。另一种简化耦合情况是，变形不是由扩散引起的孔隙压力变化产生，而是由较短时尺度上的力学加载引起，因而可忽略孔隙压力扩散。这通常称为不排水变形。</p>
+<p>不排水分析需要以下步骤：</p>
+<ol class="arabic simple">
+<li>像单向耦合情况一样设置初始应力和孔隙压力。</li>
+<li>为 <span class="math">\(u_{res}\)</span> 指定真实值，因为节理开度影响变形引起的孔隙压力变化。</li>
+<li>将流体体积模量设为真实值，例如 2 GPa。使用 <span class="fishcmd">model fluid active off' and :lcmd:`model mechanical active on</span> 进行力学计算。孔隙压力随节理开度变化，如式 <a class="reference internal" href="#equation-jnt-fld3-ieee">(18)</a> 第三项所示。</li>
+</ol>
+<p>下例将初始应力和孔隙压力初始化为零，然后在试样顶部施加应力，节理孔隙压力相应增加。随后剪切节理，展示孔隙压力对抗剪强度的影响。</p>
+<p>节理中产生的流体压力见<a href="#jnt-fld3-fzfr">图 9（Figure  9）</a>，总体接近 1 MPa，表明所施加力学应力由流体承担。剪切期间块体 <span class="math">\(x\)</span> 位移见<a href="#jnt-fld3-wksn">图 10（Figure  10）</a>。由于断层有效法向应力接近零，便于滑移，剪切期间节理平面的剪应力可忽略。</p>
+<p class="h3 rubric" id="jnt-fld3-imxq">undrained.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 不排水变形</span>
+<span class="nb">model new</span>
+<span class="nb">model config</span><span class="n"> fluid</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">;</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">0</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">90</span>
+
+<span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="m m-Double">0.25</span>
+<span class="nb">block zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">block zone property</span><span class="n"> density </span><span class="m m-Double">2500</span><span class="n"> shear </span><span class="m m-Double">2e9</span><span class="n"> bulk </span><span class="m m-Double">5e9</span>
+
+<span class="nb">block contact jmodel</span><span class="n"> assign mohr</span>
+<span class="nb">block contact property</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">2e9</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">2e9</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                       friction </span><span class="m m-Double">30.</span><span class="n"> tension </span><span class="m m-Double">1e30</span>
+
+<span class="nb">block fluid</span><span class="n"> property bulk </span><span class="m m-Double">2.e9</span>
+<span class="nb">block fluid</span><span class="n"> property density </span><span class="m m-Double">1000</span>
+<span class="nb">block fluid</span><span class="n"> property viscosity </span><span class="m m-Double">1e-3</span>
+
+<span class="nb">flowplane vertex property</span><span class="n"> aperture</span><span class="o">-</span><span class="n">initial </span><span class="m m-Double">1e-4</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                          aperture</span><span class="o">-</span><span class="n">minimum </span><span class="m m-Double">1e-15</span><span class="n"> aperture</span><span class="o">-</span><span class="n">maximum </span><span class="m m-Double">1</span>
+<span class="c">;</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0.0</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0.0</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0.0</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0.0</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.0</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="c">;</span>
+<span class="c">; 假定原位应力为 0，在顶部施加应力。</span>
+<span class="nb">block face apply</span><span class="n"> stress </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1e6</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">1</span>
+<span class="c">;</span>
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">off</span>
+<span class="nb">model mechanical</span><span class="n"> active </span><span class="sx">on</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">5000</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'undrained-load'</span>
+<span class="c">;</span>
+<span class="c">; 施加剪切</span>
+<span class="nb">block gridpoint apply-remove</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x range position</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">1.1</span><span class="n"> </span><span class="m m-Double">1.1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0.01</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.0</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.1</span><span class="n"> </span><span class="m m-Double">1.1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0.0</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="nb">block contact history</span><span class="n"> stress</span><span class="o">-</span><span class="n">shear position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block gridpoint initialize</span><span class="n"> displacement </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">5000</span>
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+<div class="figure" id="jnt-fld3-fzfr">
+<a class="reference internal image-reference" href="../../../../../_images/undrained_pressure.png"><img alt="../../../../../_images/undrained_pressure.png" src="../../../../../_images/undrained_pressure.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 9：不排水条件加载后节理上的孔隙压力。</span></p>
+</div>
+<div class="figure" id="jnt-fld3-wksn">
+<a class="reference internal image-reference" href="../../../../../_images/undrained_xdisp.png"><img alt="../../../../../_images/undrained_xdisp.png" src="../../../../../_images/undrained_xdisp.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 10：块体中的 <span class="math">\(x\)</span> 位移。</span></p>
+</div>
+</div>
+<div class="section" id="fully-coupled-hydromechanical-simulation">
+<h3>完全耦合水力—力学模拟</h3>
+<p>许多情况下需要完全耦合水力—力学模拟，例如流体压力变化引起的固体变形，使开度变化相对于初始开度很大。此时固体变形影响流体压力，流体压力也影响力学应力和应变。求解通过频繁交替力学与流体计算完成。用户可控制每个流体步执行的力学步数，反之亦然，见下文。</p>
+<p>以下小节概述完全耦合分析所需步骤。</p>
+<div class="section" id="definition-of-fluid-properties">
+<h4>流体属性的定义</h4>
+<p>分析需要的流体材料属性为密度、黏度和体积模量，命令分别为 <span class="fishcmd">block fluid property density</span>、<span class="fishcmd">block fluid property viscosity</span> 和 <span class="fishcmd">block fluid property bulk</span>。节理水力属性必须指定 <span class="cmdkey">aperture-initial</span>、<span class="cmdkey">aperture-minimum</span> 和 <span class="cmdkey">aperture-maximum</span>，分别表示零应力开度、残余开度和最大水力开度，使用 <span class="fishcmd">flowplane property</span> 命令设置。</p>
+</div>
+<div class="section" id="solving-for-initial-state">
+<h4>求解初始状态</h4>
+<p>首先通过 <span class="fishcmd">block insitu</span> 命令指定原位应力和孔隙压力。求初始状态时，先激活力学模式、关闭流动（<span class="fishcmd">model fluid active off' and :lcmd:`model mechanical active on</span>），并将流体体积模量设为 0（<span class="fishcmd">block fluid property bulk 0</span>），确保求解应力时流体压力不变。平衡后关闭力学模式、开启流动（<span class="fishcmd">model fluid active on' and :lcmd:`model mechanical active off</span>），恢复真实流体体积模量，再步进至平衡，获得初始稳态压力。初始化目标是在模型中建立平衡应力与稳态压力。这一步产生的位移通常无实际意义，即并非实际物理过程的结果，因此获得初始状态后应重置位移（<span class="fishcmd">block gridpoint initialize displacement 0 0 0</span> 和 <span class="fishcmd">block contact reset displacement</span>）。</p>
+<p>使用 <span class="fishcmd">block insitu</span> 设置应力时，可采用 <span class="cmdkey">nodisplacement</span> 关键字。<span class="cmdkey">nodisplacement</span> 防止从 <span class="cmdkey">aperture-initial</span>，即零应力水力开度，中减去初始应力导致的法向位移。因此 azero 将表示初始开度，而非零应力开度。</p>
+</div>
+<div class="section" id="running-the-coupled-solution">
+<h4>运行耦合求解</h4>
+<p>运行耦合求解时，力学和流动模式必须同时开启。<span class="codename">3DEC</span> 内部先运行一系列力学步，再运行一系列流体步。用户可设置每个流体步对应的力学步数，以及每个力学步对应的流体步数。</p>
+<p>大多数情况下，力学变形时间远短于流动时间。事实上，<span class="codename">3DEC</span> 水力—力学耦合模型假定准静态，即力学模型针对当前孔隙压力分布保持平衡。因此，虽然流动与力学模型均显式时间积分，只有流动时间才是物理时间。两模型无须同步；每个流体时间步，只需执行足够多力学步达到平衡。最大不平衡力低于给定阈值时视为平衡。默认阈值为 1 × 10<sup>−5</sup>，可通过 <code class="docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code> 命令中的 <span class="fishcmd">mechanical ratio maximum</span> 关键字修改。</p>
+<p>每个流体步都达到不平衡力阈值有时非常耗时，因此也可指定每个流体步最多执行的力学循环数。使用 <span class="fishcmd">model mechanical slave on</span> 和 <span class="fishcmd">model mechanical substep 200</span>，将两流动步之间的最大力学循环数设为 200，不论不平衡力大小。如果力学模型在少于 200 步时已平衡，实际执行步数可以更少。该命令仅防止每个流体步执行过多力学步。</p>
+<p>某些情况下，尤其模型初始扰动经过很长时间后，单个流体步内的压力变化和力学扰动可能很小。此时每个流体步执行一个或多个力学步可能没有必要且低效。可使用 <span class="fishcmd">model fluid slave on</span> 和 <span class="fishcmd">model fluid substep n</span>，将每个力学步最多执行的流体步数设为 n，默认值为 1。</p>
+</div>
+<div class="section" id="example">
+<h4>示例</h4>
+<p>下例与单向耦合示例类似，但改为完全耦合水力—力学模拟。</p>
+<p>运行后可见执行了超过 500,000 步，因为每个流体步都执行多个力学步，文件指定共 20,000 个流体步。总物理时间仅约 0.047 s。<a href="#jnt-fld3-utgk">图 11（Figure  11）</a> 显示节理压力等值线，与<a href="#jnt-fld3-nwrp">图 5（Figure  5）</a> 比较可知尚未达到稳态，压力仍在变化。节理开度等值线见<a href="#jnt-fld3-pmaq">图 12（Figure  12）</a>，添加<span class="menuselection">流动平面（Flow PLane）</span>／<span class="menuselection">等值线（Contours）</span>／<span class="menuselection">开度（Aperture）</span>绘图项即可生成。最后，块体位移等值线见<a href="#jnt-fld3-ssgs">图 13（Figure  13）</a>，表明块体随流体压力变化而变形，模型确实为耦合。</p>
+<p class="h3 rubric" id="jnt-fld3-yzhd">coupled.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 完全耦合分析</span>
+<span class="nb">model new</span>
+<span class="nb">model config</span><span class="n"> fluid</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+
+<span class="nb">block create</span><span class="n"> brick </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">0</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">90</span>
+
+<span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="m m-Double">0.25</span>
+<span class="nb">block zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">block zone prop</span><span class="n"> density </span><span class="m m-Double">2500</span><span class="n"> shear </span><span class="m m-Double">2e9</span><span class="n"> bulk </span><span class="m m-Double">5e9</span>
+
+<span class="nb">block contact jmodel</span><span class="n"> assign mohr</span>
+<span class="nb">block contact property</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1e10</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1e10</span><span class="n"> </span>
+
+<span class="nb">block fluid</span><span class="n"> property bulk </span><span class="m m-Double">2e9</span><span class="n"> density </span><span class="m m-Double">1000</span><span class="n"> viscosity </span><span class="m m-Double">1e-3</span>
+
+<span class="nb">flowplane vertex property</span><span class="n"> aperture</span><span class="o">-</span><span class="n">initial </span><span class="m m-Double">1e-4</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                          aperture</span><span class="o">-</span><span class="n">minimum </span><span class="m m-Double">1e-5</span><span class="n"> aperture</span><span class="o">-</span><span class="n">maximum </span><span class="m m-Double">1e-3</span>
+
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0.0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">1.0</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0.0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x  </span><span class="m m-Double">1.0</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0.0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">1.0</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0.0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">y  </span><span class="m m-Double">1.0</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">1.0</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">z  </span><span class="m m-Double">1.0</span>
+
+<span class="nb">block insitu</span><span class="n"> stress </span><span class="o">-</span><span class="m m-Double">1e7</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1e7</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1e7</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> nodis</span>
+<span class="nb">block insitu</span><span class="n"> p</span><span class="o">-</span><span class="n">p </span><span class="m m-Double">2e6</span>
+
+<span class="c">; 初始平衡，力学部分</span>
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">off</span>
+<span class="nb">block fluid</span><span class="n"> property bulk </span><span class="m m-Double">0.0</span>
+<span class="n">model hist mech unbal</span><span class="o">-</span><span class="n">max</span>
+<span class="nb">model </span><span class="ss">cyc</span><span class="n"> </span><span class="m m-Double">100</span>
+
+<span class="c">; 初始平衡，流体部分</span>
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">on</span>
+<span class="n">model mech active </span><span class="sx">off</span>
+<span class="nb">block fluid</span><span class="n"> property bulk </span><span class="m m-Double">2e9</span>
+<span class="nb">model </span><span class="ss">cyc</span><span class="n"> </span><span class="m m-Double">100</span>
+
+<span class="nb">block gridpoint ini</span><span class="n"> disp </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block contact reset</span><span class="n"> disp</span>
+
+<span class="nb">flowknot apply p-p</span><span class="n"> </span><span class="m m-Double">3.0e6</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">1.0</span>
+<span class="nb">flowknot apply p-p</span><span class="n"> </span><span class="m m-Double">2.0e6</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">1.0</span>
+
+<span class="n">model mech active </span><span class="sx">on</span>
+<span class="nb">block fluid</span><span class="n"> property bulk </span><span class="m m-Double">2e8</span>
+
+<span class="nb">model mechanical</span><span class="n"> substep </span><span class="m m-Double">10</span>
+<span class="nb">model mechanical</span><span class="n"> slave </span><span class="sx">on</span>
+
+<span class="nb">history delete</span>
+<span class="n">model his fluid time</span><span class="o">-</span><span class="n">total</span>
+<span class="nb">flowknot his p-p</span><span class="n"> pos </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fluid cycles </span><span class="m m-Double">20000</span><span class="n"> or mechanical ratio </span><span class="m m-Double">1e-5</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">"coupled"</span>
+</pre></div>
+</div>
+<div class="figure" id="jnt-fld3-utgk">
+<a class="reference internal image-reference" href="../../../../../_images/coupled_pressure.png"><img alt="../../../../../_images/coupled_pressure.png" src="../../../../../_images/coupled_pressure.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 11：耦合模型 20,000 步后的流体压力。</span></p>
+</div>
+<div class="figure" id="jnt-fld3-pmaq">
+<a class="reference internal image-reference" href="../../../../../_images/coupled_aperture.png"><img alt="../../../../../_images/coupled_aperture.png" src="../../../../../_images/coupled_aperture.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 12：耦合模型 20,000 步后的节理开度。</span></p>
+</div>
+<div class="figure" id="jnt-fld3-ssgs">
+<a class="reference internal image-reference" href="../../../../../_images/coupled_zdisp.png"><img alt="../../../../../_images/coupled_zdisp.png" src="../../../../../_images/coupled_zdisp.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 13：块体的 <span class="math">\(z\)</span> 位移。</span></p>
+</div>
+</div>
+<div class="section" id="fast-flow">
+<h4>快速流动</h4>
+<p>程序提供快速流动选项，加快耦合计算。该选项假定流体不可压缩。当岩石相对于流体并不很刚硬，或开度很小时，这可能是合理假设。回顾饱和节理表观刚度为 <span class="math">\(K_w / u_H\)</span>，因此小开度会产生大表观刚度，可能可将其近似为无穷大，即节理内流体不可压缩。</p>
+<p>通过 <span class="fishcmd">block fluid fast-flow active on</span> 命令开启快速流动。注意，该逻辑通常产生大得多的流体时间步长，因此可能需增大 <span class="fishcmd">model mechanical substep</span>，确保每步近似达到力学平衡。</p>
+<p>快速流动还需要不同的流体体积模量输入。由于假定流体不可压缩，输入的不是实际流体模量，而是材料体积模量除以网格单元尺寸立方，即 K/edge<sup>3</sup>。启用 fastflow 时，通过 <span class="fishcmd">block fluid bulk property  &lt; value  &gt;</span> 输入该量，其国际单位制量纲为 Pa/L<sup>3</sup>。模型材料属性和网格尺寸变化时，应采用该参数的最大值。</p>
+<p>将“<a class="reference internal" href="#jnt-fld3-yzhd"><span class="std std-ref">coupled.dat</span></a>”修改为“<a class="reference internal" href="#jnt-fld3-plit"><span class="std std-ref">coupled-fast.dat</span></a>”，以使用快速流动逻辑，需要以下改变：</p>
+<ul class="simple">
+<li>将流体体积模量设为固体体积模量除以网格单元尺寸立方。</li>
+<li>每个流体步允许的力学步数增加至 2000。</li>
+<li>流体时间步长限制为最大 1e-3 s。</li>
+</ul>
+<p>如果不限制流体时间步长，初始值会很大，产生较大的初始压力脉冲和不稳定行为。限制为 1e-3 s 后，时间步长仍约为未采用快速流动示例的 1000 倍，因此仅需约 200 个流体步达到稳态，总步数约 50,000，明显少于上述普通流动版本。</p>
+<p class="h3 rubric" id="jnt-fld3-plit">coupled-fast.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 采用快速流动算法的完全耦合分析</span>
+<span class="c">; 完全耦合分析</span>
+<span class="nb">model new</span>
+<span class="nb">model config</span><span class="n"> fluid</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+
+<span class="nb">block create</span><span class="n"> brick </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">0</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">90</span>
+
+
+<span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="m m-Double">0.25</span>
+<span class="nb">block zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">block zone prop</span><span class="n"> density </span><span class="m m-Double">2500</span><span class="n"> shear </span><span class="m m-Double">2e9</span><span class="n"> bulk </span><span class="m m-Double">5e9</span>
+
+<span class="nb">block contact jmodel</span><span class="n"> assign mohr</span>
+<span class="nb">block contact property</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1e10</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1e10</span><span class="n"> </span>
+
+<span class="nb">flowplane vertex property</span><span class="n"> aperture</span><span class="o">-</span><span class="n">initial </span><span class="m m-Double">1e-4</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                          aperture</span><span class="o">-</span><span class="n">minimum </span><span class="m m-Double">1e-5</span><span class="n"> aperture</span><span class="o">-</span><span class="n">maximum </span><span class="m m-Double">1e-3</span>
+
+<span class="nb">block fluid</span><span class="n"> property bulk </span><span class="m m-Double">2e9</span><span class="n"> density </span><span class="m m-Double">1000</span><span class="n"> viscosity </span><span class="m m-Double">1e-3</span>
+
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0.0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">1.0</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0.0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x  </span><span class="m m-Double">1.0</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0.0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">1.0</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0.0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">y  </span><span class="m m-Double">1.0</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">1.0</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">z  </span><span class="m m-Double">1.0</span>
+
+<span class="nb">block insitu</span><span class="n"> stress </span><span class="o">-</span><span class="m m-Double">1e7</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1e7</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1e7</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> nodis</span>
+<span class="nb">block insitu</span><span class="n"> p</span><span class="o">-</span><span class="n">p </span><span class="m m-Double">2e6</span>
+
+<span class="c">; 初始平衡，力学部分</span>
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">off</span>
+<span class="nb">block fluid</span><span class="n"> property bulk </span><span class="m m-Double">0.0</span>
+<span class="n">model hist mech unbal</span><span class="o">-</span><span class="n">max</span>
+<span class="nb">model </span><span class="ss">cyc</span><span class="n"> </span><span class="m m-Double">100</span>
+
+<span class="c">; 初始平衡，流体部分</span>
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">on</span>
+<span class="n">model mech active </span><span class="sx">off</span>
+<span class="nb">block fluid</span><span class="n"> property bulk </span><span class="m m-Double">2e9</span>
+<span class="nb">model </span><span class="ss">cyc</span><span class="n"> </span><span class="m m-Double">100</span>
+
+<span class="nb">block gridpoint ini</span><span class="n"> disp </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block contact reset</span><span class="n"> disp </span>
+
+<span class="nb">flowknot apply p-p</span><span class="n"> </span><span class="m m-Double">3.0e6</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">1.0</span>
+<span class="nb">flowknot apply p-p</span><span class="n"> </span><span class="m m-Double">2.0e6</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">1.0</span>
+
+<span class="nb">block fluid</span><span class="n"> fast</span><span class="o">-</span><span class="n">flow active </span><span class="sx">on</span>
+
+<span class="n">model mech active </span><span class="sx">on</span>
+<span class="nb">block fluid</span><span class="n"> property bulk </span><span class="ni">[</span><span class="m m-Double">2e9</span><span class="o">/</span><span class="m m-Double">0.25</span><span class="o">^</span><span class="m m-Double">3</span><span class="ni">]</span>
+<span class="nb">model mechanical</span><span class="n"> substep </span><span class="m m-Double">2000</span><span class="n"> </span>
+<span class="nb">model mechanical</span><span class="n"> slave </span><span class="sx">on</span>
+
+<span class="nb">history delete</span>
+<span class="n">model his fluid time</span><span class="o">-</span><span class="n">total</span>
+<span class="nb">flowknot his p-p</span><span class="n"> pos </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+
+<span class="nb">model fluid</span><span class="n"> timestep max </span><span class="m m-Double">1e-3</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fluid cycles </span><span class="m m-Double">250</span><span class="n"> or mechanical ratio </span><span class="m m-Double">1e-6</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">"coupled-fast"</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="leak-off">
+<h2>滤失</h2>
+<p>开启基质流体流动后，可以模拟流体从节理向相邻岩块的运移（滤失）。通过指定 <span class="fishcmd">model configure matrixflow</span>，节理流动与基质流动将同时开启。基质中每个网格点位置都会生成流动节点。在流动平面位置处，一个流动节点代表两个（或多个）重合的网格点，从而使节理流动与基质流动相连。</p>
+<p>下例仅进行流体计算，没有流固耦合。因此，将基质中流体体积模量设为式 <a class="reference internal" href="#equation-jnt-fld3-fbzq">(22)</a> 计算的表观模量。如果未通过 <span class="fishcmd">block fluid property bulk-matrix</span> 指定基质流体体积模量，则采用与节理流体相同的值，后者由 <span class="fishcmd">block fluid property bulk</span> 给出。</p>
+<p>第一个示例将基质渗透系数设为 1×10<sup>−6</sup> m/s。1.5 s 后孔隙压力见<a href="#jnt-fld3-rnd1">图 14（Figure  14）</a>，可见流体已从裂隙进入基质。<a href="#jnt-fld3-rnd2">图 15（Figure  15）</a> 为相同示例，但基质渗透系数设为 1 × 10<sup>−8</sup> m/s。此时流体进入基质的距离较短，因此沿节理流得更远。</p>
+<div class="figure" id="jnt-fld3-rnd1">
+<a class="reference internal image-reference" href="../../../../../_images/leakoff-pressure-1.png"><img alt="../../../../../_images/leakoff-pressure-1.png" src="../../../../../_images/leakoff-pressure-1.png" style="width: 80%;"/></a>
+</div>
+<div class="figure" id="jnt-fld3-rnd2">
+<a class="reference internal image-reference" href="../../../../../_images/leakoff-pressure-2.png"><img alt="../../../../../_images/leakoff-pressure-2.png" src="../../../../../_images/leakoff-pressure-2.png" style="width: 80%;"/></a>
+</div>
+<p class="h3 rubric" id="jnt-fld3-wqoc">leakoff-1.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">program log</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">program log</span><span class="o">-</span><span class="n">file </span><span class="s">'leakoff-1.log'</span>
+<span class="c">; --------------------------------------------------------</span>
+<span class="c">; leakoff-1 ... 岩石基质水力传导系数 1e-6 m/s</span>
+<span class="c">; --------------------------------------------------------</span>
+<span class="c">;</span>
+<span class="nb">model new</span>
+<span class="nb">model config</span><span class="n"> matrixflow</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">;</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.5</span><span class="n"> </span><span class="m m-Double">0.5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">5</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set</span>
+<span class="c">;</span>
+<span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="m m-Double">1.0</span>
+<span class="nb">block zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">block zone property</span><span class="n"> density </span><span class="m m-Double">2500</span><span class="n"> shear </span><span class="m m-Double">1e9</span><span class="n"> bulk </span><span class="m m-Double">2.5e9</span><span class="n"> </span>
+
+<span class="nb">block contact jmodel</span><span class="n"> assign mohr</span>
+<span class="nb">block contact property</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1e11</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1e11</span><span class="n"> </span>
+<span class="nb">flowplane vertex property</span><span class="n"> aperture</span><span class="o">-</span><span class="n">initial </span><span class="m m-Double">2e-4</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                          aperture</span><span class="o">-</span><span class="n">minimum </span><span class="m m-Double">2e-4</span><span class="n"> aperture</span><span class="o">-</span><span class="n">maximum </span><span class="m m-Double">2e-4</span><span class="n"> </span>
+
+<span class="nb">block fluid</span><span class="n"> property bulk </span><span class="m m-Double">2e9</span><span class="n"> density </span><span class="m m-Double">1000</span><span class="n"> viscosity </span><span class="m m-Double">1e-3</span>
+
+<span class="c">; perm = (1e-6 m/s) / (rho*g) = 1e-10</span>
+<span class="nb">block zone fluid</span><span class="n"> property permeability </span><span class="m m-Double">1e-10</span>
+<span class="nb">block zone fluid</span><span class="n"> property porosity </span><span class="m m-Double">0.10</span>
+<span class="c">;</span>
+<span class="nb">block insitu</span><span class="n"> stress </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1e6</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="c">;</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                      range position</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">5</span>
+<span class="c">;</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">5</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">5</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">5</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">5</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="o">-</span><span class="m m-Double">3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="o">-</span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="c">;</span>
+<span class="c">; 仅进行流体分析时，计算表观流体体积模量</span>
+<span class="nb">fish define</span><span class="ni"> kf_matrix</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> poros_ </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.1</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> rockbulk_ </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2.5e9</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> shear_ </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1e9</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> fluidbulk_ </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2e9</span>
+<span class="ni">  </span>
+<span class="ni">  kf_matrix </span><span class="p">=</span><span class="ni"> poros_</span><span class="o">/</span><span class="p">(</span><span class="ni">poros_</span><span class="o">/</span><span class="ni">fluidbulk_ </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="o">/</span><span class="p">(</span><span class="ni">rockbulk_</span><span class="o">+</span><span class="m m-Double">4.0</span><span class="o">/</span><span class="m m-Double">3.0</span><span class="o">*</span><span class="ni">shear_</span><span class="p">))</span>
+<span class="nb">end</span>
+<span class="nb">block fluid</span><span class="n"> property bulk</span><span class="o">-</span><span class="n">matrix </span><span class="ni">[kf_matrix]</span>
+<span class="c">;</span>
+<span class="nb">flowknot apply pore-pressure</span><span class="n"> </span><span class="m m-Double">1e6</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span>
+<span class="nb">flowknot apply pore-pressure</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">5</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span>
+<span class="c">;</span>
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">on</span>
+<span class="nb">model mechanical</span><span class="n"> active </span><span class="sx">off</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fluid time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">1.5</span>
+<span class="c">;</span>
+<span class="nb">flowknot list range</span><span class="n"> pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">0.1</span><span class="n"> </span><span class="m m-Double">0.1</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'leakoff-1'</span>
+</pre></div>
+</div>
+<div class="section" id="considerations-for-model-optimization">
+<h3>模型优化的考虑因素</h3>
+<p>根据前节讨论，水力—力学耦合模型的特征，使建模人员面对以下两个不同困难：</p>
+<ol class="arabic simple">
+<li>由于开度较小，困在节理中的流体表现得很刚硬。换言之，充液节理表观刚度由 <span class="math">\(K_w / u_h\)</span> 决定，该项往往因开度相对较小而很大，导致力学和流动时间步长很小。</li>
+<li>由于流动方程包含开度立方项，渗透性对开度非常敏感。因此，开度增加会使流体时间步长急剧减小。</li>
+</ol>
+<p>下面分别处理这两个困难。</p>
+<p>流体体积模量过大的问题在于：通常问题扩散率由岩体变形性控制，即流体体积模量并不影响问题物理本质；但它参与时间步长计算，导致极小时间步长。为减轻这一问题，建议降低流体体积模量。例如，20° 时水的体积模量约为 2.2 GPa，考虑典型节理开度，充水节理表观刚度会比岩石高许多数量级。如果模型存在这种刚度反差，建议降低流体体积模量，使充液节理表观刚度近似等于相邻岩石块体网格单元的等效刚度。</p>
+<p>局部的大位移会显著减小流体时步。在流量计算中对张开度取上限 <span class="cmdkey">aperture-maximum</span>，可以在不影响所分析问题物理实质的前提下，避免过大张开度对时步的影响。不过建议所取最大张开度不要影响流动模型中相当大一部分区域的张开度。</p>
+<div class="section" id="tips-for-speeding-up-coupled-simulations">
+<span id="fluid-joint-tips"></span><h4>加快耦合模拟的建议</h4>
+<p>除快速流动之外，还可通过以下方法加快耦合计算：</p>
+<ol class="arabic simple">
+<li>减小 <span class="cmdkey">model mechanical substep</span>，或增大 <span class="cmdkey">mechanical ratio</span>，都可能减少每个流体步执行的力学步数。但也应避免减少过多，否则块体不能正确响应流体压力变化而变形。</li>
+<li>使用 <span class="fishcmd">flowplane area-minimum</span> 命令设置最小允许流动平面面积。离散时可能在流动平面内形成面积远小于平均值的极小网格单元，使流体时间步长大幅减小。如果这种单元数量较少，可赋予其 <span class="cmdkey">area-minimum</span>，即计算时按面积等于 <span class="cmdkey">area-minimum</span> 处理，在较小影响问题物理性质的情况下显著增大时间步长。但若 <span class="cmdkey">area-minimum</span> 影响模型中大量单元，说明参数选择不当，会影响所模拟问题的物理性质。为确定 <span class="cmdkey">area-minimum</span>，可编写 <span class="codename">FISH</span> 函数生成流动平面面积直方图，再选取截断最小值的合适阈值，例如低于均值两个标准差。</li>
+<li>使用 <span class="fishcmd">flowknot volume-minimum</span> 设置最小流动节点体积。块体几何生成和／或离散过程中，可能产生远小于平均体积的节点，显著影响流体时间步长。如果这类小体积节点数量较少，可赋予其 <span class="cmdkey">volume-minimum</span>，即计算时按体积等于 <span class="cmdkey">volume-minimum</span> 处理，在较小影响物理性质的情况下显著增大时间步长。但若 <span class="cmdkey">volume-minimum</span> 影响模型中大量节点，则参数选择不当，会改变问题物理性质。为确定 <span class="cmdkey">volume-minimum</span>，可编写 <span class="codename">FISH</span> 函数生成流动节点体积直方图，再选择截断最小值的合适阈值，例如低于均值两个标准差。</li>
+<li>用 <span class="fishcmd">flowplane zone edge-minimum</span> 命令设置流动单元的最小边长。所有边长小于该值的单元都会（带标记地）“停用”。它们不会被删除，用户以后可以修改该最小值（或将其设为零以恢复标准逻辑）。通过停用极小的边，时步会如前所述增大。</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="section" id="representation-of-a-discrete-fracture-network-dfn-for-fluid-flow-simulations">
+<span id="fluid-joint-dfn-representation"></span><h2>用于流动模拟的离散裂隙网络（DFN）表示</h2>
+<p>岩体离散裂隙通常由地质历史不同时期的荷载作用形成。裂隙一般呈平面且范围较大，可识别为若干特定组，各组具有特征方位和间距。不可能完全了解整个裂隙网络几何，因此许多裂隙模型采用随机方式。根据可观测量计算网络统计属性，再生成随机裂隙场。这类模型严格为三维，因为二维和三维连通性质无法简单尺度转换。更多信息见<a class="reference internal" href="../../../../../common/dfn/doc/dfn_manual/dfn_overview.html#dfn-description"><span class="std std-ref">DFN 概述</span>（DFN overview）</a>。</p>
+<p>虽然 <span class="codename">3DEC</span> 块体几何限制不允许块体仅部分破裂，但可通过为两块体接触面内的子接触赋予变化属性，达到类似效果。例如，节理平面一部分赋予较高强度，表现为“岩桥”或完整岩石；另一部分赋予摩擦面强度，表现为岩石节理或弱面。裂隙可表示为圆盘或多边形。</p>
+<p>对于每条裂隙，一个节理平面将切穿所有与其相交的块体。由于 <span class="codename">3DEC</span> 不允许部分破裂块体，裂隙对应的节理平面会延伸至有关块体边界，见<a href="#jnt-fld3-asdo">图 16（Figure  16）</a>。</p>
+<div class="figure" id="jnt-fld3-asdo">
+<img alt="../../../../../_images/leakoff-subcontacts.png" src="../../../../../_images/leakoff-subcontacts.png"/>
+<p class="caption"><span class="caption-text">图 16：为节理平面上圆形裂隙内部（黑色）与外部（灰色）子接触赋予不同属性的示意图。</span></p>
+</div>
+<p>切割后，<span class="codename">3DEC</span> 不区分裂隙与节理平面。要定义特定形状裂隙，还需要第二步。完成块体生成并离散为四面体网格后，通过赋予不同材料属性，区分节理平面的破裂与未破裂部分，见 <code class="docutils literal"><span class="pre">Section</span> <span class="pre">6.6</span> <span class="pre">in</span> <span class="pre">the</span> <span class="pre">User’s</span> <span class="pre">Guide</span></code>。<span class="flag3">CS：见前一个标记——相同思路。</span></p>
+<p>默认所有节理平面均可流动，但现实中流动只能通过裂隙，因此需阻止未破裂部分流动。可通过 <span class="fishcmd">block fluid crack-flow on</span> 开启 <span class="codename">3DEC</span> 的 crackflow 选项，使流动仅发生于节理平面中已剪切或拉伸屈服的部分。启用后，为允许 DFN 内流动，应将裂隙内子接触破坏指示值设为 1，表示已经破坏，未破裂子接触的指示值则设为零。</p>
+<p>“<a class="reference internal" href="#jnt-fld3-rsdq"><span class="std std-ref">dfn.dat</span></a>”演示此方法。在 2 m × 2 m 块体中创建直径 0.5 m 的水平圆形裂隙，将内部子接触设为“已裂开”以允许流动。初始子接触状态见<a href="#jnt-fld3-sbia">图 17（Figure  17）</a>。随后从中心注入流体并执行 10,000 步。注入后子接触状态见<a href="#jnt-fld3-vosb">图 18（Figure  18）</a>，可见初始裂隙已扩展。压力和开度分别见<a href="#jnt-fld3-oomy">图 19（Figure  19）</a> 和<a href="#jnt-fld3-sjuy">图 20（Figure  20）</a>。</p>
+<p class="h3 rubric" id="jnt-fld3-rsdq">dfn.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10000</span>
+<span class="nb">model config</span><span class="n"> fluid</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+
+<span class="nb">block create</span><span class="n"> brick </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="c">;</span>
+<span class="c">; 创建单条圆形裂隙</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span>
+
+<span class="nb">fracture create</span><span class="n"> dip </span><span class="m m-Double">0</span><span class="n"> size </span><span class="m m-Double">1</span><span class="n"> dfn </span><span class="s">'simple'</span>
+<span class="nb">block cut</span><span class="n"> dfn name </span><span class="s">'simple'</span>
+<span class="c">;</span>
+<span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="m m-Double">0.15</span>
+<span class="nb">block zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">block zone property</span><span class="n"> density </span><span class="m m-Double">2500</span><span class="n"> shear </span><span class="m m-Double">2e9</span><span class="n"> bulk </span><span class="m m-Double">5e9</span>
+
+<span class="nb">block contact jmodel</span><span class="n"> assign mohr</span>
+
+<span class="c">; 裂隙外部</span>
+<span class="nb">block contact property</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1e10</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1e10</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                       friction </span><span class="m m-Double">30</span><span class="n"> cohesion </span><span class="m m-Double">10000</span><span class="n"> tension </span><span class="m m-Double">1000</span>
+
+<span class="c">; 裂隙内部</span>
+<span class="nb">block contact property</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1e10</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1e10</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                       friction </span><span class="m m-Double">30</span><span class="n"> range dfn</span><span class="o">-</span><span class="m m-Double">3</span><span class="n">dec </span><span class="s">'simple'</span>
+<span class="c">;</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">1</span>
+<span class="c">;</span>
+<span class="nb">block fluid</span><span class="n"> property bulk </span><span class="m m-Double">2e8</span><span class="n"> density </span><span class="m m-Double">1000</span><span class="n"> viscosity </span><span class="m m-Double">1e-3</span>
+
+<span class="nb">flowplane vertex property</span><span class="n"> aperture</span><span class="o">-</span><span class="n">initial </span><span class="m m-Double">1e-4</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                          aperture</span><span class="o">-</span><span class="n">minimum </span><span class="m m-Double">1e-4</span><span class="n"> aperture</span><span class="o">-</span><span class="n">maximum </span><span class="m m-Double">1e-3</span>
+<span class="c">;</span>
+<span class="c">; 启用裂隙流动，并将裂隙内部子接触设为“开裂”</span>
+<span class="nb">block fluid</span><span class="n"> crack</span><span class="o">-</span><span class="n">flow </span><span class="sx">on</span>
+<span class="c">;</span>
+<span class="nb">fish define</span><span class="ni"> crack_frac</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> cx </span><span class="k">block.subcontact.list</span>
+<span class="ni">      </span><span class="k">if</span><span class="ni"> </span><span class="k">block.subcontact.fid</span><span class="p">(</span><span class="ni">cx</span><span class="p">)</span><span class="ni"> # </span><span class="m m-Double">0</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">        </span><span class="k">block.subcontact.state</span><span class="p">(</span><span class="ni">cx</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2</span><span class="ni"> </span><span class="c">; 将状态设为“拉伸破坏”</span>
+<span class="ni">      </span><span class="k">endif</span>
+<span class="ni">    </span><span class="k">end_loop</span>
+<span class="nb">end</span>
+<span class="ni">[crack_frac]</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'dfn_initial'</span>
+
+<span class="c">;</span>
+<span class="c">; 在中心注入</span>
+<span class="nb">flowknot apply discharge</span><span class="n"> </span><span class="m m-Double">0.0001</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">0.1</span><span class="n"> </span><span class="m m-Double">0.1</span><span class="n"> position</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">0.1</span><span class="n"> </span><span class="m m-Double">0.1</span>
+<span class="c">;</span>
+<span class="nb">model history</span><span class="n"> fluid time</span><span class="o">-</span><span class="n">total</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="c">;</span>
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">on</span>
+<span class="nb">model mechanical</span><span class="n"> active </span><span class="sx">on</span>
+<span class="nb">model mechanical</span><span class="n"> substep </span><span class="m m-Double">200</span>
+<span class="nb">model mechanical</span><span class="n"> slave </span><span class="sx">on</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fluid cycle </span><span class="m m-Double">500</span><span class="n"> or mech ratio </span><span class="m m-Double">1e-3</span>
+<span class="c">;</span>
+</pre></div>
+</div>
+<div class="figure" id="jnt-fld3-sbia">
+<a class="reference internal image-reference" href="../../../../../_images/dfn-subcontacts-start.png"><img alt="../../../../../_images/dfn-subcontacts-start.png" src="../../../../../_images/dfn-subcontacts-start.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 17：注入前子接触状态。</span></p>
+</div>
+<div class="figure" id="jnt-fld3-vosb">
+<a class="reference internal image-reference" href="../../../../../_images/dfn-subcontacts-end.png"><img alt="../../../../../_images/dfn-subcontacts-end.png" src="../../../../../_images/dfn-subcontacts-end.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 18：注入 17 ms 后的子接触状态。</span></p>
+</div>
+<div class="figure" id="jnt-fld3-oomy">
+<a class="reference internal image-reference" href="../../../../../_images/dfn-pressure.png"><img alt="../../../../../_images/dfn-pressure.png" src="../../../../../_images/dfn-pressure.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 19：注入 17 ms 后的压力和流量矢量。</span></p>
+</div>
+<div class="figure" id="jnt-fld3-sjuy">
+<a class="reference internal image-reference" href="../../../../../_images/dfn-aperture.png"><img alt="../../../../../_images/dfn-aperture.png" src="../../../../../_images/dfn-aperture.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 20：注入 17 ms 后的节理开度。</span></p>
+</div>
+</div>
+<div class="section" id="geometrical-and-topological-model-of-a-fractured-rock-mass">
+<span id="fluid-joint-geometrical-topological"></span><h2>裂隙岩体的几何与拓扑模型</h2>
+<div class="section" id="id2">
+<h3>引言</h3>
+<p>如前述，<span class="codename">3DEC</span> 将岩体流动简化为裂隙网络中的流动，裂隙由分隔块体的节理形成。<span class="codename">3DEC</span> 模型几何是通常非常复杂的岩石内部结构的简化形式。<span class="codename">3DEC</span> 假定岩石节理为平面，这一假定往往接近实际，并显著简化固体块体几何及其相互作用。此外，<span class="codename">3DEC</span> 节理始终延伸到块体边界。实际节理尺寸有限，整体通常呈节理平面内的椭圆形。为避免部分破裂块体，<span class="codename">3DEC</span> 假定节理无限延伸，或恰好终止于另一节理平面。因此，用节理“切割”实体后，模型只由凸多面体组成。模拟有限节理的一种方法，见<a class="reference internal" href="#fluid-joint-dfn-representation"><span class="std std-ref">用于流动模拟的 DFN 表示</span>（Representation of a DFN for Fluid Flow Simulations）</a>。</p>
+</div>
+<div class="section" id="dec-geometrical-entities">
+<h3><span class="codename">3DEC</span> 几何实体</h3>
+<p><span class="codename">3DEC</span> 用以下若干简单几何元素表示岩石块体和裂隙。</p>
+<p><span class="codename">3DEC</span> 块体对应完整岩块，只能为凸多面体。每个表面为平面多边形，称为面；两面交线为边；两条线交点为顶点。块体基本几何元素为面 F、边 E 和顶点 V。</p>
+<p>流动平面是流动模型的主要几何元素，是流动发生在其厚度范围内的二维平面；流动方程沿薄平面接触面的厚度或开度积分。流动平面是 <span class="codename">3DEC</span> 流体数据结构中的元素，对应固体模型两个多面体块体间的面—面接触，见<a href="#jnt-fld3-vyqg">图 4（Figure  4）</a>。注意，<span class="codename">3DEC</span> 接触属于固相计算数据结构。换言之，同时存在流动平面与面—面接触这两个几何实体，并非由于物理差异，而是为了将流体与固相信息和计算分别放在两个数据结构中。</p>
+<p>固体块体为平面面构成的多面体，因此流动平面为平面多边形。流动平面沿直线段边相连，同一条线上可连接两个以上流动平面。这条连接线称为流动管道。</p>
+<div class="section" id="fluid-flow-data-structure">
+<h4>流体流动数据结构</h4>
+<p>流动模型的几何元素包括：</p>
+<ol class="arabic simple">
+<li><em>流动平面</em>——对应固体块体间面—面接触的平面多边形</li>
+<li><em>流动平面网格单元</em>——流动平面的三角形离散单元</li>
+<li><em>流动平面顶点</em>——流动平面网格单元顶点，通常对应固体块体间子接触</li>
+<li><em>流动平面边</em>——定义流动平面周边各段的直线</li>
+<li><em>流动平面边分段</em>——流动平面边的子段</li>
+<li><em>流动管道</em>——一个或多个流动平面的交线</li>
+<li><em>流动管道顶点</em>——流动管道的端点</li>
+<li><em>流动管道分段</em>——流动管道的子段</li>
+<li><em>流动节点</em>——除流动平面交线处外，与流动平面顶点相同；交线处一个流动节点对应相交流动平面上两个或更多位置重合的顶点。流动节点存储流体压力。</li>
+</ol>
+<p>部分元素的图形表示见<a href="#jnt-fld3-lhbp">图 21（Figure  21）</a>。</p>
+<div class="figure" id="jnt-fld3-lhbp">
+<img alt="../../../../../_images/jointflow-structures.png" src="../../../../../_images/jointflow-structures.png"/>
+<p class="caption"><span class="caption-text">图 21：三个流动平面相交时的流动结构。流动平面实际相连，为便于观察采用分解显示。</span></p>
+</div>
+<p>数据结构中元素双向层级和邻接关系见<a href="#jnt-fld3-hjwf">图 22（Figure  22）</a>。竖直箭头表示层级关系，水平箭头表示邻接关系。虚线箭头为指向所示元素列表或循环链表的指针。</p>
+<div class="figure" id="jnt-fld3-hjwf">
+<img alt="../../../../../_images/jointflow-links.png" src="../../../../../_images/jointflow-links.png"/>
+<p class="caption"><span class="caption-text">图 22：流动模型几何表示的数据结构连接。</span></p>
+</div>
+</div>
+<div class="section" id="accessing-flow-plane-data">
+<h4>访问流动平面数据</h4>
+<p>可通过 <span class="cmdkey">loop foreach</span> 遍历流动平面、顶点、网格单元或流动节点，示例见“<a class="reference internal" href="#jnt-fld3-yewl"><span class="std std-ref">get_pressures.fis</span></a>”。也可通过 <span class="cmdkey">flowknotknot.near</span> 获取最接近某位置的单个流动节点指针。如<a href="#jnt-fld3-hjwf">图 22（Figure  22）</a> 所示，流动平面位于结构层级顶部。除了用 <span class="cmdkey">loop foreach</span> 遍历整个模型全部流动平面网格单元或顶点，也可遍历某特定流动平面的全部网格单元或顶点，见“<a class="reference internal" href="#jnt-fld3-wxyz"><span class="std std-ref">flowzones.fis</span></a>”。</p>
+<p><a href="#jnt-fld3-hjwf">图 22（Figure  22）</a> 中，虚线箭头表示上层结构包含指向下层结构链表的指针，例如流动平面含有指向网格单元链表的指针。实线箭头表示指向对应对象单个实例的指针，例如流动平面边指向其所属流动平面。请注意以下例外：</p>
+<ul class="simple">
+<li>每个流动平面指向流动平面边列表，该列表为双向链表，可双向遍历循环。末元素连接首元素，本质上是无限循环。因此，遍历流动边时必须谨慎，如“<a class="reference internal" href="#jnt-fld3-nvmz"><span class="std std-ref">test_pipe.fis</span></a>”所示。</li>
+<li>流动管道指向两个管道顶点，代表两端点。</li>
+<li>流动管道分段指向两个流动节点，分别位于分段两端。</li>
+</ul>
+<p>下面给出三个示例。“<a class="reference internal" href="#jnt-fld3-yewl"><span class="std std-ref">get_pressures.fis</span></a>”假定某流动平面包含沿 <span class="math">\(x\)</span> 轴的一条线，并输出沿线流动节点的压力。</p>
+<p>“<a class="reference internal" href="#jnt-fld3-wxyz"><span class="std std-ref">flowzones.fis</span></a>”展示如何遍历特定流动平面相关的流动网格单元。</p>
+<p>“<a class="reference internal" href="#jnt-fld3-nvmz"><span class="std std-ref">test_pipe.fis</span></a>”输出全部流动管道顶点坐标，需要“FLOW.FIN”。由于遍历全部流动平面边来获取管道，可能有重复。流动平面相交时，两条或更多平面边会指向同一管道，见<a href="#jnt-fld3-lhbp">图 21（Figure  21）</a>。</p>
+<p class="h3 rubric" id="jnt-fld3-yewl">get_pressures.fis</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 用于输出沿 x 轴压力的函数</span>
+<span class="nb">fish define</span><span class="ni"> get_pressures</span>
+<span class="ni">    </span><span class="c">; 遍历渗流节点</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> knot flowknot</span><span class="p">.</span><span class="ni">list</span>
+<span class="ni">      </span><span class="k">local</span><span class="ni"> coord </span><span class="p">=</span><span class="ni"> flowknot</span><span class="p">.</span><span class="ni">pos</span><span class="p">(</span><span class="ni">knot</span><span class="p">)</span>
+<span class="ni">      </span><span class="k">if</span><span class="ni"> </span><span class="k">math.abs</span><span class="p">(</span><span class="k">comp.z</span><span class="p">(</span><span class="ni">coord</span><span class="p">))</span><span class="ni"> </span><span class="o">&lt;</span><span class="ni"> </span><span class="m m-Double">0.01</span>
+<span class="ni">        </span><span class="k">if</span><span class="ni"> </span><span class="k">math.abs</span><span class="p">(</span><span class="k">comp.y</span><span class="p">(</span><span class="ni">coord</span><span class="p">))</span><span class="ni"> </span><span class="o">&lt;</span><span class="ni"> </span><span class="m m-Double">0.01</span><span class="ni">        </span>
+<span class="ni">          </span><span class="k">local</span><span class="ni"> pressure_ </span><span class="p">=</span><span class="ni"> flowknot</span><span class="p">.</span><span class="ni">pp</span><span class="p">(</span><span class="ni">knot</span><span class="p">)</span>
+<span class="ni">          </span><span class="k">local</span><span class="ni"> status </span><span class="p">=</span><span class="ni"> </span><span class="k">io.out</span><span class="p">(</span><span class="s">'x: '</span><span class="ni"> </span><span class="o">+</span><span class="ni"> string</span><span class="p">(</span><span class="k">comp.x</span><span class="p">(</span><span class="ni">coord</span><span class="p">))</span><span class="ni"> </span><span class="o">+</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">                                </span><span class="s">' pp: '</span><span class="ni"> </span><span class="o">+</span><span class="ni"> string</span><span class="p">(</span><span class="ni">pressure_</span><span class="p">))</span>
+<span class="ni">        </span><span class="k">endif</span>
+<span class="ni">      </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">end_loop</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="jnt-fld3-wxyz">flowzones.fis</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 用于输出 id 为 1 的渗流平面内渗流单元形心的函数</span>
+<span class="nb">fish define</span><span class="ni"> get_flowzones</span>
+<span class="ni">    </span><span class="c">; 遍历渗流平面</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> fp flowplane</span><span class="p">.</span><span class="ni">list</span>
+<span class="ni">      </span><span class="k">if</span><span class="ni"> flowplane</span><span class="p">.</span><span class="ni">id</span><span class="p">(</span><span class="ni">fp</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2</span>
+<span class="ni">        </span><span class="c">; 遍历该渗流平面中的全部渗流单元</span>
+<span class="ni">        </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> fz flowplane</span><span class="p">.</span><span class="ni">zonelist</span><span class="p">(</span><span class="ni">fp</span><span class="p">)</span><span class="ni">        </span>
+<span class="ni">          </span><span class="k">local</span><span class="ni"> status </span><span class="p">=</span><span class="ni"> </span><span class="k">io.out</span><span class="p">(</span><span class="ni">string</span><span class="p">(</span><span class="ni">flowplane</span><span class="p">.</span><span class="k">zone.pos</span><span class="p">(</span><span class="ni">fz</span><span class="p">)))</span>
+<span class="ni">        </span><span class="k">end_loop</span>
+<span class="ni">      </span><span class="k">endif</span>
+<span class="ni">    </span><span class="k">end_loop</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="jnt-fld3-nvmz">test_pipe.fis</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;</span>
+<span class="c">; 用于输出渗流管道顶点坐标的函数</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'FLOW.FIN'</span>
+<span class="nb">fish define</span><span class="ni"> test_pipe</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> fp flowplane</span><span class="p">.</span><span class="ni">list</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> status </span><span class="p">=</span><span class="ni"> </span><span class="k">io.out</span><span class="p">(</span><span class="s">'flow plane: '</span><span class="o">+</span><span class="ni">string</span><span class="p">(</span><span class="ni">fp</span><span class="p">))</span>
+<span class="ni">    </span>
+<span class="ni">    </span><span class="c">; 获取渗流平面的索引，以直接访问内存</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> fp_index </span><span class="p">=</span><span class="ni"> flowplane</span><span class="p">.</span><span class="ni">index</span><span class="p">(</span><span class="ni">fp</span><span class="p">)</span>
+<span class="ni">    </span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> fpe_start </span><span class="p">=</span><span class="ni"> </span><span class="k">memory.fortran.index</span><span class="p">(</span><span class="ni">fp_index</span><span class="o">+</span><span class="ni">$klcor</span><span class="p">)</span><span class="ni"> </span><span class="c">; 渗流平面的边</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> fpe </span><span class="p">=</span><span class="ni"> fpe_start</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">while</span><span class="ni"> fpe # </span><span class="m m-Double">0</span>
+<span class="ni">      status </span><span class="p">=</span><span class="ni"> </span><span class="k">io.out</span><span class="p">(</span><span class="s">' flow plane edge '</span><span class="o">+</span><span class="ni">string</span><span class="p">(</span><span class="ni">fpe</span><span class="p">))</span>
+<span class="ni">      </span><span class="k">local</span><span class="ni"> fpp </span><span class="p">=</span><span class="ni"> </span><span class="k">memory.fortran.index</span><span class="p">(</span><span class="ni">fpe</span><span class="o">+</span><span class="ni">$kpip</span><span class="p">)</span><span class="ni"> </span><span class="c">; 渗流管道</span>
+<span class="ni">      status </span><span class="p">=</span><span class="ni"> </span><span class="k">io.out</span><span class="p">(</span><span class="s">'  flow pipe: '</span><span class="o">+</span><span class="ni">string</span><span class="p">(</span><span class="ni">fpp</span><span class="p">))</span>
+<span class="ni">      </span>
+<span class="ni">      </span><span class="k">if</span><span class="ni"> fpp # index</span><span class="p">(</span><span class="m m-Double">9999</span><span class="p">)</span><span class="ni"> </span><span class="c">; 已连接</span>
+<span class="ni">      </span>
+<span class="ni">        </span><span class="k">local</span><span class="ni"> fppv_left </span><span class="p">=</span><span class="ni"> </span><span class="k">memory.fortran.index</span><span class="p">(</span><span class="ni">fpp</span><span class="o">+</span><span class="ni">$kpleft</span><span class="p">)</span>
+<span class="ni">        </span><span class="k">local</span><span class="ni"> fppv_right </span><span class="p">=</span><span class="ni"> </span><span class="k">memory.fortran.index</span><span class="p">(</span><span class="ni">fpp</span><span class="o">+</span><span class="ni">$kpright</span><span class="p">)</span>
+<span class="ni">      </span>
+<span class="ni">        </span><span class="k">local</span><span class="ni"> outstring </span><span class="p">=</span><span class="ni"> </span><span class="s">'   left vertex: '</span><span class="ni"> </span><span class="o">+</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">                          string</span><span class="p">(</span><span class="k">memory.fortran.float</span><span class="p">(</span><span class="ni">fppv_left</span><span class="o">+</span><span class="ni">$kxyz</span><span class="p">))</span>
+<span class="ni">        outstring </span><span class="p">=</span><span class="ni"> outstring </span><span class="o">+</span><span class="ni"> </span><span class="s">','</span><span class="ni"> </span><span class="o">+</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">                    string</span><span class="p">(</span><span class="k">memory.fortran.float</span><span class="p">(</span><span class="ni">fppv_left</span><span class="o">+</span><span class="ni">$kxyz</span><span class="o">+</span><span class="m m-Double">1</span><span class="p">))</span>
+<span class="ni">        outstring </span><span class="p">=</span><span class="ni"> outstring </span><span class="o">+</span><span class="ni"> </span><span class="s">','</span><span class="ni"> </span><span class="o">+</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">                    string</span><span class="p">(</span><span class="k">memory.fortran.float</span><span class="p">(</span><span class="ni">fppv_left</span><span class="o">+</span><span class="ni">$kxyz</span><span class="o">+</span><span class="m m-Double">2</span><span class="p">))</span>
+
+<span class="ni">        status </span><span class="p">=</span><span class="ni"> </span><span class="k">io.out</span><span class="p">(</span><span class="ni">outstring</span><span class="p">)</span>
+
+<span class="ni">        outstring </span><span class="p">=</span><span class="ni"> </span><span class="s">'   right vertex: '</span><span class="ni"> </span><span class="o">+</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">                    string</span><span class="p">(</span><span class="k">memory.fortran.float</span><span class="p">(</span><span class="ni">fppv_right</span><span class="o">+</span><span class="ni">$kxyz</span><span class="p">))</span>
+<span class="ni">        outstring </span><span class="p">=</span><span class="ni"> outstring </span><span class="o">+</span><span class="ni"> </span><span class="s">','</span><span class="ni"> </span><span class="o">+</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">                    string</span><span class="p">(</span><span class="k">memory.fortran.float</span><span class="p">(</span><span class="ni">fppv_right</span><span class="o">+</span><span class="ni">$kxyz</span><span class="o">+</span><span class="m m-Double">1</span><span class="p">))</span>
+<span class="ni">        outstring </span><span class="p">=</span><span class="ni"> outstring </span><span class="o">+</span><span class="ni"> </span><span class="s">','</span><span class="ni"> </span><span class="o">+</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">                    string</span><span class="p">(</span><span class="k">memory.fortran.float</span><span class="p">(</span><span class="ni">fppv_right</span><span class="o">+</span><span class="ni">$kxyz</span><span class="o">+</span><span class="m m-Double">2</span><span class="p">))</span>
+
+<span class="ni">        status </span><span class="p">=</span><span class="ni"> </span><span class="k">io.out</span><span class="p">(</span><span class="ni">outstring</span><span class="p">)</span>
+<span class="ni">      </span><span class="k">end_if</span>
+<span class="ni">      fpe </span><span class="p">=</span><span class="ni"> </span><span class="k">memory.fortran.index</span><span class="p">(</span><span class="ni">fpe </span><span class="o">+</span><span class="ni"> $knfe</span><span class="p">)</span>
+<span class="ni">      </span><span class="k">if</span><span class="ni"> fpe </span><span class="p">=</span><span class="ni"> fpe_start</span>
+<span class="ni">        </span><span class="k">exit loop</span>
+<span class="ni">      </span><span class="k">end_if</span>
+<span class="ni">    </span><span class="k">end_loop</span>
+<span class="ni">  </span><span class="k">end_loop</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="links-between-the-solid-and-flow-models">
+<h4>固体模型与流动模型之间的联系</h4>
+<p>流动数据结构与固体模型通过以下关系连接：</p>
+<ol class="arabic simple">
+<li>流动平面与对应的固体块体面—面接触。使用 <span class="fishcmd">block.contact.flowplane</span> 从接触访问流动平面，使用 <span class="fishcmd">flowplane.contact</span> 从流动平面访问接触。</li>
+<li>流动平面顶点与对应的固体块体子接触。每个不在平面边上的子接触，均通过 <span class="fishcmd">block.subcontact.flowplane.vertex</span> 连接流动平面顶点；每个不在边上的顶点，也通过 <span class="fishcmd">flowplane.vertex.subcontact1</span> 连接相应子接触。某些情况下，边上单个顶点位于两个子接触之间，第二个子接触由 <span class="fishcmd">flowplane.vertex.subcontact2</span> 给出，两个子接触权重由 <span class="fishcmd">flowplane.vertex.weight1</span> 和 <span class="fishcmd">flowplane.vertex.weight2</span> 给出。</li>
+</ol>
+</div>
+<div class="section" id="generation-of-geometry-of-the-flow-model">
+<h4>生成流动模型几何体</h4>
+<p>流动模型几何根据固体模型几何，即块体形状及其拓扑关系自动生成，无须用户交互。流体数据结构主要出于计算需要建立。实际流动路径是由块体间张开空间定义的裂隙。</p>
+</div>
+</div>
+</div>
+<div class="section" id="gas-flow">
+<h2>气体流动</h2>
+<p><span class="codename">3DEC</span> 也可模拟可压缩气体通过节理的瞬态流动。算法基于可压缩流体流动算法，并作以下修改。气体流动必须考虑密度对压力的强烈依赖；处理微可压缩流体时通常可忽略这种依赖，当前 <span class="codename">3DEC</span> 的做法即如此。</p>
+<p>对于理想气体，可考虑等温条件下的流动，此时</p>
+<div class="math" id="equation-jnt-fld3-dket">
+<span class="eqno">(23)</span>\[\rho = B p\]</div>
+<p>也可考虑绝热流动，此时</p>
+<div class="math" id="equation-jnt-fld3-xpff">
+<span class="eqno">(24)</span>\[\rho = B p^{1/\gamma}\]</div>
+<p>其中，<span class="math">\(\rho\)</span> 为密度，<span class="math">\(p\)</span> 为压力，<span class="math">\(B\)</span> 和 <span class="math">\(\gamma\)</span> 为常数，见 Chan 等（1993）。</p>
+<p>因此，气体体积模量也是压力的函数。等温情况下，由式 <a class="reference internal" href="#equation-jnt-fld3-dket">(23)</a> 得到体积模量</p>
+<div class="math" id="equation-Eq 4.25">
+<span class="eqno">(25)</span>\[K_w = p\]</div>
+<p>绝热情况下为</p>
+<div class="math" id="equation-jnt-fld3-thsc">
+<span class="eqno">(26)</span>\[K_w = {p \over \gamma}\]</div>
+<p>密度依赖压力，要求流体质量平衡中考虑密度空间变化：</p>
+<div class="math" id="equation-jnt-fld3-qbrs">
+<span class="eqno">(27)</span>\[{\partial (n \rho) \over \partial t}  + \nabla (\rho q) = 0\]</div>
+<p>其中，<span class="math">\(n\)</span> 为孔隙率。与 <span class="codename">3DEC</span> 现有微可压缩流体逻辑不同，气流分析需考虑式 <a class="reference internal" href="#equation-jnt-fld3-qbrs">(27)</a> 第二项中密度梯度产生的对流项。</p>
+<div class="section" id="implementation">
+<h3>实现</h3>
+<p><span class="codename">3DEC</span> 不连续面流动模型，将流动平面离散为三角形流动网格单元，假定单元内压力线性变化、流量均匀。在流动平面顶点即节点处建立质量平衡，考虑包含该节点的全部单元贡献。每个时间步节点压力更新可表示为</p>
+<div class="math" id="equation-jnt-fld3-xprd">
+<span class="eqno">(28)</span>\[p_{new} = p_{old} + K_g {1 \over V} \sum_{i} q_i {\rho_{im} \over \rho} \Delta t - K_g {\Delta V \over V}\]</div>
+<p>求和覆盖包含该节点的全部三角形流动网格单元。三角形单元密度取其三个节点密度的平均：</p>
+<div class="math" id="equation-Eq 4.29">
+<span class="eqno">(29)</span>\[\rho_{im} = {{\rho_{i1} + \rho_{i3}} \over 3}\]</div>
+<p>式 <a class="reference internal" href="#equation-jnt-fld3-xprd">(28)</a> 中，单元平均密度 <span class="math">\(\rho_{im}\)</span> 与原域密度 <span class="math">\(\rho\)</span> 的比值，考虑气体密度空间变化；水流情况下没有该因子。各域密度和体积模量根据式 <a class="reference internal" href="#equation-jnt-fld3-dket">(23)</a> 至 <a class="reference internal" href="#equation-jnt-fld3-thsc">(26)</a>，作为域压力函数更新。</p>
+</div>
+<div class="section" id="id3">
+<h3>示例</h3>
+<p>Chan 等（1993）给出瞬态一维气流问题的解，描述理想气体从节理排入空腔时的压力时间演化。条件为半无限域中恒定体积下沿节理一维流动。<span class="math">\(x\)</span> = 0 处气压 <span class="math">\(p\)</span> = 0；在 <span class="math">\(x = \infty\)</span> 处，气压设为 <span class="math">\(p_1\)</span>。</p>
+<p>作者给出近似解析解，以及采用隐式时间推进方案所得数值解的经验拟合。沿节理气压近似解析解为：</p>
+<div class="math" id="equation-jnt-fld3-gjui">
+<span class="eqno">(30)</span>\[{\Psi \simeq 1 - exp(-\xi/\sqrt{2} -\xi^2/4})\]</div>
+<p>他们还给出数值解的经验拟合：</p>
+<div class="math" id="equation-jnt-fld3-mwnb">
+<span class="eqno">(31)</span>\[{\Psi = 1 - e^{-(0.625\xi+0.186\xi^2)}}\]</div>
+<p>式 <a class="reference internal" href="#equation-jnt-fld3-gjui">(30)</a> 和 <a class="reference internal" href="#equation-jnt-fld3-mwnb">(31)</a> 中，无量纲参数为 <span class="math">\(\Psi = p^2 / p_1^2\)</span> 与 <span class="math">\(\xi = \sqrt{{(\nu n x^2)} / {(t k p_1)}}\)</span>，其中 <span class="math">\(\nu\)</span> 为气体剪切黏度，<span class="math">\(n\)</span> 为孔隙率，<span class="math">\(k\)</span> 为渗透率，<span class="math">\(t\)</span> 为时间。将这些解写成 <span class="codename">FISH</span> 函数，结果存表以与 <span class="codename">3DEC</span> 比较。该 <span class="codename">FISH</span> 函数 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)...">解析解 FISH 函数（<span class="varfloat"><span class="null">fppan</span></span>）</a> 如下。</p>
+<p class="h2 rubric" id="fluidjointempiricalfit">一维气流的解析解与经验拟合</p>
+<p><span class="codename">3DEC</span> 模型中，节理沿 <span class="math">\(x\)</span> 方向长 100 m，包含 10 个块体和 100 个网格单元；<span class="math">\(y\)</span> 方向宽 1 m。在 <span class="math">\(x\)</span> = 0 处压力固定为零，在 <span class="math">\(x\)</span> = 100 处固定为 <span class="math">\(p_1\)</span> = 1 MPa。问题参数为 <span class="math">\(k\)</span> = 10<sup>9</sup>、<span class="math">\(v\)</span> = 10<sup>-12</sup>、<span class="math">\(n\)</span> = 10<sup>-4</sup>。</p>
+<p><span class="codename">3DEC</span> 数据文件见“<a class="reference internal" href="#jnt-fld3-iuuu"><span class="std std-ref">gas_flow.dat</span></a>”。<span class="codename">3DEC</span> 结果与解析解（式 <a class="reference internal" href="#equation-jnt-fld3-gjui">(30)</a>）及经验拟合（式 <a class="reference internal" href="#equation-jnt-fld3-mwnb">(31)</a>）的比较，在时间 0.5 时见<a href="#jnt-fld3-jeux">图 23（Figure  23）</a>，在时间 2.0 时见<a href="#jnt-fld3-dekn">图 24（Figure  24）</a>。</p>
+<p class="h2 rubric" id="jnt-fld3-iuuu">gas_flow.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 气体一维流动试验问题，采用 Chan 等（1993）的解</span>
+<span class="nb">model new</span>
+<span class="nb">model config</span><span class="n"> fluid</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">;</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">100</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">100</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block densify</span><span class="n"> segments </span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> join</span>
+
+<span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="m m-Double">1.01</span>
+<span class="nb">block zone cmodel</span><span class="n"> assign elastic</span>
+<span class="c">; 单位为 MPa</span>
+<span class="nb">block zone property</span><span class="n"> density </span><span class="m m-Double">0.0027</span><span class="n"> young </span><span class="m m-Double">1.0</span><span class="n"> poisson </span><span class="m m-Double">0.2</span><span class="n"> </span>
+
+<span class="nb">block contact jmodel</span><span class="n"> assign elastic</span>
+<span class="nb">block contact property</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1</span><span class="n"> </span>
+<span class="c">;</span>
+<span class="nb">block fluid</span><span class="n"> property bulk </span><span class="m m-Double">1</span><span class="n"> density </span><span class="m m-Double">1e-6</span><span class="n"> viscosity </span><span class="m m-Double">0.0833e-9</span>
+
+<span class="nb">flowplane vertex property</span><span class="n"> aperture</span><span class="o">-</span><span class="n">initial </span><span class="m m-Double">1e-4</span><span class="n"> aperture</span><span class="o">-</span><span class="n">minimum </span><span class="m m-Double">0.5e-4</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                                aperture</span><span class="o">-</span><span class="n">maximum </span><span class="m m-Double">5e-4</span><span class="n"> </span>
+<span class="c">;</span>
+<span class="nb">block insitu</span><span class="n"> stress </span><span class="o">-</span><span class="m m-Double">1e-6</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1e-6</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1e-6</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> nodis</span>
+<span class="nb">block insitu</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure </span><span class="m m-Double">1</span>
+<span class="c">;</span>
+<span class="c">; 气体流动</span>
+<span class="nb">block fluid</span><span class="n"> gas active </span><span class="sx">on</span>
+<span class="nb">block fluid</span><span class="n"> gas alpha </span><span class="m m-Double">1.0</span>
+<span class="nb">block fluid</span><span class="n"> gas constant </span><span class="m m-Double">1.0</span>
+<span class="nb">block fluid</span><span class="n"> gas bulk</span><span class="o">-</span><span class="n">minimum </span><span class="m m-Double">0.001</span>
+<span class="nb">block fluid</span><span class="n"> gas density</span><span class="o">-</span><span class="n">minimum </span><span class="m m-Double">1e-6</span>
+<span class="c">;</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">100</span>
+<span class="c">;</span>
+<span class="nb">flowknot apply pore-pressure</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span>
+<span class="nb">flowknot apply pore-pressure</span><span class="n"> </span><span class="m m-Double">1.0</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">100</span>
+<span class="c">;</span>
+<span class="nb">model history</span><span class="n"> fluid time</span><span class="o">-</span><span class="n">total</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="m m-Double">0.5</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="m m-Double">1.5</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="m m-Double">4.5</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="m m-Double">8.5</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="m m-Double">9.5</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">on</span>
+<span class="nb">model mechanical</span><span class="n"> active </span><span class="sx">off</span>
+<span class="c">;</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'gas_fish.fis'</span>
+<span class="ni">[ppan]</span>
+<span class="ni">[pp1dini]</span>
+<span class="c">;</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fluid time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">0.5</span>
+<span class="ni">[getpp1d</span><span class="p">(</span><span class="m m-Double">3</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="c">; 3DEC 结果存入表 '3'</span>
+<span class="nb">table</span><span class="n"> </span><span class="s">'3'</span><span class="n"> label </span><span class="s">'3DEC - 0.5 s'</span>
+<span class="nb">table</span><span class="n"> </span><span class="s">'8'</span><span class="n"> label </span><span class="s">'Analytical - 0.5 s'</span>
+<span class="nb">table</span><span class="n"> </span><span class="s">'10'</span><span class="n"> label </span><span class="s">'Empirical - 0.5 s'</span>
+<span class="c">;</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fluid time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">2.0</span>
+<span class="ni">[getpp1d</span><span class="p">(</span><span class="m m-Double">4</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="c">; 3DEC 结果存入表 '4'</span>
+<span class="nb">table</span><span class="n"> </span><span class="s">'4'</span><span class="n"> label </span><span class="s">'3DEC - 2 s'</span>
+<span class="nb">table</span><span class="n"> </span><span class="s">'9'</span><span class="n"> label </span><span class="s">'Analytical - 2 s'</span>
+<span class="nb">table</span><span class="n"> </span><span class="s">'11'</span><span class="n"> label </span><span class="s">'Empirical - 2 s'</span>
+<span class="c">;</span>
+<span class="c">;</span>
+</pre></div>
+</div>
+<div class="figure" id="jnt-fld3-jeux">
+<a class="reference internal image-reference" href="../../../../../_images/gas-t05.png"><img alt="../../../../../_images/gas-t05.png" src="../../../../../_images/gas-t05.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 23：<span class="math">\(t\)</span> =0.5 s 时，节理 <span class="math">\(x\)</span> =0 至 <span class="math">\(x\)</span> =10 之间的气压。</span></p>
+</div>
+<div class="figure" id="jnt-fld3-dekn">
+<a class="reference internal image-reference" href="../../../../../_images/gas-t2.png"><img alt="../../../../../_images/gas-t2.png" src="../../../../../_images/gas-t2.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 24：<span class="math">\(t\)</span> =2.0 s 时，节理 <span class="math">\(x\)</span> =0 至 <span class="math">\(x\)</span> =10 之间的气压。</span></p>
+</div>
+</div>
+</div>
+<div class="section" id="fluid-discharge-and-velocity">
+<h2>流量与流速</h2>
+<p>可通过<span class="menuselection">流体矢量（Fluid Vectors）</span>／<span class="menuselection">流量（Discharge）</span>，或<span class="menuselection">流体矢量（Fluid Vectors）</span>／<span class="menuselection">速度（Velocity）</span>绘制节理流动速率。也可通过 <span class="codename">FISH</span> 函数 <span class="fishcmd">flowplane.zone.discharge</span> 和 <span class="fishcmd">flowplane.zone.velocity</span> 访问。下文说明这些值的计算。</p>
+<div class="figure align-center" id="jnt-fld3-qelp">
+<a class="reference internal image-reference" href="../../../../../_images/flowzone-geom.png"><img alt="../../../../../_images/flowzone-geom.png" src="../../../../../_images/flowzone-geom.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 25：流动网格单元几何。</span></p>
+</div>
+<p>对于具有三个顶点的流动网格单元，见<a href="#jnt-fld3-qelp">图 25（Figure  25）</a>，可构造消除重力影响的孔隙压力矢量：</p>
+<div class="math" id="equation-Eq 4.32">
+<span class="eqno">(32)</span>\[p_i = pp_i - \rho_f {\bf g \cdot x_i}\]</div>
+<p>其中，<span class="math">\(pp_i\)</span> 为流动节点 <span class="math">\(i\)</span> 处孔隙压力，<span class="math">\(\rho_f\)</span> 为流体密度，<span class="math">\(\bf{g}\)</span> 为重力矢量，<span class="math">\(\bf{x_i}\)</span> 为流动节点全局位置。此处假设每个流动顶点对应一个流动节点，且二者重合。</p>
+<p>随后可按以下方式计算梯度：</p>
+<div class="math" id="equation-Eq 4.33">
+<span class="eqno">(33)</span>\[{\bf \nabla x} = -{1 \over 2A} \left [\matrix{ y'_2 - y'_3 &amp; y'_3 - y'_1 &amp; y'_1 - y'_2 \cr x'_2 - x'_3 &amp; x'_3 - x'_1 &amp; x'_1 - x'_2 \cr }\right ]\]</div>
+<p>其中，<span class="math">\(A\)</span> 为流动网格单元面积，<span class="math">\(x'_i\)</span> 为第 <span class="math">\(i\)</span> 个流动节点的局部 <span class="math">\(x\)</span> 坐标，<span class="math">\(y'_i\)</span> 为第 <span class="math">\(i\)</span> 个流动节点的局部 <span class="math">\(y\)</span> 坐标。</p>
+<p>导流矩阵为：</p>
+<div class="math" id="equation-Eq 4.34">
+<span class="eqno">(34)</span>\[{\bf k} = \left [\matrix{ {u^3_h \over 12v} &amp; 0 \cr 0 &amp; {u^3_h \over 12v} \cr }\right ]\]</div>
+<p>其中，<span class="math">\(u_h\)</span> 为水力开度，<span class="math">\(v\)</span> 为流体黏度。于是，局部坐标流量为</p>
+<div class="math" id="equation-Eq 4.35">
+<span class="eqno">(35)</span>\[\bf q_{local} = k \nabla xp\]</div>
+<p>要获得全局坐标流量，只需将二维局部流量矢量分量乘以三维局部坐标轴分量：</p>
+<div class="math" id="equation-Eq 4.36">
+<span class="eqno">(36)</span>\[{\bf q} = {\bf x'} q_{local}^{x'} + {\bf y'} q_{local}^{y'}\]</div>
+<p>其中，<span class="math">\({\bf x'}\)</span> 和 <span class="math">\({\bf y'}\)</span> 为以全局坐标表示的局部轴矢量，<span class="math">\(q_{local}^{x'}\)</span> 和 <span class="math">\(y' q_{local}^{y'}\)</span> 为局部坐标中的流量矢量分量。</p>
+<p>结果为单位 L<sup>2</sup>/T 的三维矢量，例如国际单位制中的 m<sup>2</sup>/s。<span class="codename">FISH</span> 内置函数 <span class="fishcmd">flowplane.zone.discharge</span> 返回该矢量。</p>
+<p>再除以网格单元平均开度，即可计算流动网格单元速度：</p>
+<div class="math" id="equation-Eq 4.37">
+<span class="eqno">(37)</span>\[{\bf v} = {{\bf q} \over {(u_{h1} = u_{h2} + u_{h3})/3}}\]</div>
+<p>其中，<span class="math">\(u_{hi}\)</span> 为第 <span class="math">\(i\)</span> 个流动网格单元顶点对应的水力开度，结果单位为 L/T。<span class="codename">FISH</span> 内置函数 <span class="fishcmd">flowplane.zone.velocity</span> 返回该矢量。</p>
+</div>
+<div class="section" id="references">
+<h2>参考文献</h2>
+<p>Alvarez, T. A., Jr., E. J. Cording and R. A. Milhail.《岩石节理水力—力学行为：对已发表试验的重新解释》，载于<span class="bi">《岩石力学》（第 35 届美国研讨会论文集，内华达大学里诺分校，1995 年 6 月）</span>，第 665-671 页。J. J. K. Daemen 和 R. A. Schultz 主编。鹿特丹：A. A. Balkema（1995）。</p>
+<p>Bandis, S. C.《<span class="bi">尺度效应对岩石节理抗剪强度和变形影响的试验研究</span>》。博士学位论文，利兹大学（1980）。</p>
+<p>Barton, N. R., S. C. Bandis and K. Bakhtar.《岩石节理的强度、变形与导流耦合》，<em>Int. J. Rock Mech. Min. Sci. &amp; Geomech. Abstr.</em>，<span class="bi">22</span>(3)，121-140（1985）。</p>
+<p>Batchelor, G. K.《<span class="bi">流体动力学导论</span>》。剑桥大学出版社（1967）。</p>
+<p>Baumgart, B. G.《翼边多面体表示》，斯坦福人工智能项目，技术报告，备忘录 AIM-179、STAN-CS-320，斯坦福大学人文与科学学院计算机科学系（1972）。</p>
+<p>Chan, D. Y. C., B. D. Hughes and L. Paterson.《钻孔周围瞬态气体流动》，<em>Transport in Porous Media</em>，<span class="bi">10</span>，137-152（1993）。</p>
+<p>Detournay, E.《闭合岩石裂隙的水力传导性：试验与分析研究》，载于<span class="bi">第 13 届加拿大岩石力学研讨会论文集</span>，第 168-173 页（1980）。</p>
+<p>Iwai, K.《<span class="bi">单裂隙流体流动的基础研究</span>》。博士学位论文，加利福尼亚大学伯克利分校（1976）。</p>
+<p>Louis, C.《岩石水力学》，载于<span class="bi">《岩石力学：固体力学系课程》</span>，第 299-387 页。L. Muller 主编。乌迪内：Springer-Verlag（1974）。</p>
+<p>Robin, P.-Y. F.《关于有效压力的说明》，<em>J. Geophys. Res.</em>，<span class="bi">78</span>(14)，2434-2437（1973）。</p>
+<p>Walsh, J. B.《孔隙压力和围压对裂隙渗透性的影响》，<em>Int. J. Rock Mech. Min. Sci. &amp; Geomech. Abstr.</em>，<span class="bi">18</span>，429-435（1981）。</p>
+<p>Witherspoon, P. A. 等。《可变形岩石裂隙中流体流动立方定律的有效性》，<em>Water Resources Res.</em>，<span class="bi">16</span>(6)，1016-1024（1980）。</p>
+<p class="endnotesection rubric">尾注</p>
+<table class="docutils footnote" frame="void" id="id4" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>节理流动和变形方程沿节理厚度积分，因此节理的“几何维数”降低一维。</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../3dechome.html"><span class="codename">3DEC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../theory.html"><span class="codename">3DEC</span> Theory and Background</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="fluid.html">Fluid-Mechanical Interaction</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="fluid_matrix.html" title="previous chapter"> Matrix Fluid Flow</a> |    
+       <a href="fluid_proppant.html" title="next chapter">Proppant</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Joint Fluid Flow" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

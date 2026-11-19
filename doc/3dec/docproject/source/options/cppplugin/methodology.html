@@ -1,0 +1,354 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>方法 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="implementation.html" rel="next" title="Implementation"/>
+<link href="writeyourownmodel.html" rel="prev" title="Writing New Joint Constitutive Models"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="methodology">
+<span id="modelswritingmethodology-3dec"></span><h1>方法</h1>
+<div class="section" id="base-class-for-joint-constitutive-models">
+<h2>节理本构模型的基类</h2>
+<p><span class="codename">3DEC</span> 对用户自定义本构模型的支持采用了 <a class="reference internal" href="../../../../../flac3d/docproject/source/options/cppplugin/writeyourownmodel.html#modelswriting"><span class="std std-ref">引言</span>（Introduction）</a> 中所述的面向对象编程方法。
+由一个基类为实际的节理本构模型提供框架，
+这些模型即从该基类派生的类。
+该基类名为 <code class="docutils literal"><span class="pre">JointModel</span></code>，是一个“抽象”类。它声明了若干“纯虚”成员函数
+（以附加在函数原型后的 <code class="docutils literal"><span class="pre">=0</span></code> 语法表示）。
+这意味着不能创建该基类的任何对象，
+并且任何派生类对象都<em>必须</em>提供实际的成员函数，
+以替换 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">节理模型（<span class="varfishsym"><span class="null">JointModel</span></span>）</a> 的每一个纯虚函数。</p>
+<p><code class="docutils literal"><span class="pre">JointModel</span></code> 的完整文档见 <a class="reference internal" href="programmersinterface.html#dec-interface"><span class="std std-ref">程序员接口</span>（Programmer’s Interface）</a>。请参见 <span class="cmdkey">jmodels</span> 命名空间。</p>
+</div>
+<div class="section" id="member-functions">
+<h2>成员函数</h2>
+<p>任何派生的本构模型类都必须提供实际函数，以替换 <code class="docutils literal"><span class="pre">JointModel</span></code> 中的虚成员函数。</p>
+<p>模型类定义还应包含一个必须调用基类构造函数的构造函数。
+在所有情况下，派生类构造函数都应以无参数方式调用，如 <code class="docutils literal"><span class="pre">clone</span></code> 成员函数所示。
+数据成员的初始化可由构造函数完成，如此处所示。
+在本示例中，符号 <code class="docutils literal"><span class="pre">kn_</span></code>、<code class="docutils literal"><span class="pre">ks_</span></code> 等是派生模型的数据成员。</p>
+<p id="modelswriting-constructor-3dec"><strong>典型模型构造函数</strong></p>
+<div class="highlight-cpp"><div class="highlight"><pre><span></span>  <span class="n">JModelExample</span><span class="o">::</span><span class="n">JModelExample</span><span class="p">()</span> <span class="o">:</span>     
+    <span class="n">kn_</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+    <span class="n">ks_</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+    <span class="n">cohesion_</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+    <span class="n">friction_</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+    <span class="n">dilation_</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+    <span class="n">tension_</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+    <span class="n">zero_dilation_</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+    <span class="n">res_cohesion_</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+    <span class="n">res_friction_</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+    <span class="n">res_tension_</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+    <span class="n">tan_friction_</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+    <span class="n">tan_dilation_</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+    <span class="n">tan_res_friction_</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+  <span class="p">{</span>
+  <span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="registration-of-models">
+<h2>模型注册</h2>
+<p>每个用户自定义本构模型都编译为一个 DLL，该 DLL 必须在 <span class="codename">3DEC</span> 进程中实例化。
+按照约定，作为 <span class="codename">3DEC</span> 插件使用的 DLL 中有四个导出函数：
+<code class="docutils literal"><span class="pre">getName()</span></code>、<code class="docutils literal"><span class="pre">getMajorVersion()</span></code>、<code class="docutils literal"><span class="pre">getMinorVersion()</span></code> 和 <code class="docutils literal"><span class="pre">createInstance()</span></code>。
+还必须提供一个名为 <code class="docutils literal"><span class="pre">DllMain()</span></code> 的桩函数，
+在从系统中加载和卸载该库时调用。
+例如，对于示例模型，这些函数的形式如下：</p>
+<div class="highlight-cpp"><div class="highlight"><pre><span></span><span class="kt">int</span> <span class="kr">__stdcall</span> <span class="nf">DllMain</span><span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="p">,</span><span class="kt">unsigned</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">extern</span> <span class="s">"C"</span> <span class="kr">__declspec</span><span class="p">(</span><span class="n">dllexport</span><span class="p">)</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">getName</span><span class="p">()</span> 
+<span class="p">{</span>
+<span class="cp">#ifdef JMODELDEBUG</span>
+  <span class="k">return</span> <span class="s">"jmodelexampled"</span><span class="p">;</span>
+<span class="cp">#else</span>
+  <span class="k">return</span> <span class="s">"jmodelexample"</span><span class="p">;</span>
+<span class="cp">#endif</span>
+<span class="p">}</span>
+
+<span class="k">extern</span> <span class="s">"C"</span> <span class="kr">__declspec</span><span class="p">(</span><span class="n">dllexport</span><span class="p">)</span> <span class="kt">unsigned</span> <span class="n">getMajorVersion</span><span class="p">()</span>
+<span class="p">{</span>
+  <span class="k">return</span> <span class="n">MAJOR_VERSION</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">extern</span> <span class="s">"C"</span> <span class="kr">__declspec</span><span class="p">(</span><span class="n">dllexport</span><span class="p">)</span> <span class="kt">unsigned</span> <span class="n">getMinorVersion</span><span class="p">()</span>
+<span class="p">{</span>
+  <span class="k">return</span> <span class="n">UPDATE_VERSION</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">extern</span> <span class="s">"C"</span> <span class="kr">__declspec</span><span class="p">(</span><span class="n">dllexport</span><span class="p">)</span> <span class="kt">void</span> <span class="o">*</span><span class="n">createInstance</span><span class="p">()</span> 
+<span class="p">{</span>
+  <span class="n">jmodels</span><span class="o">::</span><span class="n">JModelExample</span> <span class="o">*</span><span class="n">m</span> <span class="o">=</span> <span class="k">new</span> <span class="n">jmodels</span><span class="o">::</span><span class="n">JModelExample</span><span class="p">();</span>
+  <span class="k">return</span> <span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="n">m</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><span class="fishcmd">extern "C" __declspec(dllexport)</span> 代码表示这些函数应从 DLL 中导出。</p>
+<p><code class="docutils literal"><span class="pre">DllMain()</span></code> 函数始终相同。</p>
+<p>导出的 DLL 函数 <code class="docutils literal"><span class="pre">getName()</span></code> 应始终返回以 “jmodel” 开头的字符串。
+这表明该 DLL 是节理本构模型插件。
+在上面的示例中，导出的 DLL 函数 <code class="docutils literal"><span class="pre">getName()</span></code> 返回字符串 “jmodelexample”。
+应遵循在导出名称前加 “jmodel” 前缀的约定。
+<code class="docutils literal"><span class="pre">JointModel</span></code> 的 <code class="docutils literal"><span class="pre">getName()</span></code> 函数必须返回唯一的字符串
+（这是用来区分不同本构模型的方法）。</p>
+<p>不应改动 <code class="docutils literal"><span class="pre">getMajorVersion()</span></code> 函数。
+主版本号由基础本构模型 DLL 确定，
+并表示二进制兼容性。
+按照约定，该编号也会体现在您所生成的 DLL 的文件名中。</p>
+<p><code class="docutils literal"><span class="pre">getMinorVersion()</span></code> 函数表示本构模型的次版本更新。
+例如，若向本构模型添加了新属性，
+它可能与旧版本在保存文件上不兼容。
+在这种情况下，次版本号（定义于文件 “version.txt”）将增加 1。</p>
+<p><code class="docutils literal"><span class="pre">createInstance()</span></code> 函数实际创建并返回您所定义类的一个实例。
+该实例存储在注册表中，并（通过 <code class="docutils literal"><span class="pre">clone()</span></code> 函数）用于创建所有其他实例。</p>
+</div>
+<div class="section" id="information-passed-between-model-and-program-during-cycling">
+<h2>循环计算过程中模型与程序之间传递的信息</h2>
+<p><span class="codename">3DEC</span> 与用户自定义模型之间最重要的联系是成员函数 <code class="docutils literal"><span class="pre">run(UByte</span> <span class="pre">dim,</span> <span class="pre">State</span> <span class="pre">*s)</span></code>，
+它在循环计算过程中计算模型的力学响应。
+结构体 <code class="docutils literal"><span class="pre">State</span></code>（定义于 “state.h”）
+用于向模型传递信息以及从模型传出信息。</p>
+<p><code class="docutils literal"><span class="pre">State</span></code> 的完整文档也见于 <a class="reference internal" href="programmersinterface.html#dec-interface"><span class="std std-ref">程序员接口</span>（Programmer’s Interface）</a> 文档的 <code class="docutils literal"><span class="pre">jmodels</span></code> 命名空间中
+（可从屏幕上的 <span class="menuselection">帮助</span> 菜单获得）。</p>
+<p>成员函数 <code class="docutils literal"><span class="pre">run()</span></code> 的主要任务是由位移增量计算新的力。
+在非线性模型中，传递模型的内部状态也很有用，以便该状态可被绘制和打印。
+例如，随附的模型会指出它们当前是否正在屈服或过去是否曾屈服。
+每个子接触可设置变量 <code class="docutils literal"><span class="pre">state_</span></code>，
+它以一系列可开可关（1 或 0）的位来记录模型的状态。
+每一位都可与一条显示在屏幕上的消息相关联。
+成员函数 <code class="docutils literal"><span class="pre">States</span></code> 返回的字符串包含若干子串，分别对应于模型可在 <code class="docutils literal"><span class="pre">state_</span></code> 中设置的位位置。
+第一个子串对应第 1 位，第二个对应第 2 位，依此类推。
+可以同时设置多个位。
+例如，剪切屈服和拉伸屈服可能同时发生。
+各位的分配如下所述。
+查阅任一非线性模型文件（例如 “jmodelexample.cpp”）即可理解状态逻辑的运行方式。</p>
+<p>数组 <code class="docutils literal"><span class="pre">working_</span></code> 和 <code class="docutils literal"><span class="pre">iworking_</span></code> 可将数据安全地存储在 <code class="docutils literal"><span class="pre">State</span></code> 结构中。注意，用户<strong>不应</strong>假定这些数组在首次调用第一个四面体时已被初始化为零，而应自行检测并初始化该存储。</p>
+</div>
+<div class="section" id="state-indicators-of-subcontacts">
+<span id="modelwriting-stateindicators-3dec"></span><h2>子接触的状态指示变量</h2>
+<p>每个子接触 <code class="docutils literal"><span class="pre">State</span></code> 都有一个 <code class="docutils literal"><span class="pre">state_</span></code> 成员，可用于存储破坏状态。
+该成员变量有 32 位，最多可表示 16 个不同状态（假定您分别跟踪“当前”和“过去”状态）。
+内置本构模型使用状态指示位来表示子接触的塑性破坏。
+关于内置本构模型的位分配及相应的破坏状态，见 <a href="#table-modelwriting-stateindicators-3dec">表  1（Table  1）</a>。注意，这只是一项约定，并非所有本构模型都实际要求如此。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<span id="table-modelwriting-stateindicators-3dec"></span><table border="1" class="colwidths-given icg1 docutils" id="id1">
+<caption><span class="caption-text">表 1：节理破坏状态与位分配</span></caption>
+<colgroup>
+<col width="24%"/>
+<col width="4%"/>
+<col width="24%"/>
+<col width="16%"/>
+<col width="32%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head"> </th>
+<th class="head"> </th>
+<th class="head">六面体</th>
+<th class="head">十进制</th>
+<th class="head">二进制</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>slip_now</td>
+<td>=</td>
+<td>0x0001</td>
+<td>1</td>
+<td>0000 0000 0000 0001</td>
+</tr>
+<tr class="row-odd"><td>tension_now</td>
+<td>=</td>
+<td>0x0002</td>
+<td>2</td>
+<td>0000 0000 0000 0010</td>
+</tr>
+<tr class="row-even"><td>slip_past</td>
+<td>=</td>
+<td>0x0004</td>
+<td>4</td>
+<td>0000 0000 0000 0100</td>
+</tr>
+<tr class="row-odd"><td>tension_past</td>
+<td>=</td>
+<td>0x0008</td>
+<td>8</td>
+<td>0000 0000 0000 1000</td>
+</tr>
+<tr class="row-even"><td>未使用</td>
+<td>=</td>
+<td>0x0010</td>
+<td>16</td>
+<td>0000 0000 0001 0000</td>
+</tr>
+<tr class="row-odd"><td>未使用</td>
+<td>=</td>
+<td>0x0020</td>
+<td>32</td>
+<td>0000 0000 0010 0000</td>
+</tr>
+<tr class="row-even"><td>.</td>
+<td> </td>
+<td> </td>
+<td> </td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td>.</td>
+<td> </td>
+<td> </td>
+<td> </td>
+<td> </td>
+</tr>
+<tr class="row-even"><td>.</td>
+<td> </td>
+<td> </td>
+<td> </td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td>未使用</td>
+<td>=</td>
+<td>0x8000</td>
+<td>32768</td>
+<td>1000 0000 0000 0000</td>
+</tr>
+</tbody>
+</table>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p>对于用户自定义本构模型，
+用户可以创建一个命名状态并为该状态指定任意一个特定位，
+随后更新子接触的状态指示变量。
+<a href="#table-modelwriting-stateindicators-3dec">表  1（Table  1）</a> 中的命名状态由内置本构模型用来
+更新子接触的破坏状态，
+并展示了状态指示变量的一种具体用法。</p>
+<p><span class="codename">3DEC</span> 对每个子接触调用本构模型函数 <code class="docutils literal"><span class="pre">run()</span></code>，
+以更新其力的取值。
+通常，本构模型在该过程中还会更新状态指示变量。
+对于内置模型，状态指示变量表示子接触的破坏状态。
+本构模型通过对子接触状态指示变量与本构模型计算得到的当前破坏状态
+执行逻辑“或”(|) 运算来更新它。
+用户应注意正确设置或清除此前已更新的所有状态，
+使其先于本构模型计算得到的当前状态。
+随后，可用状态变量与所需的用户自定义状态
+通过逻辑“与”(&amp;) 运算符检查子接触的状态。</p>
+<p>假设某个子接触正在发生拉伸破坏和剪切破坏。
+该破坏状态存储在子接触的状态指示变量中。
+内置本构模型对状态变量进行更新：</p>
+<blockquote>
+<div><ol class="loweralpha simple">
+<li>首先检查当前状态，并相应地设置/取消设置状态指示变量。例如，</li>
+</ol>
+<blockquote>
+<div><div class="highlight-cpp"><div class="highlight"><pre><span></span>    <span class="k">if</span> <span class="p">(</span><span class="n">s</span><span class="o">-&gt;</span><span class="n">state_</span> <span class="o">&amp;</span> <span class="n">slip_now</span><span class="p">)</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">state_</span> <span class="o">|=</span> <span class="n">slip_past</span><span class="p">;</span>
+    <span class="n">s</span><span class="o">-&gt;</span><span class="n">state_</span> <span class="o">&amp;=</span> <span class="o">~</span><span class="n">slip_now</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">s</span><span class="o">-&gt;</span><span class="n">state_</span> <span class="o">&amp;</span> <span class="n">tension_now</span><span class="p">)</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">state_</span> <span class="o">|=</span> <span class="n">tension_past</span><span class="p">;</span>
+    <span class="n">s</span><span class="o">-&gt;</span><span class="n">state_</span> <span class="o">&amp;=</span> <span class="o">~</span><span class="n">tension_now</span><span class="p">;</span>
+</pre></div>
+</div>
+</div></blockquote>
+<ol class="loweralpha simple" start="2">
+<li>计算子接触的当前状态。</li>
+<li>必要时更新状态。例如，</li>
+</ol>
+<blockquote>
+<div><div class="highlight-cpp"><div class="highlight"><pre><span></span>      <span class="n">s</span><span class="o">-&gt;</span><span class="n">state_</span> <span class="o">|=</span> <span class="n">tension_now</span><span class="p">;</span>
+</pre></div>
+</div>
+</div></blockquote>
+</div></blockquote>
+<p>在初始化（步骤 a）中，slip_past 和 tension_past 被置位，shear_now 和 tenison_now 被清除。
+步骤 (c) 为该特定子接触设置第 2 位（tension_now）。
+假定过去没有发生破坏，<span class="codename">FISH</span> 函数 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_fish/block.subcontact/fish_block.subcontact.state.html#function:block.subcontact.state" title="Get/set the subcontact state indicator...">子接触状态（<code class="xref fish fish-func docutils literal"><span class="pre">block.subcontact.state</span></code>）</a> 返回值为 2，
+即第 2 位置位所对应的十进制值。</p>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../3dechome.html"><span class="codename">3DEC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../options.html">Options</a> »</li>
+<li class="nav-item nav-item-3"><a href="cppplugin.html">C++ Option</a> »</li>
+<li class="nav-item nav-item-4"><a accesskey="U" href="writeyourownmodel.html">Writing New Joint Constitutive Models</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="writeyourownmodel.html" title="previous chapter"> Writing New Joint Constitutive Models</a> |    
+       <a href="implementation.html" title="next chapter">Implementation</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Methodology" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

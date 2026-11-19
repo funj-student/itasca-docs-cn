@@ -1,0 +1,811 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>带 DFN 的水力压裂 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../search.html" rel="search" title="Search"/>
+<link href="ExcavationInASaturatedSoil.html" rel="next" title="Excavation in a Saturated Soil"/>
+<link href="HydraulicFracture.html" rel="prev" title="Hydraulic Fracture"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="hydraulic-fracture-with-dfn">
+<span id="dec-hydraulic-fracture-dfn"></span><h1>带 DFN 的水力压裂</h1>
+<p class="h2 rubric">警告</p>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">要在 <span class="codename">3DEC</span> 中查看此项目，请使用菜单命令 <span class="menuselection">Help ► Examples…</span>。选择“3DEC/ ExampleApplications/ Hydraulic_Fracture_DFN”，然后选择“hf.prj”进行加载。所用的<a class="reference internal" href="#hydraulicfracturedfn-datafiles"><span class="std std-ref">主数据文件</span>（main data files）</a>显示在本示例的末尾。所有数据文件都可在该项目中找到。</p>
+</div>
+<p>该问题的运行时间很长。如需运行此验证问题，请预留 12-24 小时（取决于计算机速度）以完成计算。</p>
+<p class="h2 rubric">引言</p>
+<p>本教程将向用户介绍创建基本水力压裂模型所需的命令顺序。该模型需要离散裂隙网络（DFN），其以补充文件“dfn.dat”提供。还提供了另一个文件（“hf.fis”），其中包含若干支持水力压裂模拟的函数。该文件附在本教程末尾。</p>
+<p class="h2 rubric">模型创建</p>
+<p class="h3 rubric">几何</p>
+<p>首先清除模型信息，并使用 <a class="reference internal" href="../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.fluid" title="Fluid-flow analysis...">配置流体计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">fluid</span></code>）</a> 激活流体流动计算模式。该命令必须在创建任何块体之前执行。这将增加内存以支持裂隙流体流动的计算。另请注意，<span class="codename">3DEC</span> 中的节理流体流动要求小应变分析，因此还需要命令 <code class="xref fish fish-kwd docutils literal"><span class="pre">model</span> <span class="pre">large-strain</span> <span class="pre">off</span></code>。</p>
+<p>接下来，定义并调用一个 <span class="codename">FISH</span> 函数，以设置定义模型几何的参数。指定整个模型的形心位于 (0, 0, 0)（<span class="cmdkey">xmiddle</span>、<span class="cmdkey">ymiddle</span>、<span class="cmdkey">zmiddle</span>），并用其作为构成岩体的边界点的参考点。还指定了模型的尺寸（<span class="cmdkey">_modelSize_x = 800</span>、<span class="cmdkey">_modelSize_y = 800</span>、<span class="cmdkey">_modelSize_z = 200</span>）。为水力裂隙指定了节理 ID（hf_id=10000）。DFN 区域所需的较小内部盒体由六个点（x1、x2、x3、y1、y2、y3、z1、z2、z3）指定，而扩展模型则由带“_ext”后缀的类似变量指定。这样做的目的是使模型边界远离关注区域。函数中还包含定义关注区域和扩展模型界限的计算。为额外关注平面的位置指定了附加 z 坐标（<span class="cmdkey">z_sub1</span>、<span class="cmdkey">z_sub2</span>）。最后，为内部和外部区域的离散化定义了网格单元尺寸（<span class="cmdkey">edge_size</span>）（内部 = 10，外部 = 3×内部）。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish define</span><span class="ni"> set_geometry</span>
+
+<span class="ni">  </span><span class="c">; 输入参数</span>
+
+<span class="ni">  </span><span class="c">; 模型中部</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> xmiddle </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> ymiddle </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> zmiddle </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+
+<span class="ni">  </span><span class="c">; 关注区域（DFN 区域）的尺寸</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> _modelSize_x </span><span class="p">=</span><span class="m m-Double">800</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> _modelSize_y </span><span class="p">=</span><span class="m m-Double">800</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> _modelSize_z </span><span class="p">=</span><span class="m m-Double">200</span>
+
+<span class="ni">  </span><span class="c">; 水力裂隙节理 id</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> hf_id</span><span class="p">=</span><span class="m m-Double">10000</span>
+
+<span class="ni">  </span><span class="c">; 关注区域内的网格单元尺寸</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> edge_size</span><span class="p">=</span><span class="m m-Double">10</span>
+
+<span class="ni">  </span><span class="c">; 几何计算，请勿更改</span>
+<span class="ni">  </span><span class="c">; 关注区域（DFN 区域）的边界</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> x1 </span><span class="p">=</span><span class="ni"> xmiddle </span><span class="o">-</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">_modelSize_x</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> x2 </span><span class="p">=</span><span class="ni"> xmiddle </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">_modelSize_x</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> y1 </span><span class="p">=</span><span class="ni"> ymiddle </span><span class="o">-</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">_modelSize_y</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> y2 </span><span class="p">=</span><span class="ni"> ymiddle </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">_modelSize_y</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> z1 </span><span class="p">=</span><span class="ni"> zmiddle </span><span class="o">-</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">_modelSize_z</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> z2 </span><span class="p">=</span><span class="ni"> zmiddle </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">_modelSize_z</span>
+
+<span class="ni">  </span><span class="c">; 扩展模型的边界</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> x1_ext </span><span class="p">=</span><span class="ni"> xmiddle </span><span class="o">-</span><span class="ni"> _modelSize_x</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> x2_ext </span><span class="p">=</span><span class="ni"> xmiddle </span><span class="o">+</span><span class="ni"> _modelSize_x</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> y1_ext </span><span class="p">=</span><span class="ni"> ymiddle </span><span class="o">-</span><span class="ni"> _modelSize_y</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> y2_ext </span><span class="p">=</span><span class="ni"> ymiddle </span><span class="o">+</span><span class="ni"> _modelSize_y</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> z1_ext </span><span class="p">=</span><span class="ni"> zmiddle </span><span class="o">-</span><span class="ni"> _modelSize_z</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> z2_ext </span><span class="p">=</span><span class="ni"> zmiddle </span><span class="o">+</span><span class="ni"> _modelSize_z</span>
+
+<span class="ni">  </span><span class="c">; 附加平面的 z 坐标</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> z_sub1 </span><span class="p">=</span><span class="ni"> zmiddle </span><span class="o">-</span><span class="ni"> </span><span class="m m-Double">0.25</span><span class="o">*</span><span class="ni">_modelSize_z</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> z_sub2 </span><span class="p">=</span><span class="ni"> zmiddle </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">0.25</span><span class="o">*</span><span class="ni">_modelSize_z</span>
+
+<span class="ni">  </span><span class="k">global</span><span class="ni"> edge_size_outer </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">3</span><span class="o">*</span><span class="ni">edge_size </span><span class="c">; 外部计算域的离散</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+<p class="h3 rubric">块体模型</p>
+<p>我们为模型初始化一个总体容差（<code class="xref fish fish-kwd docutils literal"><span class="pre">02</span></code>），它除其他设置外，还设定网格点之间的最小距离和子接触的面积。</p>
+<p>随后使用以下命令创建块体模型。该命令使用前一函数（<code class="xref fish fish-kwd docutils literal"><span class="pre">set_geometry</span></code>）中定义的点。利用扩展模型的界限，指定外部块体的顶点。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">block create</span><span class="n"> brick </span><span class="ni">[x1_ext]</span><span class="n"> </span><span class="ni">[x2_ext]</span><span class="n"> </span><span class="ni">[y1_ext]</span><span class="n"> </span><span class="ni">[y2_ext]</span><span class="n"> </span><span class="ni">[z1_ext]</span><span class="n"> </span><span class="ni">[z2_ext]</span>
+</pre></div>
+</div>
+<p>内部 DFN 区域使用六个（6）节理创建，每个节理定义内部盒体的一个面。使用几何函数中定义的顶点，指定每个节理面的原点。每次切割均使用以下命令完成：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">0</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">0</span><span class="n"> ori </span><span class="ni">[x1]</span><span class="n"> </span><span class="ni">[y1]</span><span class="n"> </span><span class="ni">[z1]</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">0</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">0</span><span class="n"> ori </span><span class="ni">[x1]</span><span class="n"> </span><span class="ni">[y1]</span><span class="n"> </span><span class="ni">[z2]</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">90</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">0</span><span class="n"> ori </span><span class="ni">[x1]</span><span class="n"> </span><span class="ni">[y1]</span><span class="n"> </span><span class="ni">[z1]</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">90</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">0</span><span class="n"> ori </span><span class="ni">[x1]</span><span class="n"> </span><span class="ni">[y2]</span><span class="n"> </span><span class="ni">[z1]</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">90</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">90</span><span class="n"> ori </span><span class="ni">[x1]</span><span class="n"> </span><span class="ni">[y1]</span><span class="n"> </span><span class="ni">[z1]</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">90</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">90</span><span class="n"> ori </span><span class="ni">[x2]</span><span class="n"> </span><span class="ni">[y1]</span><span class="n"> </span><span class="ni">[z1]</span>
+
+<span class="nb">model range</span><span class="n"> create </span><span class="s">'middle'</span><span class="n"> position</span><span class="o">-</span><span class="n">x </span><span class="ni">[x1]</span><span class="n"> </span><span class="ni">[x2]</span><span class="n"> position</span><span class="o">-</span><span class="n">y </span><span class="ni">[y1]</span><span class="n"> </span><span class="ni">[y2]</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="ni">[z1]</span><span class="n"> </span><span class="ni">[z2]</span>
+<span class="nb">block hide</span><span class="n"> range named</span><span class="o">-</span><span class="n">range </span><span class="s">'middle'</span>
+</pre></div>
+</div>
+<p>内部 DFN 区域使用 range 命令命名为“middle”，然后使用 <a class="reference internal" href="../../../block/doc/manual/block_manual/block_commands/block/cmd_block.hide.html#command:block.hide" title="Hide/show blocks in the range. All blocks with centroids in the range are hidden
+with  block hide   on ; they can be recalled later using  block
+hide   off . When blocks are hidden, they are not split by  block
+cut  operations; in this way, discontinuous joints may be made. However, hidden
+blocks interact normally with other blocks, and are remembered on restart. In
+general, hidden blocks are unaffected by most commands that change something..."><code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">hide</span></code></a> 命令并指定该命名范围将其隐藏。这样做的目的是使添加到外部块体的节理不会被加到内部块体上。</p>
+<p>随后使用 <a class="reference internal" href="../../../block/doc/manual/block_manual/block_commands/block/cmd_block.densify.html#command:block.densify" title="Increase block density. Within the given range, subdivide blocks to increase
+density of blocking. Blocks are subdivided by cutting joints parallel to the
+global `x`, `y`, `z` axes unless the  tetrahedra  keyword is given..."><code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">densify</span></code></a> 命令为外部扩展模型创建虚拟块体。该命令可方便地在整个模型中生成一系列节理。紧随其后采用加密属性的 <a class="reference internal" href="../../../block/doc/manual/block_manual/block_commands/block/cmd_block.join.html#command:block.join" title='Join adjacent blocks in the range.  Adjacent blocks within an optional range
+can be joined into one block ( on ) or or unjoined ( off ). Joined
+blocks act as one block with a common centroid and volume calculated for all
+blocks joined together. A joined block group consists of one "master" block
+and one or more "slave" blocks. Use the  block.list.information  command
+to identify master and slave blocks in a block group. Note: only visible blocks...'><code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">join</span></code></a> 命令会将新块体连接起来。由于内部区域被隐藏，只有外部块体被切割。</p>
+<p>使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">block</span> <span class="pre">hide</span> <span class="pre">off</span></code> 使内部区域可见，该区域不会被加密命令切割。虚拟节理的目的只是加快后续的网格划分（随着块体体积增大，网格划分会显著变慢）。</p>
+<p>内部 DFN 区域需要水力裂隙面，而外部扩展模型不需要。这通过以下命令实现：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">block hide</span><span class="n"> range named</span><span class="o">-</span><span class="n">range </span><span class="s">'middle'</span><span class="n"> not</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">90</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">0</span><span class="n"> ori </span><span class="ni">[xmiddle]</span><span class="n"> </span><span class="ni">[ymiddle]</span><span class="n"> </span><span class="ni">[zmiddle]</span><span class="n"> jointset</span><span class="o">-</span><span class="n">id </span><span class="ni">[hf_id]</span>
+</pre></div>
+</div>
+<p>对 <a class="reference internal" href="../../../block/doc/manual/block_manual/block_commands/block/cmd_block.hide.html#command:block.hide" title="Hide/show blocks in the range. All blocks with centroids in the range are hidden
+with  block hide   on ; they can be recalled later using  block
+hide   off . When blocks are hidden, they are not split by  block
+cut  operations; in this way, discontinuous joints may be made. However, hidden
+blocks interact normally with other blocks, and are remembered on restart. In
+general, hidden blocks are unaffected by most commands that change something..."><code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">hide</span></code></a> 命令的范围应用 <code class="xref fish fish-kwd docutils literal"><span class="pre">not</span></code> 关键字，将隐藏除指定范围（middle）之外的所有内容。在几何函数中各点指定的原点处引入一条节理。该节理还赋予一个 I.D.，该 I.D. 同样在几何函数中指定（hf_id=10000）。</p>
+<p>随后引入附加的虚拟节理面，以帮助将 DFN 切割限制在内部区域。</p>
+<p class="h3 rubric">DFN</p>
+<p>现在 DFN 已可引入模型。有关如何创建 DFN 模板并应用必要过滤器的进一步说明，见<a class="reference internal" href="../modeling/problemsolving/cuttingblocks.html#cuttingblocks"><span class="std std-ref">切割块体</span>（Cutting Blocks）</a>中的 DFN 一节。就我们的目的而言，使用的是预先过滤的 DFN，该文件包含将 DFN 导入模型所需的全部数据。应用于该 DFN 的过滤器包括去除某些方位的裂隙、极小的裂隙，并重新调整裂隙方位，以便在切割过程中不会形成极小的薄块体。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model domain</span><span class="n"> extent </span><span class="ni">[x1_ext]</span><span class="n"> </span><span class="ni">[x2_ext]</span><span class="n"> </span><span class="ni">[y1_ext]</span><span class="n"> </span><span class="ni">[y2_ext]</span><span class="n"> </span><span class="ni">[z1_ext]</span><span class="n"> </span><span class="ni">[z2_ext]</span>
+<span class="nb">fracture import</span><span class="n"> skip</span><span class="o">-</span><span class="n">errors from</span><span class="o">-</span><span class="n">file </span><span class="s">'dfn.dat'</span><span class="n"> dfn </span><span class="s">'fractures'</span>
+</pre></div>
+</div>
+<p><code class="xref fish fish-kwd docutils literal"><span class="pre">skip-errors</span></code> 关键字会将非平面的裂隙转换为最佳拟合平面。若不使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">skip-errors</span></code> 关键字，非平面裂隙将产生错误信息并停止执行。创建一个名为“DFN”的新图。添加“Fracture - Fracture”（<a href="#hf-dfn-1">图 1（Figure  1）</a>）。</p>
+<div class="figure align-center" id="hf-dfn-1">
+<a class="reference internal image-reference" href="../../../../_images/dfn.png"><img alt="../../../../_images/dfn.png" src="../../../../_images/dfn.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 1：离散裂隙网络。</span></p>
+</div>
+<p>现在，可用 DFN（“fractures”）通过 <a class="reference internal" href="../../../block/doc/manual/block_manual/block_commands/block/cmd_block.cut.html#kwd:block.cut.dfn" title="Cut blocks according to the discrete fracture network specified. A cut will
+be made from each fracture in the DFN, but be aware that the generated joints
+will generally be larger than the actual fractures of the DFN. After zoning,
+use the command CHANGE dfn to set different properties to subcontacts inside
+and outside of the DFN fractures.  Either the  name  or  id  keyword
+must be supplied...">按 DFN 切割区块命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">cut</span> <span class="pre">dfn</span></code>）</a> 命令在 <span class="codename">3DEC</span> 模型中切割节理。生成的块体如<a href="#hf-dfn-2">图 2（Figure  2）</a>所示。</p>
+<div class="figure align-center" id="hf-dfn-2">
+<a class="reference internal image-reference" href="../../../../_images/blocks1.png"><img alt="../../../../_images/blocks1.png" src="../../../../_images/blocks1.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：用 DFN 切割后得到的块体。</span></p>
+</div>
+<p>注意，DFN 的域设置为外部模型范围；但由于外部区域保持隐藏，DFN 实际应用于内部区域。建议将 DFN 域设置得比关注区域更大，以消除任何边界问题。</p>
+<p>初始块体模型现已完成，所有块体都可以显示出来。在划分网格之前保存块体模型也是一种好做法。</p>
+<p class="h3 rubric">网格划分</p>
+<p>创建块体模型的最后阶段是通过网格划分使块体可变形。外部块体较粗，而 DFN 区域划分得较细。各范围所用的棱边长度在几何函数中分别指定为 <code class="xref fish fish-kwd docutils literal"><span class="pre">edge_size</span></code> 和 <code class="xref fish fish-kwd docutils literal"><span class="pre">edge_size_outer</span></code>。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="ni">[edge_size]</span><span class="n"> range named</span><span class="o">-</span><span class="n">range </span><span class="s">'middle'</span>
+<span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="ni">[edge_size_outer]</span><span class="n"> range named</span><span class="o">-</span><span class="n">range </span><span class="s">'middle'</span><span class="n"> not</span>
+</pre></div>
+</div>
+<p>可使用以下命令将模型信息记录保存到日志文件中：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">program log</span><span class="o">-</span><span class="n">file </span><span class="s">'model_info.log'</span>
+<span class="nb">program log</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">model list</span><span class="n"> info</span>
+<span class="nb">program log</span><span class="n"> </span><span class="sx">off</span>
+</pre></div>
+</div>
+<p>通过使用 <code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">list</span> <span class="pre">info</span></code> 命令，可将有关全局变量、参数设置和程序状态的信息输出到屏幕。由于日志文件已启动并设置为“on”，输出到屏幕的任何信息也会被捕获并保存到日志文件中。
+最后，使用 <a class="reference internal" href="../../../../common/kernel/doc/manual/model/commands/cmd_model.save.html#command:model.save" title="Save all model-state information. The file  s  is created and, if no extension
+is...">保存模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">save</span></code>）</a> 命令保存模型状态。同时保存项目（File - Save Project）也是个好做法。</p>
+<p class="h3 rubric">属性</p>
+<p>定义一个 <span class="codename">FISH</span> 函数来设置所有属性并将其赋予变量，类似于第 1 步中定义的几何函数。用于定义各属性变量的 <span class="codename">FISH</span> 代码如下：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish define</span><span class="ni"> set_mat_prop</span>
+<span class="ni">  </span><span class="c">; 输入参数</span>
+<span class="ni">  </span><span class="c">; 完整岩石参数</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> rock_young </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">20e9</span><span class="ni">   </span><span class="c">; Pa</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> rock_poisson </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.25</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> rock_density </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2600.0</span>
+<span class="ni">  </span><span class="c">; 节理参数</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> joint_kn </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">5.e10</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> joint_ks </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">5.e10</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> joint_cohesion </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> joint_friction </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">20.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> joint_tension </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> j_ap0 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0e-4</span><span class="ni"> </span><span class="c">;法向应力为 0 时的缝宽</span>
+<span class="ni">  </span><span class="c">; 流体参数</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> fluid_bulk_ </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">3e6</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> fluid_density_ </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1000.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> fluid_viscosity_ </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0015</span>
+
+<span class="nb">end</span>
+</pre></div>
+</div>
+<p><span class="codename">FISH</span> 函数并不赋予材料属性，只是指定变量来存储将要使用的数值。也可以不使用 <span class="codename">FISH</span> 而直接输入材料属性，但 <span class="codename">FISH</span> 函数提供了一种整洁的方式，可将所有参数集中在一起，并便于日后修改这些参数。</p>
+<p>网格单元设为弹性，并按如下方式赋予属性：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">block zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">block zone property</span><span class="n"> density </span><span class="ni">[rock_density]</span><span class="n"> young </span><span class="ni">[rock_young]</span><span class="n"> poisson </span><span class="ni">[rock_poisson]</span><span class="n"> </span>
+</pre></div>
+</div>
+<p>对 DFN 节理、施工节理和水力裂隙面赋予不同的节理属性。所有节理均采用莫尔-库仑本构模型。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; DFN 节理 </span>
+<span class="nb">block contact property</span><span class="n"> friction </span><span class="ni">[joint_friction]</span><span class="n"> cohesion </span><span class="ni">[joint_cohesion]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  tension </span><span class="ni">[joint_tension]</span><span class="n"> range dfn</span><span class="o">-</span><span class="m m-Double">3</span><span class="n">dec </span><span class="s">'fractures'</span>
+
+<span class="c">;水力裂隙平面</span>
+<span class="nb">block contact property</span><span class="n"> friction </span><span class="ni">[joint_friction]</span><span class="n"> cohesion </span><span class="ni">[joint_cohesion]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  tension </span><span class="ni">[joint_tension]</span><span class="n"> range joint</span><span class="o">-</span><span class="n">set </span><span class="ni">[hf_id]</span>
+</pre></div>
+</div>
+<p>随后为流动面指定初始、最大和最小张开度，并赋予流体属性。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="n">  tension </span><span class="ni">[joint_tension]</span><span class="n"> range joint</span><span class="o">-</span><span class="n">set </span><span class="ni">[hf_id]</span>
+
+<span class="c">; 渗流平面参数</span>
+<span class="nb">flowplane vertex property</span><span class="n"> aperture</span><span class="o">-</span><span class="n">ini </span><span class="ni">[j_ap0]</span><span class="n"> aperture</span><span class="o">-</span><span class="n">min </span><span class="ni">[j_ap0]</span><span class="n"> aperture</span><span class="o">-</span><span class="n">max </span><span class="ni">[j_ap0]</span><span class="n"> </span>
+<span class="c">;</span>
+<span class="c">; 指定流体参数</span>
+<span class="nb">block fluid</span><span class="n"> property bulk </span><span class="ni">[fluid_bulk_]</span>
+</pre></div>
+</div>
+<p class="h3 rubric">原位应力</p>
+<p>地应力相关变量的赋值方式与模型和岩石属性类似。它们定义在 <span class="codename">FISH</span> 函数中，并在随后的命令中使用。本示例所需的参数包括模型深度、重力加速度以及水平应力与竖向应力的最大和最小比值。计算的参数包括 z = 0 处的应力，x、y 和 z 方向的应力梯度，以及地应力流体压力。</p>
+<p>输入与计算在函数“set_insitu”中定义，如下所示。随后执行 <a class="reference internal" href="../../../block/doc/manual/block_manual/block_commands/block/cmd_block.insitu.html#command:block.insitu" title="Specify in situ stress or fluid conditions..."><code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">insitu</span></code></a> 命令以设置初始应力和孔隙压力。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;</span>
+<span class="c">;</span>
+<span class="c">; 定义原位应力值</span>
+<span class="nb">fish define</span><span class="ni"> set_insitu</span>
+<span class="ni">  </span><span class="c">; 输入</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> depth </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">3000.0</span><span class="ni"> </span><span class="c">; 模型中心深度（m）</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> gravity_ </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">9.81</span><span class="ni"> </span><span class="c">; 公制</span>
+
+<span class="ni">  </span><span class="k">global</span><span class="ni"> kH_max</span><span class="p">=</span><span class="m m-Double">1.0</span><span class="ni"> </span><span class="c">; 最大水平应力与竖向应力之比（x）</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> kh_min</span><span class="p">=</span><span class="m m-Double">0.5</span><span class="ni"> </span><span class="c">; 最小水平应力与竖向应力之比（y）</span>
+
+<span class="ni">  </span><span class="c">; 计算，请勿更改</span>
+<span class="ni">  </span><span class="c">; z = 0 处的应力，压应力为负</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> szz0 </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni">rock_density</span><span class="o">*</span><span class="ni">depth</span><span class="o">*</span><span class="ni">gravity_</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> sxx0 </span><span class="p">=</span><span class="ni"> kH_max</span><span class="o">*</span><span class="ni">szz0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> syy0 </span><span class="p">=</span><span class="ni"> kh_min</span><span class="o">*</span><span class="ni">szz0</span>
+
+<span class="ni">  </span><span class="c">; z = 0 处的流体压力，为正值</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> pp0 </span><span class="p">=</span><span class="ni"> fluid_density_</span><span class="o">*</span><span class="ni">depth</span><span class="o">*</span><span class="ni">gravity_</span>
+
+<span class="ni">  </span><span class="c">; 梯度，沿 z 正方向每米的变化量</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> szz_grad </span><span class="p">=</span><span class="ni"> rock_density</span><span class="o">*</span><span class="ni">gravity_</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> syy_grad </span><span class="p">=</span><span class="ni"> kh_min</span><span class="o">*</span><span class="ni">szz_grad</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> sxx_grad </span><span class="p">=</span><span class="ni"> kH_max</span><span class="o">*</span><span class="ni">szz_grad</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> pp_grad </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni">fluid_density_</span><span class="o">*</span><span class="ni">gravity_</span>
+
+<span class="nb">end</span>
+<span class="ni">[set_insitu]</span>
+<span class="c">;</span>
+<span class="c">; 原位应力</span>
+<span class="nb">block insitu</span><span class="n"> stress </span><span class="ni">[sxx0]</span><span class="n"> </span><span class="ni">[syy0]</span><span class="n"> </span><span class="ni">[szz0]</span><span class="n"> </span><span class="m m-Double">0.</span><span class="n"> </span><span class="m m-Double">0.</span><span class="n"> </span><span class="m m-Double">0.</span><span class="n"> </span><span class="sx">...</span>
+<span class="n"> grad</span><span class="o">-</span><span class="n">z </span><span class="ni">[sxx_grad]</span><span class="n"> </span><span class="ni">[syy_grad]</span><span class="n"> </span><span class="ni">[szz_grad]</span><span class="n"> </span><span class="m m-Double">0.</span><span class="n"> </span><span class="m m-Double">0.</span><span class="n"> </span><span class="m m-Double">0.</span><span class="n"> nodisp</span>
+</pre></div>
+</div>
+<p>使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">nodisp</span></code> 关键字可阻止 <span class="codename">3DEC</span> 计算由初始应力引起的节理初始法向位移。使用 <span class="math">\(...\)</span> 时，会将下一行代码视为与上一行位于同一行</p>
+<p class="h3 rubric">边界条件</p>
+<p>通过将 x、y 和 z 方向的速度设为零，将模型外部边界固定不动。使用以下命令设置边界速度：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;</span>
+<span class="c">; 边界条件</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="ni">[x1_ext]</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="ni">[x2_ext]</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="ni">[y1_ext]</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="ni">[y2_ext]</span>
+</pre></div>
+</div>
+<p>最大和最小 x、y、z 坐标被用作施加边界条件的范围。</p>
+<p class="h3 rubric">求解初始应力状态</p>
+<p>模型现已准备好进入初始应力状态。在开始计算阶段之前，需要确定一些总体模型设置。使用 <a class="reference internal" href="../../../../common/kernel/doc/manual/model/commands/cmd_model.gravity.html#command:model.gravity" title="Set the gravity as a vector or float. Gravity is set in units of acceleration.
+ Body force is calculated as the product of the gravity vector and the real
+mass of an object...">设置重力命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">gravity</span></code>）</a> 命令设置重力，然后打开力学计算并关闭流体计算。
+我们还将流体体积模量设为零，以便孔隙压力不会因力学变形而变化。记录不平衡力的历史：
+最后，将模型求解至平衡并保存。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">block gridpoint apply</span><span class="n"> velocity </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="ni">[z2_ext]</span>
+<span class="c">;</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="ni">gravity_]</span>
+<span class="c">;</span>
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">off</span>
+<span class="nb">model mechanical</span><span class="n"> active </span><span class="sx">on</span>
+<span class="nb">block fluid</span><span class="n"> property bulk </span><span class="m m-Double">0</span>
+<span class="c">;</span>
+<span class="nb">model history</span><span class="n"> mechanical unbalanced</span><span class="o">-</span><span class="n">maximum</span>
+<span class="c">;</span>
+<span class="nb">model </span><span class="ss">solve</span>
+</pre></div>
+</div>
+<p class="h2 rubric">水力压裂模拟</p>
+<p>在恢复初始应力状态之后，我们首先在 <span class="codename">FISH</span> 函数中设置模拟参数。先指定水力裂隙面初始破裂部分的半径。在注入前使该平面上一小块区域“破裂”，以启动岩石中的裂隙扩展。然后指定最大允许张开度，以控制和保持合理的时步。最后给出注入位置和注入速率。各历史记录的位置也如下所示的 hf_setup 函数中指定：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model restore</span><span class="n"> </span><span class="s">'initial'</span>
+<span class="c">;</span>
+<span class="c">; 定义各项水力压裂参数</span>
+<span class="nb">fish define</span><span class="ni"> hf_setup</span>
+
+<span class="ni">  </span><span class="c">; 输入参数</span>
+
+<span class="ni">  </span><span class="c">; 水力裂隙初始破裂（张开）部分的半径</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> hf_fractured_radius </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">15.0</span>
+
+<span class="ni">  </span><span class="c">; 最大允许缝宽</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> j_ap_max </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">30.0e-4</span>
+
+<span class="ni">  </span><span class="c">; 注入点位置</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> injection_loc </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span>
+
+<span class="ni">  </span><span class="c">; 体积注入速率</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> injection_rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.05</span>
+
+<span class="ni">  </span><span class="c">; 计算得到的量</span>
+
+<span class="ni">  </span><span class="c">; 历程监测位置</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> his_x </span><span class="p">=</span><span class="ni"> </span><span class="k">comp.x</span><span class="p">(</span><span class="ni">injection_loc</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> his_y </span><span class="p">=</span><span class="ni"> </span><span class="k">comp.y</span><span class="p">(</span><span class="ni">injection_loc</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> his_z </span><span class="p">=</span><span class="ni"> </span><span class="k">comp.z</span><span class="p">(</span><span class="ni">injection_loc</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> his_x1 </span><span class="p">=</span><span class="ni"> </span><span class="k">comp.x</span><span class="p">(</span><span class="ni">injection_loc</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="m m-Double">30.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> his_x2 </span><span class="p">=</span><span class="ni"> </span><span class="k">comp.x</span><span class="p">(</span><span class="ni">injection_loc</span><span class="p">)</span><span class="ni"> </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">30.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> his_z1 </span><span class="p">=</span><span class="ni"> </span><span class="k">comp.z</span><span class="p">(</span><span class="ni">injection_loc</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="m m-Double">30.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> his_z2 </span><span class="p">=</span><span class="ni"> </span><span class="k">comp.z</span><span class="p">(</span><span class="ni">injection_loc</span><span class="p">)</span><span class="ni"> </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">30.0</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+<p>接下来，我们调用一个 <span class="codename">FISH</span> 文件，其中包含若干对岩体进行预处理所需的 <span class="codename">FISH</span> 函数（见<a class="reference internal" href="#hfdfn-hf-fis"><span class="std std-ref">hf.fis</span></a>）。</p>
+<p>我们通过使用 <a class="reference internal" href="../../../block/doc/manual/block_manual/block_commands/block.gridpoint/cmd_block.gridpoint.initialize.html#kwd:block.gridpoint.initialize.displacement" title="Initialize gridpoint `x`-, `y`-, and `z`-displacements...">初始化网格点位移命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">gridpoint</span> <span class="pre">initialize</span> <span class="pre">displacement</span></code>）</a> 命令和 <a class="reference internal" href="../../../block/doc/manual/block_manual/block_commands/block.contact/cmd_block.contact.reset.html#command:block.contact.reset" title="Reset certain model variables..."><code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">contact</span> <span class="pre">reset</span></code></a> 命令重置有关已记录的块体和节理位移的信息来开始模拟。“hf.fis”文件中名为 <code class="xref fish fish-kwd docutils literal"><span class="pre">reset_aperture</span></code> 的 <span class="codename">FISH</span> 函数将对任何已记录的张开度进行同样的重置。</p>
+<p>此前，最大节理张开度是用 <code class="xref fish fish-kwd docutils literal"><span class="pre">j_ap0</span></code> 值设置的；必须更改该值，以便节理张开并发生流体流动。使用 <a class="reference internal" href="../../../block/doc/manual/flow_manual/flow_commands/flowplane.vertex/cmd_flowplane.vertex.property.html#command:flowplane.vertex.property" title="Set flow plane vertex properties..."><code class="xref fish fish-cmd docutils literal"><span class="pre">flowplane</span> <span class="pre">vertex</span> <span class="pre">property</span></code></a> 命令，按定义的最大允许张开度（<code class="xref fish fish-kwd docutils literal"><span class="pre">j_ap_max</span></code>）更改节理属性。</p>
+<p>使用以下命令指定记录注入位置及周围位置的时间和孔隙压力的历史记录：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="ni">[his_x]</span><span class="n"> </span><span class="ni">[his_y]</span><span class="n"> </span><span class="ni">[his_z]</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="ni">[his_x1]</span><span class="n"> </span><span class="ni">[his_y]</span><span class="n"> </span><span class="ni">[his_z]</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="ni">[his_x2]</span><span class="n"> </span><span class="ni">[his_y]</span><span class="n"> </span><span class="ni">[his_z]</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="ni">[his_x]</span><span class="n"> </span><span class="ni">[his_y]</span><span class="n"> </span><span class="ni">[his_z1]</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="ni">[his_x]</span><span class="n"> </span><span class="ni">[his_y]</span><span class="n"> </span><span class="ni">[his_z2]</span>
+</pre></div>
+</div>
+<p>回顾一下，先前曾将初始模型的流体体积模量设为零。现在我们用 <code class="xref fish fish-kwd docutils literal"><span class="pre">fluid_bulk</span></code> 变量将该体积模量重置为先前定义的数值（3 MPa）。该体积模量小于真实流体；但就本教程而言，它有助于在获得合理结果的同时加快模型求解。还使用最小流动节点体积（<code class="xref fish fish-kwd docutils literal"><span class="pre">volmin</span></code>）以避免极小的时步。类似地，还指定了最小流动面网格单元面积（<code class="xref fish fish-kwd docutils literal"><span class="pre">areamin</span></code>）。我们还打开力学与流体计算以获得耦合解。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">block fluid</span><span class="n"> property bulk </span><span class="ni">[fluid_bulk_]</span>
+<span class="nb">flowplane zone area-min</span><span class="n"> </span><span class="m m-Double">0.25</span><span class="n"> </span>
+<span class="nb">flowknot volume-min 1e-3</span>
+
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">on</span>
+<span class="nb">model mechanical</span><span class="n"> active </span><span class="sx">on</span>
+</pre></div>
+</div>
+<p>一般而言，流体时步大于力学时步，因此每个流体步可能需要执行许多力学时步。严谨的解法会在每个流体步后求解力学平衡。但这将耗费很长时间，因此每个流体步的力学步数可能受到限制。以下命令将每个流体步的最大力学步数设为 5。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model mechanical</span><span class="n"> substep </span><span class="m m-Double">5</span>
+<span class="nb">model mechanical</span><span class="n"> slave </span><span class="sx">on</span>
+</pre></div>
+</div>
+<p>现在需要人为使水力裂隙的一小段失效，以便流动能够开始。通过调用“hf.fis”文件中的 <span class="codename">FISH</span> 函数，使水力裂隙面上距注入点 <code class="xref fish fish-kwd docutils literal"><span class="pre">hf_fractured_radius</span></code> 距离内的子接触失效。同时打开 <code class="xref fish fish-kwd docutils literal"><span class="pre">crack-flow</span></code> 选项，以将流动限制在裂隙已失效的部分。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 使水力裂隙平面的一部分破坏，以允许流动</span>
+<span class="ni">[crack_hf]</span>
+<span class="c">;</span>
+<span class="c">; 流动仅发生在已发生拉伸破坏的节理中</span>
+<span class="nb">block fluid</span><span class="n"> crack</span><span class="o">-</span><span class="n">flow </span><span class="sx">on</span>
+</pre></div>
+</div>
+<p>最后，将流体注入距指定位置最近的流动节点（<code class="xref fish fish-kwd docutils literal"><span class="pre">injection_loc)</span> <span class="pre">with</span> <span class="pre">the</span> <span class="pre">fish</span> <span class="pre">function</span> <span class="pre">:kwd:`inject</span></code>。</p>
+<p class="h3 rubric">求解与分析</p>
+<p>模拟的计算步骤由一个 <span class="codename">FISH</span> 函数控制，该函数循环一定次数（本例为 10 次），并在每次循环迭代中执行一条命令。在以下函数中，循环索引 <code class="xref fish fish-kwd docutils literal"><span class="pre">k</span></code> 用于创建文件名 <code class="xref fish fish-kwd docutils literal"><span class="pre">fname</span></code>，即在执行 10000 步后将循环索引与保存文件名关联起来。</p>
+<p>要在 <span class="codename">FISH</span> 函数中执行 <a class="reference internal" href="../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#kwd:model.solve.fluid.cycles" title="Limit of the number of cycles to take with fluid-flow active during this solve
+operation...">模型流体求解循环命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span> <span class="pre">fluid</span> <span class="pre">cycles</span></code>）</a> 和 <a class="reference internal" href="../../../../common/kernel/doc/manual/model/commands/cmd_model.save.html#command:model.save" title="Save all model-state information. The file  s  is created and, if no extension
+is...">保存模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">save</span></code>）</a> 等 <span class="codename">3DEC</span> 命令，需使用 <span class="codename">FISH</span> 内置函数 <code class="xref fish fish-kwd docutils literal"><span class="pre">command</span></code>。在包含 <span class="codename">3DEC</span> 命令之后，使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">end_command</span></code> 指定 <span class="codename">3DEC</span> 命令的结束。</p>
+<p>执行该函数后，将创建十（10）个保存文件，每个记录 10000 个计算步。每个文件的命名规则由 fname 变量指定为 hf-k.sav，其中 k 为从 1 到 10 的循环索引。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish define</span><span class="ni"> loop_solve</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">local</span><span class="ni"> k </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> fname</span><span class="p">=</span><span class="s">"hf-"</span><span class="o">+</span><span class="ni">string</span><span class="p">(</span><span class="ni">k</span><span class="p">)</span>
+<span class="k">    command</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fluid cycles </span><span class="m m-Double">10000</span>
+<span class="nb">      model save</span><span class="n"> </span><span class="ni">[fname]</span>
+<span class="k">    end_command</span>
+<span class="ni">  </span><span class="k">end_loop</span>
+<span class="nb">end</span>
+<span class="ni">[loop_solve]</span>
+</pre></div>
+</div>
+<p>计算完成后，绘制 Flow Planes，将“Type”改为“Contour”，并将“Contour”改为“Joint pore pressure”。为便于比较不同阶段的孔隙压力，最好为等值线图设置固定范围。具体做法是：在“Attributes”选项卡中展开“Contour”条目，再次展开“Contour”，取消勾选“Auto”并将等值线上限设为 45e6；取消勾选“Auto”并将等值线下限设为 28e6。</p>
+<p>施工节理会遮挡关注区域。若只想查看中心部位，可在列表中的“Flow-planes joint pore pressure”绘图项下打开 Clip Box 并展开，以查看关注区域。最终应得到类似下图的图形：</p>
+<div class="figure align-center" id="hf-dfn-3">
+<a class="reference internal image-reference" href="../../../../_images/pressure.png"><img alt="../../../../_images/pressure.png" src="../../../../_images/pressure.png" style="width: 80%;"/></a>
+</div>
+<p>你将看到流体如何开始渗入与水力裂隙面相交的裂隙中。也可以用同样的方法查看张开度：</p>
+<div class="figure align-center" id="hf-dfn-4">
+<a class="reference internal image-reference" href="../../../../_images/aperture.png"><img alt="../../../../_images/aperture.png" src="../../../../_images/aperture.png" style="width: 80%;"/></a>
+</div>
+<p class="h2 rubric" id="hydraulicfracturedfn-datafiles">数据文件</p>
+<p class="rubric" id="hfdfn-geometry-dat"><strong>geometry.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;;-- 定义水力压裂模型的几何形状</span>
+<span class="c">;</span>
+<span class="nb">model new</span>
+<span class="n">fish auto</span><span class="o">-</span><span class="n">create </span><span class="sx">off</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+
+<span class="nb">model configure</span><span class="n"> fluid</span>
+<span class="c">;</span>
+<span class="c">; 用于指定几何参数的函数</span>
+<span class="nb">fish define</span><span class="ni"> set_geometry</span>
+
+<span class="ni">  </span><span class="c">; 输入参数</span>
+
+<span class="ni">  </span><span class="c">; 模型中部</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> xmiddle </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> ymiddle </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> zmiddle </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+
+<span class="ni">  </span><span class="c">; 关注区域（DFN 区域）的尺寸</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> _modelSize_x </span><span class="p">=</span><span class="m m-Double">800</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> _modelSize_y </span><span class="p">=</span><span class="m m-Double">800</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> _modelSize_z </span><span class="p">=</span><span class="m m-Double">200</span>
+
+<span class="ni">  </span><span class="c">; 水力裂隙节理 id</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> hf_id</span><span class="p">=</span><span class="m m-Double">10000</span>
+
+<span class="ni">  </span><span class="c">; 关注区域内的网格单元尺寸</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> edge_size</span><span class="p">=</span><span class="m m-Double">10</span>
+
+<span class="ni">  </span><span class="c">; 几何计算，请勿更改</span>
+<span class="ni">  </span><span class="c">; 关注区域（DFN 区域）的边界</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> x1 </span><span class="p">=</span><span class="ni"> xmiddle </span><span class="o">-</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">_modelSize_x</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> x2 </span><span class="p">=</span><span class="ni"> xmiddle </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">_modelSize_x</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> y1 </span><span class="p">=</span><span class="ni"> ymiddle </span><span class="o">-</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">_modelSize_y</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> y2 </span><span class="p">=</span><span class="ni"> ymiddle </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">_modelSize_y</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> z1 </span><span class="p">=</span><span class="ni"> zmiddle </span><span class="o">-</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">_modelSize_z</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> z2 </span><span class="p">=</span><span class="ni"> zmiddle </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">_modelSize_z</span>
+
+<span class="ni">  </span><span class="c">; 扩展模型的边界</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> x1_ext </span><span class="p">=</span><span class="ni"> xmiddle </span><span class="o">-</span><span class="ni"> _modelSize_x</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> x2_ext </span><span class="p">=</span><span class="ni"> xmiddle </span><span class="o">+</span><span class="ni"> _modelSize_x</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> y1_ext </span><span class="p">=</span><span class="ni"> ymiddle </span><span class="o">-</span><span class="ni"> _modelSize_y</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> y2_ext </span><span class="p">=</span><span class="ni"> ymiddle </span><span class="o">+</span><span class="ni"> _modelSize_y</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> z1_ext </span><span class="p">=</span><span class="ni"> zmiddle </span><span class="o">-</span><span class="ni"> _modelSize_z</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> z2_ext </span><span class="p">=</span><span class="ni"> zmiddle </span><span class="o">+</span><span class="ni"> _modelSize_z</span>
+
+<span class="ni">  </span><span class="c">; 附加平面的 z 坐标</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> z_sub1 </span><span class="p">=</span><span class="ni"> zmiddle </span><span class="o">-</span><span class="ni"> </span><span class="m m-Double">0.25</span><span class="o">*</span><span class="ni">_modelSize_z</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> z_sub2 </span><span class="p">=</span><span class="ni"> zmiddle </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">0.25</span><span class="o">*</span><span class="ni">_modelSize_z</span>
+
+<span class="ni">  </span><span class="k">global</span><span class="ni"> edge_size_outer </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">3</span><span class="o">*</span><span class="ni">edge_size </span><span class="c">; 外部计算域的离散</span>
+<span class="nb">end</span>
+<span class="ni">[set_geometry]</span>
+<span class="c">;</span>
+<span class="c">; 设置容差</span>
+<span class="nb">block tolerance</span><span class="n"> </span><span class="m m-Double">0.02</span>
+<span class="c">;</span>
+<span class="c">; 创建大长方体</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="ni">[x1_ext]</span><span class="n"> </span><span class="ni">[x2_ext]</span><span class="n"> </span><span class="ni">[y1_ext]</span><span class="n"> </span><span class="ni">[y2_ext]</span><span class="n"> </span><span class="ni">[z1_ext]</span><span class="n"> </span><span class="ni">[z2_ext]</span>
+
+<span class="c">;</span>
+<span class="c">; 定义内部 DFN 区域</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">0</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">0</span><span class="n"> ori </span><span class="ni">[x1]</span><span class="n"> </span><span class="ni">[y1]</span><span class="n"> </span><span class="ni">[z1]</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">0</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">0</span><span class="n"> ori </span><span class="ni">[x1]</span><span class="n"> </span><span class="ni">[y1]</span><span class="n"> </span><span class="ni">[z2]</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">90</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">0</span><span class="n"> ori </span><span class="ni">[x1]</span><span class="n"> </span><span class="ni">[y1]</span><span class="n"> </span><span class="ni">[z1]</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">90</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">0</span><span class="n"> ori </span><span class="ni">[x1]</span><span class="n"> </span><span class="ni">[y2]</span><span class="n"> </span><span class="ni">[z1]</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">90</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">90</span><span class="n"> ori </span><span class="ni">[x1]</span><span class="n"> </span><span class="ni">[y1]</span><span class="n"> </span><span class="ni">[z1]</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">90</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">90</span><span class="n"> ori </span><span class="ni">[x2]</span><span class="n"> </span><span class="ni">[y1]</span><span class="n"> </span><span class="ni">[z1]</span>
+
+<span class="nb">model range</span><span class="n"> create </span><span class="s">'middle'</span><span class="n"> position</span><span class="o">-</span><span class="n">x </span><span class="ni">[x1]</span><span class="n"> </span><span class="ni">[x2]</span><span class="n"> position</span><span class="o">-</span><span class="n">y </span><span class="ni">[y1]</span><span class="n"> </span><span class="ni">[y2]</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="ni">[z1]</span><span class="n"> </span><span class="ni">[z2]</span>
+<span class="nb">block hide</span><span class="n"> range named</span><span class="o">-</span><span class="n">range </span><span class="s">'middle'</span>
+<span class="c">;</span>
+<span class="nb">block densify</span><span class="n"> segments </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">2</span><span class="n"> join</span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">;</span>
+<span class="nb">block hide</span><span class="n"> range named</span><span class="o">-</span><span class="n">range </span><span class="s">'middle'</span><span class="n"> not</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">90</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">0</span><span class="n"> ori </span><span class="ni">[xmiddle]</span><span class="n"> </span><span class="ni">[ymiddle]</span><span class="n"> </span><span class="ni">[zmiddle]</span><span class="n"> jointset</span><span class="o">-</span><span class="n">id </span><span class="ni">[hf_id]</span>
+<span class="c">;</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">90</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">90</span><span class="n"> ori </span><span class="ni">[xmiddle]</span><span class="n"> </span><span class="ni">[ymiddle]</span><span class="n"> </span><span class="ni">[zmiddle]</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">0</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">0</span><span class="n"> ori </span><span class="ni">[xmiddle]</span><span class="n"> </span><span class="ni">[ymiddle]</span><span class="n"> </span><span class="ni">[zmiddle]</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">0</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">0</span><span class="n"> ori </span><span class="ni">[xmiddle]</span><span class="n"> </span><span class="ni">[ymiddle]</span><span class="n"> </span><span class="ni">[z_sub1]</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">0</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">0</span><span class="n"> ori </span><span class="ni">[xmiddle]</span><span class="n"> </span><span class="ni">[ymiddle]</span><span class="n"> </span><span class="ni">[z_sub2]</span>
+<span class="c">;</span>
+<span class="c">;</span>
+<span class="c">; 导入 DFN 并进行切割</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="ni">[x1_ext]</span><span class="n"> </span><span class="ni">[x2_ext]</span><span class="n"> </span><span class="ni">[y1_ext]</span><span class="n"> </span><span class="ni">[y2_ext]</span><span class="n"> </span><span class="ni">[z1_ext]</span><span class="n"> </span><span class="ni">[z2_ext]</span>
+<span class="nb">fracture import</span><span class="n"> skip</span><span class="o">-</span><span class="n">errors from</span><span class="o">-</span><span class="n">file </span><span class="s">'dfn.dat'</span><span class="n"> dfn </span><span class="s">'fractures'</span>
+<span class="c">;</span>
+<span class="nb">block cut</span><span class="n"> dfn id </span><span class="m m-Double">1</span>
+<span class="c">;</span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'blocks'</span>
+<span class="c">;</span>
+<span class="c">; 生成网格单元</span>
+<span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="ni">[edge_size]</span><span class="n"> range named</span><span class="o">-</span><span class="n">range </span><span class="s">'middle'</span>
+<span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="ni">[edge_size_outer]</span><span class="n"> range named</span><span class="o">-</span><span class="n">range </span><span class="s">'middle'</span><span class="n"> not</span>
+
+<span class="c">;</span>
+<span class="nb">program log</span><span class="o">-</span><span class="n">file </span><span class="s">'model_info.log'</span>
+<span class="nb">program log</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">model list</span><span class="n"> info</span>
+<span class="nb">program log</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'zoned'</span>
+</pre></div>
+</div>
+<p class="rubric" id="hfdfn-initial-dat"><strong>initial.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 设置参数并赋予初始条件和边界条件</span>
+<span class="c">;</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'zoned'</span>
+<span class="c">;</span>
+<span class="c">; 用于定义材料和流体参数的函数</span>
+<span class="nb">fish define</span><span class="ni"> set_mat_prop</span>
+<span class="ni">  </span><span class="c">; 输入参数</span>
+<span class="ni">  </span><span class="c">; 完整岩石参数</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> rock_young </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">20e9</span><span class="ni">   </span><span class="c">; Pa</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> rock_poisson </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.25</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> rock_density </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2600.0</span>
+<span class="ni">  </span><span class="c">; 节理参数</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> joint_kn </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">5.e10</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> joint_ks </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">5.e10</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> joint_cohesion </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> joint_friction </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">20.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> joint_tension </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> j_ap0 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0e-4</span><span class="ni"> </span><span class="c">;法向应力为 0 时的缝宽</span>
+<span class="ni">  </span><span class="c">; 流体参数</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> fluid_bulk_ </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">3e6</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> fluid_density_ </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1000.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> fluid_viscosity_ </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0015</span>
+
+<span class="nb">end</span>
+<span class="ni">[set_mat_prop]</span>
+<span class="c">;</span>
+<span class="c">; 指定岩石参数</span>
+<span class="nb">block zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">block zone property</span><span class="n"> density </span><span class="ni">[rock_density]</span><span class="n"> young </span><span class="ni">[rock_young]</span><span class="n"> poisson </span><span class="ni">[rock_poisson]</span><span class="n"> </span>
+<span class="c">;</span>
+<span class="c">; 节理材料，初始应力状态下保持缝宽不变</span>
+<span class="c">;</span>
+
+<span class="c">; DFN 外部的节理</span>
+<span class="nb">block contact jmodel</span><span class="n"> assign mohr</span>
+<span class="nb">block contact property</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="ni">[joint_kn]</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="ni">[joint_ks]</span><span class="n"> </span>
+<span class="nb">block contact property</span><span class="n"> friction </span><span class="m m-Double">40</span><span class="n"> cohesion </span><span class="m m-Double">1e30</span><span class="n"> tension </span><span class="m m-Double">1e30</span><span class="n"> </span>
+
+<span class="c">; DFN 节理 </span>
+<span class="nb">block contact property</span><span class="n"> friction </span><span class="ni">[joint_friction]</span><span class="n"> cohesion </span><span class="ni">[joint_cohesion]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  tension </span><span class="ni">[joint_tension]</span><span class="n"> range dfn</span><span class="o">-</span><span class="m m-Double">3</span><span class="n">dec </span><span class="s">'fractures'</span>
+
+<span class="c">;水力裂隙平面</span>
+<span class="nb">block contact property</span><span class="n"> friction </span><span class="ni">[joint_friction]</span><span class="n"> cohesion </span><span class="ni">[joint_cohesion]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  tension </span><span class="ni">[joint_tension]</span><span class="n"> range joint</span><span class="o">-</span><span class="n">set </span><span class="ni">[hf_id]</span>
+
+<span class="c">; 渗流平面参数</span>
+<span class="nb">flowplane vertex property</span><span class="n"> aperture</span><span class="o">-</span><span class="n">ini </span><span class="ni">[j_ap0]</span><span class="n"> aperture</span><span class="o">-</span><span class="n">min </span><span class="ni">[j_ap0]</span><span class="n"> aperture</span><span class="o">-</span><span class="n">max </span><span class="ni">[j_ap0]</span><span class="n"> </span>
+<span class="c">;</span>
+<span class="c">; 指定流体参数</span>
+<span class="nb">block fluid</span><span class="n"> property bulk </span><span class="ni">[fluid_bulk_]</span>
+<span class="nb">block fluid</span><span class="n"> property density </span><span class="ni">[fluid_density_]</span>
+<span class="nb">block fluid</span><span class="n"> property viscosity </span><span class="ni">[fluid_viscosity_]</span>
+<span class="c">;</span>
+<span class="c">;</span>
+<span class="c">; 定义原位应力值</span>
+<span class="nb">fish define</span><span class="ni"> set_insitu</span>
+<span class="ni">  </span><span class="c">; 输入</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> depth </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">3000.0</span><span class="ni"> </span><span class="c">; 模型中心深度（m）</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> gravity_ </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">9.81</span><span class="ni"> </span><span class="c">; 公制</span>
+
+<span class="ni">  </span><span class="k">global</span><span class="ni"> kH_max</span><span class="p">=</span><span class="m m-Double">1.0</span><span class="ni"> </span><span class="c">; 最大水平应力与竖向应力之比（x）</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> kh_min</span><span class="p">=</span><span class="m m-Double">0.5</span><span class="ni"> </span><span class="c">; 最小水平应力与竖向应力之比（y）</span>
+
+<span class="ni">  </span><span class="c">; 计算，请勿更改</span>
+<span class="ni">  </span><span class="c">; z = 0 处的应力，压应力为负</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> szz0 </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni">rock_density</span><span class="o">*</span><span class="ni">depth</span><span class="o">*</span><span class="ni">gravity_</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> sxx0 </span><span class="p">=</span><span class="ni"> kH_max</span><span class="o">*</span><span class="ni">szz0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> syy0 </span><span class="p">=</span><span class="ni"> kh_min</span><span class="o">*</span><span class="ni">szz0</span>
+
+<span class="ni">  </span><span class="c">; z = 0 处的流体压力，为正值</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> pp0 </span><span class="p">=</span><span class="ni"> fluid_density_</span><span class="o">*</span><span class="ni">depth</span><span class="o">*</span><span class="ni">gravity_</span>
+
+<span class="ni">  </span><span class="c">; 梯度，沿 z 正方向每米的变化量</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> szz_grad </span><span class="p">=</span><span class="ni"> rock_density</span><span class="o">*</span><span class="ni">gravity_</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> syy_grad </span><span class="p">=</span><span class="ni"> kh_min</span><span class="o">*</span><span class="ni">szz_grad</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> sxx_grad </span><span class="p">=</span><span class="ni"> kH_max</span><span class="o">*</span><span class="ni">szz_grad</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> pp_grad </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni">fluid_density_</span><span class="o">*</span><span class="ni">gravity_</span>
+
+<span class="nb">end</span>
+<span class="ni">[set_insitu]</span>
+<span class="c">;</span>
+<span class="c">; 原位应力</span>
+<span class="nb">block insitu</span><span class="n"> stress </span><span class="ni">[sxx0]</span><span class="n"> </span><span class="ni">[syy0]</span><span class="n"> </span><span class="ni">[szz0]</span><span class="n"> </span><span class="m m-Double">0.</span><span class="n"> </span><span class="m m-Double">0.</span><span class="n"> </span><span class="m m-Double">0.</span><span class="n"> </span><span class="sx">...</span>
+<span class="n"> grad</span><span class="o">-</span><span class="n">z </span><span class="ni">[sxx_grad]</span><span class="n"> </span><span class="ni">[syy_grad]</span><span class="n"> </span><span class="ni">[szz_grad]</span><span class="n"> </span><span class="m m-Double">0.</span><span class="n"> </span><span class="m m-Double">0.</span><span class="n"> </span><span class="m m-Double">0.</span><span class="n"> nodisp</span>
+
+<span class="nb">block insitu</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure </span><span class="ni">[pp0]</span><span class="n"> gradient </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[pp_grad]</span>
+
+<span class="c">;</span>
+<span class="c">; 边界条件</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="ni">[x1_ext]</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="ni">[x2_ext]</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="ni">[y1_ext]</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="ni">[y2_ext]</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="ni">[z1_ext]</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="ni">[z2_ext]</span>
+<span class="c">;</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="ni">gravity_]</span>
+<span class="c">;</span>
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">off</span>
+<span class="nb">model mechanical</span><span class="n"> active </span><span class="sx">on</span>
+<span class="nb">block fluid</span><span class="n"> property bulk </span><span class="m m-Double">0</span>
+<span class="c">;</span>
+<span class="nb">model history</span><span class="n"> mechanical unbalanced</span><span class="o">-</span><span class="n">maximum</span>
+<span class="c">;</span>
+<span class="nb">model </span><span class="ss">solve</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'initial'</span>
+<span class="c">;</span>
+</pre></div>
+</div>
+<p class="rubric" id="hfdfn-simulate-dat"><strong>simulate.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 进行水力压裂模拟</span>
+<span class="c">;</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'initial'</span>
+<span class="c">;</span>
+<span class="c">; 定义各项水力压裂参数</span>
+<span class="nb">fish define</span><span class="ni"> hf_setup</span>
+
+<span class="ni">  </span><span class="c">; 输入参数</span>
+
+<span class="ni">  </span><span class="c">; 水力裂隙初始破裂（张开）部分的半径</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> hf_fractured_radius </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">15.0</span>
+
+<span class="ni">  </span><span class="c">; 最大允许缝宽</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> j_ap_max </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">30.0e-4</span>
+
+<span class="ni">  </span><span class="c">; 注入点位置</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> injection_loc </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span>
+
+<span class="ni">  </span><span class="c">; 体积注入速率</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> injection_rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.05</span>
+
+<span class="ni">  </span><span class="c">; 计算得到的量</span>
+
+<span class="ni">  </span><span class="c">; 历程监测位置</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> his_x </span><span class="p">=</span><span class="ni"> </span><span class="k">comp.x</span><span class="p">(</span><span class="ni">injection_loc</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> his_y </span><span class="p">=</span><span class="ni"> </span><span class="k">comp.y</span><span class="p">(</span><span class="ni">injection_loc</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> his_z </span><span class="p">=</span><span class="ni"> </span><span class="k">comp.z</span><span class="p">(</span><span class="ni">injection_loc</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> his_x1 </span><span class="p">=</span><span class="ni"> </span><span class="k">comp.x</span><span class="p">(</span><span class="ni">injection_loc</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="m m-Double">30.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> his_x2 </span><span class="p">=</span><span class="ni"> </span><span class="k">comp.x</span><span class="p">(</span><span class="ni">injection_loc</span><span class="p">)</span><span class="ni"> </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">30.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> his_z1 </span><span class="p">=</span><span class="ni"> </span><span class="k">comp.z</span><span class="p">(</span><span class="ni">injection_loc</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="m m-Double">30.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> his_z2 </span><span class="p">=</span><span class="ni"> </span><span class="k">comp.z</span><span class="p">(</span><span class="ni">injection_loc</span><span class="p">)</span><span class="ni"> </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">30.0</span>
+<span class="nb">end</span>
+<span class="ni">[hf_setup]</span>
+<span class="c">;</span>
+<span class="c">; 辅助水力压裂模拟的函数</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'hf.fis'</span>
+<span class="c">;</span>
+<span class="c">; 重置位移、缝宽和时间</span>
+<span class="nb">block gridpoint initialize</span><span class="n"> displacement </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block contact reset</span><span class="n"> displacement</span>
+<span class="ni">[reset_aperture]</span>
+<span class="nb">model mechanical</span><span class="n"> time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">0</span>
+<span class="c">;</span>
+<span class="c">; 修改节理材料以允许节理张开</span>
+<span class="nb">flowplane vertex property</span><span class="n"> aperture</span><span class="o">-</span><span class="n">maximum </span><span class="ni">[j_ap_max]</span><span class="n"> range joint</span><span class="o">-</span><span class="n">set </span><span class="ni">[hf_id]</span>
+<span class="nb">flowplane vertex property</span><span class="n"> aperture</span><span class="o">-</span><span class="n">maximum </span><span class="ni">[j_ap_max]</span><span class="n"> range dfn</span><span class="o">-</span><span class="m m-Double">3</span><span class="n">dec </span><span class="s">'fractures'</span>
+<span class="c">;</span>
+<span class="c">;</span>
+<span class="c">; 设置历程</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="ni">[his_x]</span><span class="n"> </span><span class="ni">[his_y]</span><span class="n"> </span><span class="ni">[his_z]</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="ni">[his_x1]</span><span class="n"> </span><span class="ni">[his_y]</span><span class="n"> </span><span class="ni">[his_z]</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="ni">[his_x2]</span><span class="n"> </span><span class="ni">[his_y]</span><span class="n"> </span><span class="ni">[his_z]</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="ni">[his_x]</span><span class="n"> </span><span class="ni">[his_y]</span><span class="n"> </span><span class="ni">[his_z1]</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="ni">[his_x]</span><span class="n"> </span><span class="ni">[his_y]</span><span class="n"> </span><span class="ni">[his_z2]</span>
+<span class="c">;</span>
+<span class="c">; 设置通用流体参数</span>
+<span class="nb">block fluid</span><span class="n"> property bulk </span><span class="ni">[fluid_bulk_]</span>
+<span class="nb">flowplane zone area-min</span><span class="n"> </span><span class="m m-Double">0.25</span><span class="n"> </span>
+<span class="nb">flowknot volume-min 1e-3</span>
+
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">on</span>
+<span class="nb">model mechanical</span><span class="n"> active </span><span class="sx">on</span>
+<span class="c">;</span>
+<span class="c">; 每个流体步允许的最大力学计算步数</span>
+<span class="nb">model mechanical</span><span class="n"> substep </span><span class="m m-Double">5</span>
+<span class="nb">model mechanical</span><span class="n"> slave </span><span class="sx">on</span>
+<span class="c">;</span>
+<span class="c">; 使水力裂隙平面的一部分破坏，以允许流动</span>
+<span class="ni">[crack_hf]</span>
+<span class="c">;</span>
+<span class="c">; 流动仅发生在已发生拉伸破坏的节理中</span>
+<span class="nb">block fluid</span><span class="n"> crack</span><span class="o">-</span><span class="n">flow </span><span class="sx">on</span>
+<span class="c">;</span>
+<span class="c">; 注入</span>
+<span class="ni">[inject]</span>
+<span class="c">;</span>
+<span class="nb">fish define</span><span class="ni"> loop_solve</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">local</span><span class="ni"> k </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> fname</span><span class="p">=</span><span class="s">"hf-"</span><span class="o">+</span><span class="ni">string</span><span class="p">(</span><span class="ni">k</span><span class="p">)</span>
+<span class="k">    command</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fluid cycles </span><span class="m m-Double">10000</span>
+<span class="nb">      model save</span><span class="n"> </span><span class="ni">[fname]</span>
+<span class="k">    end_command</span>
+<span class="ni">  </span><span class="k">end_loop</span>
+<span class="nb">end</span>
+<span class="ni">[loop_solve]</span>
+<span class="c">;</span>
+</pre></div>
+</div>
+<p class="rubric" id="hfdfn-hf-fis"><strong>hf.fis</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;</span>
+<span class="c">; 将水力裂隙的一小部分设置为“已破坏”的函数</span>
+<span class="c">;</span>
+<span class="c">; 输入：hf_fractured_radius - 水力裂隙破裂部分的半径（flt）</span>
+<span class="c">;        injection_loc - 注入位置（v3）</span>
+<span class="c">;        hf_id - 水力裂隙节理的 id（int）</span>
+<span class="c">;</span>
+<span class="nb">fish define</span><span class="ni"> crack_hf</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> cxi </span><span class="k">block.subcontact.list</span>
+<span class="ni">        </span>
+<span class="ni">        </span><span class="c">; 检查是否位于钻孔注入点的给定半径范围内</span>
+<span class="ni">        </span><span class="k">local</span><span class="ni"> dist_ </span><span class="p">=</span><span class="ni"> </span><span class="k">math.mag</span><span class="p">(</span><span class="ni">injection_loc </span><span class="o">-</span><span class="ni"> </span><span class="k">block.subcontact.pos</span><span class="p">(</span><span class="ni">cxi</span><span class="p">))</span>
+<span class="ni">        </span><span class="k">if</span><span class="ni"> dist_ </span><span class="o">&lt;</span><span class="p">=</span><span class="ni"> hf_fractured_radius </span><span class="k">then</span>
+<span class="ni">          </span><span class="k">block.subcontact.state</span><span class="p">(</span><span class="ni">cxi</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">3</span><span class="ni"> </span><span class="c">; 将状态设为“拉伸破坏”</span>
+<span class="ni">          </span><span class="k">block.subcontact.extra</span><span class="p">(</span><span class="ni">cxi</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">3</span><span class="ni"> </span><span class="c">; 用于绘图</span>
+<span class="ni">        </span><span class="k">else</span>
+<span class="ni">          </span><span class="k">block.subcontact.state</span><span class="p">(</span><span class="ni">cxi</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span><span class="ni"> </span><span class="c">; 设置为未破坏</span>
+<span class="ni">          </span><span class="k">block.subcontact.extra</span><span class="p">(</span><span class="ni">cxi</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">        </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">end_loop</span>
+<span class="nb">end</span>
+<span class="c">;</span>
+<span class="c">; 将力学缝宽设为初始值的函数</span>
+<span class="c">;</span>
+<span class="c">; 输入：j_ap0 - 初始缝宽（flt）</span>
+<span class="c">;</span>
+<span class="nb">fish define</span><span class="ni"> reset_aperture</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> fpx flowplane</span><span class="p">.</span><span class="ni">vertex</span><span class="p">.</span><span class="ni">list</span>
+<span class="ni">        flowplane</span><span class="p">.</span><span class="ni">vertex</span><span class="p">.</span><span class="ni">aperture</span><span class="p">.</span><span class="ni">mech</span><span class="p">(</span><span class="ni">fpx</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> j_ap0</span>
+<span class="ni">    </span><span class="k">end_loop</span>
+<span class="nb">end</span>
+<span class="c">;</span>
+<span class="c">;</span>
+<span class="c">; 用于施加注入的函数</span>
+<span class="c">;</span>
+<span class="c">; 输入：injection_loc - 注入位置（v3）</span>
+<span class="c">;        injection_rate - 体积（??）注入速率</span>
+<span class="c">;</span>
+<span class="nb">fish define</span><span class="ni"> inject</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> fk </span><span class="p">=</span><span class="ni"> flowknot</span><span class="p">.</span><span class="ni">near</span><span class="p">(</span><span class="k">comp.x</span><span class="p">(</span><span class="ni">injection_loc</span><span class="p">),</span><span class="k">comp.y</span><span class="p">(</span><span class="ni">injection_loc</span><span class="p">),</span><span class="k">comp.z</span><span class="p">(</span><span class="ni">injection_loc</span><span class="p">))</span>
+<span class="ni">  flowknot</span><span class="p">.</span><span class="ni">flux</span><span class="p">.</span><span class="ni">fluid</span><span class="p">.</span><span class="ni">app</span><span class="p">(</span><span class="ni">fk</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> injection_rate</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="c">; 在此记录历程</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> fk_x_ </span><span class="p">=</span><span class="ni"> flowknot</span><span class="p">.</span><span class="ni">pos</span><span class="p">.</span><span class="ni">x</span><span class="p">(</span><span class="ni">fk</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> fk_y_ </span><span class="p">=</span><span class="ni"> flowknot</span><span class="p">.</span><span class="ni">pos</span><span class="p">.</span><span class="ni">y</span><span class="p">(</span><span class="ni">fk</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> fk_z_ </span><span class="p">=</span><span class="ni"> flowknot</span><span class="p">.</span><span class="ni">pos</span><span class="p">.</span><span class="ni">z</span><span class="p">(</span><span class="ni">fk</span><span class="p">)</span>
+<span class="k">  command</span>
+<span class="nb">    flowknot history pore-pressure</span><span class="n"> position </span><span class="ni">[fk_x_]</span><span class="n"> </span><span class="ni">[fk_y_]</span><span class="n"> </span><span class="ni">[fk_z_]</span>
+<span class="k">  end_command</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../3dechome.html"><span class="codename">3DEC</span></a> »</li>
+<li class="nav-item nav-item-2"><a accesskey="U" href="examples.html">Examples</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="HydraulicFracture.html" title="previous chapter"> Hydraulic Fracture</a> |    
+       <a href="ExcavationInASaturatedSoil.html" title="next chapter">Excavation in a Saturated Soil</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Hydraulic Fracture with DFN" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../_static/icgscripts.js"></script>
+</body>
+</html>

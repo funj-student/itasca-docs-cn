@@ -1,0 +1,254 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>波传播 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="dynamic_partdensscaling.html" rel="next" title="Partial Density Scaling for Dynamic Analysis"/>
+<link href="dynamic_oscillation.html" rel="prev" title="Natural Modes of Oscillation"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="wave-transmission">
+<span id="dynamic-wavetransmission"></span><h1>波传播</h1>
+<p>原位节理的物理刚度可能对地震波传播有实质影响。Myer 等人（1990）给出的现场和室内试验结果表明，岩石中干燥天然裂隙的刚度会影响高频衰减以及地震波走时的变化。若要准确模拟波的传播，在非连续介质模型中体现这一效应可能很重要。不过，必须注意不要引入可能掩盖节理对波传播实际效应的数值畸变。</p>
+<p>动力分析中，无论基于连续介质程序还是非连续介质程序，随建模条件的不同，都可能出现传播波的数值畸变。输入波的频率成分和体系的波速特性都会影响波传播的数值精度。Kuhlemeyer 和 Lysmer（1973）指出，为准确表示波在模型中的传播，空间单元尺寸必须小于输入波最高频率成分相应波长的大约十分之一至八分之一，即</p>
+<div class="math">
+\[\Delta l \le {1 \over 8} \cdot \gamma\]</div>
+<p>其中 <span class="math">\(γ\)</span> 为与通过介质的峰值速度的最高频率成分相应的波长。
+对于非连续介质程序，这也适用于节理间距（或块体尺寸）。</p>
+<p>为在离散元模型中准确表示应力波，特别是当节理间距变化时，应将块体设为可变形，以满足频率和波长所施加的单元尺寸限制。如 <a class="reference internal" href="../../theory/theory.html#theory-background-3dec"><span class="std std-ref">3DEC 理论与背景</span>（3DEC Theory and Background）</a> 中所述，在 <span class="codename">3DEC</span> 中通过将每个块体细分为有限差分单元网格来实现这一点。这些单元随即受 Kuhlemeyer 和 Lysmer 限制的约束。</p>
+<p>通过对底部承受冲击荷载的块体柱进行简单分析，可以说明模型条件对波传播数值畸变的影响（<a href="#dyn-wvtr-chua">图  1（Figure  1）</a> 和 <a href="#dyn-wvtr-nubz">图  3（Figure  3）</a>）。块体尺寸为 1 m 至 5 m（平均尺寸 2 m），块体之间的接触呈线弹性，体系的 P 波速度为 4300 m/s。在底部施加三角形冲击荷载，其最高频率约为 200 Hz（<a href="#dyn-wvtr-gowt">图  2（Figure  2）</a> 和 <a href="#dyn-wvtr-foes">图  4（Figure  4）</a> 中的实线）。与该体系最高频率相应的波长为 21.5 m。因此，按照 Kuhlemeyer 和 Lysmer 的要求，为使该波无畸变地传播，单元尺寸不得超过约 2 m。</p>
+<p>用恒定接触法向刚度进行刚性块体分析，以产生 4300 m/s 的平均波速（基于平均节理间距）。在柱体顶部计算得到严重畸变的速度时程，如图 2.9 中的虚线所示。对于该问题，可通过局部改变法向刚度使块体之间接触处的波速保持恒定，从而减小这种畸变。但一般来说，对于多重节理体系，有效（局部）法向刚度的计算变得极为复杂，使该方法不切实际。</p>
+<p>采用有限差分单元最大尺寸小于 2 m 的可变形块体分析（见 <a href="#dyn-wvtr-nubz">图  3（Figure  3）</a>）。块体的弹性模量和接触刚度经计算取值，以产生给定的 <span class="math">\(p\)</span> 波速。如 <a href="#dyn-wvtr-foes">图  4（Figure  4）</a> 所示，柱体顶部波的畸变此时已基本消除。在这种情况下，弹性变形参数分别表示块体和接触的物理属性，无需作局部调整。</p>
+<p>对于节理、断层、层面等地质结构的法向刚度和剪切刚度，通常不易获得实测值。往往需要根据完整材料弹性变形特性的实测值以及穿过节理体系的波速来反算这些属性。例如，Singh（1973）和 Gerrard（1982）给出了等效弹性连续介质属性与完整材料及节理属性之间的关系式。在 <span class="codename">3DEC</span> 中，可利用这些关系为节理刚度属性提供合理估计，以重现体系的实测剪切波速和压缩波速。</p>
+<div class="figure align-center" id="dyn-wvtr-chua">
+<a class="reference internal image-reference" href="../../../../../_images/impulse-blocks.png"><img alt="../../../../../_images/impulse-blocks.png" src="../../../../../_images/impulse-blocks.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 1：底部承受三角形冲击荷载的变尺寸块体柱。</span></p>
+</div>
+<div class="figure align-center" id="dyn-wvtr-gowt">
+<a class="reference internal image-reference" href="../../../../../_images/impulse-rigid-wave.png"><img alt="../../../../../_images/impulse-rigid-wave.png" src="../../../../../_images/impulse-rigid-wave.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：刚性块体模型柱体底部的输入波（实线）和顶部的计算波（虚线）。</span></p>
+</div>
+<div class="figure align-center" id="dyn-wvtr-nubz">
+<a class="reference internal image-reference" href="../../../../../_images/impulse-zones.png"><img alt="../../../../../_images/impulse-zones.png" src="../../../../../_images/impulse-zones.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 3：划分为有限差分离散单元的变尺寸块体柱。</span></p>
+</div>
+<div class="figure align-center" id="dyn-wvtr-foes">
+<a class="reference internal image-reference" href="../../../../../_images/impulse-def-wave.png"><img alt="../../../../../_images/impulse-def-wave.png" src="../../../../../_images/impulse-def-wave.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 4：可变形块体模型柱体底部的输入波（实线）和顶部的计算波（虚线）。</span></p>
+</div>
+<p class="h2 rubric" id="dec-block-test3d-optional-features-dynamic-impulseload-impulse-rigid-dat">数据文件 - 通过刚性块体的传播</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;-----------------------------------------------------------------------</span>
+<span class="c">; 向由不同尺寸刚性块体组成的柱体施加脉冲</span>
+<span class="c">;-----------------------------------------------------------------------</span>
+
+<span class="nb">model new</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">"Impulse applied to column of rigid blocks"</span>
+
+<span class="nb">model config</span><span class="n"> dynamic</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+
+<span class="c">;几何形状</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">100</span>
+
+<span class="c">; 通过 program call 调用用于切割块体的 FISH 函数</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">"impulse.fis"</span>
+<span class="ni">[varcut]</span>
+
+<span class="nb">block prop</span><span class="n"> dens </span><span class="m m-Double">1000</span>
+
+<span class="c">; 创建子接触并指定参数</span>
+<span class="nb">block contact gen-sub</span>
+<span class="nb">block contact jmodel</span><span class="n"> assign el</span>
+<span class="nb">block contact prop</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">10e9</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">10e9</span>
+<span class="nb">block contact material-table</span><span class="n"> default prop stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">10e9</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                          stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">10e9</span>
+
+<span class="ni">[impulse_ini]</span>
+<span class="ni">[vmax </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">11.0</span><span class="ni">]</span><span class="n"> </span>
+<span class="ni">[tpeak </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.005</span><span class="ni">]</span><span class="n"> </span>
+<span class="ni">[tend </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.06</span><span class="ni">]</span>
+
+<span class="c">; 固定底部块体，以便向刚性块体模型施加脉冲</span>
+<span class="nb">block apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">1.0</span><span class="n"> fish pulse range pos</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">10</span><span class="n"> pos</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">10</span><span class="n"> pos</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">5</span>
+
+<span class="c">; 顶部采用静默边界 </span>
+<span class="nb">block gridpoint apply</span><span class="n"> visc</span><span class="o">-</span><span class="n">z range pos</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">100</span>
+
+<span class="c">; 监测底部和顶部速度</span>
+<span class="n">hist interval </span><span class="m m-Double">10</span>
+<span class="nb">block hist</span><span class="n"> name </span><span class="s">'v1'</span><span class="n"> vel</span><span class="o">-</span><span class="n">z pos </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span>
+<span class="nb">block hist</span><span class="n"> name </span><span class="s">'v2'</span><span class="n"> vel</span><span class="o">-</span><span class="n">z pos </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">95</span>
+<span class="n">fish hist pulse</span>
+<span class="n">model hist name </span><span class="s">'Time'</span><span class="n"> dynamic time</span><span class="o">-</span><span class="n">total</span>
+<span class="n">hist name </span><span class="s">'v1'</span><span class="n"> label </span><span class="s">'Input Wave'</span>
+<span class="n">hist name </span><span class="s">'v2'</span><span class="n"> label </span><span class="s">'Calculated Wave'</span>
+<span class="n">hist name </span><span class="s">'Time'</span><span class="n"> label </span><span class="s">'Time'</span>
+
+<span class="c">; adip-direction：5\\% 刚度阻尼</span>
+<span class="nb">block mech</span><span class="n"> damp rayleigh </span><span class="m m-Double">0.05</span><span class="n"> </span><span class="m m-Double">200</span><span class="n"> stiff</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">0.12</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">"impulse-rigid"</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="dec-block-test3d-optional-features-dynamic-impulseload-impulse-deformable-dat">数据文件 - 通过可变形块体的传播</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;-----------------------------------------------------------------------</span>
+<span class="c">; 向由不同尺寸可变形块体组成的柱体施加脉冲</span>
+<span class="c">;-----------------------------------------------------------------------</span>
+
+<span class="nb">model new</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">"Impulse applied to column of deformable blocks"</span>
+
+<span class="nb">model config</span><span class="n"> dynamic</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+
+<span class="c">;几何形状</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">100</span>
+
+<span class="c">; 通过 program call 调用用于切割块体的 FISH 函数</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">"impulse.fis"</span>
+<span class="ni">[varcut]</span>
+
+<span class="nb">block zone gen</span><span class="n"> edgelength </span><span class="m m-Double">2</span>
+<span class="nb">block zone cmodel</span><span class="n"> assign el</span>
+<span class="nb">block zone prop</span><span class="n"> dens </span><span class="m m-Double">1000</span><span class="n"> bulk </span><span class="m m-Double">10e9</span><span class="n"> shear </span><span class="m m-Double">7.5e9</span>
+
+<span class="c">; 创建子接触并指定参数</span>
+<span class="nb">block contact gen-sub</span>
+<span class="nb">block contact jmodel</span><span class="n"> assign el</span>
+<span class="nb">block contact prop</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">200e9</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">200e9</span>
+<span class="nb">block contact material-table</span><span class="n"> default prop stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">200e9</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                          stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">200e9</span>
+
+<span class="ni">[impulse_ini]</span>
+<span class="ni">[vmax </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">11.0</span><span class="ni">]</span>
+<span class="ni">[tpeak </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.005</span><span class="ni">]</span>
+<span class="ni">[tend </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.06</span><span class="ni">]</span>
+
+<span class="c">; 在底部施加脉冲</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">1.0</span><span class="n"> fish pulse range pos</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span>
+
+<span class="c">; 顶部采用静默边界 </span>
+<span class="nb">block gridpoint apply</span><span class="n"> visc</span><span class="o">-</span><span class="n">z range pos</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">100</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0.0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0.0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">10</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0.0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0.0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">10</span>
+
+<span class="c">; 监测底部和顶部速度</span>
+<span class="n">hist interval </span><span class="m m-Double">100</span>
+<span class="nb">block hist</span><span class="n"> name </span><span class="s">'v1'</span><span class="n"> vel</span><span class="o">-</span><span class="n">z pos </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span>
+<span class="nb">block hist</span><span class="n"> name </span><span class="s">'v2'</span><span class="n"> vel</span><span class="o">-</span><span class="n">z pos </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">95</span>
+<span class="n">fish hist pulse</span>
+<span class="n">model hist name </span><span class="s">'Time'</span><span class="n"> dynamic time</span><span class="o">-</span><span class="n">total</span>
+<span class="n">hist name </span><span class="s">'v1'</span><span class="n"> label </span><span class="s">'Input Wave'</span>
+<span class="n">hist name </span><span class="s">'v2'</span><span class="n"> label </span><span class="s">'Calculated Wave'</span>
+<span class="n">hist name </span><span class="s">'Time'</span><span class="n"> label </span><span class="s">'Time'</span>
+
+<span class="c">; adip-direction：5\\% 刚度阻尼</span>
+<span class="nb">block mech</span><span class="n"> damp rayleigh </span><span class="m m-Double">0.05</span><span class="n"> </span><span class="m m-Double">200</span><span class="n"> stiff</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">0.12</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">"impulse-deformable"</span>
+</pre></div>
+</div>
+<p>对于峰值速度高、上升时间短的动力输入，Kuhlemeyer 和 Lysmer 的要求可能迫使采用非常细的空间网格和相应很小的时步。在非连续介质程序中，这种影响会进一步加剧，因为波跨过不连续面传播时会产生比输入波更高的频率成分。其结果是，原本合理的分析可能变得极为耗时、耗内存，而且费用高昂。在这种情况下，可以通过认识到输入时程的大部分功率都包含在较低频率成分中，来调整输入。对时程进行滤波并去除高频成分后，即可采用较粗的网格，而不会显著影响结果。</p>
+<p>滤波过程可用低通滤波程序（例如快速傅里叶变换技术）完成。例如，<a href="#dyn-wvtr-kovv">图  5（Figure  5）</a> 所示的未滤波速度记录表示一个含甚高频尖峰的典型波形。该输入的最高频率超过 50 Hz，但如傅里叶幅值随频率变化的功率谱密度图（<a href="#dyn-wvtr-ttpf">图  6（Figure  6）</a>）所示，大部分功率（约 99%）由频率为 15 Hz 或更低的成分构成。因此可以推断，用 15 Hz 低通滤波器对该速度时程滤波，损失的功率不到 1%。经 15 Hz 滤波的输入如 <a href="#dyn-wvtr-iarp">图  7（Figure  7）</a> 所示，其傅里叶幅值绘制于 <a href="#dyn-wvtr-kkkf">图  8（Figure  8）</a>。未滤波与滤波输入的功率之差小于 1%，而峰值速度降低 38%，上升时间由 0.035 秒移至 0.09 秒。应在不同滤波水平下用输入进行分析，以评估滤波器对模型结果的影响。</p>
+<div class="figure align-center" id="dyn-wvtr-kovv">
+<a class="reference internal image-reference" href="../../../../../_images/dynamic-filter1.png"><img alt="../../../../../_images/dynamic-filter1.png" src="../../../../../_images/dynamic-filter1.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 5：未滤波的速度时程。</span></p>
+</div>
+<div class="figure align-center" id="dyn-wvtr-ttpf">
+<a class="reference internal image-reference" href="../../../../../_images/dynamic-filter2.png"><img alt="../../../../../_images/dynamic-filter2.png" src="../../../../../_images/dynamic-filter2.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 6：未滤波的功率谱密度图。</span></p>
+</div>
+<div class="figure align-center" id="dyn-wvtr-iarp">
+<a class="reference internal image-reference" href="../../../../../_images/dynamic-filter3.png"><img alt="../../../../../_images/dynamic-filter3.png" src="../../../../../_images/dynamic-filter3.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 7：15 Hz 滤波后的速度时程。</span></p>
+</div>
+<div class="figure align-center" id="dyn-wvtr-kkkf">
+<a class="reference internal image-reference" href="../../../../../_images/dynamic-filter4.png"><img alt="../../../../../_images/dynamic-filter4.png" src="../../../../../_images/dynamic-filter4.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 8：15 Hz 滤波的结果。</span></p>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../3dechome.html"><span class="codename">3DEC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../options.html">Options</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="dynamic.html">Dynamic Analysis</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="dynamic_oscillation.html" title="previous chapter"> Natural Modes of Oscillation</a> |    
+       <a href="dynamic_partdensscaling.html" title="next chapter">Partial Density Scaling for Dynamic Analysis</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Wave Transmission" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

@@ -1,0 +1,715 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>支撑剂 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="fluid_properties.html" rel="next" title="Fluid Flow Properties and Units"/>
+<link href="fluid_joint.html" rel="prev" title="Joint Fluid Flow"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="proppant">
+<span id="fluid-proppant"></span><h1>支撑剂</h1>
+<p>本节介绍 <span class="codename">3DEC</span> 中裂隙内支撑剂的模拟，内容主要取自 Detournay 等（2015）。</p>
+<div class="section" id="introduction">
+<h2>引言</h2>
+<p>水力压裂是油气行业用于增产的一项技术。压裂处理通常涉及将支撑剂以悬浮于压裂液中的形式注入。注入结束后，裂隙闭合并压在支撑剂上，形成导流通道，使油气能够有效流出。</p>
+<p>模拟裂隙内支撑剂输运和铺置时，通常将支撑剂与压裂液表示为混合物，<span class="codename">3DEC</span> 也采用这一方法。假定支撑剂颗粒相对于裂隙张开度很小，混合物中的支撑剂用其体积浓度表示。</p>
+<p>该算法考虑了流固耦合，并表示了多种效应，包括充填层形成（浓度达到给定值时，支撑剂形成充填层，只有压裂液可穿过）、桥堵（裂隙宽度相对于粒径足够小时，支撑剂停止运动）、支撑剂对流（密度梯度使载有支撑剂的流体运动）以及沉降（重力引起浆液与支撑剂之间出现速度滑差）。</p>
+</div>
+<div class="section" id="logic-overview">
+<h2>逻辑概述</h2>
+<p><span class="codename">3DEC</span> 中节理内支撑剂的输运与铺置建模时，假定在无重力引起的沉降时支撑剂与流体以相同速度运动。该逻辑沿用 Adachi 等（2007）总结的一般方法。假定支撑剂颗粒通常远小于裂缝宽度，且裂缝中支撑剂的分布由体积分数表示。此外，支撑剂与携砂液之间相对速度的唯一机制是重力引起的沉降。</p>
+<p>支撑剂体积分数达到饱和值时，浆液（压裂液和支撑剂的混合物）的行为类似于多孔固体，支撑剂颗粒形成“充填层”。此外，如果节理开度相对于粒径变小，支撑剂的流动会受到抑制，同样形成“充填层”或“桥堵”。随后考虑两种效应：首先，支撑剂充填层能够承担裂隙闭合产生的荷载（力学效应）；其次，只有携带液能够通过充填层孔隙流动（流体输运效应）。</p>
+<p>当允许发生沉降时，支撑剂速度中增加一个沿重力方向的矢量分量，以计入颗粒沉降。沉降速率与给定尺寸的颗粒在给定黏度流体中的（重力下）斯托克斯速度成正比。此外，对斯托克斯速度乘以一个经验系数（体积分数的函数），以计入颗粒相互作用与壁面效应。</p>
+</div>
+<div class="section" id="basic-equations">
+<h2>基本方程</h2>
+<p>支撑剂体积分数 <span class="math">\(C\)</span> 的对流（体积守恒）方程为</p>
+<div class="math" id="equation-prp-fld3-olpo">
+<span class="eqno">(1)</span>\[{\partial (ca) \over \partial t} + \nabla . (ca {\bf v}_p) = 0\]</div>
+<p>式中，<span class="math">\(a\)</span> 为节理张开度，<span class="math">\({\bf v}_p\)</span> 为支撑剂速度矢量。</p>
+<p>把 <a class="reference internal" href="#equation-prp-fld3-olpo">式 (1)</a> 与 <span class="codename">3DEC</span> 中的流体流动逻辑进行耦合，是通过浆液流速 <span class="math">\({\bf v}\)</span> 实现的：该流速由求解现有流体流动方程得到，并注意到浆液流量 <span class="math">\(\bf q\)</span>（节理单位宽度上）与浆液流速的关系为：</p>
+<div class="math" id="equation-prp-fld3-ggmf">
+<span class="eqno">(2)</span>\[{\bf v} = {{\bf q} \over a}\]</div>
+<p>若允许发生沉降，则支撑剂速度由浆液流速按下式计算：</p>
+<div class="math" id="equation-prp-fld3-dxel">
+<span class="eqno">(3)</span>\[{\bf v}_p = {\bf v} + (1-c){\bf v}_s\]</div>
+<p>其中，滑移速度 <span class="math">\({\bf v}_s\)</span> 是平行于重力加速度 <span class="math">\(\bf g\)</span> 的矢量。滑移速度的大小由 Stokes 方程计算，并施加一个修正系数（浓度的函数），以考虑支撑剂相互作用和壁面效应：</p>
+<div class="math" id="equation-prp-fld3-vxbp">
+<span class="eqno">(4)</span>\[{\bf v}_s = f(c){\bf v}_{stokes}\]</div>
+<p>在式 <a class="reference internal" href="#equation-prp-fld3-vxbp">(4)</a> 中，<span class="math">\({\bf v}_{stokes}\)</span> 为单颗粒的 Stokes 阻力定律：</p>
+<div class="math" id="equation-prp-fld3-xcwe">
+<span class="eqno">(5)</span>\[{\bf v}_{stokes} = (\rho_p - \rho_f) {{d^2_p} \over {18 \mu}}{\bf g}\]</div>
+<p>其中，<span class="math">\(\rho_p\)</span> 和 <span class="math">\(\rho_f\)</span> 分别为固体颗粒和携带液的密度，<span class="math">\(d_p\)</span> 为支撑剂的代表性直径，<span class="math">\(\mu\)</span> 为流体黏度。</p>
+<p>此外，Richardson 和 Zaki 相关关系（1954）给出了广泛使用的修正系数形式：</p>
+<div class="math" id="equation-prp-fld3-gjsy">
+<span class="eqno">(6)</span>\[f(c)=(1-c)^{4.65}\]</div>
+<p>将式 <a class="reference internal" href="#equation-prp-fld3-gjsy">(6)</a> 代入式 <a class="reference internal" href="#equation-prp-fld3-vxbp">(4)</a>，再将所得表达式代入式 <a class="reference internal" href="#equation-prp-fld3-dxel">(3)</a>，得到：</p>
+<div class="math" id="equation-prp-fld3-htrw">
+<span class="eqno">(7)</span>\[{\bf v}_p = {\bf v} + f^*(c) {\bf v}_{stokes}\]</div>
+<p>其中</p>
+<div class="math" id="equation-prp-fld3-bijd">
+<span class="eqno">(8)</span>\[f^*(c)=(1-c)^{5.65}\]</div>
+<p><a href="#prp-fld3-jmej">图 1（Figure  1）</a> 绘出了沉降速率系数 <span class="math">\((1-c)^{5.65}\)</span> 随体积浓度 <span class="math">\(c\)</span> 的变化。</p>
+<div class="figure" id="prp-fld3-jmej">
+<img alt="../../../../../_images/proppant-flowplanes.png" src="../../../../../_images/proppant-flowplanes.png"/>
+<p class="caption"><span class="caption-text">图 1：沉降速率系数与浓度的关系。</span></p>
+</div>
+<div class="section" id="proppant-convection">
+<h3>支撑剂对流</h3>
+<p>另一个需要关注的耦合变量是浆液密度，它会影响流体渗流的 Reynolds 控制方程。在支撑剂算法的公式中，采用 Boussinesq 近似，即由浓度变化导致的流体密度变化，仅在产生浮力时才具有显著影响。</p>
+<p>在现有 <span class="codename">3DEC</span> 流体渗流算法中，节理单位宽度的流量为：</p>
+<div class="math" id="equation-prp-fld3-rgmt">
+<span class="eqno">(9)</span>\[{\bf q} = -ka \nabla (p- \rho {\bf g.x})\]</div>
+<p>其中，<span class="math">\(k=a^2 / (12 \mu)\)</span> 为节理流动系数，<span class="math">\(\rho\)</span> 为流体（浆液）密度，<span class="math">\(g\)</span> 为重力。在 Boussinesq 近似中，假定式 <a class="reference internal" href="#equation-prp-fld3-gjsy">(6)</a> 中的流体密度与支撑剂浓度 <span class="math">\(c\)</span> 满足以下线性关系：</p>
+<div class="math" id="equation-prp-fld3-jfgr">
+<span class="eqno">(10)</span>\[\rho = \rho_f \biggl[ 1 + c \biggl ({{\rho_p \over \rho_f}}-1 \biggr) \biggr]\]</div>
+<p>式中，<span class="math">\(\rho_f\)</span> 为携砂液的密度，<span class="math">\(\rho_p\)</span> 为支撑剂密度。</p>
+</div>
+<div class="section" id="slurry-viscosity">
+<h3>浆液黏度</h3>
+<p>通过经验公式，按支撑剂浓度调整携带液黏度，即可得到浆液黏度与流体渗流的耦合关系。<span class="codename">3DEC</span> 采用 Mack 和 Warpinski（2000）所述的关系</p>
+<div class="math" id="equation-prp-fld3-gcba">
+<span class="eqno">(11)</span>\[\mu_{slurry} = {\mu_{base} \over (1-c/c_{limit})^{2.5}}\]</div>
+<p>其中，<span class="math">\(\mu_{base}\)</span> 为用户输入的流体黏度（<span class="fishcmd">block fluid property viscosity</span>），<span class="math">\(c_{limit}\)</span> 为用户定义的支撑剂开始承载时的浓度限值（<span class="fishcmd">block fluid proppant concentration-limit-volume</span>）。当 <span class="math">\(c/c_{limit}\)</span> 趋近于 1 时，<span class="math">\(\mu_{slurry}\)</span> 趋近于无穷大，因此在 <span class="codename">3DEC</span> 中，将 <span class="math">\(c/c_{limit}\)</span> 的最大值设为 0.9。</p>
+<p>可绘制浆液黏度（<span class="menuselection">渗流平面</span> / <span class="menuselection">等值云图</span> / <span class="menuselection">黏度</span>），也可通过 <span class="codename">FISH</span>（<span class="fishcmd">flowplane.vertex.visc</span>）查询。</p>
+</div>
+</div>
+<div class="section" id="numerical-implementation">
+<h2>数值实现</h2>
+<p>对流方程采用以节点为中心的有限体积法进行数值求解。该格式利用了流体流动计算中流动平面的三角形离散。节点是位于三角形顶点的离散特征。为每个节点指定一个控制域，支撑剂体积分数 <span class="math">\(c\)</span>、节理中的支撑剂高度 <span class="math">\(h\)</span> 以及节理张开度 <span class="math">\(a\)</span> 都在控制域上取平均。某个节点的二维控制域边界是由直线段构成的多边形：每个以该节点为公共顶点的三角形定义两条线段，每条线段把三角形中心与该节点出发的一条边的中点相连，见<a href="#prp-fld3-tmfu">图 2（Figure  2）</a>。</p>
+<p>节点（位于节理内）处的支撑剂体积分数为</p>
+<div class="math" id="equation-prp-fld3-qymw">
+<span class="eqno">(12)</span>\[c = {h \over a}\]</div>
+<p>而节点处的支撑剂高度为</p>
+<div class="math" id="equation-prp-fld3-ffos">
+<span class="eqno">(13)</span>\[h = ca\]</div>
+<div class="figure" id="prp-fld3-tmfu">
+<img alt="../../../../../_images/proppant-flowplanes2.png" src="../../../../../_images/proppant-flowplanes2.png"/>
+<p class="caption"><span class="caption-text">图 2：<span class="codename">3DEC</span> 渗流平面的三角形离散（虚线），显示节点及控制域（实线）。</span></p>
+</div>
+<p>为用有限体积法离散 <a class="reference internal" href="#equation-prp-fld3-olpo">式 (1)</a>，先对面积为 <span class="math">\(A\)</span> 的控制域积分：</p>
+<div class="math" id="equation-prp-fld3-cvow">
+<span class="eqno">(14)</span>\[\int_A {\partial (ca) \over \partial t} dA + \int_A \cdot (ca {\bf v}_p)dA = 0\]</div>
+<p>然后对穿过各控制域边界的通量作适当近似。</p>
+<div class="section" id="transport-with-no-aperture-change">
+<h3>开度不变时的输运</h3>
+<p>对于存在输运而开度不变的情况，分别考察式 <a class="reference internal" href="#equation-prp-fld3-cvow">(14)</a> 中的每一项。</p>
+<div class="section" id="transient-term">
+<h4>瞬态项</h4>
+<p>存在输运（且开度保持不变）时，瞬态项积分的离散形式为</p>
+<div class="math" id="equation-prp-fld3-ixfy">
+<span class="eqno">(15)</span>\[\int_A {\partial (ca) \over \partial t} dA = {{h^{new} - h^{old}} \over \Delta t} A\]</div>
+<p>其中，<span class="math">\(\Delta t\)</span> 为时间步长。</p>
+</div>
+<div class="section" id="advection-term">
+<h4>平流项</h4>
+<p>利用式 <a class="reference internal" href="#equation-prp-fld3-dxel">(3)</a>，将平流项表示为浆液速度和沉降速度的函数：</p>
+<div class="math" id="equation-prp-fld3-cmat">
+<span class="eqno">(16)</span>\[\int_A \nabla \cdot (ca {\bf v}_p) dA = \int_A \nabla \cdot (ca {\bf v}) dA + \int_A \nabla \cdot (caf^* (c) {\bf v}_{stokes})dA\]</div>
+<p>用高斯散度定理把控制域上的积分转换为其多边形边界 <span class="math">\(\mathscr{C}\)</span> 上的积分：</p>
+<div class="math" id="equation-prp-fld3-kiju">
+<span class="eqno">(17)</span>\[\int_A \nabla \cdot (ca {\bf v}_p) dA = \int_{\mathscr{C}} ca {\bf v} \cdot {\bf n} ds + \int_{\mathscr{C}} caf^* (c) {\bf v}_{stokes} \cdot {\bf n} ds\]</div>
+<p>式中，<span class="math">\(n\)</span> 为边界上由控制域向外的法向。</p>
+<p>利用式 <a class="reference internal" href="#equation-prp-fld3-ggmf">(2)</a>，将式 <a class="reference internal" href="#equation-prp-fld3-kiju">(17)</a> 中的浆液扩散项表示为节理单位宽度流量的函数：</p>
+<div class="math" id="equation-prp-fld3-ywkw">
+<span class="eqno">(18)</span>\[\int_{\mathscr{C}} ca {\bf v} \cdot {\bf n} ds = \int_{\mathscr{C}} c {\bf q} \cdot {\bf n} ds\]</div>
+<p>浆液扩散项的离散形式为：</p>
+<div class="math" id="equation-prp-fld3-vgjs">
+<span class="eqno">(19)</span>\[\int_{\mathscr{C}} c {\bf q} \cdot {\bf n} ds = \sum_s c_s ({\bf q} \cdot {\bf n})_s L_s\]</div>
+<p>其中，<span class="math">\(\sum_s\)</span> 表示对控制域边界各线段求和，<span class="math">\(L_s\)</span> 为每一线段的长度。</p>
+<p>矢量 <span class="math">\({\bf n}\)</span> 是该线段的法向矢量，指向以点 <span class="math">\(P_1\)</span> 为中心的控制域之外，进入以点 <span class="math">\(P_2\)</span> 为中心的相邻控制域，见<a href="#prp-fld3-vrdz">图 3（Figure  3）</a>。<span class="math">\(c_s\)</span> 的值取决于为获得符合物理实际的解而采用的对流格式。这里采用迎风格式，即从流动上游取被平流输运的量 <span class="math">\(c_s\)</span>：</p>
+<div class="math" id="equation-prp-fld3-xmyq">
+<span class="eqno">(20)</span>\[\eqalign{c_s &amp;= c_{P_1} {\rm if} {\bf q.n} &gt; 0 \cr &amp;= c_{P_2} {\rm if} {\bf q.n} &lt; 0 }\]</div>
+<p>迎风格式无条件稳定，但所得解会高估扩散项，使前缘出现数值弥散。采用带通量限制器的二阶修正项，有望提高解的质量；不过，当前版本的格式尚未实现这一技术。</p>
+<div class="figure" id="prp-fld3-vrdz">
+<img alt="../../../../../_images/proppant-flowplanes3.png" src="../../../../../_images/proppant-flowplanes3.png"/>
+<p class="caption"><span class="caption-text">图 3：用于说明迎风对流格式的控制域与相关量。</span></p>
+</div>
+<p><a class="reference internal" href="#equation-prp-fld3-kiju">式 (17)</a> 中的沉降扩散项是主变量 <span class="math">\(c\)</span> 的非线性函数。数值格式中采用的离散形式为</p>
+<div class="math" id="equation-prp-fld3-wpmm">
+<span class="eqno">(21)</span>\[\int_e caf^* (c) {\bf v}_{stokes} \cdot {\bf n} ds = \sum_s h_s {(f^* (\overline{c}) {\bf v}_{stokes} \cdot {\bf n})}_s L_s\]</div>
+<p>式中，<span class="math">\(h = ca\)</span>（见 <a class="reference internal" href="#equation-prp-fld3-ffos">式 (13)</a>），<span class="math">\(\overline{c}\)</span> 的取值（用于表示修正项 <span class="math">\(f^*\)</span>）为包含该边界段的三角形三个节点上 <span class="math">\(c\)</span> 的平均值，并且</p>
+<div class="math" id="equation-prp-fld3-nldl">
+<span class="eqno">(22)</span>\[\eqalign{ h_s &amp;= h_{p_1} {\bf v}_{stokes}.{\bf n} &gt; 0 \cr &amp;= h_{p_1} {\bf v}_{stokes}.{\bf n} &lt; 0 }\]</div>
+<p>联立 <a class="reference internal" href="#equation-prp-fld3-ixfy">式 (15)</a>、<a class="reference internal" href="#equation-prp-fld3-vgjs">式 (19)</a> 和 <a class="reference internal" href="#equation-prp-fld3-wpmm">式 (21)</a>，可对每个控制域写出 <a class="reference internal" href="#equation-prp-fld3-cvow">式 (14)</a> 的离散形式：</p>
+<div class="math" id="equation-prp-fld3-hjgr">
+<span class="eqno">(23)</span>\[h^{new} = h^{old} - {\Delta t \over A} \biggl[ \sum_s c_s ( {\bf q \cdot n})_s L_s - \sum_s h_s {(f^* (\overline{c}) {\bf v}_{stokes} \cdot {\bf n})}_s L_s \biggr]\]</div>
+<p>在（显式）时间步进数值格式中，<a class="reference internal" href="#equation-prp-fld3-hjgr">式 (23)</a> 右端的所有量都假定由上一时步已知。对每个节点计算该步新的支撑剂高度，然后用 <a class="reference internal" href="#equation-prp-fld3-qymw">式 (12)</a> 更新体积分数。</p>
+<p>现有流体渗流格式假定流体体积平衡。此外，平流格式保持支撑剂体积守恒（支撑剂不会损失，因为它只是在渗流域中从一个控制体积移到另一个控制体积）；下面的示例将对此进行说明。</p>
+</div>
+</div>
+</div>
+<div class="section" id="mechanical-coupling">
+<h2>力学耦合</h2>
+<div class="section" id="aperture-change-with-no-transport">
+<h3>无输运时的开度变化</h3>
+<p>除对流引起的浓度变化外，节点处的浓度还随张开度变化。当没有输运发生时，对流方程（<a class="reference internal" href="#equation-prp-fld3-cvow">式 (14)</a>）简化为</p>
+<div class="math" id="equation-prp-fld3-amvj">
+<span class="eqno">(24)</span>\[\int_A {\partial (ca) \over \partial t} dA = 0\]</div>
+<p>该方程意味着乘积 <span class="math">\(ca\)</span> 保持不变。换言之，由于在开度发生变化的力学步内，支撑剂质量保持恒定，因此可根据该步中节理开度的变化（从 <span class="math">\(a_0\)</span> 变为 <span class="math">\(a_1\)</span>），直接计算新浓度 <span class="math">\(c_1\)</span>，如下所示：</p>
+<div class="math" id="equation-prp-fld3-bzqr">
+<span class="eqno">(25)</span>\[c_1 = c_0 {a_0 \over a_1}\]</div>
+<p>式中，<span class="math">\(c_0\)</span> 为该步之前的浓度。</p>
+</div>
+<div class="section" id="load-carried-by-the-proppant-pack">
+<h3>支撑剂充填层承担的荷载</h3>
+<p>当支撑剂（体积）浓度达到饱和值 <span class="math">\(c_{limit}\)</span> 时，即达到支撑剂承担荷载的条件；该值等于堆积支撑剂的最大初始（无荷载）密度 <span class="math">\(\rho_0\)</span> 与支撑剂颗粒密度 <span class="math">\(\rho_p\)</span> 之比。该限值用 <span class="fishcmd">block fluid proppant concentration-limit-volume</span> 命令设置。</p>
+<p>对于具有最大初始（未加载）密度、受到侧向约束并施加轴向位移 <span class="math">\(\Delta u\)</span> 的材料充填层，其承载应力的一般方程为：</p>
+<div class="math" id="equation-prp-fld3-vdrc">
+<span class="eqno">(26)</span>\[\sigma = -{\Delta u \over h_p^*} B\]</div>
+<p>式中，<span class="math">\(B\)</span> 为约束模量（对各向同性材料等于 <span class="math">\(K + 4G / 3\)</span>），<span class="math">\(h_p^*\)</span> 为无荷载时充填层的高度。充填层的约束模量用 <span class="fishcmd">block fluid proppant modulus</span> 命令设置。由支撑剂试验得到的裂缝宽度与应力的关系表明，<a class="reference internal" href="#equation-prp-fld3-vdrc">式 (26)</a> 中的线性假定是合理的。</p>
+<p>对张开度为 <span class="math">\(a\)</span> 的裂缝，把 <a class="reference internal" href="#equation-prp-fld3-vdrc">式 (26)</a> 写成增量形式：</p>
+<div class="math" id="equation-prp-fld3-zkvk">
+<span class="eqno">(27)</span>\[\Delta \sigma = -{\Delta a \over h_p^*} B\]</div>
+<p>该方程仅在满足支撑剂承载条件（即 <span class="math">\(c &gt; c_{lim}\)</span>），且总应力 <span class="math">\(\sigma\)</span> 始终为压应力时有效。如果不满足条件，支撑剂不承担荷载。常数 <span class="math">\(c_{lim}\)</span> 和 <span class="math">\(B\)</span> 是支撑剂的输入属性。</p>
+<p>若某节点处 <span class="math">\(\sigma\)</span> &gt; 0，则支撑剂的对流被阻断。但携砂液仍可流过充填层；充填层的固有渗透率是用户输入值（<span class="fishcmd">block fluid proppant permeability</span>）。</p>
+<p>支撑剂对接触法向力 <span class="math">\(F_n\)</span> 的力学效应由下式表示：</p>
+<div class="math" id="equation-prp-fld3-ykkc">
+<span class="eqno">(28)</span>\[\Delta F_n = -A (\Delta P + \Delta \sigma) w_f\]</div>
+<p>式中，<span class="math">\(\Delta \sigma\)</span> 为一个时步内支撑剂应力的变化量，<span class="math">\(w_f\)</span> 为合适的节点-接触权重因子。</p>
+</div>
+<div class="section" id="bridging">
+<h3>桥堵</h3>
+<p>若裂缝宽度小到与颗粒尺寸乘以某经验系数（&gt;1）相当，则支撑剂被堵住。需要该经验系数，是因为裂缝中形成拱或桥时，张开度大于颗粒直径也可能发生堵塞。</p>
+<p>粒径和堵塞系数是用户输入值，分别由 <span class="fishcmd">block fluid proppant grains-size</span> 和 <span class="fishcmd">block fluid proppant grains-size-factor</span> 命令指定。粒径系数的默认值为 1。</p>
+<p>发生堵塞时，支撑剂对流停止，但仍可通过指定一个与流动单元固有渗透率相乘的系数使流体流动。用 <span class="fishcmd">block fluid proppant permeability-factor</span> 命令给出乘数（一般小于 1），以降低通过被堵塞流动单元的流量。默认值为 0，即被堵塞单元中不发生流动。</p>
+<p>若流动单元中<em>任一</em>节点的张开度小于该限值，则认为该流动单元被堵塞。</p>
+</div>
+<div class="section" id="id1">
+<h3>支撑剂对流</h3>
+<p>在公式中，浆液密度变化引起的对流机制，通过按 <a class="reference internal" href="#equation-prp-fld3-jfgr">式 (10)</a> 在流体输运方程中局部调整浆液密度来考虑。</p>
+</div>
+<div class="section" id="condition-at-an-intersection-between-flow-planes">
+<h3>流动平面相交处的条件</h3>
+<p>以下讨论采用<a href="#prp-fld3-gsyx">图 4（Figure  4）</a> 所示的简化双平面构型。</p>
+<div class="figure" id="prp-fld3-gsyx">
+<img alt="../../../../../_images/proppant-intersecting.png" src="../../../../../_images/proppant-intersecting.png"/>
+<p class="caption"><span class="caption-text">图 4：两个相交的流动平面，含离散三角形、边节点和控制域（深色）。</span></p>
+</div>
+<p>每个渗流平面均离散为三角形；位于两平面交线上的节点 1 和节点 2 归入同一个“渗流节点”。将节点 1 和节点 2 的控制域集中到一起，并将结果赋予该渗流节点：</p>
+<div class="math" id="equation-prp-fld3-jnkx">
+<span class="eqno">(29)</span>\[A_{knot} = A_1 + A_2\]</div>
+<p>此外，节点张开度按节点量上的面积平均求值：</p>
+<div class="math" id="equation-prp-fld3-bkpe">
+<span class="eqno">(30)</span>\[a_{knot} = {a_1 A_1 + a_2 A_2 \over A_{knot}}\]</div>
+<p>采用上述数值格式计算渗流节点处新的支撑剂高度 <span class="math">\(h_{knot}\)</span>，再将支撑剂高度除以渗流节点开度，即 <span class="math">\(c_{knot} = h_{knot} / a_{knot}\)</span>，得到渗流节点处支撑剂浓度 <span class="math">\(c_{knot}\)</span>。将该浓度赋予节点 1 和节点 2，并将浓度与节点开度相乘，计算节点处新的支撑剂高度 <span class="math">\(h_1 = c_{knot} a_1\)</span>、<span class="math">\(h_2 = c_{knot} a_2\)</span>。交汇处的支撑剂体积平衡</p>
+<div class="math" id="equation-prp-fld3-bfog">
+<span class="eqno">(31)</span>\[h_{knot} A_{knot} = h_1 A_1 + h_2 A_2\]</div>
+<p>采用该格式时自动满足守恒。</p>
+</div>
+<div class="section" id="timestep-for-stability">
+<h3>稳定时间步长</h3>
+<p>流体与支撑剂输运计算有两种运行方式：a）非耦合，先进行渗流计算，再进行支撑剂输运计算；b）耦合，每执行一个渗流计算步后，就执行支撑剂输运计算。</p>
+<p>此外，多数情况下，支撑剂输运的稳定显式时间步长远大于显式流体渗流时间步长。</p>
+<p>在非耦合模拟中，通过考虑一维平流方程离散形式的 CFL（Courant-Friedricks-Lewy）条件，计算支撑剂输运的稳定时间步长：</p>
+<div class="math" id="equation-prp-fld3-iycr">
+<span class="eqno">(32)</span>\[{\partial c \over \partial t} + \nu {\partial c \over \partial x} = 0\]</div>
+<p>此时 Courant 数定义为：</p>
+<div class="math" id="equation-prp-fld3-tbxx">
+<span class="eqno">(33)</span>\[v = {c \Delta t \over \Delta x}\]</div>
+<p>其中，<span class="math">\(\Delta t\)</span> 为支撑剂时间步长，<span class="math">\(\Delta x\)</span> 为离散长度，稳定性条件为</p>
+<div class="math" id="equation-prp-fld3-yome">
+<span class="eqno">(34)</span>\[0 \leq v \leq 1\]</div>
+<p>对于 <span class="codename">3DEC</span> 的非耦合情形，采用基于 <a class="reference internal" href="#equation-prp-fld3-tbxx">式 (33)</a> 的如下稳定时步表达式：</p>
+<div class="math" id="equation-prp-fld3-wcxa">
+<span class="eqno">(35)</span>\[\Delta t_p = \alpha {\Delta L_{min} \over \left | {\bf v}_{p,max} \right |}\]</div>
+<p>其中，<span class="math">\(\Delta L_{min}\)</span> 为最小离散长度，<span class="math">\(\left | {\bf v}_{p,max} \right |\)</span> 为渗流平面各三角形中支撑剂速度的最大值。</p>
+<p>在耦合模拟中，稳定时步取与显式流体步相同。</p>
+<p>在流体-支撑剂-力学耦合计算中，每个计算步先进行流体流动计算，然后进行支撑剂输运计算，最后按设置取足够数量的力学步，使系统保持准静态平衡。</p>
+</div>
+<div class="section" id="boundary-and-initial-conditions">
+<h3>边界条件和初始条件</h3>
+<p>可用 <span class="fishcmd">flowplane vertex initialize proppant-volume</span> 命令把流动平面中的支撑剂浓度初始化为非零值。可给出范围，以便在不同流动平面中设置不同的初始浓度。</p>
+<p>支撑剂输运问题考虑两类边界条件：指定支撑剂体积通量，以及指定体积分数。</p>
+<p>第二类在物理上难以实现，引入它只是为了便于把数值结果与现有解析解进行比较。</p>
+<p>要注入支撑剂，可用 <span class="fishcmd">flowknot apply proppant-volume</span> 命令指定注入流体中的支撑剂浓度。注意，若在指定边界位置没有流体流入或流出网格，则支撑剂不会被加入（或减去）系统。这意味着必须在与支撑剂边界条件相同的位置施加固定压力或流体流量边界条件，才能注入支撑剂。</p>
+</div>
+</div>
+<div class="section" id="examples">
+<h2>示例</h2>
+<div class="section" id="planar-flow">
+<h3>平面流动</h3>
+<p>用一个简单的对流试验检验平面水平节理（张开度恒定且均匀）中支撑剂输运逻辑的功能。节理长 10 m、宽 1 m，张开度为 0.1 mm。沿节理长方向施加 0.1 MPa/m 的均匀压力梯度。流体黏度为 10<sup>−3</sup> Pa · m。节理离散长度为 0.25 m。按试验所选参数，裂缝中的流速约为 8.33 10<sup>−2</sup> m/s，即 1/12 m/s（<a href="#prp-fld3-uvxc">图 5（Figure  5）</a>）。</p>
+<p>随后沿节理左侧（短）边以浓度 0.3 注入支撑剂。注入 60 s 后的支撑剂浓度等值线见<a href="#prp-fld3-mcye">图 6（Figure  6）</a>。12 s、36 s 和 60 s 的浓度剖面绘于<a href="#prp-fld3-pnlr">图 7（Figure  7）</a>。虚线给出基于流体流速的理论支撑剂前缘。注入 12 s 后，支撑剂前缘大致位于理论线附近；其后支撑剂前缘逐渐减速并落后于理论线。这是因为注入支撑剂后流体黏度增大、流动减慢。注入 60 s 后的流体黏度与流速见<a href="#prp-fld3-mfmf">图 8（Figure  8）</a>。可以看到，在支撑剂浓度最高处黏度增大了一倍以上，而最大流速下降了约 30%。</p>
+<div class="figure" id="prp-fld3-uvxc">
+<a class="reference internal image-reference" href="../../../../../_images/planarflow-pressure.png"><img alt="../../../../../_images/planarflow-pressure.png" src="../../../../../_images/planarflow-pressure.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 5：稳态孔隙压力和流体速度。</span></p>
+</div>
+<div class="figure" id="prp-fld3-mcye">
+<a class="reference internal image-reference" href="../../../../../_images/planarflow-proppant.png"><img alt="../../../../../_images/planarflow-proppant.png" src="../../../../../_images/planarflow-proppant.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 6：60 s 后的支撑剂浓度。</span></p>
+</div>
+<div class="figure" id="prp-fld3-pnlr">
+<a class="reference internal image-reference" href="../../../../../_images/planarflow-profiles.png"><img alt="../../../../../_images/planarflow-profiles.png" src="../../../../../_images/planarflow-profiles.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 7：三个不同时刻沿绘图平面中心的支撑剂浓度剖面；虚线表示恒定黏度下支撑剂的理论前缘。</span></p>
+</div>
+<div class="figure" id="prp-fld3-mfmf">
+<a class="reference internal image-reference" href="../../../../../_images/planarflow-viscosity.png"><img alt="../../../../../_images/planarflow-viscosity.png" src="../../../../../_images/planarflow-viscosity.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 8：60 s 后的黏度和流体速度。</span></p>
+</div>
+<p class="h2 rubric" id="fluidproppant1dadvection">数据文件</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10000</span>
+<span class="nb">model config</span><span class="n"> fluid</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">;</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.5</span><span class="n"> </span><span class="m m-Double">0.5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2.5</span><span class="n"> </span><span class="m m-Double">2.5</span>
+<span class="c">;</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">0</span>
+<span class="c">;</span>
+<span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="m m-Double">0.25</span>
+<span class="nb">block zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">block zone property</span><span class="n"> density </span><span class="m m-Double">2500</span><span class="n"> shear </span><span class="m m-Double">2e9</span><span class="n"> bulk </span><span class="m m-Double">5e9</span><span class="n"> </span>
+
+<span class="nb">block contact jmodel</span><span class="n"> assign mohr</span>
+<span class="nb">block contact property</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">5e10</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1e10</span><span class="n"> </span>
+
+<span class="nb">flowplane vertex property</span><span class="n"> aperture</span><span class="o">-</span><span class="n">initial </span><span class="m m-Double">1e-4</span><span class="n"> aperture</span><span class="o">-</span><span class="n">minimum </span><span class="m m-Double">1e-5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                                aperture</span><span class="o">-</span><span class="n">maximum </span><span class="m m-Double">2e-4</span><span class="n"> </span>
+
+<span class="nb">block fluid</span><span class="n"> property bulk </span><span class="m m-Double">0.05e9</span><span class="n"> density </span><span class="m m-Double">1000</span><span class="n"> viscosity </span><span class="m m-Double">1e-3</span>
+<span class="c">;</span>
+<span class="nb">history interval</span><span class="n"> </span><span class="m m-Double">1000</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="m m-Double">7</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="c">;</span>
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">on</span>
+<span class="nb">model mechanical</span><span class="n"> active </span><span class="sx">off</span>
+<span class="c">;</span>
+<span class="nb">flowknot apply pore-pressure</span><span class="n"> </span><span class="m m-Double">2e6</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">0.1</span><span class="n"> </span><span class="m m-Double">0.1</span>
+<span class="nb">flowknot apply pore-pressure</span><span class="n"> </span><span class="m m-Double">1e6</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">10</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">0.1</span><span class="n"> </span><span class="m m-Double">0.1</span>
+<span class="c">;</span>
+<span class="c">; --- 运行至稳态流动 ---</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">20000</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'advec-ss'</span>
+<span class="c">;</span>
+<span class="c">; --- 现在注入支撑剂 </span>
+<span class="nb">flowknot apply proppant-volume</span><span class="n"> </span><span class="m m-Double">0.3</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">0.1</span><span class="n"> </span><span class="m m-Double">0.1</span>
+<span class="c">;</span>
+<span class="nb">block fluid</span><span class="n"> proppant active </span><span class="sx">on</span>
+<span class="c">;</span>
+<span class="nb">model history</span><span class="n"> fluid time</span>
+<span class="nb">flowplane vertex history</span><span class="n"> proppant</span><span class="o">-</span><span class="n">vconcentration position </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowplane vertex history</span><span class="n"> proppant</span><span class="o">-</span><span class="n">vconcentration position </span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowplane vertex history</span><span class="n"> proppant</span><span class="o">-</span><span class="n">vconcentration position </span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="c">;</span>
+<span class="nb">model fluid</span><span class="n"> time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">0</span>
+<span class="c">;</span>
+<span class="nb">fish define</span><span class="ni"> profile</span><span class="p">(</span><span class="ni">itab</span><span class="p">)</span>
+<span class="c">;</span>
+<span class="c">; 建立沿 y=0 的支撑剂浓度分布</span>
+<span class="c">; 导出到输入数据表 itab（整数）</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> tabp </span><span class="p">=</span><span class="ni"> </span><span class="k">table.get</span><span class="p">(</span><span class="ni">itab</span><span class="p">)</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> fpx flowplane</span><span class="p">.</span><span class="ni">vertex</span><span class="p">.</span><span class="ni">list</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> pos </span><span class="p">=</span><span class="ni"> flowplane</span><span class="p">.</span><span class="ni">vertex</span><span class="p">.</span><span class="ni">pos</span><span class="p">(</span><span class="ni">fpx</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> </span><span class="k">math.abs</span><span class="p">(</span><span class="k">comp.y</span><span class="p">(</span><span class="ni">pos</span><span class="p">))</span><span class="ni"> </span><span class="o">&lt;</span><span class="ni"> </span><span class="m m-Double">0.1</span>
+<span class="ni">      </span><span class="k">table</span><span class="p">(</span><span class="ni">tabp</span><span class="p">,</span><span class="k">comp.x</span><span class="p">(</span><span class="ni">pos</span><span class="p">))</span><span class="ni"> </span><span class="p">=</span><span class="ni"> flowplane</span><span class="p">.</span><span class="ni">vertex</span><span class="p">.</span><span class="ni">proppan</span><span class="p">.</span><span class="ni">vconc</span><span class="p">(</span><span class="ni">fpx</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">end_if</span>
+<span class="ni">  </span><span class="k">end_loop</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="c">; 另建一个数据表，用于显示理论支撑剂前缘的位置</span>
+<span class="ni">  tabp </span><span class="p">=</span><span class="ni"> </span><span class="k">table.get</span><span class="p">(</span><span class="ni">itab</span><span class="o">+</span><span class="m m-Double">100</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> front </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="o">/</span><span class="m m-Double">12.0</span><span class="o">*</span><span class="ni">fluid</span><span class="p">.</span><span class="k">time.total</span>
+<span class="ni">  </span><span class="k">table</span><span class="p">(</span><span class="ni">tabp</span><span class="p">,</span><span class="ni">front</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">table</span><span class="p">(</span><span class="ni">tabp</span><span class="p">,</span><span class="ni">front</span><span class="o">+</span><span class="m m-Double">0.001</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.3</span>
+<span class="nb">end</span>
+<span class="c">;</span>
+<span class="c">;</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fluid time </span><span class="m m-Double">12</span>
+<span class="ni">[profile</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fluid time </span><span class="m m-Double">24</span>
+<span class="ni">[profile</span><span class="p">(</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fluid time </span><span class="m m-Double">24</span>
+<span class="ni">[profile</span><span class="p">(</span><span class="m m-Double">3</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;</span>
+<span class="nb">table</span><span class="n"> </span><span class="s">'1'</span><span class="n"> label </span><span class="s">'12 s'</span>
+<span class="nb">table</span><span class="n"> </span><span class="s">'2'</span><span class="n"> label </span><span class="s">'36 s'</span>
+<span class="nb">table</span><span class="n"> </span><span class="s">'3'</span><span class="n"> label </span><span class="s">'60 s'</span>
+
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'advec-60s'</span>
+<span class="c">;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="injection">
+<h3>注入</h3>
+<p>本例模拟向一个含有两个相互垂直裂隙面的 10 m x 10 m x 10 m 弹性材料块体内注入流体。块体的初始应力在 <span class="math">\(x\)</span> 和 <span class="math">\(z\)</span> 方向为 3 MPa，在 <span class="math">\(y\)</span> 方向为零。第一个裂隙面为水平面，穿过块体中心；第二个裂隙面为竖直面，位于 <span class="math">\(x\)</span> = 2.5 m 处。在水平裂隙面中心施加载有支撑剂的流体体积源（注意，所指定范围确保仅向一个渗流节点注入）。注入流体中的支撑剂体积浓度为 0.1。</p>
+<p><a href="#prp-fld3-ghys">图 9（Figure  9）</a> 显示了模拟至 2 s 时裂隙中的孔隙压力等值云图和比流量矢量。流体已在第一个裂隙中大范围迁移，也已进入第二个裂隙。<a href="#prp-fld3-xbfh">图 10（Figure  10）</a> 绘出了 2 s 时的裂隙开度。<a href="#prp-fld3-zoot">图 11（Figure  11）</a> 显示了模拟至 2 s 时的支撑剂浓度等值云图。模拟表明，支撑剂在第一个裂隙中呈径向迁移，也进入了第二个裂隙。比较源处注入的支撑剂体积与模型中分布的支撑剂体积（使用 <span class="codename">FISH</span> 函数计算），可知模拟结束时体积平衡的相对误差小于 0.2%。</p>
+<div class="figure" id="prp-fld3-ghys">
+<a class="reference internal image-reference" href="../../../../../_images/injection-pressure.png"><img alt="../../../../../_images/injection-pressure.png" src="../../../../../_images/injection-pressure.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 9：注入 2 s 后的孔隙压力与流速。</span></p>
+</div>
+<div class="figure" id="prp-fld3-xbfh">
+<a class="reference internal image-reference" href="../../../../../_images/injection-aperture.png"><img alt="../../../../../_images/injection-aperture.png" src="../../../../../_images/injection-aperture.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 10：注入 2 s 后的裂隙开度。</span></p>
+</div>
+<div class="figure" id="prp-fld3-zoot">
+<a class="reference internal image-reference" href="../../../../../_images/injection-proppant.png"><img alt="../../../../../_images/injection-proppant.png" src="../../../../../_images/injection-proppant.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 11：注入 2 s 后的支撑剂浓度。</span></p>
+</div>
+<p class="h2 rubric" id="fluidproppantinjection">数据文件</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10000</span>
+<span class="nb">model config</span><span class="n"> fluid</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+
+<span class="nb">block create</span><span class="n"> brick </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5.0</span><span class="n"> </span><span class="m m-Double">5.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">5</span>
+<span class="nb">block cut</span><span class="n"> j</span><span class="o">-</span><span class="n">set</span>
+<span class="nb">block cut</span><span class="n"> j</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">90</span><span class="n"> d</span><span class="o">-</span><span class="n">d </span><span class="m m-Double">90</span><span class="n"> or </span><span class="m m-Double">2.5</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+
+<span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="m m-Double">0.5</span>
+
+<span class="nb">block zone cmodel</span><span class="n"> assign el</span>
+<span class="nb">block zone prop</span><span class="n"> density </span><span class="m m-Double">2500</span><span class="n"> shear </span><span class="m m-Double">2e9</span><span class="n"> bulk </span><span class="m m-Double">5e9</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">"mesh"</span>
+
+<span class="nb">block contact jmodel</span><span class="n"> assign mohr</span>
+<span class="nb">block contact property</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">5e10</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1e10</span>
+
+<span class="nb">flowplane vertex prop</span><span class="n"> ap</span><span class="o">-</span><span class="n">ini </span><span class="m m-Double">1e-4</span><span class="n"> ap</span><span class="o">-</span><span class="n">min </span><span class="m m-Double">1e-5</span><span class="n"> ap</span><span class="o">-</span><span class="n">max </span><span class="m m-Double">2e-4</span>
+
+<span class="nb">block fluid</span><span class="n"> property bulk </span><span class="m m-Double">0.05e9</span><span class="n"> density </span><span class="m m-Double">1000</span><span class="n"> viscosity </span><span class="m m-Double">1e-3</span>
+
+<span class="nb">block insitu</span><span class="n"> stress </span><span class="o">-</span><span class="m m-Double">3e6</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">3e6</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block face apply</span><span class="n"> stress </span><span class="o">-</span><span class="m m-Double">3e6</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">3.0e6</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">5</span>
+<span class="nb">block face apply</span><span class="n"> stress </span><span class="o">-</span><span class="m m-Double">3e6</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">3.0e6</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">5</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">5</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> vel</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> vel</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">5</span>
+
+<span class="nb">block hist</span><span class="n"> dis</span><span class="o">-</span><span class="n">x pos </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block hist</span><span class="n"> dis</span><span class="o">-</span><span class="n">y pos </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block hist</span><span class="n"> dis</span><span class="o">-</span><span class="n">z pos </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowknot hist p-p</span><span class="n"> pos </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowknot hist p-p</span><span class="n"> pos </span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowknot hist p-p</span><span class="n"> pos  </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowknot hist p-p</span><span class="n"> pos  </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowplane vertex his</span><span class="n"> proppant</span><span class="o">-</span><span class="n">vconc pos </span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowplane vertex his</span><span class="n"> proppant</span><span class="o">-</span><span class="n">vconc pos </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowplane vertex his</span><span class="n"> proppant</span><span class="o">-</span><span class="n">vconc pos </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+
+<span class="nb">flowknot apply discharge</span><span class="n"> </span><span class="m m-Double">0.01</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">               range pos</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">0.3</span><span class="n"> </span><span class="m m-Double">0.2</span><span class="n"> pos</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">0.3</span><span class="n"> </span><span class="m m-Double">0.3</span><span class="n"> pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">0.1</span><span class="n"> </span><span class="m m-Double">0.1</span>
+<span class="nb">flowknot apply proppant-volume</span><span class="n"> </span><span class="m m-Double">0.1</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">               range pos</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">0.3</span><span class="n"> </span><span class="m m-Double">0.2</span><span class="n"> pos</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">0.3</span><span class="n"> </span><span class="m m-Double">0.3</span><span class="n"> pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">0.1</span><span class="n"> </span><span class="m m-Double">0.1</span>
+
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">on</span>
+<span class="n">model mech active </span><span class="sx">on</span>
+<span class="nb">block fluid</span><span class="n"> proppant active </span><span class="sx">on</span>
+
+<span class="c">;------------------------</span>
+<span class="nb">fish def</span><span class="ni"> check_volume</span>
+
+<span class="ni">  </span><span class="k">global</span><span class="ni"> propp_vol </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni"> </span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> fpx flowplane</span><span class="p">.</span><span class="ni">vertex</span><span class="p">.</span><span class="ni">list </span>
+<span class="ni">    propp_vol </span><span class="p">=</span><span class="ni"> propp_vol </span><span class="o">+</span><span class="ni"> flowplane</span><span class="p">.</span><span class="ni">vertex</span><span class="p">.</span><span class="ni">area</span><span class="p">(</span><span class="ni">fpx</span><span class="p">)</span><span class="ni"> </span><span class="o">*</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">                            flowplane</span><span class="p">.</span><span class="ni">vertex</span><span class="p">.</span><span class="ni">proppant</span><span class="p">.</span><span class="ni">thick</span><span class="p">(</span><span class="ni">fpx</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">end_loop</span>
+
+<span class="ni">  </span><span class="c">; 体积等于流体注入速率乘支撑剂浓度再乘时间</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> volume_inject </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.01</span><span class="o">*</span><span class="m m-Double">0.1</span><span class="o">*</span><span class="ni">fluid</span><span class="p">.</span><span class="k">time.total</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> status </span><span class="p">=</span><span class="ni"> </span><span class="k">io.out</span><span class="p">(</span><span class="s">'current stayed proppant vol: '</span><span class="ni"> </span><span class="o">+</span><span class="ni"> string</span><span class="p">(</span><span class="ni">propp_vol</span><span class="p">))</span>
+<span class="ni">  status </span><span class="p">=</span><span class="ni"> </span><span class="k">io.out</span><span class="p">(</span><span class="s">'actual injected proppant vol: '</span><span class="ni"> </span><span class="o">+</span><span class="ni"> string</span><span class="p">(</span><span class="ni">volume_inject</span><span class="p">))</span>
+<span class="nb">end</span>
+
+<span class="nb">model mechanical</span><span class="n"> substep </span><span class="m m-Double">1</span><span class="n"> </span>
+<span class="nb">model mechanical</span><span class="n"> slave </span><span class="sx">on</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">2.0</span>
+<span class="ni">[check_volume]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">"injection"</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="id2">
+<h3>桥堵</h3>
+<p>若裂缝宽度小于若干个颗粒直径，则很可能形成桥堵，从而阻止（或减少）流体和支撑剂的进一步流动。以下算例演示了这一效应。</p>
+<p>创建一个具有两种不同属性的渗流平面。平面的一部分赋予 100 <span class="math">\(\mu\)</span>m 的开度，其余部分的开度为 80 <span class="math">\(\mu\)</span>m。施加初始应力后，开度分别减小至 40 <span class="math">\(\mu\)</span>m 和 20 <span class="math">\(\mu\)</span>m（<a href="#prp-fld3-ihuw">图 12（Figure  12）</a>）。向平面开度较大的部分注入流体和支撑剂。模型以非耦合方式运行（仅流体渗流）。</p>
+<p>预计流体前缘到达较窄开口时流动将受到限制。支撑剂颗粒尺寸设为 10 <span class="math">\(\mu\)</span>m。默认的桥堵颗粒尺寸系数为 1（即若流动平面张开度小于 1 × 10 <span class="math">\(\mu\)</span>m，就会发生桥堵）。由于流动平面狭窄段的张开度为 20 <span class="math">\(\mu\)</span>m，预计不会发生桥堵。<a href="#prp-fld3-punb">图 13（Figure  13）</a>和<a href="#prp-fld3-ntid">图 14（Figure  14）</a>给出注入 10 s 后的孔隙压力与支撑剂浓度。在流动平面各段的交界处流动明显受到限制，但流体和支撑剂都能通过。</p>
+<p>将粒径系数设为 3 后重新运行模型，这意味着渗流平面开度小于 30 <span class="math">\(\mu\)</span>m 时会发生桥堵。堵塞处的渗透率系数设为 0.1，即穿过堵塞处的流量为无堵塞时的十分之一。</p>
+<p><a href="#prp-fld3-notk">图 15（Figure  15）</a>给出注入 10 s 后的孔隙压力。与<a href="#prp-fld3-punb">图 13（Figure  13）</a>相比，节理狭窄段的压力降低。<a href="#prp-fld3-anyr">图 16（Figure  16）</a>给出支撑剂浓度。可见在张开度由宽变窄的过渡处，没有支撑剂通过桥堵。</p>
+<div class="figure" id="prp-fld3-ihuw">
+<a class="reference internal image-reference" href="../../../../../_images/bridging-aperture.png"><img alt="../../../../../_images/bridging-aperture.png" src="../../../../../_images/bridging-aperture.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 12：渗流平面上的开度分布。</span></p>
+</div>
+<div class="figure" id="prp-fld3-punb">
+<a class="reference internal image-reference" href="../../../../../_images/bridging-pressure-factor1.png"><img alt="../../../../../_images/bridging-pressure-factor1.png" src="../../../../../_images/bridging-pressure-factor1.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 13：无支撑剂桥堵（颗粒尺寸系数 = 1）情况下注入 10 s 后的孔隙压力。</span></p>
+</div>
+<div class="figure" id="prp-fld3-ntid">
+<a class="reference internal image-reference" href="../../../../../_images/bridging-proppant-factor1.png"><img alt="../../../../../_images/bridging-proppant-factor1.png" src="../../../../../_images/bridging-proppant-factor1.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 14：无支撑剂桥堵时（粒径系数 = 1），注入 10 s 后的支撑剂浓度。</span></p>
+</div>
+<div class="figure" id="prp-fld3-notk">
+<a class="reference internal image-reference" href="../../../../../_images/bridging-pressure-factor3.png"><img alt="../../../../../_images/bridging-pressure-factor3.png" src="../../../../../_images/bridging-pressure-factor3.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 15：支撑剂桥堵（颗粒尺寸系数 = 3）情况下注入 10 s 后的孔隙压力。</span></p>
+</div>
+<div class="figure" id="prp-fld3-anyr">
+<a class="reference internal image-reference" href="../../../../../_images/bridging-proppant-factor3.png"><img alt="../../../../../_images/bridging-proppant-factor3.png" src="../../../../../_images/bridging-proppant-factor3.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 16：有支撑剂桥堵时（粒径系数 = 3），注入 10 s 后的支撑剂浓度。</span></p>
+</div>
+<p class="h2 rubric" id="fluidproppantflowsimulation">数据文件</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10000</span>
+<span class="nb">model config</span><span class="n"> fluid</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+
+<span class="c">;</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5.0</span><span class="n"> </span><span class="m m-Double">5.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">5</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">90</span><span class="n"> origin </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">1.5</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block join</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set</span>
+<span class="c">;</span>
+<span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="m m-Double">0.5</span>
+<span class="nb">block zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">block zone property</span><span class="n"> density </span><span class="m m-Double">2500</span><span class="n"> shear </span><span class="m m-Double">2e9</span><span class="n"> bulk </span><span class="m m-Double">5e9</span><span class="n"> </span>
+<span class="c">;</span>
+<span class="nb">block contact jmodel</span><span class="n"> assign mohr</span>
+<span class="nb">block contact property</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">5e10</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1e10</span><span class="n"> </span>
+
+<span class="c">; 使顶部缝宽小于底部</span>
+<span class="nb">flowplane vertex property</span><span class="n"> aperture</span><span class="o">-</span><span class="n">initial </span><span class="m m-Double">1e-4</span><span class="n"> aperture</span><span class="o">-</span><span class="n">minimum </span><span class="m m-Double">1e-5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                                aperture</span><span class="o">-</span><span class="n">maximum </span><span class="m m-Double">2e-4</span><span class="n"> </span>
+<span class="nb">flowplane hide range</span><span class="n"> pos</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">1.5</span>
+<span class="nb">flowplane vertex property</span><span class="n"> aperture</span><span class="o">-</span><span class="n">initial </span><span class="m m-Double">0.8e-4</span><span class="n"> aperture</span><span class="o">-</span><span class="n">minimum </span><span class="m m-Double">0.8e-5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                                  aperture</span><span class="o">-</span><span class="n">maximum </span><span class="m m-Double">1.6e-4</span><span class="n"> </span>
+<span class="nb">flowplane hide off</span>
+
+<span class="nb">block fluid</span><span class="n"> property bulk </span><span class="m m-Double">0.05e9</span><span class="n"> density </span><span class="m m-Double">1000</span><span class="n"> viscosity </span><span class="m m-Double">1e-3</span>
+<span class="c">;</span>
+<span class="nb">block insitu</span><span class="n"> stress </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">3e6</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="c">;</span>
+<span class="nb">block face apply</span><span class="n"> stress </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">3.0e6</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">5</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                range position</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">5</span>
+<span class="c">;</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowplane vertex history</span><span class="n"> proppant</span><span class="o">-</span><span class="n">vconcentration position </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowplane vertex history</span><span class="n"> proppant</span><span class="o">-</span><span class="n">vconcentration position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowplane vertex history</span><span class="n"> proppant</span><span class="o">-</span><span class="n">vconcentration position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="c">;</span>
+<span class="nb">flowknot apply discharge</span><span class="n"> </span><span class="m m-Double">0.0001</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">         range position</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">0.3</span><span class="n"> </span><span class="m m-Double">0.2</span><span class="n"> position</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">0.3</span><span class="n"> </span><span class="m m-Double">0.3</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">0.1</span><span class="n"> </span><span class="m m-Double">0.1</span>
+<span class="nb">flowknot apply proppant-volume</span><span class="n"> </span><span class="m m-Double">0.1</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">         range position</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">0.3</span><span class="n"> </span><span class="m m-Double">0.2</span><span class="n"> position</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">0.3</span><span class="n"> </span><span class="m m-Double">0.3</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">0.1</span><span class="n"> </span><span class="m m-Double">0.1</span>
+<span class="c">;</span>
+<span class="nb">block fluid</span><span class="n"> proppant grain</span><span class="o">-</span><span class="n">size </span><span class="m m-Double">1e-5</span>
+<span class="nb">block fluid</span><span class="n"> proppant permeability</span><span class="o">-</span><span class="n">factor </span><span class="m m-Double">0.1</span>
+<span class="c">;</span>
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">on</span>
+<span class="nb">model mechanical</span><span class="n"> active </span><span class="sx">off</span>
+<span class="nb">block fluid</span><span class="n"> proppant active </span><span class="sx">on</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'bridging-ini'</span>
+<span class="c">;</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fluid time </span><span class="m m-Double">10.0</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'bridging-factor1'</span>
+<span class="c">;</span>
+<span class="p">======================================================</span>
+<span class="c">;</span>
+<span class="c">; 现在通过增大粒径系数来测试桥接</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'bridging-ini'</span>
+<span class="c">;</span>
+<span class="nb">block fluid</span><span class="n"> proppant grain</span><span class="o">-</span><span class="n">size</span><span class="o">-</span><span class="n">factor </span><span class="m m-Double">3.0</span>
+<span class="c">;</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fluid time </span><span class="m m-Double">10.0</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'bridging-factor3'</span>
+<span class="c">;</span>
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">;</span>
+<span class="c">;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="proppant-settlement">
+<h3>支撑剂沉降</h3>
+<p>为说明支撑剂在重力下的沉降，给出一个含单条垂直裂缝的简单模型。初始孔隙压力设为 5 MPa，并沿一条边以 0.0007 m<sup>2</sup>/s 的速率注入流体（不含支撑剂）。2 s 后的压力见<a href="#prp-fld3-lchh">图 17（Figure  17）</a>。该算例中把流体体积模量设为一个不切实际的小值（0.01 MPa）以加快求解，因此该时间并不代表实际时间。</p>
+<p>随后以浓度 0.1 向注入流体中加入支撑剂。为支撑剂指定实际的密度（2650 kg/m<sup>2</sup>）和颗粒尺寸（0.425 mm），并开启支撑剂沉降。最大浓度指定为 0.7，这意味着浓度达到该值时支撑剂已紧密堆积、浓度无法继续增大。此外，渗透率将会下降，反映这些区域中流动因收缩而受限。支撑剂充填层的固有渗透率设为一个低值（5.33 × 10<sup>−13</sup> m<sup>2</sup>）。</p>
+<p>注入支撑剂 20 s 和 40 s 后的支撑剂浓度与流动矢量分别见<a href="#prp-fld3-rtel">图 18（Figure  18）</a>和<a href="#prp-fld3-cbix">图 19（Figure  19）</a>。这些图显示支撑剂如何沉降到裂缝底部并形成一个“沉积堤”，由于该区域渗透率降低、支撑剂流动受限，流体和支撑剂必须从沉积堤上方流过。</p>
+<div class="figure" id="prp-fld3-lchh">
+<a class="reference internal image-reference" href="../../../../../_images/settlement-pressure-ini.png"><img alt="../../../../../_images/settlement-pressure-ini.png" src="../../../../../_images/settlement-pressure-ini.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 17：注入支撑剂之前的孔隙压力。</span></p>
+</div>
+<div class="figure" id="prp-fld3-rtel">
+<a class="reference internal image-reference" href="../../../../../_images/settlement-proppant-20s.png"><img alt="../../../../../_images/settlement-proppant-20s.png" src="../../../../../_images/settlement-proppant-20s.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 18：注入支撑剂 20 s 后的支撑剂浓度与流速。</span></p>
+</div>
+<div class="figure" id="prp-fld3-cbix">
+<a class="reference internal image-reference" href="../../../../../_images/settlement-proppant-20s.png"><img alt="../../../../../_images/settlement-proppant-20s.png" src="../../../../../_images/settlement-proppant-20s.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 19：注入支撑剂 40 s 后的支撑剂浓度与流速。</span></p>
+</div>
+<p class="h2 rubric" id="fluidproppantsettlement">数据文件</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10000</span>
+<span class="nb">model config</span><span class="n"> fluid</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">;</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="o">-</span><span class="m m-Double">4.0</span><span class="n"> </span><span class="m m-Double">4.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.25</span><span class="n"> </span><span class="m m-Double">0.25</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.5</span><span class="n"> </span><span class="m m-Double">0.5</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">90</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">0</span>
+<span class="c">;</span>
+<span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="m m-Double">0.075</span>
+<span class="nb">block zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">block zone property</span><span class="n"> density </span><span class="m m-Double">2500</span><span class="n"> shear </span><span class="m m-Double">2e9</span><span class="n"> bulk </span><span class="m m-Double">5e9</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">"mesh"</span>
+
+<span class="nb">block contact jmodel</span><span class="n"> assign mohr</span>
+<span class="nb">block contact property</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">5e10</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1e10</span><span class="n"> </span>
+<span class="nb">block contact property</span><span class="n"> friction </span><span class="m m-Double">40</span><span class="n"> cohesion </span><span class="m m-Double">0.0</span><span class="n"> tension </span><span class="m m-Double">0.0</span>
+
+<span class="nb">flowplane vertex property</span><span class="n"> aperture</span><span class="o">-</span><span class="n">initial </span><span class="m m-Double">2e-3</span><span class="n"> aperture</span><span class="o">-</span><span class="n">minimum </span><span class="m m-Double">2e-3</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                                aperture</span><span class="o">-</span><span class="n">maximum </span><span class="m m-Double">1e-2</span><span class="n"> </span>
+<span class="n"> </span>
+<span class="c">; 注意，为加快求解采用了较低的流体模量</span>
+<span class="nb">block fluid</span><span class="n"> property bulk </span><span class="m m-Double">1e4</span><span class="n"> density </span><span class="m m-Double">1300</span><span class="n"> viscosity </span><span class="m m-Double">1e-3</span>
+<span class="c">;</span>
+<span class="nb">block insitu</span><span class="n"> stress </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">10.0e6</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> gradient</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="m m-Double">1.6e4</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="m m-Double">0.0</span>
+<span class="nb">block insitu</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure </span><span class="m m-Double">5.0e6</span><span class="n"> gradient </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="m m-Double">0.0</span>
+<span class="c">;</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">10.0</span>
+<span class="c">;</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">0.25</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0.25</span>
+<span class="c">;</span>
+<span class="nb">history interval</span><span class="n"> </span><span class="m m-Double">1000</span>
+<span class="nb">model history</span><span class="n"> fluid time</span>
+<span class="nb">block history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">z position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowknot history pore-pressure</span><span class="n"> position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="c">;</span>
+<span class="nb">flowplane edge apply</span><span class="n"> discharge </span><span class="m m-Double">0.0007</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">4</span>
+<span class="c">;</span>
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">on</span>
+<span class="nb">model mechanical</span><span class="n"> active </span><span class="sx">off</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fluid time </span><span class="m m-Double">2.0</span><span class="n"> </span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'settlement_ini'</span>
+<span class="c">;</span>
+<span class="c">;</span>
+<span class="nb">flowplane vertex history</span><span class="n"> proppant</span><span class="o">-</span><span class="n">vconcentration position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0.5</span>
+<span class="nb">flowplane vertex history</span><span class="n"> proppant</span><span class="o">-</span><span class="n">vconcentration position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowplane vertex history</span><span class="n"> proppant</span><span class="o">-</span><span class="n">vconcentration position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.5</span>
+<span class="nb">flowplane vertex history</span><span class="n"> proppant</span><span class="o">-</span><span class="n">thickness position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0.5</span>
+<span class="nb">flowplane vertex history</span><span class="n"> proppant</span><span class="o">-</span><span class="n">thickness position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">flowplane vertex history</span><span class="n"> proppant</span><span class="o">-</span><span class="n">thickness position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.5</span>
+<span class="c">;</span>
+<span class="nb">block fluid</span><span class="n"> proppant concentration</span><span class="o">-</span><span class="n">limit</span><span class="o">-</span><span class="n">volume </span><span class="m m-Double">0.7</span>
+<span class="nb">block fluid</span><span class="n"> proppant permeability </span><span class="m m-Double">5.33e-13</span>
+<span class="nb">block fluid</span><span class="n"> proppant grain</span><span class="o">-</span><span class="n">size </span><span class="m m-Double">0.425e-3</span>
+<span class="c">;</span>
+<span class="nb">block fluid</span><span class="n"> proppant density </span><span class="m m-Double">2.65e3</span>
+<span class="nb">block fluid</span><span class="n"> proppant settling </span><span class="sx">on</span>
+<span class="nb">block fluid</span><span class="n"> proppant active </span><span class="sx">on</span>
+<span class="c">;</span>
+<span class="nb">flowknot apply proppant-volume</span><span class="n"> </span><span class="m m-Double">0.1</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">4</span>
+<span class="c">;</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fluid time </span><span class="m m-Double">10.0</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'settlement_10s'</span>
+<span class="c">;</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fluid time </span><span class="m m-Double">10.0</span><span class="n"> </span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'settlement_20s'</span>
+<span class="c">;</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fluid time </span><span class="m m-Double">10.0</span><span class="n"> </span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'settlement_30s'</span>
+<span class="c">;</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fluid time </span><span class="m m-Double">10.0</span><span class="n"> </span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'settlement_40s'</span>
+<span class="c">;</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../3dechome.html"><span class="codename">3DEC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../theory.html"><span class="codename">3DEC</span> Theory and Background</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="fluid.html">Fluid-Mechanical Interaction</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="fluid_joint.html" title="previous chapter"> Joint Fluid Flow</a> |    
+       <a href="fluid_properties.html" title="next chapter">Fluid Flow Properties and Units</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Proppant" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

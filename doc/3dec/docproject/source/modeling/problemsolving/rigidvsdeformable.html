@@ -1,0 +1,158 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>刚性与可变形块体的比较 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="zonetypes.html" rel="next" title="Zone Types"/>
+<link href="zoning.html" rel="prev" title="Zoning 3DEC Blocks"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="rigid-vs-deformable">
+<span id="rigidvsdeformable"></span><h1>刚性与可变形块体的比较</h1>
+<p>进行非连续介质分析时，一项重要考虑是采用刚性还是可变形块体表示完整材料的行为。本节讨论二者的选择。如果需要可变形块体分析，可以选用多种模型模拟块体变形性，详见<a class="reference internal" href="choiceofconstitutivemodel.html#choiceofconstitutivemodel"><span class="std std-ref">本构模型的选择</span>（Choice of Constitutive Model）</a>。</p>
+<p>如<a class="reference internal" href="../../theory/3dectheory/theory_background.html#theory-background-3dec-dem"><span class="std std-ref">理论与背景</span>（Theory and Background）</a>所述，早期离散元程序假设块体为刚性。然而，计入块体可变形性的重要性已逐渐得到认识，特别是在地下洞室稳定性分析和埋地结构地震响应研究中。离散元分析中考虑块体可变形性最明显的原因之一，是需要表示受约束岩体的“泊松比效应”。</p>
+<p class="h2 rubric">泊松效应</p>
+<p>岩石力学问题通常对所选岩体泊松比非常敏感。这是因为节理和完整岩石均对应力压力敏感，其破坏准则是围压的函数，例如莫尔—库仑准则。捕捉节理岩体真实的泊松行为，对于有意义的数值模拟至关重要。</p>
+<p>岩体的有效泊松比包含两部分：节理引起的分量，以及完整岩石弹性属性引起的分量。除浅部或低围压情况外，完整岩石的可压缩性对岩体整体可压缩性贡献很大。因此，完整岩石的泊松比对节理岩体泊松比有显著影响。</p>
+<p>严格而言，单一泊松比 <span class="math">\(\nu\)</span> 仅适用于各向同性弹性材料。然而，只有少数节理分布型式会使岩体具有各向同性弹性属性。因此，定义一种可用于讨论各向异性材料的“泊松效应”会比较方便。</p>
+<div class="aside admonition">
+<p class="first admonition-title">注意</p>
+<p class="last">以下讨论假定二维平面应变条件，<span class="math">\(y\)</span> 为竖直方向。</p>
+</div>
+<p>将泊松效应定义为：在竖直方向施加载荷、同时水平方向不允许产生应变时，水平应力与竖直应力的比值；假定平面应变条件。例如，各向同性弹性材料的泊松效应为</p>
+<div class="math" id="equation-rigvsdef-eq-ohAy">
+<span class="eqno">(1)</span>\[\frac{\sigma_{xx}}{\sigma_{yy}} = \frac{\nu}{1-\nu}\]</div>
+<p>考虑下图竖直节理分布所产生的泊松效应。如果采用刚性块体模拟这些节理，施加竖直应力后将完全不产生水平应力。这显然不现实，因为忽略了完整岩石泊松比所产生的水平应力。</p>
+<div class="figure" id="rigvsdef-fig-bhqm">
+<img alt="../../../../../_images/poissoninrock.svg" src="../../../../../_images/poissoninrock.svg"/><p class="caption"><span class="caption-text">图 1：具有竖直和水平节理的岩石泊松效应模型</span></p>
+</div>
+<p>节理与完整岩石以串联方式共同作用。换言之，作用于节理和岩石的应力相同。节理岩体总应变，是节理产生的应变与岩石可压缩性产生的应变之和。将节理和完整岩石的柔度相加，可推导岩体整体弹性属性：</p>
+<div class="math" id="equation-rigvsdef-eq-pjTF">
+<span class="eqno">(2)</span>\[\begin{split}\begin{bmatrix}\epsilon_{xx}\\\epsilon_{yy}\end{bmatrix} = \biggl(C^{\mathrm{rock}}+ C^{\mathrm{jointing}}\biggr)\begin{bmatrix}\sigma_{xx}\\\sigma_{yy}\end{bmatrix}\end{split}\]</div>
+<p>如果将完整岩石模拟为各向同性弹性材料，其柔度矩阵为</p>
+<div class="math" id="equation-rigvsdef-eq-oJbF">
+<span class="eqno">(3)</span>\[\begin{split}C^{\mathrm{rock}} = \frac{1+\nu}{E}\begin{bmatrix}1-\nu &amp; -\nu\\-\nu &amp; 1-\nu\end{bmatrix}\end{split}\]</div>
+<p>节理引起的柔度矩阵为</p>
+<div class="math" id="equation-rigvsdef-eq-JbCY">
+<span class="eqno">(4)</span>\[\begin{split}C^{\mathrm{jointing}} = \begin{bmatrix}\frac{1}{Sk_n}&amp;0\\0&amp;\frac{1}{Sk_n}\end{bmatrix}\end{split}\]</div>
+<p>其中，<span class="math">\(S\)</span> 为节理间距，<span class="math">\(k_n\)</span> 为节理法向刚度。</p>
+<p>若式 <a class="reference internal" href="#equation-rigvsdef-eq-pjTF">(2)</a> 中 <span class="math">\(\epsilon_{xx}\)</span> = 0，则</p>
+<div class="math" id="equation-rigvsdef-eq-aVcK">
+<span class="eqno">(5)</span>\[\frac{\sigma_{xx}}{\sigma_{yy}}=-\frac{C^{(total)}_{12}}{C^{(total)}_{11}}\]</div>
+<p>其中，<span class="math">\(C^{(total)} = C^{(rock)} + C^{(jointing)}\)</span>。</p>
+<p>因此，岩体整体的泊松效应为</p>
+<div class="math" id="equation-rigvsdef-eq-tssd">
+<span class="eqno">(6)</span>\[\frac{\sigma_{xx}}{\sigma_{yy}}=\frac{\nu(1+\nu)}{E/(Sk_n)+(1+\nu)(1-\nu)}\]</div>
+<p>下图将式 <a class="reference internal" href="#equation-rigvsdef-eq-tssd">(6)</a> 绘制为比值 <span class="math">\(E/(Sk_n)\)</span> 的函数，同时绘出为验证公式而运行的若干二维 <span class="codename">UDEC</span> 模拟结果。比值 <span class="math">\(E/(Sk_n)\)</span> 用于衡量完整岩石相对于节理的刚度。当 <span class="math">\(E/(Sk_n)\)</span> 较低时，岩体泊松效应由完整岩石的弹性属性主导；当 <span class="math">\(E/(Sk_n)\)</span> 较高时，泊松效应由节理主导。</p>
+<p>现在考虑不同倾角节理产生的泊松效应。泊松效应是节理方位和弹性属性的函数。考虑<a href="#rigvsdef-fig-prxi">图 3（Figure  3）</a> 所示特殊情况：岩体包含两组等间距节理，与水平面成 <span class="math">\(θ\)</span> 倾角。节理弹性属性包括法向刚度 <span class="math">\(k_n\)</span> 和剪切刚度 <span class="math">\(k_s\)</span>。假定完整岩石块体完全刚性。</p>
+<div class="figure" id="rigvsdef-fig-notv">
+<img alt="../../../../../_images/verticallyjointed.svg" src="../../../../../_images/verticallyjointed.svg"/><p class="caption"><span class="caption-text">图 2：竖直节理岩体的泊松效应（完整岩石 <span class="math">\(ν\)</span> = 0.3）</span></p>
+</div>
+<p>其中，<span class="math">\(S\)</span> 为节理间距，<span class="math">\(k_n\)</span> 为节理法向刚度。</p>
+<div class="figure" id="rigvsdef-fig-prxi">
+<img alt="../../../../../_images/poissondipping.svg" src="../../../../../_images/poissondipping.svg"/><p class="caption"><span class="caption-text">图 3：节理相对水平面倾角为 <span class="math">\(θ\)</span>、间距为 <span class="math">\(S\)</span> 的岩石泊松效应模型</span></p>
+</div>
+<p>这种节理分布的泊松效应为</p>
+<div class="math" id="equation-rigvsdef-eq-eQcZ">
+<span class="eqno">(7)</span>\[\frac{\sigma_{xx}}{\sigma_{yy}}=\frac{\cos^2\theta[(k_n\, / \,k_s)-1]}{\sin^2\theta+cos^2\theta(k_n\, / \,k_s)}\]</div>
+<p>下图以若干 <span class="math">\(θ\)</span> 值图示该公式，同时给出采用 <span class="codename">UDEC</span> 进行数值模拟的结果。<span class="codename">UDEC</span> 模拟结果与式 <a class="reference internal" href="#equation-rigvsdef-eq-eQcZ">(7)</a> 高度一致。</p>
+<div class="figure" id="rigvsdef-fig-npdx">
+<img alt="../../../../../_images/poisson4.svg" src="../../../../../_images/poisson4.svg"/><p class="caption"><span class="caption-text">图 4：不同节理倾角下节理岩体的泊松效应（块体为刚性）</span></p>
+</div>
+<p>式 <a class="reference internal" href="#equation-rigvsdef-eq-eQcZ">(7)</a> 说明，数值模型必须采用合理的节理剪切刚度。剪切刚度与法向刚度之比，会显著影响岩体的泊松响应。如果剪切刚度等于法向刚度，泊松效应为零。对于较合理的 <span class="math">\(k_n/k_s\)</span> 值 2.0 至 10.0，泊松效应相当高，最高可达 0.9。</p>
+<p>接下来，针对 θ = 45º 的情况，研究完整岩石弹性属性的贡献。沿用竖直节理情况的分析，将完整岩石视为各向同性弹性材料。通过叠加节理与完整岩石的柔度，推导岩体整体弹性属性。</p>
+<p>两组等间距、倾角为 45º 的节理产生的柔度矩阵为</p>
+<div class="math" id="equation-rigvsdef-eq-Sern">
+<span class="eqno">(8)</span>\[\begin{split}C^{(jointing)}=\frac{1}{2S\:k_nk_s}\begin{bmatrix}k_s+k_n&amp;k_s-k_n\\k_s-k_n&amp;k_s+k_n\end{bmatrix}\end{split}\]</div>
+<p>因此，岩体整体的泊松效应为</p>
+<div class="math" id="equation-rigvsdef-eq-LZYR">
+<span class="eqno">(9)</span>\[\frac{\sigma_{xx}}{\sigma_{yy}}=\frac{\nu(1+\nu)\,/E+(k_n-k_s)\,/\,(2S\,k_nk_s)}{[(1+\nu)(1_-\nu)]\,/E+\,(k_n+k_s)\,/\,(2S\,k_nk_s)}\]</div>
+<p>对于 <span class="math">\(ν\)</span> = 0.2 的情况，按若干比值 <span class="math">\(E/(Sk_n)\)</span> 绘制式 <a class="reference internal" href="#equation-rigvsdef-eq-LZYR">(9)</a>（见下图），同时绘出 <span class="codename">UDEC</span> 模拟结果。当 <span class="math">\(E/(Sk_n)\)</span> 较低时，岩体泊松效应由完整岩石的弹性属性主导；当 <span class="math">\(E/(Sk_n)\)</span> 较高时，泊松效应由节理主导。</p>
+<div class="figure" id="rigvsdef-fig-swoz">
+<img alt="../../../../../_images/poisson5.svg" src="../../../../../_images/poisson5.svg"/><p class="caption"><span class="caption-text">图 5：含两组等间距、θ = 45◦ 节理的岩石泊松效应（块体可变形，ν = 0.2）</span></p>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../3dechome.html"><span class="codename">3DEC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../modeling3dec.html"><span class="codename">3DEC</span> Modeling</a> »</li>
+<li class="nav-item nav-item-3"><a href="problemsolving.html">Problem Solving with <span class="codename">3DEC</span></a> »</li>
+<li class="nav-item nav-item-4"><a accesskey="U" href="zoning.html">Zoning <span class="codename">3DEC</span> Blocks</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="zoning.html" title="previous chapter"> Zoning <span class="codename">3DEC</span> Blocks</a> |    
+       <a href="zonetypes.html" title="next chapter">Zone Types</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Rigid vs. Deformable" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

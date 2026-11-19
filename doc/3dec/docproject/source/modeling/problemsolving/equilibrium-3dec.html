@@ -1,0 +1,292 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>达到平衡 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="loading3dec.html" rel="next" title="Loading and Sequential Modeling"/>
+<link href="transferring_fieldstress.html" rel="prev" title="Transferring Field Stresses to Model Stresses"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="hide sectionname docutils container">
+<span class="codename">3DEC</span> Modeling • Problem Solving with <span class="codename">3DEC</span></div>
+<div class="section" id="reaching-equilibrium">
+<span id="equilibrium-3dec"></span><h1>达到平衡</h1>
+<p>设置完初始条件时、模型计算结束时，以及可能存在的多个中间阶段，模型都需要达到“平衡”。到目前为止的示例中，通过简单的 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令实现这一点。但如何知道已经达到平衡？如何判断计算循环数是否超过需要，或模型的某个局部是否仍需继续计算？</p>
+<p>可以使用 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.step.html#command:model.step" title="Execute timesteps. The synonym  model.cycle  may also be used.  This is
+the equivalent of calling  model.solve  with the  cycles  keyword
+set to  i ...">执行计算时步命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">step</span></code>）</a> 或 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.cycle.html#command:model.cycle" title="Execute timesteps. The synonym  model.step  may also be used.  This is
+the equivalent of calling  model.solve  with the  cycles  keyword
+set to  i ...">执行计算时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">cycle</span></code>）</a> 命令，手动执行 <span class="codename">3DEC</span> 计算循环。在某些情况下这很有用，最常见的是边界已规定速度，需要步进直到达到特定总位移。不过，一般情况下，希望循环计算持续到满足某个条件，例如动力模拟可计算到经过一定时长。<a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令允许循环持续到满足一个或多个限制条件（通过后续关键字指定）。静力模型中，最常关注的限制条件是“直到模型达到平衡”。</p>
+<p>由于 <span class="codename">3DEC</span> 使用遵循物理规律的迭代过程达到静力平衡，因此这里所说的“处于平衡”，与完全收敛至静力解含义相同。<span class="codename">3DEC</span> 提供多种方式，量化和直观显示模型距收敛或平衡状态还有多远。不过，一如既往，越了解其中涉及的问题，模型就越可能高效且准确。</p>
+<div class="section" id="convergence-criteria">
+<h2>收敛准则</h2>
+<p><span class="codename">3DEC</span> 提供四种不同准则，以确定何时达到平衡：局部力比、平均力比、最大力比和收敛度。下面分别介绍这些选项。</p>
+<div class="section" id="local-maximum-force-ratio">
+<h3>局部最大力比</h3>
+<blockquote>
+<div><p><strong>局部力比</strong>是衡量网格点<em>局部</em>收敛情况的无量纲量。其思路很简单：将各力求和后剩余的不平衡分量，除以施加于该网格点的总力的某种度量。为提高性能，采用矢量的“曼哈顿范数”，也称“出租车范数”，定义为：</p>
+<div class="math">
+\[\langle v_i \rangle = |v_x| + |v_y| + |v_z|\]</div>
+<p>即矢量各分量绝对值之和。于是，局部力比可定义为：</p>
+<div class="math">
+\[\frac{\langle \sum_i f_i\rangle}{\sum_i \langle f_i \rangle}\]</div>
+<p>其中，<span class="math">\(f_i\)</span> 为施加到某网格点上的全部力矢量。</p>
+<p><strong>局部最大力比</strong>是模型中所有网格点局部力比的最大值。这是衡量模型收敛情况的一种非常保守的指标。不过，当某网格点承受的力少于两个，或作用于该点的全部力均沿同一方向时，它存在缺陷。此时，唯一可能的“平衡”状态是分子和分母都趋近于零，而二者的比值将趋近于 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">1</span></span></a>。</p>
+<p><span class="codename">3DEC</span> 会检测网格点是否只承受一个力矢量，并自动将其排除。但如果多个同向力作用于同一网格点，或第二个力相对于主要驱动力可以忽略，则这种检查并不足够。这些点会主导最大局部力比，使模型<em>看起来</em>始终无法有效收敛。</p>
+<p>实际中，这种情况并不常见，大多数模型都不会遇到。但它<em>确实</em>会发生，因此为保证任意模型都能采用默认准则收敛，<a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 没有将最大局部力比作为默认收敛准则。</p>
+<p>网格点最近一次计算的局部力比会被保存，可通过 <span class="codename">FISH</span> 的 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_fish/block.gridpoint/fish_block.gridpoint.ratio.html#function:block.gp.ratio" title="Get the local gridpoint mechanical convergence ratio. This is the ratio of unbalanced
+force to force applied to the gridpoint...">区块节点局部力比（<code class="xref fish fish-func docutils literal"><span class="pre">block.gp.ratio</span></code>）</a> 获取，也可在绘图项中以局部力比（Local Force Ratio）使用。</p>
+<p>在 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令中使用 <span class="cmdkey">ratio-local</span> 关键字，可将局部力比用于求解准则。</p>
+</div></blockquote>
+</div>
+<div class="section" id="average-force-ratio">
+<h3>平均力比</h3>
+<blockquote>
+<div><p><strong>平均力比</strong>定义为所有网格点不平衡力分量之和，除以施加于各网格点的全部力的总和。即：</p>
+<div class="math">
+\[\frac{ \sum_j^n \langle \sum_i f_i \rangle }{ \sum_j^n \sum_i \langle f_i \rangle }\]</div>
+<p>该指标能够可靠衡量系统的整体收敛情况。对于相对均匀的模型，它表现很好。其稳健性足够高，因此 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 的默认收敛准则设为 <span class="cmdkey">ratio-average</span> <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">1e-5</span></span></a>。</p>
+<p>不过，对于很不均匀的模型，局部收敛问题的影响可能被平均过程掩盖，用户因而无法察觉某个可能最受关注的区域仍需计算。这种情况可能由网格单元尺寸差异或较大的刚度差异引起。对于大型复杂模型，在信赖该指标之前，应仔细检查。见下文讨论。</p>
+<p>在 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令中使用 <span class="cmdkey">ratio-average</span> 或简称 <span class="cmdkey">ratio</span> 关键字，可将平均力比用于求解准则。</p>
+</div></blockquote>
+</div>
+<div class="section" id="maximum-force-ratio">
+<h3>最大力比</h3>
+<blockquote>
+<div><p><strong>最大力比</strong>定义为最大不平衡力，除以作用于所有网格点的平均总力。平均总力定义为：</p>
+<div class="math">
+\[\frac{\sum_j^n \sum_i \langle f_i^j \rangle}{N}\]</div>
+<p>其中，<span class="math">\(N\)</span> 为模型中的网格点总数。</p>
+<p>在 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令中使用 <span class="cmdkey">ratio-maximum</span> 关键字，可将最大力比用于求解准则。</p>
+</div></blockquote>
+</div>
+<div class="section" id="convergence">
+<h3>收敛</h3>
+<blockquote>
+<div><p><span class="cmdkey">convergence</span> 求解方式的提出，是为了让用户能更好地控制所需的收敛判据，并克服依赖局部力比可能带来的缺点。</p>
+<p>首先，创建一个称为局部力目标值（Local Force Target）的新网格点场变量。每个网格点和节点的该值均默认为 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">1e-4</span></span></a>。可通过 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block.gridpoint/cmd_block.gridpoint.initialize.html#kwd:block.gridpoint.initialize.ratio-target" title="Specifies the target local force ratio that is considered to be converged for
+mechanical calculations. The default value is 1e-4. A local force ratio of this
+value will result in a convergence value of 1.0 for the gridpoint. See the convergence
+keyword in the  model.solve  command...">初始化区块网格点目标力比命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">gridpoint</span> <span class="pre">initialize</span> <span class="pre">ratio-target</span></code>）</a> 命令或 <span class="codename">FISH</span> 内置函数 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_fish/block.gridpoint/fish_block.gridpoint.ratio.target.html#function:block.gp.ratio.target" title="Get/set the target local gridpoint mechanical convergence ratio. The default
+value is 1e-4. A local force ratio ( block.gp.ratio ) below this value
+is considered converged. See  block.gp.convergence ...">区块节点目标力比（<code class="xref fish fish-func docutils literal"><span class="pre">block.gp.ratio.target</span></code>）</a> 修改。这个值表示<em>对于该特定网格点</em>而言，可视为“已收敛”的局部力比。这意味着网格不同位置的局部收敛准则可以不同。</p>
+<p>定义一个新量，直接称为<strong>收敛度</strong>，即<em>当前</em>局部力比与<em>目标</em>局部力比的比值。因此，收敛度为 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">1.0</span></span></a> 时即视为“已收敛”。于是，<strong>最大收敛度</strong>就是衡量整个模型收敛情况的指标，与 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 中的 <span class="cmdkey">convergence</span> 关键字关联。收敛度可用于绘图项，也可通过 <span class="codename">FISH</span> 内置函数 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_fish/block.gridpoint/fish_block.gp.convergence.html#function:block.gp.convergence" title='Returns the gridpoint convergence value, defined as the ratio of the currenct
+local force ratio ( block.gp.ratio ) to the target force ratio ( block.gp.ratio.target ).
+ A value of 1 or less is therefore considered "converged"...'>区块节点收敛值（<code class="xref fish fish-func docutils literal"><span class="pre">block.gp.convergence</span></code>）</a> 获取。默认情况下，<span class="cmdkey">convergence</span> 为 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">1.0</span></span></a>，与 <span class="cmdkey">ratio-local</span> 限值为 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">1e-4</span></span></a> 完全等价。</p>
+<p>如果局部力比计算在特殊情况下失效，可以将该网格点或节点的 <span class="cmdkey">ratio-target</span> 设为较大值，实际上将其从整体收敛准则中排除。此外，模型中很小的区域对达到收敛所需时间产生过大影响的情况并不少见，原因可能是这些区域很小、很刚硬，或二者兼有。例如，少量刚度很高的结构支护，常常会主导一个很大模型的收敛时间。确认放宽这些节点的准则对主要关注的模型结果影响可以忽略后，可将其 <span class="cmdkey">ratio-target</span> 设为 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">1e-3</span></span></a> 或更高。</p>
+<p>在 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令中使用 <span class="cmdkey">convergence</span> 关键字，即可采用收敛度准则。</p>
+</div></blockquote>
+</div>
+</div>
+<div class="section" id="choosing-convergence-criteria">
+<h2>选择收敛准则</h2>
+<p>如果 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令未指定收敛准则，默认采用 <span class="cmdkey">ratio</span> 为 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">1e-5</span></span></a>。根据我们的经验，对于复杂程度一般的模型，平均力比 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">1e-5</span></span></a> 大致对应局部力比限值 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">1e-4</span></span></a>。因此，选取 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">1e-4</span></span></a> 作为默认 <span class="cmdkey">ratio-target</span>。</p>
+<p>对于大多数工程应用，最大局部力比 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">1e-4</span></span></a> 通常已经足够，甚至偏保守。对许多用途而言，最大局部力比 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">1e-3</span></span></a>，甚至高至 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">1e-2</span></span></a> 也可能足够。模型的中间阶段（开挖顺序等）尤其如此，因为每一步后都耗时达到“完全”收敛，对模型最终状态的影响可能微乎其微。</p>
+</div>
+<div class="section" id="evaluating-equilibrium">
+<h2>评估平衡状态</h2>
+<p>为便于说明，采用一个极为简化的地表开挖模型进行演示。基本几何形状见<a href="#equilibrium-geom-3dec">图 1（Figure  1）</a>。</p>
+<div class="figure align-center" id="id1">
+<span id="equilibrium-geom-3dec"></span><a class="reference internal image-reference" href="../../../../../_images/Geom.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/Geom.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 1：沟槽开挖的简化示意模型。</span></p>
+</div>
+<p>第一个演示的完整数据文件如下。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+
+<span class="c">; 创建沟槽</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">30</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set origin </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">24</span><span class="n"> join</span>
+<span class="nb">block hide</span><span class="n"> range pos</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">24</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">90</span><span class="n"> dip</span><span class="o">-</span><span class="n">dir </span><span class="m m-Double">90</span><span class="n"> origin </span><span class="m m-Double">3</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="n"> join</span>
+<span class="nb">block hide</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">30</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">90</span><span class="n"> origin </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">6</span><span class="p">,</span><span class="m m-Double">0</span><span class="n"> join</span>
+<span class="nb">block group</span><span class="n"> </span><span class="s">'Trench'</span><span class="n"> range pos</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">6</span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+
+<span class="c">; 在沟槽附近采用较小网格单元划分模型</span>
+<span class="nb">block zone size</span><span class="n"> isolated</span><span class="o">-</span><span class="n">point </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">30</span><span class="n"> edge </span><span class="m m-Double">0.5</span>
+<span class="nb">block zone generate-new</span><span class="n"> min</span><span class="o">-</span><span class="n">edge </span><span class="m m-Double">0.5</span><span class="n"> max</span><span class="o">-</span><span class="n">edge </span><span class="m m-Double">5</span><span class="n"> grad</span><span class="o">-</span><span class="n">surface </span><span class="m m-Double">0.1</span>
+
+<span class="c">; 本构模型和参数</span>
+<span class="nb">block zone cmodel</span><span class="n"> assign mohr</span><span class="o">-</span><span class="n">coulomb</span>
+<span class="nb">block zone property</span><span class="n"> bulk </span><span class="m m-Double">3e6</span><span class="n"> shear </span><span class="m m-Double">2e6</span><span class="n"> density </span><span class="m m-Double">1000</span>
+<span class="nb">block zone property</span><span class="n"> cohesion </span><span class="m m-Double">1e5</span><span class="n"> friction </span><span class="m m-Double">25</span><span class="n"> tension </span><span class="m m-Double">1e3</span>
+
+<span class="c">; 边界条件</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">30</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">30</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span>
+
+<span class="c">; 初始条件</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">10</span>
+<span class="nb">block insitu</span><span class="n"> topography ratio</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0.5</span><span class="n"> ratio</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0.5</span>
+<span class="nb">model </span><span class="ss">solve</span>
+
+<span class="c">; 历程</span>
+<span class="nb">model history</span><span class="n"> mechanical ratio</span><span class="o">-</span><span class="n">average</span>
+<span class="nb">block history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">x position </span><span class="p">(</span><span class="m m-Double">3.1</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">30</span><span class="p">)</span>
+<span class="nb">block history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">z position </span><span class="p">(</span><span class="m m-Double">3.1</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">30</span><span class="p">)</span>
+
+<span class="c">; 开挖</span>
+<span class="nb">block delete</span><span class="n"> range group </span><span class="s">'Trench'</span>
+
+<span class="c">; 求解</span>
+<span class="nb">model </span><span class="ss">solve</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'simple'</span>
+
+<span class="c">;; 按收敛准则求解</span>
+<span class="c">;model solve convergence 1</span>
+<span class="c">;model save 'simple-convergence'</span>
+</pre></div>
+</div>
+<p>应始终通过以下检查，确认模型是否真正达到足够的平衡程度。<strong>首先</strong>，记录主要关注区域的位移和／或速度历程。如果循环结束时，这些位移仍变化较快，则模型尚未调整完毕。<strong>其次</strong>，绘制局部力比或收敛度的图形（等值线和等值面）。收敛度等值面图尤其有助于判断模型何处收敛最慢，以及应该在等值线图中进一步检查哪些位置（可能需要使用切割平面查看模型内部）。</p>
+<p><a href="#equilibrium-hist1-3dec">图 2（Figure  2）</a> 显示平均力比历程和沟槽顶部位移历程。注意，平均力比采用对数坐标绘制。对于行为正常的模型，预期会出现这种对数坐标下近似线性（即指数式）的收敛。破坏或其他非线性行为会导致收敛出现扰动，而不受约束的渐进破坏会使曲线趋于水平。位移历程同样显示出典型的轻微欠阻尼响应。可以清楚看到，沟槽壁顶部已停止明显运动，模型实际上已达到平衡。</p>
+<div class="figure align-center" id="id2">
+<span id="equilibrium-hist1-3dec"></span><a class="reference internal image-reference" href="../../../../../_images/Histories.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/Histories.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 2：简单沟槽模型的平均不平衡力比与位移历程。</span></p>
+</div>
+<p><a href="#equilibrium-ratio1-3dec">图 3（Figure  3）</a> 显示检查收敛度等值线的结果。虽然模型大部分区域的收敛度远小于 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">1</span></span></a>，但靠近表面的少量网格点仍明显较高。这是此类问题的典型现象；表面网格点具有相同的抵抗运动惯性质量，而应力产生的驱动力较小。底部网格点通常会（也需要）先收敛，微小调整逆重力方向传播，因此表面网格点最后收敛。如果采用更严格的 <span class="cmdkey">convergence</span> <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">1</span></span></a> 准则，模型达到平衡所需步数会再增加一半。这是否重要，取决于表面网格点相对较小的调整有多大意义。如果准确的地表沉降值十分关键，就可能必须作这一更改。</p>
+<div class="figure align-center" id="id3">
+<span id="equilibrium-ratio1-3dec"></span><a class="reference internal image-reference" href="../../../../../_images/Converge.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/Converge.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 3：网格点收敛度等值线。</span></p>
+</div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../3dechome.html"><span class="codename">3DEC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../modeling3dec.html"><span class="codename">3DEC</span> Modeling</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="problemsolving.html">Problem Solving with <span class="codename">3DEC</span></a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="transferring_fieldstress.html" title="previous chapter"> Transferring Field Stresses to Model Stresses</a> |    
+       <a href="loading3dec.html" title="next chapter">Loading and Sequential Modeling</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Reaching Equilibrium" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

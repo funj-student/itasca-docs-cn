@@ -1,0 +1,238 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>动力分析中的部分密度缩放 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="dynamic_boudaryconditions.html" rel="next" title="Boundary Conditions"/>
+<link href="dynamic_wavetransmission.html" rel="prev" title="Wave Transmission"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="partial-density-scaling-for-dynamic-analysis">
+<span id="dynamic-partdensscaling"></span><h1>动力分析中的部分密度缩放</h1>
+<p>密度缩放是 <span class="codename">3DEC</span> 在准静力计算中采用的一种技术，可大幅提高求解大型问题的效率。在准静力问题中，惯性力并不重要。可为获得最优的数值收敛而对网格点质量进行缩放，而不影响解答。然而在动力分析中，不能采用整体缩放。复杂的节理体系在自动划分网格过程中常常产生非常小的块体和/或网格单元。这些小尺寸块体/网格单元为使显式算法数值稳定，需要非常小的时步，从而使某些动力求解极为耗时。不过，由于这些块体/网格单元可能非常小、质量也非常小，因而可以仅对这些块体/网格单元引入一定的密度缩放，使系统惯性的变化可忽略不计。这种部分密度缩放方案在 <span class="codename">3DEC</span> 中的实现方式是：由用户控制所要引入的缩放量。程序先算出时步，用户再用命令 <span class="fishcmd">block mechanical mass-scale dt</span> 指定所需的时步。该命令规定，只对体系施加达到时步 <span class="cmdkey">dt</span> 所需的密度缩放量。给出 <span class="fishcmd">model cycle</span> 命令时，程序会打印一条消息，说明被缩放的网格点质量数目以及所增加的质量量值。</p>
+<div class="section" id="example-of-partial-density-scaling">
+<h2>部分密度缩放的示例</h2>
+<p><a href="#dyn-pdss-ysjn">图  1（Figure  1）</a> 显示了一个含若干薄块体的简单块体系统。未作任何缩放时动力分析所需的时步为 1.005e-6 秒。采用部分密度缩放后，时步可增大到 5e-6 秒，而系统总质量仅增加 5%。</p>
+<p>使用 <span class="fishcmd">block mechanical mass-scale</span> 命令后，<span class="codename">3DEC</span> 会打印该信息：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="sx">no</span><span class="p">.</span><span class="n"> scaled g</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="n"> masses </span><span class="p">=</span><span class="n"> </span><span class="m m-Double">68</span>
+<span class="n">min</span><span class="p">.</span><span class="n"> g</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="n"> scaling factor </span><span class="p">=</span><span class="n"> </span><span class="m m-Double">4.038E-02</span>
+<span class="n">max</span><span class="p">.</span><span class="n"> g</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="n"> scaling factor </span><span class="p">=</span><span class="n"> </span><span class="m m-Double">1.000E+00</span>
+<span class="n">min</span><span class="p">.</span><span class="n"> g</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="n"> added mass </span><span class="p">=</span><span class="n"> </span><span class="m m-Double">0.000E+00</span>
+<span class="n">max</span><span class="p">.</span><span class="n"> g</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="n"> added mass </span><span class="p">=</span><span class="n"> </span><span class="m m-Double">3.103E-05</span>
+<span class="n">min</span><span class="p">.</span><span class="n"> block added mass </span><span class="p">=</span><span class="n"> </span><span class="m m-Double">0.000E+00</span>
+<span class="n">max</span><span class="p">.</span><span class="n"> block added mass </span><span class="p">=</span><span class="n"> </span><span class="m m-Double">1.938E-04</span>
+<span class="n">total added mass in model </span><span class="p">=</span><span class="n"> </span><span class="m m-Double">8.202E-04</span>
+<span class="n">total real mass in model </span><span class="p">=</span><span class="n"> </span><span class="m m-Double">1.920E-02</span>
+<span class="n">added mass </span><span class="o">/</span><span class="n"> real mass </span><span class="p">=</span><span class="n"> </span><span class="m m-Double">4.272E-02</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="dyn-pdss-ysjn">
+<a class="reference internal image-reference" href="../../../../../_images/mscale-blocks.png"><img alt="../../../../../_images/mscale-blocks.png" src="../../../../../_images/mscale-blocks.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 1：含小块体和薄块体的模型视图。</span></p>
+</div>
+<p>通过比较体系对施加于模型底部的正弦剪切的响应，检验了这一部分密度缩放量的效果。模型顶部施加黏性边界条件以模拟延展的介质。<a href="#dyn-pdss-moeq">图  2（Figure  2）</a> 给出了未作缩放的计算中施加于底部的 <span class="math">\(x\)</span> 向速度以及模型顶部得到的速度。<a href="#dyn-pdss-ymek">图  3（Figure  3）</a> 给出了采用部分密度缩放（时步约大 5 倍）的计算中的相同量。可以看出，波传播并未受到所引入的少量缩放的影响。</p>
+<div class="figure align-center" id="dyn-pdss-moeq">
+<a class="reference internal image-reference" href="../../../../../_images/mscale-none-his.png"><img alt="../../../../../_images/mscale-none-his.png" src="../../../../../_images/mscale-none-his.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：未作任何密度缩放的分析中模型底部和顶部的速度。</span></p>
+</div>
+<div class="figure align-center" id="dyn-pdss-ymek">
+<a class="reference internal image-reference" href="../../../../../_images/mscale-part-his.png"><img alt="../../../../../_images/mscale-part-his.png" src="../../../../../_images/mscale-part-his.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 3：采用部分密度缩放的分析中模型底部和顶部的速度。</span></p>
+</div>
+<p class="h2 rubric" id="dynamicnoscaling">数据文件 - 不缩放</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;-----------------------------------------------------------------------</span>
+<span class="c">; 动力分析，不进行密度缩放</span>
+<span class="c">;-----------------------------------------------------------------------</span>
+
+<span class="nb">model new</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">"Dynamic Analysis - no density scaling"</span>
+
+<span class="nb">model config</span><span class="n"> dynamic</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+
+<span class="c">;几何形状</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">5</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">45</span><span class="n"> origin </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">10</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">40</span><span class="n"> origin </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">70</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">95</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">80</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">10</span>
+
+<span class="c">; 网格单元</span>
+<span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="m m-Double">0.5</span>
+<span class="nb">block zone cmodel</span><span class="n"> assign el</span>
+<span class="nb">block zone prop</span><span class="n"> dens </span><span class="m m-Double">0.0024</span><span class="n"> bulk </span><span class="m m-Double">33333</span><span class="n"> shear </span><span class="m m-Double">20000</span>
+
+<span class="c">; 节理</span>
+<span class="nb">block contact jmodel</span><span class="n"> assign el</span>
+<span class="nb">block contact prop</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">500000</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">500000</span>
+<span class="nb">block contact material-table</span><span class="n"> default prop stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">500000</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                          stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">500000</span>
+
+
+<span class="c">; 力学分析中默认关闭</span>
+<span class="c">;block mechanical mass-scale off</span>
+
+<span class="ni">[freq </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">100.0</span><span class="ni">]</span>
+<span class="nb">fish def</span><span class="ni"> sin_</span>
+<span class="ni">  sin_ </span><span class="p">=</span><span class="ni"> </span><span class="k">math.sin</span><span class="p">(</span><span class="m m-Double">2.0</span><span class="o">*</span><span class="k">math.pi</span><span class="o">*</span><span class="k">mech.time</span><span class="o">*</span><span class="ni">freq</span><span class="p">)</span>
+<span class="nb">end</span>
+
+<span class="c">; 边界条件</span>
+<span class="nb">block gridpoint apply</span><span class="n"> visc range pos</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0.1</span><span class="n"> fish sin_ range pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> vel</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> vel</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> vel</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> vel</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> vel</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">1</span>
+
+<span class="c">; 历程</span>
+<span class="n">model his mech unbalanced</span><span class="o">-</span><span class="n">max</span>
+<span class="nb">block his</span><span class="n"> name </span><span class="s">'Velocity at Bottom'</span><span class="n"> vel</span><span class="o">-</span><span class="n">x pos </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="nb">block his</span><span class="n"> name </span><span class="s">'Velocity at Top'</span><span class="n"> vel</span><span class="o">-</span><span class="n">x pos </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="n">model his name </span><span class="s">'Time'</span><span class="n"> dynamic time</span><span class="o">-</span><span class="n">total</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">0.01</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">"zp2no"</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="dynamicpartialscaling">数据文件 - 部分缩放</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;-----------------------------------------------------------------------</span>
+<span class="c">; 动力分析，不进行密度缩放</span>
+<span class="c">;-----------------------------------------------------------------------</span>
+
+<span class="nb">model new</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10000</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">"Dynamic Analysis - no density scaling"</span>
+
+<span class="nb">model config</span><span class="n"> dynamic</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+
+<span class="c">;几何形状</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">5</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">45</span><span class="n"> origin </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">10</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">40</span><span class="n"> origin </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">70</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">95</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">80</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">10</span>
+
+<span class="c">; 网格单元</span>
+<span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="m m-Double">0.5</span>
+<span class="nb">block zone cmodel</span><span class="n"> assign el</span>
+<span class="nb">block zone prop</span><span class="n"> dens </span><span class="m m-Double">0.0024</span><span class="n"> bulk </span><span class="m m-Double">33333</span><span class="n"> shear </span><span class="m m-Double">20000</span>
+
+<span class="c">; 节理</span>
+<span class="nb">block contact jmodel</span><span class="n"> assign el</span>
+<span class="nb">block contact prop</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">500000</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">500000</span>
+<span class="nb">block contact material-table</span><span class="n"> default prop stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">500000</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                          stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">500000</span>
+
+<span class="c">; 部分缩放，最大时间步长为 5e-6</span>
+<span class="nb">block mechanical</span><span class="n"> mass</span><span class="o">-</span><span class="n">scale timestep </span><span class="m m-Double">5e-6</span>
+
+<span class="ni">[freq </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">100.0</span><span class="ni">]</span>
+<span class="nb">fish def</span><span class="ni"> sin_</span>
+<span class="ni">  sin_ </span><span class="p">=</span><span class="ni"> </span><span class="k">math.sin</span><span class="p">(</span><span class="m m-Double">2.0</span><span class="o">*</span><span class="k">math.pi</span><span class="o">*</span><span class="k">mech.time</span><span class="o">*</span><span class="ni">freq</span><span class="p">)</span>
+<span class="nb">end</span>
+
+<span class="c">; 边界条件</span>
+<span class="nb">block gridpoint apply</span><span class="n"> visc range pos</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0.1</span><span class="n"> fish sin_ range pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> vel</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> vel</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> vel</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> vel</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> vel</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">1</span>
+
+<span class="c">; 历程</span>
+<span class="n">model his mech unbalanced</span><span class="o">-</span><span class="n">max</span>
+<span class="nb">block his</span><span class="n"> name </span><span class="s">'Velocity at Bottom'</span><span class="n"> vel</span><span class="o">-</span><span class="n">x pos </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="nb">block his</span><span class="n"> name </span><span class="s">'Velocity at Top'</span><span class="n"> vel</span><span class="o">-</span><span class="n">x pos </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="n">model his name </span><span class="s">'Time'</span><span class="n"> dynamic time</span><span class="o">-</span><span class="n">total</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">0.01</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">"zp2part"</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../3dechome.html"><span class="codename">3DEC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../options.html">Options</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="dynamic.html">Dynamic Analysis</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="dynamic_wavetransmission.html" title="previous chapter"> Wave Transmission</a> |    
+       <a href="dynamic_boudaryconditions.html" title="next chapter">Boundary Conditions</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Partial Density Scaling for Dynamic Analysis" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

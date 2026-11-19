@@ -1,0 +1,358 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>实现 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="programmersinterface.html" rel="next" title="Programmer’s Interface"/>
+<link href="methodology.html" rel="prev" title="Methodology"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="implementation">
+<span id="modelswritingimplementation-3dec"></span><h1>实现</h1>
+<div class="section" id="utility-structures">
+<h2>实用结构</h2>
+<p>程序提供了一些结构／类，以辅助编写本构模型及与之通信。其中一些由“base007.dll”提供，该库定义了所有插件接口共有的基础功能；另一些由“jmodels007.dll”提供，该库定义了节理本构模型系统所用的专用接口。所有这些类定义的完整文档均可在<a class="reference internal" href="programmersinterface.html#dec-interface"><span class="std std-ref">程序员接口</span>（Programmer’s Interface）</a>文档的基础接口模块中找到。</p>
+<p>“base007.dll”提供：</p>
+<p><code class="docutils literal"><span class="pre">Int,</span> <span class="pre">UInt,</span> <span class="pre">Byte,</span> <span class="pre">UByte,</span> <span class="pre">Double,</span> <span class="pre">Float</span></code> 等——定义于“base/src/basedef.h”。这些类型替代标准 C++ 类型 <code class="docutils literal"><span class="pre">int</span></code>、<code class="docutils literal"><span class="pre">unsigned</span></code>、<code class="docutils literal"><span class="pre">char</span></code>、<code class="docutils literal"><span class="pre">double</span></code> 等。使用这些替代类型是为了定义一致的大小。例如，无论平台如何，<code class="docutils literal"><span class="pre">Int</span></code> 都保证为一个有符号 32 位量。</p>
+<p><code class="docutils literal"><span class="pre">String</span></code>——定义于“base/src/basebool.h”。该类派生自 <code class="docutils literal"><span class="pre">std::basic_string&lt;wchar_t&gt;</span></code>，即 ANSI C++ 标准字符串类。<code class="docutils literal"><span class="pre">String</span></code> 类增加了一些方便的实用函数，例如字符串到数值的转换。</p>
+<p><code class="docutils literal"><span class="pre">DVect3</span></code>——定义于“base/src/vect.h”。该类实际上是模板类 <code class="docutils literal"><span class="pre">Vector3&lt;T&gt;</span></code> 的 <code class="docutils literal"><span class="pre">double</span></code> 实例。类似的预定义类型有 <code class="docutils literal"><span class="pre">IVect</span> <span class="pre">(Vector3&lt;Int&gt;)</span></code> 和 <code class="docutils literal"><span class="pre">UVect</span> <span class="pre">(Vector3&lt;UInt&gt;)</span></code>。该类使三维矢量能够像基本类型一样使用，并通过完整的运算符重载提供便利的语法。</p>
+<p><code class="docutils literal"><span class="pre">Variant</span></code> —— 定义于 “base/src/variant.h”。
+它定义了一种可表示多种不同基本类型的类型
+（例如 <code class="docutils literal"><span class="pre">String</span></code>、<code class="docutils literal"><span class="pre">Double</span></code>、<code class="docutils literal"><span class="pre">Int</span></code> 等）。
+该类用于向本构模型传递属性以及从本构模型传出属性。</p>
+<p><code class="docutils literal"><span class="pre">Axes</span></code> —— 定义于 “base/src/axes.h”。
+该类允许定义正交归一基。该基可用于
+在由传统笛卡尔坐标轴表示的“整体”基之间转换坐标。</p>
+<p><code class="docutils literal"><span class="pre">SymTensor</span></code> —— 定义于 “base/src/symtensor.h”。
+该类定义一个 3 <span class="math">\(\times\)</span> 3 的对称张量，通常用于表示应力和应变。
+成员访问可通过 <code class="docutils literal"><span class="pre">s11()</span></code>、<code class="docutils literal"><span class="pre">s12()</span></code>、<code class="docutils literal"><span class="pre">s13()</span></code>、<code class="docutils literal"><span class="pre">s22()</span></code> 等函数实现。
+成员修改可通过 <code class="docutils literal"><span class="pre">rs11()</span></code>、<code class="docutils literal"><span class="pre">rs12()</span></code> 等函数实现。
+此外，特征向量信息（即主方向和主值）可通过 <code class="docutils literal"><span class="pre">getEigenInfo()</span></code> 函数获得。
+辅助类 <code class="docutils literal"><span class="pre">SymTensorInfo</span></code> 用于使用户在保持主方向不变的同时修改主值，
+并用所得结果构造一个新的 <code class="docutils literal"><span class="pre">SymTensor</span></code>。</p>
+<p><code class="docutils literal"><span class="pre">Orientation3</span></code> —— 定义于 “base/src/orientation.h”。
+该类提供 <em>方位</em>（即空间中的一个方向）的存储与操作。
+该方位既可通过法向矢量指定，也可通过倾角和倾向指定。</p>
+</div>
+<div class="section" id="example-constitutive-model">
+<h2>本构模型示例</h2>
+<p><span class="codename">3DEC</span> 所使用的所有本构模型的源代码均提供出来，供用户查看或修改。
+为便于说明，这里摘录了文件 “jmodelexample.*” 中所含莫尔-库仑弹塑性模型的一部分。
+<a class="reference internal" href="#data-modelwriting-exampleh-3dec">jmodelexample.h 头文件（<span class="std std-ref">jmodelexample.h</span>）</a> 给出了该模型的类声明，
+其中还包括模型唯一类型编号的定义。
+在该模型中，部分变量仅供内部使用（例如 <code class="docutils literal"><span class="pre">tan_friction_</span></code>）：
+它们占用每个子接触中的内存，但 <span class="codename">3DEC</span> 用户无法更改或打印它们。
+另请注意，<code class="docutils literal"><span class="pre">getProperty()/setProperty</span></code> 接口用于保存/恢复。</p>
+<p id="data-modelwriting-exampleh-3dec"><em>jmodelexample.h:</em></p>
+<div class="includedc highlight-cpp"><div class="highlight"><pre><span></span><span class="cp">#pragma once</span>
+
+<span class="cp">#include</span> <span class="cpf">"jmodels/src/jointmodel.h"</span><span class="cp"></span>
+
+<span class="k">namespace</span> <span class="n">jmodels</span>
+<span class="p">{</span>
+  <span class="k">class</span> <span class="nc">JModelExample</span> <span class="o">:</span> <span class="k">public</span> <span class="n">JointModel</span> <span class="p">{</span>
+  <span class="k">public</span><span class="o">:</span>
+    <span class="n">JModelExample</span><span class="p">();</span>
+    <span class="k">virtual</span> <span class="n">String</span>         <span class="nf">getName</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+    <span class="k">virtual</span> <span class="n">String</span>         <span class="nf">getPluginName</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">getName</span><span class="p">();</span> <span class="p">}</span>
+    <span class="k">virtual</span> <span class="n">String</span>         <span class="nf">getFullName</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+    <span class="k">virtual</span> <span class="n">UInt</span>           <span class="nf">getMinorVersion</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span> 
+    <span class="k">virtual</span> <span class="n">String</span>         <span class="nf">getProperties</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+    <span class="k">virtual</span> <span class="n">String</span>         <span class="nf">getStates</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+    <span class="k">virtual</span> <span class="n">Variant</span>        <span class="nf">getProperty</span><span class="p">(</span><span class="n">UInt</span> <span class="n">index</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
+    <span class="k">virtual</span> <span class="kt">void</span>           <span class="nf">setProperty</span><span class="p">(</span><span class="n">UInt</span> <span class="n">index</span><span class="p">,</span><span class="k">const</span> <span class="n">Variant</span> <span class="o">&amp;</span><span class="n">p</span><span class="p">,</span><span class="n">UInt</span> <span class="n">restoreVersion</span><span class="o">=</span><span class="mi">0</span><span class="p">);</span>
+    <span class="k">virtual</span> <span class="n">JModelExample</span> <span class="o">*</span><span class="nf">clone</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="k">new</span> <span class="n">JModelExample</span><span class="p">();</span> <span class="p">}</span>
+    <span class="k">virtual</span> <span class="n">Double</span>         <span class="nf">getMaxNormalStiffness</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">kn_</span><span class="p">;</span> <span class="p">}</span>
+    <span class="k">virtual</span> <span class="n">Double</span>         <span class="nf">getMaxShearStiffness</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">ks_</span><span class="p">;</span> <span class="p">}</span>
+    <span class="k">virtual</span> <span class="kt">void</span>           <span class="nf">copy</span><span class="p">(</span><span class="k">const</span> <span class="n">JointModel</span> <span class="o">*</span><span class="n">mod</span><span class="p">);</span>
+    <span class="k">virtual</span> <span class="kt">void</span>           <span class="nf">run</span><span class="p">(</span><span class="n">UByte</span> <span class="n">dim</span><span class="p">,</span><span class="n">State</span> <span class="o">*</span><span class="n">s</span><span class="p">);</span> <span class="c1">// 若 !isValid(dim)，则调用 initialize(dim,s)</span>
+    <span class="k">virtual</span> <span class="kt">void</span>           <span class="nf">initialize</span><span class="p">(</span><span class="n">UByte</span> <span class="n">dim</span><span class="p">,</span><span class="n">State</span> <span class="o">*</span><span class="n">s</span><span class="p">);</span> <span class="c1">// 调用 setValid(dim)</span>
+    <span class="c1">// 可选 </span>
+    <span class="k">virtual</span> <span class="n">Double</span>         <span class="nf">getStressStrengthRatio</span><span class="p">(</span><span class="k">const</span> <span class="n">Double</span> <span class="o">&amp;</span><span class="p">,</span><span class="k">const</span> <span class="n">DVect3</span> <span class="o">&amp;</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="mf">10.0</span><span class="p">;</span> <span class="p">}</span>
+    <span class="k">virtual</span> <span class="kt">void</span>           <span class="nf">scaleProperties</span><span class="p">(</span><span class="k">const</span> <span class="n">Double</span> <span class="o">&amp;</span><span class="p">,</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">UInt</span><span class="o">&gt;</span> <span class="o">&amp;</span><span class="p">)</span> <span class="p">{</span> <span class="k">throw</span> <span class="n">std</span><span class="o">::</span><span class="n">exception</span><span class="p">(</span><span class="s">"Does not support property scaling"</span><span class="p">);</span> <span class="p">}</span>
+    <span class="k">virtual</span> <span class="kt">bool</span>           <span class="nf">supportsStressStrengthRatio</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="nb">false</span><span class="p">;</span> <span class="p">}</span>
+    <span class="k">virtual</span> <span class="kt">bool</span>           <span class="nf">supportsPropertyScaling</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="nb">false</span><span class="p">;</span> <span class="p">}</span>
+  <span class="k">private</span><span class="o">:</span>
+    <span class="n">Double</span> <span class="n">kn_</span><span class="p">;</span>
+    <span class="n">Double</span> <span class="n">ks_</span><span class="p">;</span>
+    <span class="n">Double</span> <span class="n">cohesion_</span><span class="p">;</span>
+    <span class="n">Double</span> <span class="n">friction_</span><span class="p">;</span>
+    <span class="n">Double</span> <span class="n">dilation_</span><span class="p">;</span>
+    <span class="n">Double</span> <span class="n">tension_</span><span class="p">;</span>
+    <span class="n">Double</span> <span class="n">zero_dilation_</span><span class="p">;</span>
+    <span class="n">Double</span> <span class="n">res_cohesion_</span><span class="p">;</span>
+    <span class="n">Double</span> <span class="n">res_friction_</span><span class="p">;</span>
+    <span class="n">Double</span> <span class="n">res_tension_</span><span class="p">;</span>
+    <span class="n">Double</span> <span class="n">tan_friction_</span><span class="p">;</span>
+    <span class="n">Double</span> <span class="n">tan_dilation_</span><span class="p">;</span>
+    <span class="n">Double</span> <span class="n">tan_res_friction_</span><span class="p">;</span>
+    <span class="n">Int</span>    <span class="n">kn_tab_</span><span class="p">;</span>
+    <span class="n">Int</span>    <span class="n">ks_tab_</span><span class="p">;</span>
+  <span class="p">};</span>
+<span class="p">}</span> <span class="c1">// namespace models</span>
+
+<span class="c1">// 文件结束</span>
+</pre></div>
+</div>
+<p>该模型的构造函数已在 <a class="reference internal" href="methodology.html#modelswriting-constructor-3dec"><span class="std std-ref">典型模型构造函数</span>（Typical Model Constructor）</a> 中列出。示例 <a class="reference internal" href="#data-modelwriting-examplecpppart-3dec"><span class="std std-ref">初始化函数与运行函数</span>（initialize and run functions）</a> 给出了用于初始化和执行（“运行”）的成员函数清单。注意，为节省时间，受保护的模型变量（例如 <code class="docutils literal"><span class="pre">tan_friction_</span></code>）不在每个循环计算，而是在初始化时于 <code class="docutils literal"><span class="pre">Initialize</span></code> 方法中计算。另请注意使用 <code class="docutils literal"><span class="pre">State</span></code> 结构来提供位移增量和力。成员函数 <code class="docutils literal"><span class="pre">getProperties</span></code>、<code class="docutils literal"><span class="pre">getStates</span></code>、<code class="docutils literal"><span class="pre">getProperty</span></code>、<code class="docutils literal"><span class="pre">setProperty</span></code> 和 <code class="docutils literal"><span class="pre">copy</span></code> 的清单请参阅文件 “jmodelexample.cpp”。</p>
+<div class="section" id="initialize-and-run-functions">
+<span id="data-modelwriting-examplecpppart-3dec"></span><h3><code class="docutils literal"><span class="pre">initialize()</span></code> 和 <code class="docutils literal"><span class="pre">run()</span></code> 函数</h3>
+<div class="includedc highlight-cpp"><div class="highlight"><pre><span></span>  <span class="kt">void</span> <span class="n">JModelExample</span><span class="o">::</span><span class="n">initialize</span><span class="p">(</span><span class="n">UByte</span> <span class="n">dim</span><span class="p">,</span><span class="n">State</span> <span class="o">*</span><span class="n">s</span><span class="p">)</span> 
+  <span class="p">{</span>
+    <span class="n">JointModel</span><span class="o">::</span><span class="n">initialize</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span><span class="n">s</span><span class="p">);</span>
+    <span class="n">tan_friction_</span>    <span class="o">=</span> <span class="n">tan</span><span class="p">(</span><span class="n">friction_</span> <span class="o">*</span> <span class="n">dDegRad</span><span class="p">);</span>
+    <span class="n">tan_res_friction_</span> <span class="o">=</span> <span class="n">tan</span><span class="p">(</span><span class="n">res_friction_</span> <span class="o">*</span> <span class="n">dDegRad</span><span class="p">);</span>
+    <span class="n">tan_dilation_</span>    <span class="o">=</span> <span class="n">tan</span><span class="p">(</span><span class="n">dilation_</span> <span class="o">*</span> <span class="n">dDegRad</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="kt">void</span> <span class="n">JModelExample</span><span class="o">::</span><span class="n">run</span><span class="p">(</span><span class="n">UByte</span> <span class="n">dim</span><span class="p">,</span><span class="n">State</span> <span class="o">*</span><span class="n">s</span><span class="p">)</span> 
+  <span class="p">{</span>
+    <span class="n">JointModel</span><span class="o">::</span><span class="n">run</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span><span class="n">s</span><span class="p">);</span>
+    <span class="cm">/* --- 状态指示量：                                  */</span>
+    <span class="cm">/*     将“当前”信息存为“过去”信息，并关闭“当前”信息 ---*/</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">s</span><span class="o">-&gt;</span><span class="n">state_</span> <span class="o">&amp;</span> <span class="n">slip_now</span><span class="p">)</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">state_</span> <span class="o">|=</span> <span class="n">slip_past</span><span class="p">;</span>
+    <span class="n">s</span><span class="o">-&gt;</span><span class="n">state_</span> <span class="o">&amp;=</span> <span class="o">~</span><span class="n">slip_now</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">s</span><span class="o">-&gt;</span><span class="n">state_</span> <span class="o">&amp;</span> <span class="n">tension_now</span><span class="p">)</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">state_</span> <span class="o">|=</span> <span class="n">tension_past</span><span class="p">;</span>
+    <span class="n">s</span><span class="o">-&gt;</span><span class="n">state_</span> <span class="o">&amp;=</span> <span class="o">~</span><span class="n">tension_now</span><span class="p">;</span>
+
+    <span class="n">Double</span> <span class="n">kna</span>  <span class="o">=</span> <span class="n">kn_</span> <span class="o">*</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">area_</span><span class="p">;</span>
+    <span class="n">Double</span> <span class="n">ksa</span>  <span class="o">=</span> <span class="n">ks_</span> <span class="o">*</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">area_</span><span class="p">;</span>
+
+    <span class="c1">// 法向力</span>
+    <span class="n">Double</span> <span class="n">fn0</span> <span class="o">=</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">normal_force_</span><span class="p">;</span>
+    <span class="n">s</span><span class="o">-&gt;</span><span class="n">normal_force_inc_</span> <span class="o">=</span> <span class="o">-</span><span class="n">kna</span> <span class="o">*</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">normal_disp_inc_</span><span class="p">;</span>
+    <span class="n">s</span><span class="o">-&gt;</span><span class="n">normal_force_</span> <span class="o">+=</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">normal_force_inc_</span><span class="p">;</span>
+
+    <span class="c1">// 针对节理张开或进入受拉状态的时间步进行修正</span>
+    <span class="c1">// s-&gt;dnop_ 是 s-&gt;normal_disp_inc_ 中引起分离或受拉的部分</span>
+    <span class="n">s</span><span class="o">-&gt;</span><span class="n">dnop_</span> <span class="o">=</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">normal_disp_inc_</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">((</span><span class="n">fn0</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">)</span>               <span class="o">&amp;&amp;</span> 
+        <span class="p">(</span><span class="n">s</span><span class="o">-&gt;</span><span class="n">normal_force_</span> <span class="o">&lt;=</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">&amp;&amp;</span> 
+        <span class="p">(</span><span class="n">s</span><span class="o">-&gt;</span><span class="n">normal_force_inc_</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">))</span>
+    <span class="p">{</span>
+        <span class="n">s</span><span class="o">-&gt;</span><span class="n">dnop_</span> <span class="o">=</span> <span class="o">-</span><span class="n">s</span><span class="o">-&gt;</span><span class="n">normal_disp_inc_</span> <span class="o">*</span> <span class="n">fn0</span> <span class="o">/</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">normal_force_inc_</span><span class="p">;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">s</span><span class="o">-&gt;</span><span class="n">dnop_</span> <span class="o">&gt;</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">normal_disp_inc_</span><span class="p">)</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">dnop_</span> <span class="o">=</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">normal_disp_inc_</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="c1">// 抗拉强度</span>
+    <span class="n">Double</span> <span class="n">ten</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">s</span><span class="o">-&gt;</span><span class="n">state_</span><span class="p">)</span>
+      <span class="n">ten</span> <span class="o">=</span> <span class="o">-</span><span class="n">res_tension_</span> <span class="o">*</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">area_</span><span class="p">;</span>
+    <span class="k">else</span>
+      <span class="n">ten</span> <span class="o">=</span> <span class="o">-</span><span class="n">tension_</span> <span class="o">*</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">area_</span><span class="p">;</span>
+
+    <span class="c1">// 检查拉伸破坏</span>
+    <span class="kt">bool</span> <span class="n">tenflag</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">s</span><span class="o">-&gt;</span><span class="n">normal_force_</span> <span class="o">&lt;=</span> <span class="n">ten</span><span class="p">)</span> 
+    <span class="p">{</span>
+      <span class="n">s</span><span class="o">-&gt;</span><span class="n">normal_force_</span>  <span class="o">=</span> <span class="n">ten</span><span class="p">;</span>
+      <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">s</span><span class="o">-&gt;</span><span class="n">normal_force_</span><span class="p">)</span>
+      <span class="p">{</span>
+        <span class="n">s</span><span class="o">-&gt;</span><span class="n">shear_force_</span> <span class="o">=</span> <span class="n">DVect3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">);</span>
+        <span class="n">tenflag</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span> <span class="c1">// 完全拉伸破坏</span>
+      <span class="p">}</span>
+      <span class="n">s</span><span class="o">-&gt;</span><span class="n">state_</span> <span class="o">|=</span> <span class="n">tension_now</span><span class="p">;</span>
+      <span class="n">s</span><span class="o">-&gt;</span><span class="n">normal_force_inc_</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+      <span class="n">s</span><span class="o">-&gt;</span><span class="n">shear_force_inc_</span> <span class="o">=</span> <span class="n">DVect3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="c1">// 剪切力</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">tenflag</span><span class="p">)</span> 
+    <span class="p">{</span>
+      <span class="n">s</span><span class="o">-&gt;</span><span class="n">shear_force_inc_</span> <span class="o">=</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">shear_disp_inc_</span> <span class="o">*</span> <span class="o">-</span><span class="n">ksa</span><span class="p">;</span>
+      <span class="n">s</span><span class="o">-&gt;</span><span class="n">shear_force_</span> <span class="o">+=</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">shear_force_inc_</span><span class="p">;</span>
+      <span class="n">Double</span> <span class="n">fsm</span> <span class="o">=</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">shear_force_</span><span class="p">.</span><span class="n">mag</span><span class="p">();</span>
+      <span class="c1">// 抗剪强度</span>
+      <span class="n">Double</span> <span class="n">fsmax</span><span class="p">;</span>
+      <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">s</span><span class="o">-&gt;</span><span class="n">state_</span><span class="p">)</span>
+        <span class="n">fsmax</span> <span class="o">=</span> <span class="n">cohesion_</span> <span class="o">*</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">area_</span> <span class="o">+</span> <span class="n">tan_friction_</span> <span class="o">*</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">normal_force_</span><span class="p">;</span>
+      <span class="k">else</span> 
+      <span class="p">{</span> <span class="c1">// 若残余摩擦角为零，则采用峰值</span>
+        <span class="n">Double</span> <span class="n">resamueff</span> <span class="o">=</span> <span class="n">tan_res_friction_</span><span class="p">;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">resamueff</span><span class="p">)</span> <span class="n">resamueff</span> <span class="o">=</span> <span class="n">tan_friction_</span><span class="p">;</span>
+        <span class="n">fsmax</span> <span class="o">=</span> <span class="n">res_cohesion_</span> <span class="o">*</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">area_</span> <span class="o">+</span> <span class="n">resamueff</span> <span class="o">*</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">normal_force_</span><span class="p">;</span>
+      <span class="p">}</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">fsmax</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">)</span> <span class="n">fsmax</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+      <span class="c1">//  检查滑移</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">fsm</span> <span class="o">&gt;=</span> <span class="n">fsmax</span><span class="p">)</span> 
+      <span class="p">{</span>
+        <span class="n">Double</span> <span class="n">rat</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">fsm</span><span class="p">)</span> <span class="n">rat</span> <span class="o">=</span> <span class="n">fsmax</span> <span class="o">/</span> <span class="n">fsm</span><span class="p">;</span>
+        <span class="n">s</span><span class="o">-&gt;</span><span class="n">shear_force_</span> <span class="o">*=</span> <span class="n">rat</span><span class="p">;</span>
+        <span class="n">s</span><span class="o">-&gt;</span><span class="n">state_</span> <span class="o">|=</span> <span class="n">slip_now</span><span class="p">;</span>
+        <span class="n">s</span><span class="o">-&gt;</span><span class="n">shear_force_inc_</span> <span class="o">=</span> <span class="n">DVect3</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">);</span>
+        <span class="c1">// 剪胀</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">dilation_</span><span class="p">)</span>
+        <span class="p">{</span>
+          <span class="n">Double</span> <span class="n">zdd</span> <span class="o">=</span> <span class="n">zero_dilation_</span><span class="p">;</span>
+          <span class="n">Double</span> <span class="n">usm</span> <span class="o">=</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">shear_disp_</span><span class="p">.</span><span class="n">mag</span><span class="p">();</span>
+          <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">zdd</span><span class="p">)</span> <span class="n">zdd</span> <span class="o">=</span> <span class="mf">1e20</span><span class="p">;</span>
+          <span class="k">if</span> <span class="p">(</span><span class="n">usm</span> <span class="o">&lt;</span> <span class="n">zdd</span><span class="p">)</span> 
+          <span class="p">{</span>
+            <span class="n">Double</span> <span class="n">dusm</span>  <span class="o">=</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">shear_disp_inc_</span><span class="p">.</span><span class="n">mag</span><span class="p">();</span>
+            <span class="n">Double</span> <span class="n">dil</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">s</span><span class="o">-&gt;</span><span class="n">state_</span><span class="p">)</span> <span class="n">dil</span> <span class="o">=</span> <span class="n">tan_dilation_</span><span class="p">;</span>
+            <span class="k">else</span>
+            <span class="p">{</span>
+              <span class="c1">// 若残余剪胀角为零，则采用峰值</span>
+              <span class="c1">//     Double resdileff = tan_res_dilation_;</span>
+              <span class="c1">// 注意：3DEC 的 CLJ1 中未定义残余剪胀</span>
+              <span class="n">Double</span> <span class="n">resdileff</span> <span class="o">=</span> <span class="n">tan_dilation_</span><span class="p">;</span>
+              <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">resdileff</span><span class="p">)</span> <span class="n">resdileff</span> <span class="o">=</span> <span class="n">tan_dilation_</span><span class="p">;</span>
+              <span class="n">dil</span> <span class="o">=</span> <span class="n">resdileff</span><span class="p">;</span>
+            <span class="p">}</span>
+            <span class="n">s</span><span class="o">-&gt;</span><span class="n">normal_force_</span> <span class="o">+=</span> <span class="n">kna</span> <span class="o">*</span> <span class="n">dil</span> <span class="o">*</span> <span class="n">dusm</span><span class="p">;</span>
+          <span class="p">}</span>
+        <span class="p">}</span> <span class="c1">// 剪胀</span>
+      <span class="p">}</span> <span class="c1">// fsm&gt;fsmax</span>
+    <span class="p">}</span> <span class="c1">// if (!tenflg)</span>
+  <span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="fish-support-for-constitutive-models">
+<h2>对本构模型的 <span class="codename">FISH</span> 支持</h2>
+<p>在 <span class="codename">3DEC</span> 中可使用 <span class="codename">FISH</span> 内置函数 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_fish/block.subcontact/fish_block.subcontact.prop.html#function:block.subcontact.prop" title="Get/set the assigned property values of subcontact models. The property name
+is supplied as a string...">子接触属性（<code class="xref fish fish-func docutils literal"><span class="pre">block.subcontact.prop</span></code>）</a>。
+它可用于表达式的左侧或右侧。
+因此，</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="n">val </span><span class="p">=</span><span class="n"> block</span><span class="p">.</span><span class="n">subcontact</span><span class="p">.</span><span class="n">prop</span><span class="p">(</span><span class="n">cxp</span><span class="p">,</span><span class="n"> p_name</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>将地址为 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">子接触地址（<span class="varfishsym"><span class="null">cxp</span></span>）</a> 的子接触中名为 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">属性名称（<span class="varfishsym"><span class="null">p_name</span></span>）</a> 的属性的浮点值存入 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">属性值（<span class="varfishsym"><span class="null">val</span></span>）</a>。
+<a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">属性名称（<span class="varfishsym"><span class="null">p_name</span></span>）</a> 可以是包含属性名称的字符串，
+也可以是取值为此类字符串的 <span class="codename">FISH</span> 变量。
+例如，<code class="docutils literal"><span class="pre">block.subcontact.prop(cxp,'friction')</span></code> 将指代内摩擦角。
+若 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">子接触地址（<span class="varfishsym"><span class="null">cxp</span></span>）</a> 中没有本构模型，
+或该模型不具有所指定的属性，
+则返回 0.0。类似地，</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="n">block</span><span class="p">.</span><span class="n">subcontact</span><span class="p">.</span><span class="n">prop</span><span class="p">(</span><span class="n">cxp</span><span class="p">,</span><span class="n"> p_name</span><span class="p">)</span><span class="n"> </span><span class="p">=</span><span class="n"> val</span>
+</pre></div>
+</div>
+<p>将 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">属性值（<span class="varfishsym"><span class="null">val</span></span>）</a> 存储到子接触 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">子接触地址（<span class="varfishsym"><span class="null">cxp</span></span>）</a> 中名为 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">属性名称（<span class="varfishsym"><span class="null">p_name</span></span>）</a> 的属性中。
+若 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">子接触地址（<span class="varfishsym"><span class="null">cxp</span></span>）</a> 中没有本构模型，
+或该模型不具有所指定的属性，
+或 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">属性值（<span class="varfishsym"><span class="null">val</span></span>）</a> 不是整数或浮点数，则不存储任何内容。
+在两种用法中，<a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">子接触地址（<span class="varfishsym"><span class="null">cxp</span></span>）</a> 都必须是子接触指针，
+而 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">属性名称（<span class="varfishsym"><span class="null">p_name</span></span>）</a> 必须是字符串或包含字符串的 <span class="codename">FISH</span> 变量。</p>
+</div>
+<div class="section" id="creating-user-written-model-dlls">
+<h2>创建用户自定义模型 DLL</h2>
+<div class="section" id="using-the-template">
+<h3>使用模板</h3>
+<p>在 Visual Studio 2017 或 2019 中创建本构模型项目的最简单方法，
+是使用 Itasca 公司提供的 <a class="reference internal" href="../../../../../flac3d/docproject/source/options/cppplugin/writeyourownmodel.html#modelswriting-template">ItascaProjectTemplates 扩展（<span class="std std-ref">ItascaProjectTemplates</span>）</a> 扩展模板。</p>
+<p>如需了解如何手动完成，请参见 <a class="reference internal" href="../../../../../flac3d/docproject/source/options/cppplugin/implementation.html#modelswritingimplementation"><span class="std std-ref">|flac3d| 实现文档</span>（|flac3d| Implementation document）</a> 中的“手动配置”部分。</p>
+</div>
+</div>
+<div class="section" id="loading-and-running-user-written-model-dlls">
+<h2>加载和运行用户自定义模型 DLL</h2>
+<p>节理模型 DLL 文件可在 <span class="codename">3DEC</span> 运行期间
+通过给出命令 <code class="xref fish fish-cmd docutils literal"><span class="pre">contact</span> <span class="pre">jmodel</span> <span class="pre">load</span></code> <span class="cmdkey">filename</span>（其中为 DLL 的文件名）加载到软件中。
+若将 DLL 文件放置在 “exe64\plugins\jmodel” 文件夹中，则会自动加载。
+此后，引用该模型及其属性的 <span class="codename">3DEC</span> 和 <span class="codename">FISH</span> 函数
+即可识别新的模型名称和属性名称。
+若对已加载的模型再次给出 <code class="xref fish fish-cmd docutils literal"><span class="pre">contact</span> <span class="pre">jmodel</span> <span class="pre">load</span></code> 命令，则不会执行任何操作，
+但会显示一条提示信息。</p>
+<p>在将本构模型插件赋予网格单元之前，
+必须先通过给出 <code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">plugin</span></code> 命令将模型配置为可使用插件。
+配置完成后，除非您的 <span class="codename">3DEC</span> 许可证包含 C++ 插件选项，否则模型将无法进行循环计算。</p>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../3dechome.html"><span class="codename">3DEC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../options.html">Options</a> »</li>
+<li class="nav-item nav-item-3"><a href="cppplugin.html">C++ Option</a> »</li>
+<li class="nav-item nav-item-4"><a accesskey="U" href="writeyourownmodel.html">Writing New Joint Constitutive Models</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="methodology.html" title="previous chapter"> Methodology</a> |    
+       <a href="programmersinterface.html" title="next chapter">Programmer’s Interface</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Implementation" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

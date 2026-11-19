@@ -1,0 +1,474 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>3DEC 中的软化愈合 Mohr-Coulomb 节理模型 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="../bilinear/bilinearmc.html" rel="next" title="Bilinear Mohr-Coulomb Joint Model In 3DEC"/>
+<link href="../mohrcoulomb/mohrcoulomb.html" rel="prev" title="Mohr-Coulomb Joint Model In 3DEC"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="softening-healing-mohr-coulomb-joint-model-in-3dec">
+<span id="softhealmcjmodel-3dec"></span><h1><span class="codename">3DEC</span> 中的软化愈合 Mohr-Coulomb 节理模型</h1>
+<p>将 Mohr-Coulomb 节理模型用于模拟地震活动时，存在以下不足：</p>
+<ul class="simple">
+<li>开始滑移时，应力瞬间下降（抗剪强度从峰值瞬间降至残余值）。这意味着所有滑移事件都是地震性事件（见<a href="#jmodelshmohr-1">图 1（Figure  1）</a>）。</li>
+<li>一旦发生滑移，断层强度就无法恢复到峰值。这意味着无法产生黏滑行为。</li>
+</ul>
+<div class="figure align-center" id="jmodelshmohr-1">
+<a class="reference internal image-reference" href="../../../../../_images/jmodelshmohr-1.png"><img alt="../../../../../_images/jmodelshmohr-1.png" src="../../../../../_images/jmodelshmohr-1.png" style="width: 80%;"/></a>
+</div>
+<p class="h3 rubric">公式</p>
+<p>软化愈合 Mohr-Coulomb 模型基于标准 Mohr-Coulomb 模型，增加了以下两点：</p>
+<ol class="arabic simple">
+<li>节理开始滑移时，抗剪强度在用户指定的临界滑移距离 <span class="math">\(D_c\)</span> 内由峰值演化至残余值。</li>
+<li>滑移停止时，抗剪强度瞬间恢复至峰值。</li>
+</ol>
+<p>拉力不发生软化或愈合。超过抗拉强度时，抗拉强度瞬间下降（无软化），并保持在残余值（无愈合）。</p>
+<p>对于未滑移的节理，黏聚力和摩擦取峰值。超过强度后，强度成为滑移距离的函数。滑移距离超过临界滑移距离时，采用黏聚力和摩擦的残余值。提供两种抗剪强度演化公式。</p>
+<p class="h4 rubric">线性</p>
+<p>线性软化时，抗剪强度按下式计算：</p>
+<div class="math" id="equation-shmcjshearpeak">
+<span class="eqno">(1)</span>\[ \begin{align}\begin{aligned}S_F = S_F^{peak} = c + \sigma_n \tan\phi \; , \;        u_s^p = 0\\S_F = S_F^{peak} - (S_F^{peak} - S_F^{resid}) * {u_s^p \over D_c } \; , \;    0 &lt; u_s^p &lt; D_c\\S_F = S_F^{resid} = c_{resid}+ \sigma_n \tan\phi_{resid} \;  , \;     u_s^p &gt; D_c\end{aligned}\end{align} \]</div>
+<p>其中，<span class="math">\(c\)</span> 为黏聚力，<span class="math">\(\sigma_n\)</span> 为法向应力，<span class="math">\(\phi\)</span> 为摩擦角，<span class="math">\(c_resid\)</span> 为残余黏聚力，<span class="math">\(\phi_{resid}\)</span> 为残余摩擦角，<span class="math">\(D_c\)</span> 为临界滑移距离，<span class="math">\(u_s^p\)</span> 为自滑移开始以来的塑性剪切位移（滑移量）。滑移停止时，抗剪强度瞬间恢复至峰值，<span class="math">\(u_s^p\)</span> 重设为 0。<a href="#jmodelshmohr-2">图 2（Figure  2）</a> 给出了一个无黏聚力子接触的示例。</p>
+<div class="figure align-center" id="id1">
+<span id="jmodelshmohr-2"></span><a class="reference internal image-reference" href="../../../../../_images/jmodelshmohr-2.png"><img alt="../../../../../_images/jmodelshmohr-2.png" src="../../../../../_images/jmodelshmohr-2.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：恒定法向应力下滑移节理的剪应力与剪切位移关系，采用线性软化规律。</span></p>
+</div>
+<p class="h4 rubric">非线性</p>
+<p>非线性软化时，抗剪强度按下式计算：</p>
+<div class="math" id="equation-shmcjshearpeak-nl">
+<span class="eqno">(2)</span>\[ \begin{align}\begin{aligned}S_F = S_F^{peak} = c + \sigma_n \tan\phi  \; , \;     u_s^p = 0\\S_F = S_F^{resid} + (S_F^{peak} - S_F^{resid}) * {D_c^\alpha \over (D_c + u_s^p)^\alpha }  \; , \; u_s^p &gt; 0\end{aligned}\end{align} \]</div>
+<p>其中，<span class="math">\(\alpha\)</span> 为决定强度下降程度的指数（&gt; 1），见<a href="#jmodelshmohr-3">图 3（Figure  3）</a>。</p>
+<div class="figure align-center" id="id2">
+<span id="jmodelshmohr-3"></span><a class="reference internal image-reference" href="../../../../../_images/jmodelshmohr-3.png"><img alt="../../../../../_images/jmodelshmohr-3.png" src="../../../../../_images/jmodelshmohr-3.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 3：恒定法向应力下滑移节理的剪应力与剪切位移关系，采用非线性软化规律。</span></p>
+</div>
+<p>剪胀（<span class="math">\(\psi\)</span>）的变化方式与黏聚力或摩擦相同。如果指定非零残余剪胀，则在 <span class="math">\(\alpha\)</span> = 0（线性）时，剪胀按下式变化：</p>
+<div class="math" id="equation-shmcjdilation">
+<span class="eqno">(3)</span>\[ \begin{align}\begin{aligned}\tan\psi = \tan\psi_{peak} - (\tan\psi_{peak} - \tan\psi_{resid}) * {u_s^p \over D_c } \;   0 &lt; u_s^p &lt; D_c\\\tan\psi = \tan\psi_{resid} \; , \; u_s^p &gt; D_c\end{aligned}\end{align} \]</div>
+<p>对于非线性情况，剪胀为：</p>
+<div class="math" id="equation-shmcjdilation2">
+<span class="eqno">(4)</span>\[tan\psi = tan\psi_{resid} + (\tan\psi_{peak} - \tan\psi_{resid}) * {D_c^\alpha \over (D_c + u_s^p)^\alpha } \; , \;   u_s^p &gt; 0\]</div>
+<p>如果未提供 <span class="math">\(\psi_{resid}\)</span> 的值，其默认值为 <span class="math">\(\psi_{peak}\)</span></p>
+<p>子接触破坏状态与<a class="reference internal" href="../mohrcoulomb/mohrcoulomb.html#mohrcoulombjmodel-3dec"><span class="std std-ref">3DEC 中的莫尔—库仑节理模型</span>（Mohr-Coulomb Joint Model In 3DEC）</a>相同。</p>
+<div class="section" id="example">
+<h2>示例</h2>
+<p>要在 <span class="codename">3DEC</span> 中查看本例，使用菜单命令 <span class="menuselection">帮助 ► 示例…</span>。选择“3DEC/ Constitutive_Models/ SHMohr_Model”，再选择“shmohr.prj”加载。所用<a class="reference internal" href="#shmohr-datafiles"><span class="std std-ref">数据文件</span>（data files）</a>列于本例末尾。</p>
+<p>采用三个块体模拟弹簧滑块问题，如<a href="#jmodelshmohr-4">图 4（Figure  4）</a> 所示。在滑块顶面施加 1 MPa 的法向应力，在系统右侧施加 1 mm/s 的速度。然后运行模型，直到发生一个或多个滑移事件。</p>
+<p>该试验模拟直剪试验，其中只有一条水平节理，先施加法向约束应力，再施加单向剪切位移。<a href="../mohrcoulomb/mohrcoulomb.html#jmodelmohr-5">图 5（Figure  5）</a> 显示了该模型；节理由一个包含 10 个子接触的接触定义。</p>
+<p>为滑动节理赋予以下强度属性：</p>
+<p>峰值摩擦角，<span class="math">\(\phi\)</span> = 25 度
+残余摩擦角，<span class="math">\(\phi_{resid}\)</span> = 20 度
+临界滑移距离，<span class="math">\(D_c = 1x10^{-4} , 1x10^{-5}\)</span>
+Alpha 指数，<span class="math">\(\alpha\)</span> = 0（线性）</p>
+<div class="figure align-center" id="id3">
+<span id="jmodelshmohr-4"></span><a class="reference internal image-reference" href="../../../../../_images/blocks10.png"><img alt="../../../../../_images/blocks10.png" src="../../../../../_images/blocks10.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 4：弹簧滑块试验中的 <span class="codename">3DEC</span> 块体布置。</span></p>
+</div>
+<p><a href="#jmodelshmohr-5">图 5（Figure  5）</a> 至<a href="#jmodelshmohr-8">图 8（Figure  8）</a> 显示了不同 <span class="math">\(D_c\)</span> 值下，节理摩擦及剪切速度与剪切位移的关系。为便于比较，各速度图采用相同的最大值。软化效应十分明显，较小 <span class="math">\(D_c\)</span> 值的模型中观测到的较高速度，提示了一种区分地震性与非地震性滑移事件的可能判据。</p>
+<div class="figure align-center" id="id4">
+<span id="jmodelshmohr-5"></span><a class="reference internal image-reference" href="../../../../../_images/ss-1e-5.png"><img alt="../../../../../_images/ss-1e-5.png" src="../../../../../_images/ss-1e-5.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 5：<span class="math">\(D_c\)</span> = 1e-5 时，软化愈合 Mohr-Coulomb 节理模型的平均剪应力与剪切位移关系。</span></p>
+</div>
+<div class="figure align-center" id="id5">
+<span id="jmodelshmohr-6"></span><a class="reference internal image-reference" href="../../../../../_images/vel-1e-5.png"><img alt="../../../../../_images/vel-1e-5.png" src="../../../../../_images/vel-1e-5.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 6：<span class="math">\(D_c\)</span> = 1e-5 时，软化愈合 Mohr-Coulomb 节理模型的剪切速度与剪切位移关系。</span></p>
+</div>
+<div class="figure align-center" id="id6">
+<span id="jmodelshmohr-7"></span><a class="reference internal image-reference" href="../../../../../_images/ss-1e-4.png"><img alt="../../../../../_images/ss-1e-4.png" src="../../../../../_images/ss-1e-4.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 7：<span class="math">\(D_c\)</span> = 1e-4 时，软化愈合 Mohr-Coulomb 节理模型的平均剪应力与剪切位移关系。</span></p>
+</div>
+<div class="figure align-center" id="id7">
+<span id="jmodelshmohr-8"></span><a class="reference internal image-reference" href="../../../../../_images/vel-1e-4.png"><img alt="../../../../../_images/vel-1e-4.png" src="../../../../../_images/vel-1e-4.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 8：<span class="math">\(D_c\)</span> = 1e-4 时，软化愈合 Mohr-Coulomb 节理模型的剪切速度与剪切位移关系。</span></p>
+</div>
+<p>为检验变化的剪胀，又运行了三次试验：剪胀角恒定为 10 度、剪胀角恒定为 2 度，以及剪胀角在临界滑移距离 <span class="math">\(D_c\)</span> 为 1e-4 的过程中由 10 度演化至 2 度。<a href="#jmodelshmohr-9">图 9（Figure  9）</a> 显示了三种情况下法向位移与剪切位移的关系。</p>
+<div class="figure align-center" id="id8">
+<span id="jmodelshmohr-9"></span><a class="reference internal image-reference" href="../../../../../_images/dilation1.png"><img alt="../../../../../_images/dilation1.png" src="../../../../../_images/dilation1.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 9：剪胀角恒定为 10 度、恒定为 2 度以及从 10 度演化至 2 度时的法向位移与剪切位移关系。</span></p>
+</div>
+<p class="h2 rubric" id="shmohr-datafiles">数据文件</p>
+<p class="rubric" id="the-jmodel-shmohr">spring-slider.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10000</span>
+<span class="nb">model config</span><span class="n"> energy</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+
+<span class="c">; 滑块长方体</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span>
+
+<span class="c">; 弹簧长方体</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span>
+
+<span class="c">; 底座长方体</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="o">-</span><span class="m m-Double">1.5</span><span class="n"> </span><span class="m m-Double">3.5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1.5</span><span class="n"> </span><span class="m m-Double">1.5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1.5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span>
+
+<span class="nb">block zone gen</span><span class="n"> edgelength </span><span class="m m-Double">0.5</span>
+
+<span class="nb">block zone cmodel</span><span class="n"> assign el</span>
+<span class="nb">block zone prop</span><span class="n"> dens </span><span class="m m-Double">2000</span><span class="n"> bulk </span><span class="m m-Double">1e11</span><span class="n"> shear </span><span class="m m-Double">0.6e11</span>
+
+<span class="c">; 弹簧</span>
+<span class="nb">block contact jmodel</span><span class="n"> assign el</span>
+<span class="nb">block contact prop</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1e9</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1e9</span>
+
+<span class="c">;滑块与底座接触，采用零摩擦的 Mohr-Coulomb 模型</span>
+<span class="nb">block hide</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">block contact jmodel</span><span class="n"> assign mohr</span>
+<span class="nb">block contact prop</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1e11</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1e11</span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+
+<span class="c">; 滑动接触</span>
+<span class="nb">block hide</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">3</span><span class="n"> pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">block contact jmodel</span><span class="n"> assign softening</span><span class="o">-</span><span class="n">mohr</span>
+
+<span class="c">; 节理参数</span>
+<span class="nb">block contact prop</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1e11</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1e11</span><span class="n"> friction </span><span class="m m-Double">25</span><span class="n"> friction</span><span class="o">-</span><span class="n">res </span><span class="m m-Double">20</span><span class="n"> tens </span><span class="m m-Double">1e12</span><span class="n"> dc </span><span class="m m-Double">1e-4</span>
+
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+
+<span class="nb">block insitu</span><span class="n"> stress </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1e6</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block face apply</span><span class="n"> stress</span><span class="o">-</span><span class="n">zz </span><span class="o">-</span><span class="m m-Double">1e6</span><span class="n"> range pos</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">1</span>
+<span class="nb">block fix</span><span class="n"> range pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">1.5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="nb">model </span><span class="ss">solve</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'blocks'</span>
+
+<span class="p">=====================================</span>
+
+<span class="nb">block gridpoint ini</span><span class="n"> disp </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block contact reset</span><span class="n"> disp</span>
+
+<span class="c">; ==== 用于历程的 FISH 函数 =====</span>
+<span class="ni">[cxi0 </span><span class="p">=</span><span class="ni"> </span><span class="k">block.subcontact.near</span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">fish def</span><span class="ni"> sh_mu</span>
+<span class="ni">  sh_mu </span><span class="p">=</span><span class="ni"> </span><span class="k">block.subcontact.prop</span><span class="p">(</span><span class="ni">cxi0</span><span class="p">,</span><span class="s">'friction-current'</span><span class="p">)</span>
+<span class="nb">end</span>
+
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">1.0e-3</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">2.9</span><span class="n"> </span><span class="m m-Double">3.1</span>
+<span class="nb">block contact his</span><span class="n"> stress</span><span class="o">-</span><span class="n">norm pos </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block contact his</span><span class="n"> stress</span><span class="o">-</span><span class="n">shear pos </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block contact his</span><span class="n"> dis</span><span class="o">-</span><span class="n">shear pos </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+
+<span class="c">; 获取速度</span>
+<span class="nb">block hide</span><span class="n"> range pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">1.5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="nb">block his</span><span class="n"> vel</span><span class="o">-</span><span class="n">x pos </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+
+<span class="nb">fish history</span><span class="n"> sh_mu</span>
+
+<span class="nb">block his</span><span class="n"> fob</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'initial'</span>
+
+<span class="p">================================</span>
+
+<span class="c">; dc = 1e-4</span>
+<span class="n">model rest </span><span class="s">'initial'</span>
+
+<span class="n">his interval </span><span class="m m-Double">100</span>
+<span class="nb">model </span><span class="ss">cyc</span><span class="n"> </span><span class="m m-Double">30000</span>
+<span class="n">his interval </span><span class="m m-Double">10</span>
+<span class="nb">model </span><span class="ss">cyc</span><span class="n"> </span><span class="m m-Double">30000</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'spring-slider-dc1e-4'</span>
+
+<span class="p">===========================================</span>
+
+<span class="c">; dc 1e-5</span>
+<span class="n">model rest </span><span class="s">'initial'</span>
+<span class="nb">block hide</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">3</span><span class="n"> pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">block contact prop</span><span class="n"> dc </span><span class="m m-Double">1e-5</span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+
+<span class="n">his interval </span><span class="m m-Double">100</span>
+<span class="nb">model </span><span class="ss">cyc</span><span class="n"> </span><span class="m m-Double">30000</span>
+<span class="n">his interval </span><span class="m m-Double">10</span>
+<span class="nb">model </span><span class="ss">cyc</span><span class="n"> </span><span class="m m-Double">25000</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'spring-slider-dc1e-5'</span>
+
+<span class="p">========================================</span>
+</pre></div>
+</div>
+<p class="rubric" id="the-jmodel-shmohrd">dilation.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 测试剪胀角随滑移变化的文件</span>
+
+<span class="n">model rest </span><span class="s">'blocks'</span>
+
+<span class="nb">block gridpoint ini</span><span class="n"> disp </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block contact reset</span><span class="n"> disp</span>
+
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">1.0e-3</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">2.9</span><span class="n"> </span><span class="m m-Double">3.1</span>
+
+<span class="nb">block contact his</span><span class="n"> stress</span><span class="o">-</span><span class="n">norm pos </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block contact his</span><span class="n"> stress</span><span class="o">-</span><span class="n">shear pos </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block contact his</span><span class="n"> dis</span><span class="o">-</span><span class="n">shear pos </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block contact his</span><span class="n"> dis</span><span class="o">-</span><span class="n">norm pos </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+
+<span class="c">; 用于计算剪胀的函数</span>
+<span class="nb">fish def</span><span class="ni"> get_dilation</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> cx0 </span><span class="p">=</span><span class="ni"> </span><span class="k">block.subcontact.near</span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> ndis </span><span class="p">=</span><span class="ni"> </span><span class="k">block.subcontact.dis.norm</span><span class="p">(</span><span class="ni">cx0</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> sdis </span><span class="p">=</span><span class="ni"> </span><span class="k">math.mag</span><span class="p">(</span><span class="k">block.subcontact.dis.shear</span><span class="p">(</span><span class="ni">cx0</span><span class="p">))</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> dilation </span><span class="p">=</span><span class="ni"> </span><span class="k">math.atan</span><span class="p">(</span><span class="ni">ndis</span><span class="o">/</span><span class="ni">sdis</span><span class="p">)</span><span class="o">/</span><span class="k">math.degrad</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> status </span><span class="p">=</span><span class="ni"> </span><span class="k">io.out</span><span class="p">(</span><span class="s">'Dilation = '</span><span class="o">+</span><span class="ni">string</span><span class="p">(</span><span class="ni">dilation</span><span class="p">))</span>
+<span class="nb">end</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'initial'</span>
+
+<span class="c">; ========= 剪胀角恒为 10 =============</span>
+
+<span class="c">; 设置节理参数</span>
+<span class="nb">block hide</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">3</span><span class="n"> pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">block contact prop</span><span class="n"> dilation </span><span class="m m-Double">10</span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+
+<span class="n">his interval </span><span class="m m-Double">100</span>
+<span class="nb">model </span><span class="ss">cyc</span><span class="n"> </span><span class="m m-Double">30000</span>
+<span class="n">his interval </span><span class="m m-Double">10</span>
+<span class="nb">model </span><span class="ss">cyc</span><span class="n"> </span><span class="m m-Double">15000</span>
+
+<span class="ni">[get_dilation]</span>
+
+<span class="n">his export </span><span class="s">'4'</span><span class="n"> vs </span><span class="s">'3'</span><span class="n"> table </span><span class="s">'dilation10'</span>
+<span class="nb">table</span><span class="n"> </span><span class="s">'dilation10'</span><span class="n"> export </span><span class="s">'dilation10.tab'</span>
+
+<span class="c">; ========= 剪胀角恒为 2 =============</span>
+
+<span class="n">model rest </span><span class="s">'initial'</span>
+
+<span class="c">; 设置节理参数</span>
+<span class="nb">block hide</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">3</span><span class="n"> pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">block contact prop</span><span class="n"> dilation </span><span class="m m-Double">2</span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+
+<span class="n">his interval </span><span class="m m-Double">100</span>
+<span class="nb">model </span><span class="ss">cyc</span><span class="n"> </span><span class="m m-Double">30000</span>
+<span class="n">his interval </span><span class="m m-Double">10</span>
+<span class="nb">model </span><span class="ss">cyc</span><span class="n"> </span><span class="m m-Double">15000</span>
+
+<span class="ni">[get_dilation]</span>
+
+<span class="n">his export </span><span class="s">'4'</span><span class="n"> vs </span><span class="s">'3'</span><span class="n"> table </span><span class="s">'dilation2'</span>
+<span class="nb">table</span><span class="n"> </span><span class="s">'dilation2'</span><span class="n"> export </span><span class="s">'dilation2.tab'</span>
+
+<span class="c">; ========= 剪胀角从 10 变化至 2 =============</span>
+
+<span class="n">model rest </span><span class="s">'initial'</span>
+
+<span class="c">; 设置节理参数</span>
+<span class="nb">block hide</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">3</span><span class="n"> pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">block contact prop</span><span class="n"> dilation </span><span class="m m-Double">10</span><span class="n"> dilation</span><span class="o">-</span><span class="n">res </span><span class="m m-Double">2</span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+
+<span class="n">his interval </span><span class="m m-Double">100</span>
+<span class="nb">model </span><span class="ss">cyc</span><span class="n"> </span><span class="m m-Double">30000</span>
+<span class="n">his interval </span><span class="m m-Double">10</span>
+<span class="nb">model </span><span class="ss">cyc</span><span class="n"> </span><span class="m m-Double">15000</span>
+
+<span class="ni">[get_dilation]</span>
+
+<span class="n">his export </span><span class="s">'4'</span><span class="n"> vs </span><span class="s">'3'</span><span class="n"> table </span><span class="s">'dilation_10_2'</span>
+<span class="nb">table</span><span class="n"> </span><span class="s">'dilation10'</span><span class="n"> import </span><span class="s">'dilation10.tab'</span>
+<span class="nb">table</span><span class="n"> </span><span class="s">'dilation2'</span><span class="n"> import </span><span class="s">'dilation2.tab'</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="properties">
+<span id="shmohrjmproperties"></span><h2>属性</h2>
+<dl class="command">
+<dt id="command:softening-mohr">
+<span class="cmdname"><span class="hide">s</span><span class="hide">o</span><span class="hide">f</span><span class="hide">t</span><span class="hide">e</span><span class="hide">n</span><span class="hide">i</span><span class="hide">n</span><span class="hide">g</span><span class="hide">-</span><span class="hide">m</span><span class="hide">o</span><span class="hide">h</span><span class="hide">r</span><span class="hide"> </span></span></dt>
+<dd><dl class="keyword">
+<dt id="kwd:softening-mohr.alpha">
+<span class="cmdkey"><span class="null">a</span><span class="null">l</span><span class="null">p</span><span class="null">h</span><span class="null">a</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>决定摩擦下降程度的指数（&gt;= 1）。如果 <span class="math">\(alpha\)</span> = 0，则采用线性摩擦降低关系。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-mohr.cohesion">
+<span class="cmdkey"><span class="null">c</span><span class="null">o</span><span class="null">h</span><span class="null">e</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>节理黏聚力。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-mohr.cohesion-residual">
+<span class="cmdkey"><span class="null">c</span><span class="null">o</span><span class="null">h</span><span class="null">e</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="null">r</span><span class="null">e</span><span class="null">s</span><span class="null">i</span><span class="null">d</span><span class="null">u</span><span class="null">a</span><span class="null">l</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>节理残余黏聚力。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-mohr.dc">
+<span class="cmdkey"><span class="null">d</span><span class="null">c</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>摩擦从峰值降至残余值所经过的滑移距离。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-mohr.dilation">
+<span class="cmdkey"><span class="null">d</span><span class="null">i</span><span class="null">l</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>节理剪胀角，单位为度。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-mohr.dilation-zero">
+<span class="cmdkey"><span class="null">d</span><span class="null">i</span><span class="null">l</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="null">z</span><span class="null">e</span><span class="null">r</span><span class="null">o</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>节理停止剪胀时的剪切位移。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-mohr.friction">
+<span class="cmdkey"><span class="null">f</span><span class="null">r</span><span class="null">i</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>峰值摩擦角，单位为度。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-mohr.friction-current">
+<span class="cmdkey"><span class="null">f</span><span class="null">r</span><span class="null">i</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="null">c</span><span class="null">u</span><span class="null">r</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">t</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>当前摩擦角，单位为度（只读）。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-mohr.friction-residual">
+<span class="cmdkey"><span class="null">f</span><span class="null">r</span><span class="null">i</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="null">r</span><span class="null">e</span><span class="null">s</span><span class="null">i</span><span class="null">d</span><span class="null">u</span><span class="null">a</span><span class="null">l</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>节理残余摩擦角，单位为度。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-mohr.healing">
+<span class="cmdkey"><span class="null">h</span><span class="null">e</span><span class="null">a</span><span class="null">l</span><span class="null">i</span><span class="null">n</span><span class="null">g</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ..."><span class="varbool"><span class="null">b</span><span class="null"> </span></span></a></dt>
+<dd><p>如果设为 true，滑移停止时摩擦恢复至峰值。默认值为 true。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-mohr.slip">
+<span class="cmdkey"><span class="null">s</span><span class="null">l</span><span class="null">i</span><span class="null">p</span><span class="null"> </span></span></dt>
+<dd><p>塑性剪切滑移量（只读）</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-mohr.stiffness-normal">
+<span class="cmdkey"><span class="null">s</span><span class="null">t</span><span class="null">i</span><span class="null">f</span><span class="null">f</span><span class="null">n</span><span class="null">e</span><span class="null">s</span><span class="null">s</span><span class="null">-</span><span class="null">n</span><span class="null">o</span><span class="null">r</span><span class="null">m</span><span class="null">a</span><span class="null">l</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>节理法向刚度（应力／距离）</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-mohr.stiffness-shear">
+<span class="cmdkey"><span class="null">s</span><span class="null">t</span><span class="null">i</span><span class="null">f</span><span class="null">f</span><span class="null">n</span><span class="null">e</span><span class="null">s</span><span class="null">s</span><span class="null">-</span><span class="null">s</span><span class="null">h</span><span class="null">e</span><span class="null">a</span><span class="null">r</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>节理剪切刚度（应力／距离）</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-mohr.tension">
+<span class="cmdkey"><span class="null">t</span><span class="null">e</span><span class="null">n</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>抗拉强度。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-mohr.tension-residual">
+<span class="cmdkey"><span class="null">t</span><span class="null">e</span><span class="null">n</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="null">r</span><span class="null">e</span><span class="null">s</span><span class="null">i</span><span class="null">d</span><span class="null">u</span><span class="null">a</span><span class="null">l</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>残余节理抗拉强度。</p>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="references">
+<h2>参考文献</h2>
+<p>Rice, J., 1983。“断层滑移与地震失稳的本构关系”，Pure Appl. Geoph., 116, 790-806, 1983。</p>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../3dechome.html"><span class="codename">3DEC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../theory.html"><span class="codename">3DEC</span> Theory and Background</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../cmodels/constitutivemodelsin3dec.html">Constitutive Models in <span class="codename">3DEC</span></a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../mohrcoulomb/mohrcoulomb.html" title="previous chapter"> Mohr-Coulomb Joint Model In <span class="codename">3DEC</span></a> |    
+       <a href="../bilinear/bilinearmc.html" title="next chapter">Bilinear Mohr-Coulomb Joint Model In <span class="codename">3DEC</span></a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Softening-Healing Mohr-Coulomb Joint Model In 3DEC" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

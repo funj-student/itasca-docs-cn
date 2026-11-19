@@ -1,0 +1,567 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>能量计算 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="isolatedblock.html" rel="next" title="Isolated Block Stability Method"/>
+<link href="theory_fos.html" rel="prev" title="Factor-of-Safety Calculation"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="energy-calculation">
+<span id="energycalculation3dec"></span><h1>能量计算</h1>
+<div class="section" id="introduction">
+<h2>引言</h2>
+<p><span class="codename">3DEC</span> 对完整岩石、节理及边界所做的功进行能量变化计算。此处计算的能量项，采用与 Salamon（1984）相同的一般术语。</p>
+<p>由于 <span class="codename">3DEC</span> 采用增量求解过程，每个时间步均在物体各质量点处求解运动方程。系统趋向平衡时，每个时间步都确定各能量分量的增量变化。<span class="codename">3DEC</span> 还持续累计各分量。</p>
+</div>
+<div class="section" id="energy-balance">
+<h2>能量平衡</h2>
+<p>总能量平衡可用释放能量（<span class="math">\(W_r\)</span>）表示，即模型边界做功与储存及耗散应变能总量之间的差：</p>
+<div class="math" id="equation-ecc3-eq-qqqq">
+<span class="eqno">(1)</span>\[W_r = W - (U_c + U_b + W_j + W_p)\]</div>
+<p>其中：</p>
+<blockquote>
+<div><p><span class="math">\(Wr\)</span> = 释放能量；</p>
+<p><span class="math">\(W\)</span> = 向系统输入的边界加载总功；</p>
+<p><span class="math">\(U_c\)</span> = 材料中储存的总应变能；</p>
+<p><span class="math">\(U_b\)</span> = 系统势能总变化；</p>
+<p><span class="math">\(W_j\)</span> = 节理剪切耗散的总能量；以及</p>
+<p><span class="math">\(W_p\)</span> = 完整岩石塑性变形耗散的总功。</p>
+</div></blockquote>
+<p>也可根据动能、质量阻尼功、黏性边界做功及开挖材料应变能，以第二种方式计算释放能量：</p>
+<div class="math">
+\[W_r = U_k + W_k + W_v + U_m\]</div>
+<p>其中：</p>
+<blockquote>
+<div><p><span class="math">\(U_k\)</span> = 系统当前动能；</p>
+<p><span class="math">\(W_k\)</span> = 质量阻尼耗散的总功；</p>
+<p><span class="math">\(W_v\)</span> = 黏性（无反射）边界做功；以及</p>
+<p><span class="math">\(U_m\)</span> = 开挖材料中的总应变能。</p>
+</div></blockquote>
+<p>第二种释放能量表达形式对动力问题尤其有用，因为释放的动能容易计算。</p>
+<p>各项的定义及计算方法见下一节。</p>
+</div>
+<div class="section" id="calculation-of-individual-energy-components">
+<h2>各能量分量的计算</h2>
+<div class="section" id="total-boundary-loading-work">
+<h3>边界加载总功（<span class="math">\(W\)</span>）</h3>
+<p><span class="codename">3DEC</span> 块体结构外边界上的做功，由边界网格点力和位移计算。对于动力问题，在达到初始应力平衡后，可将应力边界替换为无反射黏性边界。网格点做功计算如下：</p>
+<div class="math">
+\[W_{gi} = F_{xi}\ u_{xi} + F_{yi}\ u_{yi} + F_{zi}\ u_{zi}\]</div>
+<p>其中：</p>
+<blockquote>
+<div><p><span class="math">\(W_{gi}\)</span> = 外边界网格点 <span class="math">\(i\)</span> 处的做功；</p>
+<p><span class="math">\(F_{xi}\)</span> = 网格点处 <span class="math">\(x\)</span> 方向的力；</p>
+<p><span class="math">\(u_{xi}\)</span> = 网格点处 <span class="math">\(x\)</span> 方向的位移；</p>
+<p><span class="math">\(F_{yi}\)</span> = 网格点处 <span class="math">\(y\)</span> 方向的力；以及</p>
+<p><span class="math">\(u_{yi}\)</span> = 网格点处 <span class="math">\(y\)</span> 方向的位移。</p>
+<p><span class="math">\(F_{zi}\)</span> = 网格点处 <span class="math">\(z\)</span> 方向的力；以及</p>
+<p><span class="math">\(u_{zi}\)</span> = 网格点处 <span class="math">\(z\)</span> 方向的位移。</p>
+</div></blockquote>
+<p>时间步 <span class="math">\(l\)</span> 内的边界总功 <span class="math">\(W_l\)</span>，为所有边界网格点做功之和：</p>
+<div class="math">
+\[W_l = \sum^{ngp}_{i=1}\ W_{gi}\]</div>
+<p>其中，<span class="math">\(ngp\)</span> = 边界网格点数量。</p>
+<p>对全部时间步累计边界功：</p>
+<div class="math">
+\[W = \sum^{nt}_{l=1}\ W_l\]</div>
+<p>其中，<span class="math">\(nt\)</span> = 时间步数量。随着系统趋于平衡，<span class="math">\(W\)</span> 将趋于常数。</p>
+<p>边界加载功率 <span class="math">\(\Delta W\)</span>，就是每个时间步的边界做功除以时间步长：</p>
+<div class="math">
+\[\Delta W = {{W_{l+1} - W_l} \over {(\Delta t)}}\]</div>
+<p>其中，<span class="math">\(\Delta t\)</span> 为时间步长。</p>
+<p>模拟期间记录总功 <span class="math">\(W\)</span> 和增量功 <span class="math">\(\Delta W\)</span> 的历程。</p>
+</div>
+<div class="section" id="potential-energy">
+<h3>势能（<span class="math">\(U_b\)</span>）</h3>
+<p>重力势能变化根据网格点重力和位移计算。对所有网格点的增量位移求和，得到总势能变化：</p>
+<div class="math">
+\[U_{gi}= m_i\ [g_x\ u_{xi} + g_y\ u_{yi} + g_z\ u_{zi}]\]</div>
+<p>其中：</p>
+<blockquote>
+<div><p><span class="math">\(U_{gi}\)</span> = 网格点 <span class="math">\(i\)</span> 的势能；</p>
+<p><span class="math">\(m_i\)</span> = 网格点 <span class="math">\(i\)</span> 的质量；</p>
+<p><span class="math">\(u_{xi}\)</span>、<span class="math">\(u_{yi}\)</span>、<span class="math">\(u_{zi}\)</span> = 网格点 <span class="math">\(i\)</span> 的位移分量；以及</p>
+<p><span class="math">\(g_x\)</span>、<span class="math">\(g_y\)</span>、<span class="math">\(g_z\)</span> = <span class="math">\(x\)</span>、<span class="math">\(y\)</span> 和 <span class="math">\(z\)</span> 方向的加速度，通常为重力加速度。</p>
+</div></blockquote>
+<p>在给定时间步 <span class="math">\(k\)</span>，对所有网格点 <span class="math">\(i\)</span> 的能量求和，得到总势能：</p>
+<div class="math">
+\[U_b = \sum_{i=1}^{ngp}\ U_{gi}\]</div>
+<p>对全部时间步累计 <span class="math">\(U_b\)</span>：</p>
+<div class="math">
+\[U_b = \sum^{nt}_{j=1}\ U_{bj}\]</div>
+<p>其中，<span class="math">\(nt\)</span> 为时间步数量；随着模型趋于平衡，<span class="math">\(U_b\)</span> 将趋于常数。</p>
+</div>
+<div class="section" id="kinetic-energy">
+<h3>动能（<span class="math">\(U_k\)</span>）</h3>
+<p>每个时间步均计算各网格点动能，并在该时间步对全部网格点求和。不跨时间步累计动能，因此系统趋于平衡时，动能将趋近于零。动能为</p>
+<div class="math">
+\[U_k = \sum_{i=1}^{ngp}\ {{1} \over {2}}\ m_i\ (\dot u_i)^2\]</div>
+<p>其中：</p>
+<blockquote>
+<div><p><span class="math">\(U_k\)</span> = 给定时间步内所有网格点的动能；</p>
+<p><span class="math">\(m_i\)</span> = 网格点 <span class="math">\(i\)</span> 的质量；以及</p>
+<p><span class="math">\(\dot u_i\)</span> = 网格点 <span class="math">\(i\)</span> 的速度。</p>
+</div></blockquote>
+<p>计算增量动能，使用户能够检查相邻时间步之间的变化率：</p>
+<div class="math">
+\[U_{k_{inc}} = {{U_{k_n} - U_{k_{n-1}}} \over {\Delta t}}\]</div>
+<p>其中：</p>
+<blockquote>
+<div><p><span class="math">\(U_{kn}\)</span> = 时间步 <span class="math">\(n\)</span> 的动能；</p>
+<p><span class="math">\(U_{kn−1}\)</span> = 时间步 <span class="math">\(n-1\)</span> 的动能；以及</p>
+<p><span class="math">\(\Delta t\)</span> = 时间步长。</p>
+</div></blockquote>
+<p>对于刚性块体，也以类似方式根据块体质量和速度计算动能。</p>
+</div>
+<div class="section" id="damped-energy">
+<h3>阻尼耗散能（<span class="math">\(W_k\)</span>）</h3>
+<p>质量阻尼功是局部阻尼或全局阻尼吸收的全部能量之和，主要用于静力分析。动力分析中，黏性边界做功将远大于阻尼耗散能，并主要控制计算所得总释放能量。</p>
+<p>通过研究简化的运动方程，最容易理解阻尼耗散能：</p>
+<div class="math">
+\[{{\partial \dot u} \over {\partial t}} = {{\sum F} \over {m}} - \alpha\ \dot u\]</div>
+<p>其中：</p>
+<blockquote>
+<div><p><span class="math">\(\dot u\)</span> = 质量为 <span class="math">\(m\)</span> 的网格点速度</p>
+<p><span class="math">\(\sum F\)</span> = 网格点处的合力；以及</p>
+<p><span class="math">\(\alpha\)</span> = 阻尼系数，= <span class="math">\(2 \pi f \gamma\)</span>，其中 <span class="math">\(\gamma\)</span> = 临界阻尼比，<span class="math">\(f\)</span> = 系统固有频率（每秒周期数）；以弧度每秒表示的圆频率为 <span class="math">\(\omega = 2 \pi f\)</span>。</p>
+</div></blockquote>
+<p>阻尼力为</p>
+<div class="math">
+\[F_d = m\ \alpha\ \dot u\]</div>
+<p>网格点处阻尼耗散能变化率为</p>
+<div class="math">
+\[\dot W_d = F_d\ \dot u = m\ \alpha\ \dot u^2\]</div>
+<p>网格点 <span class="math">\(j\)</span> 在一个时间步内的阻尼耗散能为</p>
+<div class="math">
+\[W_{dj} = \int\ \alpha\ m\ \dot u^2\ dt = 2 \alpha\ \Delta t\ U_k\]</div>
+<p>其中，<span class="math">\(W_{dj}\)</span> 为网格点 <span class="math">\(j\)</span> 处的阻尼耗散能，<span class="math">\(U_k\)</span> 为该网格点动能。</p>
+<p>因此，阻尼耗散能与动能分量通过阻尼系数关联。总质量阻尼功为所有网格点及所有时间步的总和：</p>
+<div class="math">
+\[W_d = \sum^{nt}_{i=1}\ \sum^{ngp}_{j=1}\ W_{dj}\]</div>
+<p>其中：</p>
+<blockquote>
+<div><p><span class="math">\(W_d\)</span> = 阻尼耗散总能量；</p>
+<p><span class="math">\(nt\)</span> = 时间步数量；以及</p>
+<p><span class="math">\(ngp\)</span> = 网格点数量。</p>
+</div></blockquote>
+<p>增量阻尼耗散能也计算为</p>
+<div class="math">
+\[W_{d_{inc}} = 2 \alpha\ U_k\]</div>
+</div>
+<div class="section" id="strain-energy-stored-in-the-rock-mass">
+<h3>岩体中储存的应变能（<span class="math">\(U_c\)</span>）</h3>
+<p>岩体中储存的总应变能由两部分组成：块体储能和节理储能。分别计算两部分，再求和确定总储能 <span class="math">\(U_c\)</span>。</p>
+<div class="section" id="block-stored-strain-energy">
+<h4>块体储存的应变能（<span class="math">\(U_{cb}\)</span>）</h4>
+<p>每个时间步均计算块体内所有有限差分网格单元的应变能。对全部块体求和得到总储存应变能。每个网格单元在一个时间步内的增量应变能为</p>
+<div class="math">
+\[ \begin{align}\begin{aligned}\Delta U_{c_z} = {{V} \over {2}}\ \bigl[\ (\sigma_{11} + \sigma_{11}^{\prime})\ e_{11} + (\sigma_{22} + \sigma_{22}^{\prime})\ e_{22} + (\sigma_{33} + \sigma_{33}^{\prime})\ e_{33}\\       + 2 (\sigma_{12} + \sigma_{12}^{\prime})\ e_{12} + 2 (\sigma_{13} + \sigma_{13}^{\prime})\ e_{13} + + 2 (\sigma_{23} + \sigma_{23}^{\prime})\ e_{23} \bigr]\end{aligned}\end{align} \]</div>
+<p>其中：</p>
+<blockquote>
+<div><p><span class="math">\(\sigma_{ij}\)</span> = 当前网格单元应力；</p>
+<p><span class="math">\(\sigma_{ij}^\prime\)</span> = 上一时间步的网格单元应力；</p>
+<p><span class="math">\(e_{ij}\)</span> = 当前时间步内的增量应变；以及</p>
+<p><span class="math">\(V\)</span> = 网格单元体积。</p>
+</div></blockquote>
+<p>块体应变能为其内部全部网格单元之和，</p>
+<div class="math">
+\[U_{c_b} = \sum\ U_{c_z}\]</div>
+<p>给定时间步的总应变能为所有块体之和。程序对全部时间步持续累计，因此随着系统趋于平衡，<span class="math">\(U_{c_b}\)</span> 将随时间趋于常数。</p>
+<p>增量块体应变能也按以下方式计算：</p>
+<div class="math">
+\[U_{c_{b_{inc}}} = {{U_{c_b}} \over {\Delta t}}\]</div>
+<p>在任何开挖之前建立模型初始平衡时，采用不同于上述方法的计算。通常使用 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block/cmd_block.insitu.html#kwd:block.insitu.stress" title="Initialize in situ stresses in deformable blocks by specifying a complete stress
+tensor with optional gradients in the x, y and z directions.  If gradients are
+provided, the input stress is assumed to be the stress at 0,0,0 and gradients
+are applied accordingly.  For example, at point x,y,z, the xx stress will be
+sxx = `sxx0` + `sxxx`\*x + `sxxy`\*y + `sxxz`\*z...">区块初始应力命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">insitu</span> <span class="pre">stress</span></code>）</a> 命令“固定”各网格单元应力，以设置模型原位应力。同时施加与内部应力平衡的边界应力，模型就处于初始应力平衡，无须时间步进。但这种在初始应力下固结物体的方法，不会在物体中产生应变，因此也没有表观应变能。所以，采用另一种形式的应变能密度方程，定义系统初始应变能：</p>
+<div class="math">
+\[ \begin{align}\begin{aligned}U_{c_z} = {{V} \over {2 E}}\ \bigl[\ \sigma_{11}^2 + \sigma_{22}^2 + \sigma_{33}^2 - 2 \nu\ (\sigma_{11}\ \sigma_{22} + \sigma_{11}\ \sigma_{33} + \sigma_{22}\ \sigma_{33})\\        + 2\ (1 + \nu)\ (\sigma_{12}^2\ + \sigma_{13}^2\ + \sigma_{23}^2) \bigr]\end{aligned}\end{align} \]</div>
+</div>
+<div class="section" id="joint-strain-energy">
+<h4>节理应变能（<span class="math">\(U_{cj}\)</span>）</h4>
+<p>节理储存的应变能分为四个分量：剪切弹性应变能（<span class="math">\(U_{js}\)</span>）、压缩弹性应变能（<span class="math">\(U_{jc}\)</span>）、拉伸弹性应变能（<span class="math">\(U_{jt}\)</span>）及滑移耗散能（<span class="math">\(U_{jf}\)</span>）。两种内置节理本构模型，即库仑滑移模型和连续屈服模型，对这些分量采用不同计算方式。库仑模型的节理法向和剪切刚度为线性，而连续屈服模型允许非线性刚度。程序计算模型全部节理上各接触的能量，但目前不能按节理分别统计能量。</p>
+<p><strong>库仑滑移模型——线性刚度</strong></p>
+<p>若 <span class="math">\(f_n &lt; 0\)</span>，</p>
+<div class="math">
+\[U_{j t} = - {{1} \over {2}}\ (f_n + f_n^{\prime})\ u_n\]</div>
+<p>若 <span class="math">\(f_n \ge 0\)</span>，</p>
+<div class="math">
+\[U_{jc} = - {{1} \over {2}}\ (f_n + f_n^{\prime})\ u_n\]</div>
+<p>若 <span class="math">\(f_s &lt; f_{s \max}\)</span>，</p>
+<div class="math">
+\[U_{js} = - {{1} \over {2}} (f_s + f_s^{\prime})\ u_s\]</div>
+<p>若 <span class="math">\(f_s \ge f_{s \max}\)</span>，</p>
+<div class="math">
+\[U_{jf} = {{1} \over {2}} (f_s + f_s^{\prime})\ u_s\]</div>
+<p>其中：</p>
+<blockquote>
+<div><p><span class="math">\(f_n\)</span>、<span class="math">\(f_s\)</span> = 接触处当前法向力与剪切力，压缩为正；</p>
+<p><span class="math">\(f_n^{\prime}\)</span>、<span class="math">\(f_s^{\prime}\)</span> = 接触处上一时间步的法向力与剪切力；</p>
+<p><span class="math">\(u_n\)</span>、<span class="math">\(u_s\)</span> = 接触处当前时间步内的增量法向位移与剪切位移；以及</p>
+<p><span class="math">\(f_{s \max}\)</span> = 满足库仑滑移条件（<span class="math">\(f_{s \max} &lt; f_n \tan \phi + C\)</span>）时的剪应力。</p>
+</div></blockquote>
+<p>当 <span class="math">\(f_s \leq f_{s \max}\)</span> 且发生滑移时，库仑模型通过摩擦耗散能量，见下文。</p>
+<p><strong>连续屈服模型——允许非线性刚度</strong></p>
+<div class="math">
+\[U_{j t} = 0\ \ {\hbox{no tension in CY model}}\]</div>
+<div class="math">
+\[U_{jc} = - {{1} \over {2}}\ (f_n + f_n^{\prime})\ u_n\]</div>
+<div class="math">
+\[U_{js} = - {{F} \over {2}}\ (f_s + f_s^{\prime})\ u_s\]</div>
+<div class="math">
+\[U_{jf} = {{1 - F} \over {2}}\ (f_s + f_s^{\prime})\ u_s\]</div>
+<p>其中：</p>
+<blockquote>
+<div><p><span class="math">\(f_n\)</span>、<span class="math">\(f_s\)</span> = 接触处法向力与剪切力；</p>
+<p><span class="math">\(f_n^{\prime}\)</span>、<span class="math">\(f_s^{\prime}\)</span> = 上一时间步的接触应力；</p>
+<p><span class="math">\(u_n\)</span>、<span class="math">\(u_s\)</span> = 当前时间步内的增量法向位移与剪切位移；以及</p>
+<p><span class="math">\(F\)</span> = 连续屈服模型的屈服因子，详见<a class="reference internal" href="../cyjoint/cyjoint.html#yieldingjmodels-3dec"><span class="std std-ref">3DEC 中的连续屈服节理模型</span>（Continuously Yielding Joint Model In 3DEC）</a>。</p>
+</div></blockquote>
+<p>节理吸收和耗散的总能量 <span class="math">\(U_{cj}\)</span> 为全部分量之和：</p>
+<div class="math">
+\[U_{cj} = U_{js} + U_{jc} + U_{j t}\]</div>
+</div>
+<div class="section" id="strain-energy-content-of-excavated-material">
+<h4>开挖材料所含应变能（<span class="math">\(U_m\)</span>）</h4>
+<p>岩石开挖时，开挖体积中储存的应变能会释放。<span class="codename">3DEC</span> 可通过 <code class="xref fish fish-cmd docutils literal"><span class="pre">delete</span></code> 命令，或通过 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block/cmd_block.excavate.html#command:block.excavate" title="All blocks within the range are excavated. Excavated blocks are assigned a constitutive
+model and model properties the same as adjacent non-excavated blocks.  However,
+the excavated blocks transmit no forces to the un-excavated grid.  Only displacements
+are calculated in the excavated blocks to enable future filling. The blocks
+can be replaced later with the  block.fill  command. This command can only
+be used with deformable blocks; use  block.delete  for rigid blocks..."><code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">excavate</span></code></a> 赋予空本构模型，开挖构成洞室的岩石块体。空模型不会删除块体，但会阻止空块体中的力传递到相邻块体的网格点。空网格单元可随洞室变形而坍塌，后续也可改为回填材料。块体被删除或赋予空本构模型时，能量累计值会更新。</p>
+<p>开挖材料中的总应变能包含块体和节理应变能。块体应变能采用与前述相同的方法计算。利用主应力可计算为：</p>
+<div class="math">
+\[U_{m_b} = \sum^{nb}_{i=1}\ \sum^{nz}_{j=1}\ {{V} \over {2E}}\ \bigl[\ \sigma_{1}^2 + \sigma_{2}^2 + \sigma_{3}^2 - 2 \nu\ (\sigma_{1}\ \sigma_{2} + \sigma_{1}\ \sigma_{3} + \sigma_{22}\ \sigma_{3}) \bigr]_j\]</div>
+<p>其中：</p>
+<blockquote>
+<div><p><span class="math">\(U_{mb}\)</span> = 块体应变能；</p>
+<p><span class="math">\(V\)</span> = 网格单元体积；</p>
+<p><span class="math">\(E\)</span> = 岩体杨氏模量；</p>
+<p><span class="math">\(\nu\)</span> = 泊松比；</p>
+<p><span class="math">\(\sigma_{11}\)</span>、<span class="math">\(\sigma_{22}\)</span>、<span class="math">\(\sigma_{33}\)</span> = 网格单元质心处的主应力；</p>
+<p><span class="math">\(nb\)</span> = 开挖材料中的块体数；以及</p>
+<p><span class="math">\(nz\)</span> = 块体内的网格单元数。</p>
+</div></blockquote>
+<p>围绕开挖块体的节理总应变能（<span class="math">\(U_{cj}\)</span>）如下。</p>
+<p><strong>库仑节理（恒定刚度）</strong></p>
+<div class="math">
+\[U_{cj} = \sum^{nc}_{i=1} + {{1} \over {2}}\biggl[ {{f_n^2} \over {k_n}} + {{f_s^2} \over {k_s}}\biggr]_i\]</div>
+<p>其中：</p>
+<blockquote>
+<div><p><span class="math">\(U_{cj}\)</span> = 节理中储存的应变能；</p>
+<p><span class="math">\(f_n\)</span>、<span class="math">\(f_s\)</span> = 节理法向力与剪切力；</p>
+<p><span class="math">\(k_n\)</span>、<span class="math">\(k_s\)</span> = 节理法向刚度与剪切刚度；以及</p>
+<p><span class="math">\(nc\)</span> = 接触数量。</p>
+</div></blockquote>
+<p><strong>连续屈服节理（非线性法向刚度）</strong></p>
+<div class="math">
+\[U_{cj} = \sum_{i=1}^{nc}\ {{1} \over {2}}\ \biggl[\ {{u_n^{1 + {{1} \over {1 - e_n}}}\ [a_n\ (1 - e_n)]^{{{1} \over {1 - e_n}}}} \over {1 + {{1} \over {1 - e_n}}}} + {{f_s^2} \over {k_s}}\ \biggr]_i\]</div>
+<p>其中：</p>
+<blockquote>
+<div><p><span class="math">\(e_n\)</span> = 法向刚度指数；</p>
+<p><span class="math">\(u_n\)</span> = 节理面的法向位移（闭合量）；</p>
+<p><span class="math">\(a_n\)</span> = 节理初始法向刚度；</p>
+<p><span class="math">\(f_s\)</span> = 接触处剪切力；</p>
+<p><span class="math">\(k_s\)</span> = 接触剪切刚度；以及</p>
+<p><span class="math">\(nc\)</span> = 接触数量。</p>
+</div></blockquote>
+<p>块体开挖时，其能量从总应变能 <span class="math">\(U_c\)</span> 中移除，并加入开挖材料总能量 <span class="math">\(U_{mb}\)</span>。岩体的初始或原位应变能状态，通过标准应变能密度函数确定，其中主应力等于原位应力。对于初始平衡、采矿前的条件，将该能量加到边界加载功 W 中。最终储存应变能计算为：</p>
+<div class="math">
+\[U_c = U_c^{\prime} - U_{mj} - U_{mb}\]</div>
+<div class="math">
+\[U_m = U_m^{\prime} + U_{mj} + U_{mb}\]</div>
+<div class="math">
+\[U_{cb} = U_{cb} - U_{mb}\]</div>
+<div class="math">
+\[U_{cj} = U_{cj} - U_{mj}\]</div>
+<p>其中，“<span class="math">\(^\prime\)</span>”表示前面开挖步骤的值。</p>
+</div>
+<div class="section" id="friction-work-done-on-joints">
+<h4>节理摩擦功（<span class="math">\(W_j\)</span>）</h4>
+<p>节理摩擦发热会耗散能量。该功由弹性应变能转化而来，不可恢复。<span class="codename">3DEC</span> 将摩擦能量与弹性储存节理能量项（<span class="math">\(U_{jt}\)</span>、<span class="math">\(U_{jc}\)</span> 和 <span class="math">\(U_{js}\)</span>）分别跟踪。线性和非线性法向刚度下的摩擦损失，计算如下。</p>
+<p><strong>库仑节理——线性法向刚度</strong></p>
+<p>若 <span class="math">\(f_s \ge f_{s \max}\)</span>，</p>
+<div class="math">
+\[U_{jf} = \sum_{i=1}^{nc}\ {{1} \over {2}}\ (f_s + f_s^{\prime})\ u_s\]</div>
+<p>其中：</p>
+<blockquote>
+<div><p><span class="math">\(U_{jf}\)</span> = 接触处一个时间步内的摩擦能；</p>
+<p><span class="math">\(f_s\)</span> = 接触处当前剪切力；</p>
+<p><span class="math">\(f_s^{\prime}\)</span> = 接触处上一时间步的剪切力；</p>
+<p><span class="math">\(u_s\)</span> = 剪切位移增量；以及</p>
+<p><span class="math">\(nc\)</span> = 接触数量。</p>
+</div></blockquote>
+<p><strong>连续屈服节理（非线性法向刚度）</strong></p>
+<div class="math">
+\[U_{jf} = \sum_{i=1}^{nc}\ {{1 - F} \over {2}}\ (f_s + f_s^{\prime})\ u_s\]</div>
+<p>其中，<span class="math">\(F\)</span> = 连续屈服节理的屈服因子，<span class="math">\(nc\)</span> = 接触数量。</p>
+<p>对某开挖步骤内的所有时间步求和，累计总耗散能：</p>
+<div class="math">
+\[W_j = \sum_{i=1}^{nt}\ U_{jf}\]</div>
+<p>其中，<span class="math">\(W_j\)</span> = 总摩擦耗散能，<span class="math">\(nt\)</span> = 时间步数量。</p>
+</div>
+</div>
+<div class="section" id="viscous-boundary-work">
+<h3>黏性边界功（<span class="math">\(W_v\)</span>）</h3>
+<p>黏性边界用于抑制入射应力波的反射。由边界网格点处的边界力和变形，计算这些应力波耗散的能量：</p>
+<div class="math">
+\[W_{gj} = f_x\ u_x + f_y\ u_y + f_z\ u_z\]</div>
+<p>其中：</p>
+<blockquote>
+<div><p><span class="math">\(W_{gj}\)</span> = 网格点 <span class="math">\(j\)</span> 处的边界功；</p>
+<p><span class="math">\(f_x\)</span>、<span class="math">\(f_y\)</span>、<span class="math">\(f_z\)</span> = 边界力；以及</p>
+<p><span class="math">\(u_x\)</span>、<span class="math">\(u_y\)</span>、<span class="math">\(u_z\)</span> = 边界位移。</p>
+</div></blockquote>
+<p>一个时间步内的黏性耗散能为</p>
+<div class="math">
+\[W_v = \sum_{j=1}^{nbp}\ W_{gj}\]</div>
+<p>其中，<span class="math">\(nbp\)</span> = 边界网格点数量。</p>
+<p>对全部时间步累计总黏性功。增量黏性边界功计算为</p>
+<div class="math">
+\[\Delta W_v = {{W_v} \over {\Delta t}}\]</div>
+<p>其中，<span class="math">\(\Delta t\)</span> = 时间步长。</p>
+</div>
+<div class="section" id="energy-dissipation-in-blocks-through-plastic-work">
+<h3>块体通过塑性功耗散的能量（<span class="math">\(W_p\)</span>）</h3>
+<p><span class="codename">3DEC</span> 提供多种塑性模型，描述块体变形性。网格单元发生不可逆变形时，通过塑性功耗散能量。任意网格单元应变均可分为弹性和塑性两部分。先确定弹性应变，再按前述方法确定弹性应变能。总应变能减去弹性能量分量，即得到塑性功。</p>
+<p>弹性应变能为</p>
+<div class="math">
+\[W_e = {{V} \over {2E}}\ \bigl[\ \sigma_{1}^2 + \sigma_{2}^2 + \sigma_{3}^2 - 2 \nu\ (\sigma_{1}\ \sigma_{2} + \sigma_{1}\ \sigma_{3} + \sigma_{2}\ \sigma_{3}) \bigr]\]</div>
+<p>开挖步骤之间弹性应变能的<em>变化</em>为</p>
+<div class="math">
+\[\Delta W_e = W_e - W_e^{\prime}\]</div>
+<p>其中，<span class="math">\(W_e\)</span> 为当前弹性应变能，<span class="math">\(W_e^{\prime}\)</span> 为此前弹性应变能。</p>
+<p>可根据总应变和应力确定<em>总</em>能量变化：</p>
+<div class="math">
+\[ \begin{align}\begin{aligned}\Delta W_T = {{A} \over {2}}\ \bigl[\ (\sigma_{11} + \sigma_{11}^{\prime})\ e_{11} + (\sigma_{22} + \sigma_{22}^{\prime})\ e_{22} + (\sigma_{33} + \sigma_{33}^{\prime})\ e_{33}\\       + 2 \ (\sigma_{12} + \sigma_{12}^{\prime})\ e_{12} + 2 \ (\sigma_{13} + \sigma_{13}^{\prime})\ e_{13} + 2 \ (\sigma_{23} + \sigma_{23}^{\prime})\ e_{23} \bigr]\end{aligned}\end{align} \]</div>
+<p>某开挖步骤耗散的总塑性功，为任意时间步内总能量变化与弹性能量变化之差：</p>
+<div class="math">
+\[\Delta W_p = \Delta W_T - \Delta W_e\]</div>
+<p>总耗散量就是每个时间步全部块体 <span class="math">\(\Delta W_p\)</span> 的总和。</p>
+<div class="section" id="energy-dissipated-in-backfill-compression">
+<h4>回填压缩中耗散的能量</h4>
+<p><span class="codename">3DEC</span> 会跟踪采用空模型方法开挖、随后被回填替代的块体。此时，回填材料可储存弹性应变能，也可通过塑性变形耗散能量。砂质充填通常如此。按前述方法，分别计算每个网格单元储存或耗散的能量，并加入塑性功项。</p>
+</div>
+<div class="section" id="volume-of-excavated-material">
+<h4>开挖材料体积（<span class="math">\(V_m\)</span>）</h4>
+<p>块体删除或赋予空本构模型类型时，其体积加到 <span class="math">\(V_m\)</span>。利用组成该块体网格单元的质量和密度计算体积：</p>
+<blockquote>
+<div><span class="math">\(V_z\)</span> = 质量／密度</div></blockquote>
+<p>其中，<span class="math">\(V_z\)</span> = 单个网格单元体积。</p>
+<p>于是，已删除块体体积等于</p>
+<div class="math">
+\[V_m = \sum\ V_z\]</div>
+<p>对开挖块体内全部网格单元求和。</p>
+</div>
+<div class="section" id="method-of-operation-in-3dec">
+<h4><span class="codename">3DEC</span> 中的操作方法</h4>
+<p>使用 <code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">config</span> <span class="pre">energy</span></code> 命令启动 <span class="codename">3DEC</span> 能量计算。从此时起，根据每个时间步的应力、力、位移和应变变化，以增量方式计算前述各能量。除动能 Uk 作为增量值保留之外，其余能量值均从此时起累计。因此，输出的能量大小为自开始时间步进以来该问题的累计值，包含全部开挖步骤所计算的能量。</p>
+<p>可使用 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.history.html#kwd:model.history.energy" title="Values associated with energy quantities in |3dec|...">模型能量历程命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">history</span> <span class="pre">energy</span></code>）</a> 命令监测能量。任何时候均可通过 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block/cmd_block.list.html#kwd:block.list.energy" title="List summary of strain-energy calculation...">列出应变能汇总命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">list</span> <span class="pre">energy</span></code>）</a> 命令，将能量值输出到屏幕。</p>
+<p>下一节给出一个示例。</p>
+</div>
+<div class="section" id="example-excavation-of-a-circular-hole">
+<h4>示例：圆孔开挖</h4>
+<p>该模型显示快速开挖圆形隧道后各能量分量的演化。开挖半径为 1 m，<span class="codename">3DEC</span> 模型外半径为 10 m。开挖前存在 100 MPa 的静水压缩应力。弹性材料剪切模量为 29.17 GPa，泊松比为 0.2。</p>
+<p><a href="#energy-blocks">图 1（Figure  1）</a> 显示已划分网格的 <span class="codename">3DEC</span> 块体几何。用于模拟开挖并监测能量分量的 <span class="codename">3DEC</span> 数据文件列于 <a class="reference internal" href="#energy-datafile"><span class="std std-ref">energy.dat</span></a>。</p>
+<div class="figure align-center" id="energy-blocks">
+<a class="reference internal image-reference" href="../../../../../_images/energy-blocks.png"><img alt="../../../../../_images/energy-blocks.png" src="../../../../../_images/energy-blocks.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 1：<span class="codename">3DEC</span> 模型几何</span></p>
+</div>
+<p class="rubric" id="energy-datafile"><strong>energy.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10000</span>
+<span class="nb">model config</span><span class="n"> energy</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+
+<span class="nb">block create</span><span class="n"> drum center</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> center</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> radius</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> radius</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> edges </span><span class="m m-Double">24</span>
+
+<span class="c">; 创建用于定义隧道坐标的数据表</span>
+<span class="c">; 输入表名、半径和边数</span>
+<span class="nb">fish def</span><span class="ni"> make_</span><span class="k">table</span><span class="p">(</span><span class="ni">table_name</span><span class="p">,</span><span class="ni"> radius</span><span class="p">,</span><span class="ni"> num_edges</span><span class="p">)</span>
+<span class="ni">  tab </span><span class="p">=</span><span class="ni"> </span><span class="k">table.create</span><span class="p">(</span><span class="ni">table_name</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> i </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="ni">num_edges</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> theta </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2.0</span><span class="o">*</span><span class="k">math.pi</span><span class="o">*</span><span class="p">(</span><span class="ni">i</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="o">/</span><span class="ni">num_edges</span>
+<span class="ni">    </span><span class="k">table.x</span><span class="p">(</span><span class="ni">tab</span><span class="p">,</span><span class="ni">i</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> radius</span><span class="o">*</span><span class="k">math.cos</span><span class="p">(</span><span class="ni">theta</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">table.y</span><span class="p">(</span><span class="ni">tab</span><span class="p">,</span><span class="ni">i</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> radius</span><span class="o">*</span><span class="k">math.sin</span><span class="p">(</span><span class="ni">theta</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">end_loop</span>
+<span class="nb">end</span>
+
+<span class="ni">[make_</span><span class="k">table</span><span class="p">(</span><span class="s">'tunnel'</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">24</span><span class="p">)</span><span class="ni">]</span>
+
+<span class="nb">block cut</span><span class="n"> tunnel radial table</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="s">'tunnel'</span><span class="n"> table</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="s">'tunnel'</span><span class="n"> axis </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">0</span><span class="n"> group </span><span class="s">'tunnel'</span>
+
+<span class="nb">block zone size</span><span class="n"> center </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> edge</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0.2</span><span class="n"> dist</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">2</span><span class="n"> edge</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">1.5</span><span class="n"> dist</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">block zone gen-new</span><span class="n"> min</span><span class="o">-</span><span class="n">edge </span><span class="m m-Double">0.2</span><span class="n"> max</span><span class="o">-</span><span class="n">edge </span><span class="m m-Double">1.5</span>
+
+<span class="c">;设置应力</span>
+<span class="nb">block insitu</span><span class="n"> stress </span><span class="o">-</span><span class="m m-Double">100</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">40</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">100</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+
+<span class="c">; 固定边界</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range cyl end</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> end</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> rad </span><span class="m m-Double">9.5</span><span class="n"> </span><span class="m m-Double">10.5</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">1</span>
+
+<span class="c">;材料参数（MPa），泊松比 = 0.2</span>
+<span class="nb">block zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">block zone prop</span><span class="n">  density </span><span class="m m-Double">.002</span><span class="n"> bulk </span><span class="m m-Double">38.9e3</span><span class="n"> shear </span><span class="m m-Double">29.17e3</span>
+
+<span class="nb">block history</span><span class="n"> disp</span><span class="o">-</span><span class="n">x  pos </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0.5</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block history</span><span class="n"> disp</span><span class="o">-</span><span class="n">x pos </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0.5</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block history</span><span class="n">      stress</span><span class="o">-</span><span class="n">xx  pos </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0.5</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block history</span><span class="n">      stress</span><span class="o">-</span><span class="n">xx  pos </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0.5</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block history</span><span class="n">      stress</span><span class="o">-</span><span class="n">xx  pos </span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">0.5</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block history</span><span class="n">      stress</span><span class="o">-</span><span class="n">zz  pos </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0.5</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block history</span><span class="n">      stress</span><span class="o">-</span><span class="n">zz  pos </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0.5</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block history</span><span class="n">      stress</span><span class="o">-</span><span class="n">z  pos </span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">0.5</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> convergence </span><span class="m m-Double">1</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'initial'</span>
+
+<span class="p">============================================</span>
+
+<span class="c">; 开挖</span>
+
+<span class="n">model his energy block</span><span class="o">-</span><span class="n">kinetic</span>
+<span class="n">model his energy block</span><span class="o">-</span><span class="n">strain</span>
+<span class="n">model his energy block</span><span class="o">-</span><span class="n">strain</span><span class="o">-</span><span class="n">excavated</span>
+<span class="n">model his energy block</span><span class="o">-</span><span class="n">volume</span><span class="o">-</span><span class="n">excavated</span>
+<span class="n">model his energy damp</span><span class="o">-</span><span class="n">mass</span>
+<span class="n">model his energy boundary</span><span class="o">-</span><span class="n">load</span>
+<span class="n">model his energy total</span><span class="o">-</span><span class="n">released</span>
+
+<span class="nb">block delete</span><span class="n"> range group </span><span class="s">'tunnel'</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> convergence </span><span class="m m-Double">1</span>
+
+<span class="nb">program log</span><span class="o">-</span><span class="n">file </span><span class="s">'energies.log'</span>
+<span class="nb">program log</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">block list</span><span class="n"> energy</span>
+<span class="nb">program log</span><span class="n"> </span><span class="sx">off</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'exc'</span>
+</pre></div>
+</div>
+<p><a href="#energy-history">图 2（Figure  2）</a> 显示应变能、动能和阻尼耗散能历程。图中动能不随时间累计，而是在模型达到平衡时衰减至零。同时，累计的阻尼耗散能趋于常数。应变能也趋于一个负常数，表示隧道开挖后岩石向内运动并释放应变能。</p>
+<div class="figure align-center" id="energy-history">
+<a class="reference internal image-reference" href="../../../../../_images/energy-energies.png"><img alt="../../../../../_images/energy-energies.png" src="../../../../../_images/energy-energies.png" style="width: 90%;"/></a>
+<p class="caption"><span class="caption-text">图 2：阻尼耗散能、应变能及增量动能历程。</span></p>
+</div>
+<p>下表显示 <a class="reference internal" href="../../../../block/doc/manual/block_manual/block_commands/block/cmd_block.list.html#kwd:block.list.energy" title="List summary of strain-energy calculation...">列出应变能汇总命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">list</span> <span class="pre">energy</span></code>）</a> 命令的结果。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="o">*</span><span class="n"> Logging ended at Thu Oct </span><span class="m m-Double">8</span><span class="n"> </span><span class="m m-Double">01</span><span class="p">:</span><span class="m m-Double">29</span><span class="p">:</span><span class="m m-Double">49</span><span class="n"> </span><span class="m m-Double">2020</span>
+<span class="o">**********************************************</span>
+<span class="o">**********************************************</span>
+<span class="o">*</span><span class="n"> Logging started at Thu Oct </span><span class="m m-Double">8</span><span class="n"> </span><span class="m m-Double">06</span><span class="p">:</span><span class="m m-Double">23</span><span class="p">:</span><span class="m m-Double">52</span><span class="n"> </span><span class="m m-Double">2020</span>
+<span class="o">*</span><span class="n"> By </span><span class="m m-Double">3</span><span class="n">dec Version </span><span class="m m-Double">7.00</span><span class="n"> Release </span><span class="m m-Double">126</span>
+<span class="o">*</span><span class="n"> </span>
+<span class="o">*</span><span class="n"> </span>
+<span class="o">*</span><span class="n"> Job Title</span><span class="p">:</span><span class="n"> </span>
+<span class="o">**********************************************</span>
+<span class="n">Totals for energy stored and dissipated in system</span><span class="p">.</span>
+<span class="o">--------------------------------------------------</span>
+<span class="n">Current kinetic energy                   </span><span class="p">(</span><span class="n">Uk</span><span class="p">)</span><span class="n"> </span><span class="p">=</span><span class="n"> </span><span class="m m-Double">1.647216e-08</span>
+<span class="n">Total block strain energy               </span><span class="p">(</span><span class="n">Ucb</span><span class="p">)</span><span class="n"> </span><span class="p">=</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">8.267981e-01</span>
+<span class="n">Total fill strain energy                </span><span class="p">(</span><span class="n">Ucf</span><span class="p">)</span><span class="n"> </span><span class="p">=</span><span class="n"> </span><span class="m m-Double">0.000000e+00</span>
+<span class="n">Total joint strain energy               </span><span class="p">(</span><span class="n">Ucj</span><span class="p">)</span><span class="n"> </span><span class="p">=</span><span class="n"> </span><span class="m m-Double">0.000000e+00</span>
+<span class="n">Total strain energy          </span><span class="p">(</span><span class="n">Uc</span><span class="p">=</span><span class="n">Ucb</span><span class="o">+</span><span class="n">Ucf</span><span class="o">+</span><span class="n">Ucj</span><span class="p">)</span><span class="n"> </span><span class="p">=</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">8.267981e-01</span>
+<span class="n">Total block energy excavated            </span><span class="p">(</span><span class="n">Umb</span><span class="p">)</span><span class="n"> </span><span class="p">=</span><span class="n"> </span><span class="m m-Double">3.193760e-01</span>
+<span class="n">Total joint energy excavated            </span><span class="p">(</span><span class="n">Umj</span><span class="p">)</span><span class="n"> </span><span class="p">=</span><span class="n"> </span><span class="m m-Double">0.000000e+00</span>
+<span class="n">Total strain energy excavated    </span><span class="p">(</span><span class="n">Um</span><span class="p">=</span><span class="n">Umb</span><span class="o">+</span><span class="n">Umj</span><span class="p">)</span><span class="n"> </span><span class="p">=</span><span class="n"> </span><span class="m m-Double">3.193760e-01</span>
+<span class="n">Total block volume excavated             </span><span class="p">(</span><span class="n">Vm</span><span class="p">)</span><span class="n"> </span><span class="p">=</span><span class="n"> </span><span class="m m-Double">3.105829e+00</span>
+<span class="n">Total change in potential energy         </span><span class="p">(</span><span class="n">Ub</span><span class="p">)</span><span class="n"> </span><span class="p">=</span><span class="n"> </span><span class="m m-Double">0.000000e+00</span>
+<span class="n">Total mass damping work                  </span><span class="p">(</span><span class="n">Wk</span><span class="p">)</span><span class="n"> </span><span class="p">=</span><span class="n"> </span><span class="m m-Double">5.074388e-01</span>
+<span class="n">Total viscous boundary work              </span><span class="p">(</span><span class="n">Wv</span><span class="p">)</span><span class="n"> </span><span class="p">=</span><span class="n"> </span><span class="m m-Double">0.000000e+00</span>
+<span class="n">Total friction work                      </span><span class="p">(</span><span class="n">Wj</span><span class="p">)</span><span class="n"> </span><span class="p">=</span><span class="n"> </span><span class="m m-Double">0.000000e+00</span>
+<span class="n">Total plastic strain work                </span><span class="p">(</span><span class="n">Wp</span><span class="p">)</span><span class="n"> </span><span class="p">=</span><span class="n"> </span><span class="m m-Double">0.000000e+00</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="references">
+<h2>参考文献</h2>
+<p>Salamon, M. D. G.《岩石力学中的能量考量：基本结果》，J. S. Afr. Inst. Min. Metall.，84(8)，233-246（1984）。</p>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../3dechome.html"><span class="codename">3DEC</span></a> »</li>
+<li class="nav-item nav-item-2"><a accesskey="U" href="../theory.html"><span class="codename">3DEC</span> Theory and Background</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="theory_fos.html" title="previous chapter"> Factor-of-Safety Calculation</a> |    
+       <a href="isolatedblock.html" title="next chapter">Isolated Block Stability Method</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Energy Calculation" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

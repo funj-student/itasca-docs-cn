@@ -1,0 +1,443 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>孤立块体稳定性方法 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="structural_finiteelements.html" rel="next" title="Structural Finite Elements"/>
+<link href="energycalculation.html" rel="prev" title="Energy Calculation"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="isolated-block-stability-method">
+<span id="isolatedblock"></span><h1>孤立块体稳定性方法</h1>
+<div class="section" id="introduction">
+<h2>引言</h2>
+<p>孤立块体稳定性方法基于巴黎高等矿业学院开发的学术程序（Ghazal 等（2011a）、Ghazal（2013）、Ghazal 等（2011b））。其线性版本现已在 <span class="codename">3DEC</span> 中实现，可通过简单命令行使用。该方法评估位于地下开挖表面的任意形状单个三维刚性块体的稳定性。“孤立”表示将块体视为岩体中唯一存在的块体进行分析，即忽略其他潜在块体。块体以刚体方式平移和转动，并通过节理单元与周围连续岩体相互作用。开挖之前，块体各面初始承受原位应力。该方法计算开挖过程，即释放开挖面应力，所引起的块体运动和各面应力变化。</p>
+<p>在刚性块体假设下，该方法理论上给出与等效 <span class="codename">3DEC</span> 开挖模拟相同的解，等效模拟仅在自由表面设一个块体。不过，该方法更直接，只需块体几何、节理属性和应力数据。</p>
+<p>该方法可作为基于极限平衡和“关键块体”理论的块体稳定性方法的另一种有用选择（Goodman 和 Shi（1985）、Warburton（1985））。与这些方法的详细比较见 Ghazal 等（2011a）和 Ghazal（2013）。</p>
+<p>该方法最初针对弹性节理，以及采用莫尔—库仑破坏准则并考虑剪胀的弹塑性节理开发。然而，目前 <span class="codename">3DEC</span> 中的实现仅考虑弹性节理。因此，通过计算块体各面的安全系数评估稳定性。</p>
+</div>
+<div class="section" id="description-of-the-method">
+<h2>方法说明</h2>
+<div class="section" id="approach">
+<h3>分析方法</h3>
+<p>考虑位于地下开挖表面的刚性块体。开挖前初始状态下，各块体面承受初始原位应力。开挖过程就是释放未来自由面上施加的应力。这会引起其他面的应力变化，以保持块体平衡。应力变化受节理本构关系控制。此外，将块体视为刚体运动，可以把各面任意点的位移与块体中心的位移和转动联系起来。</p>
+<p>考虑块体刚体运动和节理本构关系，在开挖前初始状态与开挖后最终状态，即自由面应力释放后，求解平衡方程，可建立一个仅以块体平移和转动为未知量的线性系统。</p>
+<div class="figure" id="isoblock-1">
+<img alt="../../../../../_images/isoblock_figure1.svg" src="../../../../../_images/isoblock_figure1.svg"/><p class="caption"><span class="caption-text">图 1：块体稳定性程序的概念示意图。</span></p>
+</div>
+</div>
+<div class="section" id="equations">
+<h3>方程</h3>
+<div class="section" id="block-equilibrium">
+<h4>块体平衡</h4>
+<p>对开挖前自由面上作用的合力与合力矩（<span class="math">\(\mathbf{F}_0\)</span> 和 <span class="math">\(\mathbf{M}_0\)</span>）施加松弛率 <span class="math">\(d \lambda\)</span>，以变化量形式写出块体的力和力矩平衡。</p>
+<div class="math" id="equation-isoblock-eq1">
+<span class="eqno">(1)</span>\[\int_{\Sigma_J}d \pmb{σ}\ dS+d\lambda\ {\mathbf{F}}_0=\mathbf{0}\]</div>
+<div class="math" id="equation-isoblock-eq2">
+<span class="eqno">(2)</span>\[\int_{\Sigma_J}\mathbf{x}\times d\pmb{σ}\ dS+d\lambda\ {\mathbf{M}}_0=\mathbf{0}\]</div>
+<p>其中</p>
+<blockquote>
+<div><p><span class="math">\({\mathbf{F}}_0\)</span> 和 <span class="math">\({\mathbf{M}}_0\)</span> 分别为开挖前自由块体表面 <span class="math">\(\Sigma_L\)</span> 上合力和合力矩矢量的相反数；</p>
+<p><span class="math">\(\pmb{σ}\)</span> 为节理面 <span class="math">\(\Sigma_J\)</span> 上某点 <span class="math">\(\mathbf{x}\)</span> 处的应力矢量，原点为位于块体内部的固定点；</p>
+<p><span class="math">\(\lambda\)</span> 表示“卸围压”或应力松弛系数。</p>
+</div></blockquote>
+<p>对于线性弹性系统，这两个方程可简化为</p>
+<div class="math" id="equation-isoblock-eq3">
+<span class="eqno">(3)</span>\[\int_{\Sigma_J}\mathrm{\Delta} \pmb{σ}\ dS+{\mathbf{F}}_0=\mathbf{0}\]</div>
+<div class="math" id="equation-isoblock-eq4">
+<span class="eqno">(4)</span>\[\int_{\Sigma_J}\mathbf{x}\times\mathrm{\Delta}\pmb{σ}\ dS+\ {\mathbf{M}}_0=\mathbf{0}\]</div>
+</div>
+<div class="section" id="block-movement-as-a-rigid-body">
+<h4>块体的刚体运动</h4>
+<p>在小转动假设下，可将块体任意点位移与块体中心位移和块体转动联系起来。</p>
+<div class="math" id="equation-isoblock-eq5">
+<span class="eqno">(5)</span>\[d\mathbf{u}=d\mathbf{U}+d\mathbf{W}\times\mathbf{x}\]</div>
+<p>其中</p>
+<blockquote>
+<div><p><span class="math">\(\mathbf{U}\)</span> 为块体质心或块体内部任意其他点处的位移矢量；</p>
+<p><span class="math">\(\mathbf{W}\)</span> 为块体转动矢量；</p>
+<p><span class="math">\(\mathbf{u}\)</span> 为块体给定点 <span class="math">\(\mathbf{x}\)</span> 处的位移。</p>
+</div></blockquote>
+<div class="figure" id="isoblock-2">
+<img alt="../../../../../_images/isoblock_figure2.svg" src="../../../../../_images/isoblock_figure2.svg"/><p class="caption"><span class="caption-text">图 2：块体平移和转动的刚体运动（引自 Ghazal（2013））。</span></p>
+</div>
+</div>
+<div class="section" id="joint-constitutive-equations">
+<h4>节理本构方程</h4>
+<p>法向和剪切方向均考虑线性行为，见式 <a class="reference internal" href="#equation-isoblock-eq6">(6)</a> 和 <a class="reference internal" href="#equation-isoblock-eq7">(7)</a>。</p>
+<div class="math" id="equation-isoblock-eq6">
+<span class="eqno">(6)</span>\[d\sigma_n=-k_n\ du_n\]</div>
+<div class="math" id="equation-isoblock-eq7">
+<span class="eqno">(7)</span>\[d{\mathbf{\sigma}}_t=-k_s\ d{\mathbf{u}}_t\]</div>
+<p>其中，在节理（块体面）某给定点处，</p>
+<blockquote>
+<div><p><span class="math">\(u_n\)</span> 为法向位移；</p>
+<p><span class="math">\(\sigma_n\)</span> 为法向应力；</p>
+<p><span class="math">\(k_n\)</span> 为法向刚度；</p>
+<p><span class="math">\({\mathbf{u}}_t\)</span> 为剪切位移矢量；</p>
+<p><span class="math">\({\mathbf{\sigma}}_t\)</span> 为剪应力矢量；</p>
+<p><span class="math">\(k_s\)</span> 为剪切刚度。</p>
+</div></blockquote>
+<p>注意到 <span class="math">\(d\pmb{σ}=d\sigma_n\mathbf{n}+d\pmb{σ}_t\)</span>、<span class="math">\(du_n=\ d\mathbf{u}.\mathbf{n}\)</span> 和 <span class="math">\(d{\mathbf{u}}_t=d\mathbf{u}-(d\mathbf{u}.\mathbf{n})\mathbf{n}\)</span>，可将式 <a class="reference internal" href="#equation-isoblock-eq6">(6)</a> 与 <a class="reference internal" href="#equation-isoblock-eq7">(7)</a> 合并为以下方程：</p>
+<div class="math" id="equation-isoblock-eq8">
+<span class="eqno">(8)</span>\[d\pmb{σ}=-\underline{\underline{K}}\ d\mathbf{u}\]</div>
+<div class="math">
+\[\underline{\underline{K}}=k_t\underline{\underline{I}}+(k_n-k_s)\ \mathbf{n}\ \otimes\ \mathbf{n}\]</div>
+<p>其中</p>
+<blockquote>
+<div><p><span class="math">\(\underline{\underline{I}}\)</span> 为单位矩阵；</p>
+<p><span class="math">\(\mathbf{n}\)</span> 表示块体面上给定点处的外法向；</p>
+<p><span class="math">\(\mathbf{n}\ \otimes\ \mathbf{n}=\mathbf{n}\ {\mathbf{n}}^T\)</span> 为对称张量 <span class="math">\(n_i\ n_j\)</span>。</p>
+</div></blockquote>
+<p>注意，符号约定中法向压应力取负，<span class="math">\(du_n&gt;0\)</span> 表示块体正在接近岩体。</p>
+<p>在该方法最完善的版本中，节理法向采用带最大闭合量的双曲线行为；剪切方向采用具有库仑屈服准则的弹塑性行为，并在塑性阶段发生剪胀。但目前 <span class="codename">3DEC</span> 的实现仅考虑法向和剪切方向的线性弹性行为。未来也可能在 <span class="codename">3DEC</span> 中实现非线性行为。</p>
+</div>
+<div class="section" id="linear-system">
+<h4>线性系统</h4>
+<p>在开挖前初始状态与开挖后最终状态之间，求解上述方程，即式 <a class="reference internal" href="#equation-isoblock-eq3">(3)</a>、<a class="reference internal" href="#equation-isoblock-eq4">(4)</a>、<a class="reference internal" href="#equation-isoblock-eq5">(5)</a>、<a class="reference internal" href="#equation-isoblock-eq6">(6)</a> 和 <a class="reference internal" href="#equation-isoblock-eq7">(7)</a>，可得到以下线性系统：</p>
+<div class="math" id="equation-isoblock-eq9">
+<span class="eqno">(9)</span>\[\begin{split}\underline{\underline{R}}\left[\begin{matrix}\mathbf{U}\\\mathbf{W}\\\end{matrix}\right]=\left[\begin{matrix}{\mathbf{F}}_0\\{\mathbf{M}}_0\\\end{matrix}\right]\end{split}\]</div>
+<div class="math" id="equation-isoblock-eq10">
+<span class="eqno">(10)</span>\[\begin{split}\underline{\underline{R}}=\left[\begin{matrix}\underline{\underline{A}}&amp;\underline{\underline{B}}\\\underline{\underline{D}}&amp;\underline{\underline{C}}\\\end{matrix}\right]\end{split}\]</div>
+<p>其中</p>
+<blockquote>
+<div><span class="math">\(\underline{\underline{A}}\ \underline{\underline{B}}\ \underline{\underline{C}}\ \underline{\underline{D}}\)</span> 表示矩阵 <span class="math">\(\underline{\underline{K}}\)</span> 在节理表面 <span class="math">\(\Sigma_J\)</span> 上的积分，即广义弹性节理刚度矩阵 <span class="math">\(d\pmb{σ}=-\underline{\underline{K}}\ d\mathbf{u}\)</span>：</div></blockquote>
+<div class="math" id="equation-isoblock-eq11">
+<span class="eqno">(11)</span>\[\underline{\underline{A}}=\int_{\Sigma_J}{\underline{\underline{K}}\ dS}\ \ \ \ \ \ \ \ \underline{\underline{B}}=\int_{\Sigma_J}{\underline{\underline{K}}\ \underline{\underline{r}}\ dS}\]</div>
+<div class="math" id="equation-isoblock-eq12">
+<span class="eqno">(12)</span>\[\underline{\underline{C}}=\int_{\Sigma_J}{{\underline{\underline{r}}}^T\ \underline{\underline{K}}\ \underline{\underline{r}}\ dS}\ \ \ \ \ \ \ \ \underline{\underline{D}}=\int_{\Sigma_J}{{\underline{\underline{r}}}^T\ \underline{\underline{K}}\ \ dS}\]</div>
+<blockquote>
+<div><p><span class="math">\(\underline{\underline{r}}\)</span> 为位置矢量 <span class="math">\(\mathbf{x}\)</span> 的转动矢量表示，原点是块体内部的固定参考点；其定义使任意矢量 <span class="math">\(\mathbf{a}\)</span> 均满足 <span class="math">\(\underline{\underline{r}}\ \mathbf{a}=\ \mathbf{a}\times\mathbf{x}\)</span>。</p>
+<p>若 <span class="math">\(\mathbf{x}=\left[x_1\ \ x_2\ \ x_3\right]^T\ \ \ \ \ ,\ \ \ \ \ \underline{\underline{r}}=\left[\begin{matrix}0&amp;x_3&amp;-x_2\\-x_3&amp;0&amp;x_1\\x_2&amp;-x_1&amp;0\\\end{matrix}\right]\)</span></p>
+</div></blockquote>
+<p>通过面对面的离散化进行表面积分，块体面以表面网格形式输入。</p>
+</div>
+</div>
+<div class="section" id="stability-evaluation">
+<h3>稳定性评估</h3>
+<p>求解线性系统（式 <a class="reference internal" href="#equation-isoblock-eq9">(9)</a>）后，可评估块体各点位移（式 <a class="reference internal" href="#equation-isoblock-eq5">(5)</a>）和应力状态（式 <a class="reference internal" href="#equation-isoblock-eq6">(6)</a> 与 <a class="reference internal" href="#equation-isoblock-eq7">(7)</a>）。</p>
+<p>随后，可按以下公式计算块体面上每个面网格的安全系数：</p>
+<div class="math" id="equation-isoblock-eq13">
+<span class="eqno">(13)</span>\[\begin{split}FOS =
+       \begin{cases}
+       \dfrac{-\sigma_n \tan\phi + c}{||\pmb{σ}t||} &amp; \text{ if } \sigma_n \leq 0 \\
+       \hspace{12mm} 0 &amp; \text{ if } \sigma_n &gt; 0
+       \end{cases}\end{split}\]</div>
+<p>对于每个块体的单一安全系数，建议两种选项：采用全部块体面网格中的最小安全系数，或计算平均安全系数，写为 <span class="math">\(FOS_{mean}=\sum{FOS_i\ A_i/\sum A_i}, A_i\)</span>，其中 <span class="math">\(i\)</span> 为面网格面积。</p>
+</div>
+</div>
+<div class="section" id="examples-applications">
+<h2>应用示例</h2>
+<div class="section" id="single-block-stability">
+<h3>单个块体稳定性</h3>
+<p>将“孤立块体稳定性方法”应用于单个四面体块体。块体位于半径 R = 5 m 的圆柱形开挖顶板，深度为 200 m，岩体密度为 <span class="math">\(\rho = 2500 kg/m^3\)</span>。该块体由三条节理与开挖顶板相交形成，是可能形成的最大体积块体；节理倾向分别为 0°、120° 和 240°，倾角均为 60°。计算安全系数时，节理强度属性设为 <span class="math">\(\phi\)</span> =35° 和 <span class="math">\(c=0\)</span> MPa。</p>
+<p>该模型展示此方法的优点。由于只有块体几何和原位应力影响结果，隧道模型边界无须放在距开挖很远的位置。模型几何见<a href="#isoblock1-block">图 3（Figure  3）</a>。</p>
+<p>使用 <code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">analyze-stability</span></code> 命令，分别针对 <span class="math">\(K_0\)</span> = 1 和 <span class="math">\(k_n/k_s\)</span> = 10，计算块体各面的安全系数。计算完成后，将块体列表及其最小和平均安全系数输出到屏幕。注意，本分析将已连接块体视为单个块体，并给出主块体 ID。每个块体还会在“isolated_block”槽位中赋予等于主块体 ID 的分组名称。</p>
+<p>还要注意，已连接面在“Default”分组槽位中赋予分组名称“internal_face”。这些面不计算安全系数。</p>
+<p>使用 <code class="docutils literal"><span class="pre">Kinematic</span> <span class="pre">FOS</span></code> 绘制块体面和等值线：在 <code class="docutils literal"><span class="pre">Face</span></code> 绘图项中将绘图设为“Contour”，并在“Contour”属性下拉菜单中选择“Kinematic FOS”。可利用范围，仅绘制分组名称等于最小安全系数块体主 ID 的面，本例为 128。<a href="#isoblock1-fos">图 4（Figure  4）</a> 显示楔形块体各面的安全系数分布。</p>
+<div class="figure" id="isoblock1-block">
+<a class="reference internal image-reference" href="../../../../../_images/isoblock1-block.png"><img alt="../../../../../_images/isoblock1-block.png" src="../../../../../_images/isoblock1-block.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 3：运动学安全系数计算采用的隧道模型。</span></p>
+</div>
+<div class="figure" id="isoblock1-fos">
+<a class="reference internal image-reference" href="../../../../../_images/isoblock1-fos.png"><img alt="../../../../../_images/isoblock1-fos.png" src="../../../../../_images/isoblock1-fos.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 4：<span class="math">\(K_0=1\)</span> 和 <span class="math">\(k_n/k_s=10\)</span> 情况下，楔形块体面的运动学安全系数分布。</span></p>
+</div>
+<p><strong>A1.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+
+<span class="c">; 几何</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="o">-</span><span class="m m-Double">10.</span><span class="n"> </span><span class="m m-Double">10.</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">10</span>
+
+<span class="nb">fish def</span><span class="ni"> table_definition </span>
+
+<span class="ni">  </span><span class="c">; 定义半径为 5 m 的圆柱体，每隔 18 度定义一个点</span>
+
+<span class="ni">  </span><span class="k">local</span><span class="ni"> theta</span><span class="p">=</span><span class="m m-Double">0.</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> i</span><span class="p">=</span><span class="m m-Double">1</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> rad</span><span class="p">=</span><span class="m m-Double">5.</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> delta_theta</span><span class="p">=</span><span class="m m-Double">18</span>
+
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">while</span><span class="ni"> theta</span><span class="o">&lt;</span><span class="m m-Double">360.</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> x1</span><span class="p">=</span><span class="ni">rad</span><span class="o">*</span><span class="k">math.cos</span><span class="p">(</span><span class="ni">theta</span><span class="o">*</span><span class="k">math.degrad</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> y1</span><span class="p">=</span><span class="ni">rad</span><span class="o">*</span><span class="k">math.sin</span><span class="p">(</span><span class="ni">theta</span><span class="o">*</span><span class="k">math.degrad</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">table.value</span><span class="p">(</span><span class="s">'1'</span><span class="p">,</span><span class="ni">i</span><span class="p">)=</span><span class="ni">vector</span><span class="p">(</span><span class="ni">x1</span><span class="p">,</span><span class="ni">y1</span><span class="p">)</span>
+<span class="ni">    i</span><span class="p">=</span><span class="ni">i</span><span class="o">+</span><span class="m m-Double">1</span>
+<span class="ni">    theta</span><span class="p">=</span><span class="ni">theta</span><span class="o">+</span><span class="ni">delta_theta</span>
+<span class="ni">  </span><span class="k">endloop</span><span class="ni"> </span>
+<span class="nb">end</span>
+<span class="ni">[table_definition]</span>
+
+<span class="nb">block group</span><span class="n"> </span><span class="s">"rock_mass"</span>
+<span class="nb">block cut</span><span class="n"> tunnel table</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="s">'1'</span><span class="n"> table</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="s">'1'</span><span class="n"> axis </span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                         radial group </span><span class="s">"tunnel"</span>
+
+<span class="c">; 切割一个四面体块体 </span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">60.</span><span class="n"> dip</span><span class="o">-</span><span class="n">dir </span><span class="m m-Double">0.</span><span class="n"> origin </span><span class="m m-Double">0.</span><span class="n"> </span><span class="m m-Double">0.</span><span class="n"> </span><span class="m m-Double">7.</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">60.</span><span class="n"> dip</span><span class="o">-</span><span class="n">dir </span><span class="m m-Double">120.</span><span class="n"> origin </span><span class="m m-Double">0.</span><span class="n"> </span><span class="m m-Double">0.</span><span class="n"> </span><span class="m m-Double">7.</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">60.</span><span class="n"> dip</span><span class="o">-</span><span class="n">dir </span><span class="m m-Double">240.</span><span class="n"> origin </span><span class="m m-Double">0.</span><span class="n"> </span><span class="m m-Double">0.</span><span class="n"> </span><span class="m m-Double">7.</span>
+
+<span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="m m-Double">0.5</span>
+
+<span class="c">; 赋予应力，单位为 MPa</span>
+<span class="nb">block zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">block zone prop</span><span class="n"> dens </span><span class="m m-Double">2500e-6</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">9.81</span>
+
+<span class="nb">block insitu</span><span class="n"> topo ratio</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">1</span><span class="n"> ratio</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">1</span><span class="n"> overburden </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">190</span><span class="o">*</span><span class="m m-Double">9.81</span><span class="o">*</span><span class="m m-Double">2500e-6</span><span class="ni">]</span>
+
+<span class="c">; 现在标记各面并删除隧道</span>
+<span class="nb">block face group</span><span class="n"> </span><span class="s">"free"</span><span class="n"> range group</span><span class="o">-</span><span class="n">intersection </span><span class="s">"rock_mass"</span><span class="n"> </span><span class="s">"tunnel"</span>
+<span class="nb">block delete</span><span class="n"> range group </span><span class="s">"tunnel"</span>
+
+<span class="c">; 现在根据给定节理参数（MPa）计算安全系数</span>
+<span class="nb">block analyze-stability</span><span class="n"> free</span><span class="o">-</span><span class="n">face </span><span class="s">'free'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">10000</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1000</span><span class="n"> cohesion </span><span class="m m-Double">0</span><span class="n"> friction </span><span class="m m-Double">35</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="parametric-study-on-block-stability-and-comparison-to-3dec-rigid-blocks">
+<h3>块体稳定性参数研究及与 <span class="codename">3DEC</span> 刚性块体的比较</h3>
+<p>采用“孤立块体稳定性方法”，对前例块体开展参数研究。针对不同 <span class="math">\(k_n/k_s\)</span> 值，改变比值 <span class="math">\(K_0\)</span>。使用孤立块体方法时，可反复使用同一模型，因此通过 <span class="codename">FISH</span> 函数改变应力并运行试验。</p>
+<p>以楔形块体安全系数，即块体面上计算的平均安全系数，分析结果。在 <code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">analyze-stability</span></code> 中使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">block-extra</span></code> 关键字，可将某块体各面安全系数平均值存入其附加变量。本例将安全系数保存到块体附加变量 1。</p>
+<p><a href="#isoblock2-fos">图 5（Figure  5）</a> 显示结果。对于 <span class="math">\(k_n/k_s=1\)</span>，块体在全部受试 <span class="math">\(k_0\)</span> 值下均稳定。对于 <span class="math">\(k_n/k_s=10\)</span>，当 <span class="math">\(k_0&lt;0.8\)</span> 时块体掉落。对于 <span class="math">\(k_n/k_s=100\)</span>，当 <span class="math">\(k_0&lt;1\)</span> 时块体掉落。</p>
+<p>与传统 <span class="codename">3DEC</span> 模型相比，使用 <code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">stability-analyze</span></code> 命令的优点是可即时得到结果，无须“求解”。传统 <span class="codename">3DEC</span> 模型还必须大得多，使边界远离关注区域。</p>
+<div class="figure" id="isoblock2-fos">
+<a class="reference internal image-reference" href="../../../../../_images/isoblock2-fos.png"><img alt="../../../../../_images/isoblock2-fos.png" src="../../../../../_images/isoblock2-fos.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 5：采用“孤立块体稳定性”获得的各块体平均安全系数结果。注意，FOS=0 表示块体发生拉伸破坏。</span></p>
+</div>
+<p><strong>02_A2run.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="n">model rest </span><span class="s">'A2_geometry'</span>
+
+<span class="c">; 现在测试不同应力比和节理刚度</span>
+<span class="nb">fish def</span><span class="ni"> test</span>
+
+<span class="ni">  ks </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1000</span><span class="ni"> </span><span class="c">; 剪切刚度</span>
+<span class="ni">  phi </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">35</span><span class="ni"> </span><span class="c">; 摩擦角</span>
+<span class="ni">  count </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="c">; 测试三种不同的 kn/ks 比值</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> i </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">3</span><span class="p">)</span>
+<span class="ni">    factor </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">10.0</span><span class="o">^</span><span class="p">(</span><span class="ni">i</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">    kn </span><span class="p">=</span><span class="ni"> ks </span><span class="o">*</span><span class="ni"> factor   </span><span class="c">; 1, 10 , 100</span>
+<span class="ni">    tablename </span><span class="p">=</span><span class="ni"> </span><span class="s">'knks_'</span><span class="o">+</span><span class="ni">string</span><span class="p">(</span><span class="ni">factor</span><span class="p">)</span>
+<span class="ni">    tab_ </span><span class="p">=</span><span class="ni"> </span><span class="k">table.create</span><span class="p">(</span><span class="ni">tablename</span><span class="p">)</span>
+<span class="ni">    </span>
+<span class="ni">    </span><span class="c">; 现在测试不同的初始应力</span>
+<span class="ni">    K0_list </span><span class="p">=</span><span class="ni"> </span><span class="k">list.seq</span><span class="p">(</span><span class="m m-Double">0.5</span><span class="p">,</span><span class="m m-Double">0.6</span><span class="p">,</span><span class="m m-Double">0.7</span><span class="p">,</span><span class="m m-Double">0.8</span><span class="p">,</span><span class="m m-Double">0.9</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1.1</span><span class="p">,</span><span class="m m-Double">1.2</span><span class="p">,</span><span class="m m-Double">1.3</span><span class="p">,</span><span class="m m-Double">1.4</span><span class="p">,</span><span class="m m-Double">1.5</span><span class="p">)</span>
+<span class="ni">    </span>
+<span class="ni">    szz </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">5.0</span><span class="ni"> </span><span class="c">; MPa</span>
+<span class="ni">    szz_grad </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2500e-6</span><span class="o">*</span><span class="m m-Double">9.81</span><span class="ni">  </span><span class="c">; 密度 2500，重力加速度 9.81</span>
+<span class="ni">    </span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> K0 K0_list</span>
+<span class="ni">      </span><span class="c">; 赋予应力并进行安全系数试验</span>
+<span class="k">      command</span>
+<span class="nb">        block zone init</span><span class="n"> stress</span><span class="o">-</span><span class="n">xx </span><span class="ni">[szz</span><span class="o">*</span><span class="ni">K0]</span><span class="n"> gradient </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[szz_grad</span><span class="o">*</span><span class="ni">K0]</span><span class="n"> </span>
+<span class="nb">        block zone init</span><span class="n"> stress</span><span class="o">-</span><span class="n">yy </span><span class="ni">[szz</span><span class="o">*</span><span class="ni">K0]</span><span class="n"> gradient </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[szz_grad</span><span class="o">*</span><span class="ni">K0]</span>
+<span class="nb">        block zone init</span><span class="n"> stress</span><span class="o">-</span><span class="n">zz </span><span class="ni">[szz]</span><span class="n"> gradient </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[szz_grad]</span>
+<span class="nb">        block analyze-stability</span><span class="n"> free</span><span class="o">-</span><span class="n">face </span><span class="s">'free'</span><span class="n">  stiffness</span><span class="o">-</span><span class="n">normal </span><span class="ni">[kn]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">          stiffness</span><span class="o">-</span><span class="n">shear </span><span class="ni">[ks]</span><span class="n"> friction </span><span class="ni">[phi]</span><span class="n"> block</span><span class="o">-</span><span class="n">extra </span><span class="m m-Double">1</span>
+<span class="k">      end_command</span>
+<span class="ni">      </span>
+<span class="ni">      </span><span class="c">; 获取最小块体安全系数，假定对应于楔体</span>
+<span class="ni">      minfos </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1e12</span>
+<span class="ni">      </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> block </span><span class="k">block.list</span>
+<span class="ni">        </span><span class="k">if</span><span class="ni"> </span><span class="k">block.group</span><span class="p">(</span><span class="ni">block</span><span class="p">,</span><span class="s">'isolated_block'</span><span class="p">)</span><span class="ni"> # </span><span class="s">"None"</span>
+<span class="ni">          minfos </span><span class="p">=</span><span class="ni"> </span><span class="k">math.min</span><span class="p">(</span><span class="ni">minfos</span><span class="p">,</span><span class="k">block.extra</span><span class="p">(</span><span class="ni">block</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">))</span>
+<span class="ni">        </span><span class="k">endif</span>
+<span class="ni">      </span><span class="k">endloop</span>
+<span class="ni">      </span>
+<span class="ni">      </span><span class="c">; 添加到数据表</span>
+<span class="ni">      count </span><span class="p">=</span><span class="ni"> count </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">      </span><span class="k">table.value</span><span class="p">(</span><span class="ni">tab_</span><span class="p">,</span><span class="ni">count</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="ni">K0</span><span class="p">,</span><span class="ni">minfos</span><span class="p">)</span>
+<span class="ni">      </span>
+<span class="ni">    </span><span class="k">end_loop</span>
+<span class="ni">  </span><span class="k">end_loop</span>
+<span class="nb">end</span>
+
+<span class="ni">[test]</span>
+
+<span class="nb">table</span><span class="n"> </span><span class="s">'knks_1'</span><span class="n"> export </span><span class="s">'knks_1.tab'</span>
+<span class="nb">table</span><span class="n"> </span><span class="s">'knks_10'</span><span class="n"> export </span><span class="s">'knks_10.tab'</span>
+<span class="nb">table</span><span class="n"> </span><span class="s">'knks_100'</span><span class="n"> export </span><span class="s">'knks_100.tab'</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="tunnel-with-multiple-blocks">
+<h3>含多个块体的隧道</h3>
+<p>本例考虑隧道周边多个块体的稳定性。通过引入具有以下属性的 DFN（<a href="#isoblock3-dfn">图 6（Figure  6）</a>）生成块体：方位均匀分布，尺寸均匀并设为 50 m，密度为 2。</p>
+<p>隧道尺寸、节理属性和隧道深度与前述示例相同。由于“孤立块体稳定性方法”仅研究与隧道接触的块体，模型范围限制为边长 20 m 的立方体。</p>
+<p>运行 <code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">analyze-stability</span></code> 命令后，与隧道接触的块体会在“isolated_blocks”槽位中赋予分组名称。名称等于块体 ID，已连接时则等于主 ID。因此，隐藏“isolated_block”分组等于“none”的块体，即可绘制接触隧道的块体（<a href="#isoblock3-freeblocks">图 7（Figure  7）</a>）。</p>
+<p>每个块体的平均安全系数都会输出到图形界面，也可按前述第二个示例指定 <code class="xref fish fish-kwd docutils literal"><span class="pre">block-extra</span></code> 进行保存。<a href=".html#isoblock3-fos">图 （Figure）</a><code class="xref fnum docutils literal"><span class="pre">Figure</span> <span class="pre">#isoblock3-fos</span></code> 显示平均安全系数小于 1 的不稳定块体。</p>
+<div class="figure" id="isoblock3-dfn">
+<a class="reference internal image-reference" href="../../../../../_images/isoblock3-dfn.png"><img alt="../../../../../_images/isoblock3-dfn.png" src="../../../../../_images/isoblock3-dfn.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 6：用于创建块体模型的离散裂隙网络。</span></p>
+</div>
+<div class="figure" id="isoblock3-freeblocks">
+<a class="reference internal image-reference" href="../../../../../_images/isoblock3-freeblocks.png"><img alt="../../../../../_images/isoblock3-freeblocks.png" src="../../../../../_images/isoblock3-freeblocks.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 7：识别出的自由块体，保存在“isolated_block”分组槽位中。</span></p>
+</div>
+<div class="figure">
+<a class="reference internal image-reference" href="../../../../../_images/isoblock3-fos.png"><img alt="../../../../../_images/isoblock3-fos.png" src="../../../../../_images/isoblock3-fos.png" style="width: 80%;"/></a>
+</div>
+<p><strong>A3.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+
+<span class="c">; 几何</span>
+<span class="nb">block tolerance</span><span class="n"> </span><span class="m m-Double">1e-3</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="o">-</span><span class="m m-Double">10.</span><span class="n"> </span><span class="m m-Double">10.</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">10</span>
+
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">10.</span><span class="n"> </span><span class="m m-Double">10.</span>
+
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10000</span>
+
+<span class="c">; 定义 DFN 模板 </span>
+<span class="nb">fracture template</span><span class="n"> create </span><span class="s">'fractures'</span><span class="n"> orientation uniform </span><span class="sx">...</span>
+<span class="n">     size uniform size</span><span class="o">-</span><span class="n">limits </span><span class="m m-Double">50</span><span class="n"> </span><span class="m m-Double">50</span>
+<span class="n">     </span>
+<span class="nb">fracture generate</span><span class="n"> dfn </span><span class="s">'fractures'</span><span class="n"> template </span><span class="s">'fractures'</span><span class="n"> mass</span><span class="o">-</span><span class="n">density </span><span class="m m-Double">2</span>
+
+
+<span class="nb">fish def</span><span class="ni"> table_definition </span>
+
+<span class="ni">  </span><span class="c">; 定义半径为 5 m 的圆柱体，每隔 18 度定义一个点</span>
+
+<span class="ni">  </span><span class="k">local</span><span class="ni"> theta</span><span class="p">=</span><span class="m m-Double">0.</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> i</span><span class="p">=</span><span class="m m-Double">1</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> rad</span><span class="p">=</span><span class="m m-Double">5.</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> delta_theta</span><span class="p">=</span><span class="m m-Double">18</span>
+
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">while</span><span class="ni"> theta</span><span class="o">&lt;</span><span class="m m-Double">360.</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> x1</span><span class="p">=</span><span class="ni">rad</span><span class="o">*</span><span class="k">math.cos</span><span class="p">(</span><span class="ni">theta</span><span class="o">*</span><span class="k">math.degrad</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> y1</span><span class="p">=</span><span class="ni">rad</span><span class="o">*</span><span class="k">math.sin</span><span class="p">(</span><span class="ni">theta</span><span class="o">*</span><span class="k">math.degrad</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">table.value</span><span class="p">(</span><span class="s">'1'</span><span class="p">,</span><span class="ni">i</span><span class="p">)=</span><span class="ni">vector</span><span class="p">(</span><span class="ni">x1</span><span class="p">,</span><span class="ni">y1</span><span class="p">)</span>
+<span class="ni">    i</span><span class="p">=</span><span class="ni">i</span><span class="o">+</span><span class="m m-Double">1</span>
+<span class="ni">    theta</span><span class="p">=</span><span class="ni">theta</span><span class="o">+</span><span class="ni">delta_theta</span>
+<span class="ni">  </span><span class="k">endloop</span><span class="ni"> </span>
+<span class="nb">end</span>
+<span class="ni">[table_definition]</span>
+
+<span class="nb">block group</span><span class="n"> </span><span class="s">"rock_mass"</span>
+<span class="nb">block cut</span><span class="n"> tunnel table</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="s">'1'</span><span class="n"> table</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="s">'1'</span><span class="n"> axis </span><span class="m m-Double">0.</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">10.</span><span class="n"> </span><span class="m m-Double">0.</span><span class="n"> </span><span class="m m-Double">0.</span><span class="n"> </span><span class="m m-Double">10.</span><span class="n"> </span><span class="m m-Double">0.</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                         radial group </span><span class="s">"tunnel"</span>
+
+<span class="c">; 切割节理</span>
+<span class="nb">block cut</span><span class="n"> dfn name </span><span class="s">'fractures'</span>
+
+<span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="m m-Double">1.0</span><span class="n"> </span>
+
+<span class="c">; 赋予应力，单位为 MPa，采用 K0 = 0.5</span>
+<span class="nb">block zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">block zone prop</span><span class="n"> dens </span><span class="m m-Double">2500e-6</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">9.81</span>
+
+<span class="nb">block insitu</span><span class="n"> topo ratio</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0.5</span><span class="n"> ratio</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0.5</span><span class="n"> overburden </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">190</span><span class="o">*</span><span class="m m-Double">9.81</span><span class="o">*</span><span class="m m-Double">2500e-6</span><span class="ni">]</span>
+
+<span class="c">; 现在删除隧道</span>
+<span class="nb">block face group</span><span class="n"> </span><span class="s">"free"</span><span class="n"> range group</span><span class="o">-</span><span class="n">intersection </span><span class="s">"rock_mass"</span><span class="n"> </span><span class="s">"tunnel"</span>
+<span class="nb">block delete</span><span class="n"> range group </span><span class="s">"tunnel"</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'A3_mesh'</span>
+
+<span class="nb">block analyze-stability</span><span class="n"> free</span><span class="o">-</span><span class="n">face </span><span class="s">'free'</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">10000</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                         stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1000</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">                                         friction </span><span class="m m-Double">35</span><span class="n"> block</span><span class="o">-</span><span class="n">extra </span><span class="m m-Double">1</span>
+
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">on</span><span class="n"> range group  </span><span class="s">'isolated_block=none'</span><span class="n"> </span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'A3_K0_0.5'</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="references">
+<h2>参考文献</h2>
+<p>Ghazal, R., F. Hadj-Hassen, and M. Tijani.（2011）《考虑原位应力的地下开挖周边孤立块体研究新数值方法》，载于<span class="bi">第 45 届美国岩石力学／岩土力学研讨会论文集（美国加利福尼亚州旧金山，2011 年 6 月）</span>。弗吉尼亚州亚历山德里亚：ARMA。</p>
+<p>Ghazal, R.（2013）<span class="bi">《考虑初始应力和节理非线性行为的地下开挖壁面岩石块体稳定性建模》</span>。博士学位论文，巴黎高等矿业学院。</p>
+<p>Ghazal, R., F. Hadj-Hassen, and M. Tijani.（2011）《考虑原位应力的地下开挖表面孤立岩块稳定性建模》。载于第 12 届国际岩石力学学会大会论文集（2011 年 10 月，中国北京），Zhou Y 主编，《岩石工程与环境的协调》。</p>
+<p>Goodman, R. E., G. H. Shi.（1985）《块体理论及其在岩石工程中的应用》。新泽西州恩格尔伍德克利夫斯：Prentice-Hall。</p>
+<p>Warburton, PM.（1985）《用于重建块状岩体几何并分析单块体稳定性的计算机程序》。<em>Computers &amp; Geosciences</em>，11(6)，707–712。</p>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../3dechome.html"><span class="codename">3DEC</span></a> »</li>
+<li class="nav-item nav-item-2"><a accesskey="U" href="../theory.html"><span class="codename">3DEC</span> Theory and Background</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="energycalculation.html" title="previous chapter"> Energy Calculation</a> |    
+       <a href="structural_finiteelements.html" title="next chapter">Structural Finite Elements</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Isolated Block Stability Method" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

@@ -1,0 +1,290 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>边界条件 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="dynamic_dynamicinput.html" rel="next" title="Application of Dynamic Input"/>
+<link href="dynamic_partdensscaling.html" rel="prev" title="Partial Density Scaling for Dynamic Analysis"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="boundary-conditions">
+<span id="dynamic-boudaryconditions"></span><h1>边界条件</h1>
+<div class="section" id="nonreflecting-boundaries">
+<h2>非反射边界</h2>
+<p>岩土力学问题的建模涉及这样的介质：在分析尺度上，将其表示为无界介质更为合适。深部地下开挖通常假定被无限介质包围，而地表和近地表结构则假定位于半空间之上。依赖于有限空间区域离散化的数值方法，要求在人为的数值边界上施加适当条件。在静力分析中，固定边界或弹性边界（例如由边界元方法表示的边界）可以实际地设置在距所关注区域一定距离处。但在动力问题中，此类边界条件会使向外传播的波反射回模型，无法实现必要的能量辐射。采用更大的模型可减轻这一问题，因为材料阻尼会吸收从远处边界反射回来的波的大部分能量。然而，这种方案的计算成本很高。替代方案是采用非反射（或吸收）边界。目前已提出多种格式。<span class="codename">3DEC</span> 中采用的是 Lysmer 和 Kuhlemeyer（1969）提出的黏性边界。它基于独立阻尼器的使用，对于以大于 30° 的入射角接近边界的体波几乎完全有效。对于较小的入射角或面波，能量吸收只是近似的。但其优点在于它是一种可用于时域分析的有效技术。其有效性已在有限元模型和有限差分模型中得到验证（Kunar 等，1977）。White 等人（1977）提出的该技术的一种变体也被广泛使用。</p>
+<p>更高效的能量吸收（例如在瑞利波情况下）需要使用频率相关的阻尼器，而这类阻尼器只能用于频域分析（如 Lysmer 和 Waas，1972）。这类边界通常称为一致边界，其计算涉及耦合所有边界自由度的动力刚度矩阵。可采用边界元方法推导这些矩阵（如 Wolf，1985）。Roesset 和 Ettouney（1977）报告了不同简单边界、黏性边界和一致边界性能的对比研究。</p>
+<p>Cundall 等人（1978）提出了一种用于时域研究的、可获得高效吸收边界的另一种方法。该方法基于将应力边界解与速度边界解叠加，从而使反射相互抵消。在实际操作中，它需要在紧邻边界的狭窄区域内对两个平行重叠网格的结果求和。该方法已被证明能有效吸收能量，但对于几何形状复杂的块体系统难以实现，因此未在 <span class="codename">3DEC</span> 中使用。</p>
+<p>Lysmer 和 Kuhlemeyer（1969）提出的黏性边界由沿法向和剪切方向附着于边界的独立阻尼器组成。它们提供的黏性法向面力和剪切面力由下式给出</p>
+<div class="math">
+\[t_n = - \rho\ C_p\ v_n\]</div>
+<div class="math">
+\[t_s = - \rho\ C_s\ v_s\]</div>
+<p>其中：</p>
+<blockquote>
+<div><p><span class="math">\(v_n\)</span> 和 <span class="math">\(v_s\)</span> 分别是边界上速度的法向分量和剪切分量；</p>
+<p><span class="math">\(\rho\)</span> 为质量密度；以及</p>
+<p><span class="math">\(C_p\)</span> 和 <span class="math">\(C_s\)</span> 分别为 <span class="math">\(p\)</span> 波和 <span class="math">\(s\)</span> 波的波速。</p>
+</div></blockquote>
+<p>这些黏性项可直接引入位于边界上的网格点的运动方程中。不过，<span class="codename">3DEC</span> 中实现的是另一种方法，即像边界荷载那样，在每个时步计算并施加面力 <span class="math">\(t_n\)</span> 和 <span class="math">\(t_s\)</span>。这种替代方案使黏性边界也可用于刚性块体。试验表明，该实现的效果同样良好。唯一潜在的问题涉及数值稳定性，因为黏性力是由滞后半个时步的速度计算得到的。在迄今为止的实际分析中，尚未因使用非反射边界而需要减小时步。由高节理刚度或小尺寸网格单元所要求的时步限制通常更为重要。</p>
+<p>动力分析从某种地应力状态开始。若采用速度来提供静力应力状态，则该边界条件可替换为非反射边界；在整个动力加载阶段都应保持边界反力。若静力地应力求解施加的是应力边界条件，那么在动力阶段施加非反射边界时，还必须在同一边界上施加符号相反的应力边界条件。这样可使动力计算时边界上具有正确的反力。</p>
+</div>
+<div class="section" id="free-field-boundaries">
+<h2>自由场边界</h2>
+<p>对土坝等地表结构的地震反应进行数值分析时，需要对基础附近的一定区域进行离散化。地震输入通常表示为向上穿过下卧材料传播的平面波。模型侧面的边界条件必须考虑在无结构情况下会存在的自由场运动。在某些情况下，简单的侧向边界可能就足够了。例如，若只在 <a href="#dyn-bcs-emas">图  1（Figure  1）</a> 所示的水平边界 AC 上施加剪切波，则可以将沿 AB 和 CD 的边界仅约束竖直方向。这些边界应放置在足够远的位置，以尽量减小波的反射并实现自由场条件。对于材料阻尼较高的土体，这一条件可在相对较小的距离下满足（Seed 等，1975）。然而，当材料阻尼较低时，所需的距离可能导致模型不切实际。另一种方法是“强制”自由场运动，使边界保持其非反射特性（即来自结构的向外传播的波被适当吸收）。该方法曾用于连续介质有限差分程序 NESSI（Cundall 等，1980）。为 <span class="codename">3DEC</span> 开发了一种此类技术，即与主网格分析并行执行自由场计算。</p>
+<p>主网格的侧向边界通过黏性阻尼器与自由场网格耦合，以模拟安静边界（见 <a href="#dyn-bcs-emas">图  1（Figure  1）</a>）；自由场网格的不平衡力施加于主网格边界。这两种条件由下面三个方程表示，这些方程适用于沿某侧边界面的自由场边界，其法线沿 <span class="math">\(x\)</span> 轴方向。其他侧面和角点边界可写出类似的表达式：</p>
+<div class="math">
+\[F_x=-\rho C_p(v_x^m-v_x^{\rm ff}) A + F_x^{\rm ff}\]</div>
+<div class="math">
+\[F_y=-\rho C_s(v_y^m-v_y^{\rm ff}) A + F_y^{\rm ff}\]</div>
+<div class="math">
+\[F_z=-\rho C_s(v_z^m-v_z^{\rm ff}) A + F_z^{\rm ff}\]</div>
+<p>其中</p>
+<blockquote>
+<div><p><span class="math">\(\rho\)</span> = 沿竖直模型边界的材料密度；</p>
+<p><span class="math">\(C_p\)</span> = 侧边界处的 <span class="math">\(p\)</span> 波波速；</p>
+<p><span class="math">\(C_s\)</span> = 侧边界处的 <span class="math">\(s\)</span> 波波速；</p>
+<p><span class="math">\(A\)</span> = 自由场网格点的影响面积；</p>
+<p><span class="math">\(v_x^m\)</span> = 侧边界上主网格中网格点的 <span class="math">\(x\)</span> 向速度；</p>
+<p><span class="math">\(v_y^m\)</span> = 侧边界上主网格中网格点的 <span class="math">\(y\)</span> 向速度；</p>
+<p><span class="math">\(v_z^m\)</span> = 侧边界上主网格中网格点的 <span class="math">\(z\)</span> 向速度；</p>
+<p><span class="math">\(v_x^{ff}\)</span> = 侧面自由场中网格点的 <span class="math">\(x\)</span> 向速度；</p>
+<p><span class="math">\(v_y^{ff}\)</span> = 侧面自由场中网格点的 <span class="math">\(y\)</span> 向速度；</p>
+<p><span class="math">\(v_z^{ff}\)</span> = 侧面自由场中网格点的 <span class="math">\(z\)</span> 向速度；</p>
+<p><span class="math">\(F_x^{ff}\)</span> = 自由场网格点力，其值包含网格点周围自由场网格单元的 <span class="math">\(\sigma_{xx}^{\rm ff}\)</span> 应力所作的贡献；</p>
+<p><span class="math">\(F_y^{ff}\)</span> = 自由场网格点力，其值包含网格点周围自由场网格单元的 <span class="math">\(\sigma_{xy}^{\rm ff}\)</span> 应力所作的贡献；以及</p>
+<p><span class="math">\(F_z^{ff}\)</span> = 自由场网格点力，其值包含网格点周围自由场网格单元的 <span class="math">\(\sigma_{xz}^{\rm ff}\)</span> 应力所作的贡献。</p>
+</div></blockquote>
+<p>这样，向上传播的平面波在边界处不会发生畸变，因为自由场网格提供的条件与无限模型中的条件相同。若主网格是均匀的且没有地表结构，则侧向阻尼器不会起作用，因为自由场网格与主网格做相同的运动。然而，若主网格的运动与自由场不同（例如由于地表结构辐射二次波），则阻尼器会以类似于安静边界的方式吸收能量。</p>
+<div class="figure align-center" id="dyn-bcs-emas">
+<img alt="../../../../../_images/ff-model.png" src="../../../../../_images/ff-model.png"/>
+<p class="caption"><span class="caption-text">图 1：用于地表结构地震分析的模型及自由场网格。</span></p>
+</div>
+<p>为了在 <span class="codename">3DEC</span> 中施加自由场边界，模型必须满足：底面水平且其法线沿 <span class="math">\(y\)</span> 轴方向，侧面竖直且其法线沿 <span class="math">\(x\)</span> 轴或 <span class="math">\(z\)</span> 轴方向。若入射地震波的传播方向不是竖直的，则可旋转坐标轴，使 <span class="math">\(y\)</span> 轴与传播方向重合。在这种情况下，重力将与 <span class="math">\(y\)</span> 轴成一定角度作用，水平的自由面也将相对于模型边界倾斜。</p>
+<p>自由场模型由模型侧边界上的四个平面自由场网格和角点处的四个柱状自由场网格组成。平面网格的生成与侧边界上的主网格单元相匹配，从而使自由场中的网格点与主网格中的网格点一一对应。四个角点自由场柱体充当平面自由场网格的自由场边界。平面自由场网格是二维计算，假定在垂直于平面的方向上无限延伸；柱状自由场网格是一维计算，假定在两个水平方向上均无限延伸。平面网格和柱状网格均由标准 <span class="codename">3DEC</span> 网格单元组成，其网格点以某种方式受到约束，以满足无限延伸的假定。</p>
+<p>在施加自由场边界之前，模型应处于静力平衡状态。当调用 <span class="fishcmd">block dynamic free-field apply</span> 命令时，动力分析之前的静力平衡条件会自动传递到自由场。自由场条件施加于侧向边界网格点。与自由场相邻的模型网格单元中的所有单元数据（包括模型类型和当前状态变量）都会复制到自由场区域。自由场应力取相邻网格单元的平均应力。模型底部的动力边界条件应在施加自由场<em>之前</em>指定。施加自由场时，这些底部条件会自动传递到自由场。注意，自由场是连续的；若主网格中含有延伸至模型边界的接触面，则该接触面将<em>不会</em>延续到自由场中。</p>
+<p>发出 <span class="fishcmd">block dynamic free-field apply</span> 命令后，只要绘制块体，就会自动绘制自由场网格。可使用 <span class="fishcmd">block dynamic free-field list</span> 命令打印自由场信息。</p>
+<div class="section" id="example-using-dynamic-free-field">
+<h3>使用动力自由场的示例</h3>
+<p>建立一个混凝土重力坝的简单模型。模型的顶部边界为自由边界。模型的底部为黏性（安静）边界。<a href="#dyn-bcs-rmsz">图  2（Figure  2）</a> 给出了模型几何形状，大坝位于顶部中央。模型首先在重力作用下运行至静力平衡，以使体力与边界力平衡。这必须在施加自由场边界之前完成。</p>
+<div class="figure align-center" id="dyn-bcs-rmsz">
+<a class="reference internal image-reference" href="../../../../../_images/ff-blocks.png"><img alt="../../../../../_images/ff-blocks.png" src="../../../../../_images/ff-blocks.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：可见自由场块体的大坝模型。</span></p>
+</div>
+<p>下一步是仅使用黏性边界运行该模型。在模型底部施加脉冲剪应力函数。在该模型中，边界距离太近，从 <a href="#dyn-bcs-irka">图  3（Figure  3）</a> 可以看出底部 <span class="math">\(x\)</span> 向速度存在放大，坝顶处的运动发生畸变。</p>
+<div class="figure align-center" id="dyn-bcs-irka">
+<a class="reference internal image-reference" href="../../../../../_images/ff-viscous-his.png"><img alt="../../../../../_images/ff-viscous-his.png" src="../../../../../_images/ff-viscous-his.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 3：采用黏性边界时模型底部和坝顶的 <span class="math">\(x\)</span> 向速度历史记录。</span></p>
+</div>
+<p>接下来，使用自由场重新运行该模型。自由场命令在模型边界处创建新的块体并自动对其划分网格。同样，在底部施加脉冲剪应力。动力输入由施加在模型底部的正弦剪应力波组成。<a href="#dyn-bcs-woqp">图  4（Figure  4）</a> 给出了底部和坝顶的 <span class="math">\(x\)</span> 向速度历史记录。在这种情况下，底部的波没有放大，坝顶处的运动也没有畸变。</p>
+<div class="figure align-center" id="dyn-bcs-woqp">
+<a class="reference internal image-reference" href="../../../../../_images/ff-ff-his.png"><img alt="../../../../../_images/ff-ff-his.png" src="../../../../../_images/ff-ff-his.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 4：采用自由场边界时底部和坝顶的 <span class="math">\(x\)</span> 向速度。</span></p>
+</div>
+<p class="h2 rubric" id="dynamicffboundary">数据文件 - 自由场</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="c">; -------------------------------------------------------------------</span>
+<span class="c">;</span>
+<span class="c">; 坝体动力自由场分析算例</span>
+<span class="c">;  底部施加脉冲应力波，顶部自由</span>
+<span class="c">;</span>
+<span class="c">; -------------------------------------------------------------------</span>
+<span class="c">;</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10000</span>
+<span class="nb">model config</span><span class="n"> dyn</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="c">;</span>
+<span class="nb">model title</span>
+<span class="n">Dynamic Analysis of a Dam</span>
+<span class="c">;</span>
+
+<span class="c">; ---- 几何形状 ----</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="o">-</span><span class="m m-Double">100</span><span class="n"> </span><span class="m m-Double">100</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">100</span><span class="n"> </span><span class="m m-Double">100</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">100</span><span class="n"> </span><span class="m m-Double">0</span>
+
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">0</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">0</span><span class="n"> origin </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">30</span>
+<span class="nb">block hide</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">100</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">30</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">45</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">0</span><span class="n"> origin </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">50</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">45</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">180</span><span class="n"> origin </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">50</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block hide</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">100</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">50</span>
+<span class="nb">block hide</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">50</span><span class="n"> </span><span class="m m-Double">100</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">90</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">90</span><span class="n"> origin </span><span class="o">-</span><span class="m m-Double">12</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block delete</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">100</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">12</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">30</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> position</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">50</span><span class="n"> </span><span class="m m-Double">50</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">51</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">90</span><span class="n"> origin </span><span class="o">-</span><span class="m m-Double">12</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block delete</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">12</span><span class="n"> </span><span class="m m-Double">100</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">30</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> position</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">50</span><span class="n"> </span><span class="m m-Double">50</span>
+
+<span class="nb">block group</span><span class="n"> </span><span class="s">'mat2'</span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">block hide</span><span class="n"> range group </span><span class="s">'mat2'</span>
+<span class="nb">block join</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">30</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">270</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                    origin </span><span class="m m-Double">30</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">30</span><span class="n"> spacing </span><span class="m m-Double">50</span><span class="n"> number </span><span class="m m-Double">5</span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">block zone gen</span><span class="n"> edgelength </span><span class="m m-Double">26</span>
+
+<span class="c">; ---- 参数 ----</span>
+<span class="c">;</span>
+<span class="c">; E = 50000 MPa, v=0.25</span>
+<span class="c">; dens = 2500 kg/m3</span>
+<span class="c">; cp = 4899 m/s</span>
+<span class="c">; cs = 2828 m/s</span>
+<span class="c">;</span>
+<span class="nb">block zone cmodel</span><span class="n"> assign el</span>
+<span class="nb">block zone prop</span><span class="n"> dens </span><span class="m m-Double">0.0025</span><span class="n">  bulk </span><span class="m m-Double">33333</span><span class="n"> shear </span><span class="m m-Double">20000</span>
+<span class="nb">block zone prop</span><span class="n"> bulk </span><span class="m m-Double">20000</span><span class="n"> shear </span><span class="m m-Double">12000</span><span class="n"> range group </span><span class="s">'mat2'</span>
+
+<span class="nb">block contact jmodel</span><span class="n"> assign el</span>
+<span class="nb">block contact prop</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">10000</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">4000</span>
+<span class="nb">block contact material-table</span><span class="n"> default prop stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">10000</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                          stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">4000</span>
+
+
+<span class="c">; --- 边界条件和初始条件 ---</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">100</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">100</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">100</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">100</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">100</span>
+<span class="nb">block insitu</span><span class="n"> stress </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> gradient</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.00125</span><span class="n"> </span><span class="m m-Double">0.00125</span><span class="n"> </span><span class="m m-Double">0.0025</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">10</span>
+
+<span class="nb">block mechanical</span><span class="n"> damp global</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">2000</span>
+
+<span class="nb">block mechanical</span><span class="n"> damp rayleigh </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> mass</span>
+
+<span class="nb">history delete</span>
+<span class="nb">model dynamic</span><span class="n"> time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">0</span>
+<span class="nb">block gridpoint initialize</span><span class="n"> displacement </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+
+<span class="nb">model history</span><span class="n"> mechanical unbalanced</span><span class="o">-</span><span class="n">maximum</span>
+<span class="nb">block hist</span><span class="n"> name </span><span class="s">'vel1'</span><span class="n"> vel</span><span class="o">-</span><span class="n">x pos </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block hist</span><span class="n"> name </span><span class="s">'vel2'</span><span class="n"> vel</span><span class="o">-</span><span class="n">x pos </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">100</span>
+<span class="nb">block hist</span><span class="n"> name </span><span class="s">'vel3'</span><span class="n"> vel</span><span class="o">-</span><span class="n">x pos </span><span class="o">-</span><span class="m m-Double">40</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">20</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">28</span>
+
+<span class="n">hist name </span><span class="s">'vel1'</span><span class="n"> label </span><span class="s">'X velocity at crest'</span>
+<span class="n">hist name </span><span class="s">'vel2'</span><span class="n"> label </span><span class="s">'X velocity at base'</span>
+
+<span class="c">; 将在底部施加的脉冲波</span>
+<span class="ni">[freq </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">15</span><span class="ni">]</span>
+<span class="nb">fish def</span><span class="ni"> impulse</span>
+<span class="ni">  impulse </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="p">(</span><span class="m m-Double">1.0</span><span class="o">-</span><span class="k">math.cos</span><span class="p">(</span><span class="m m-Double">2.0</span><span class="o">*</span><span class="ni">freq</span><span class="o">*</span><span class="ni">dynamic</span><span class="p">.</span><span class="k">time.total</span><span class="p">))</span>
+<span class="nb">end</span>
+<span class="nb">fish history</span><span class="n"> impulse</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">"ff1"</span>
+
+<span class="n">model res </span><span class="s">"ff1"</span>
+
+<span class="c">; 仅采用黏性边界</span>
+<span class="c">;</span>
+<span class="nb">block gridpoint apply</span><span class="n"> visc</span><span class="o">-</span><span class="n">x range pos</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">100</span>
+<span class="nb">block gridpoint apply</span><span class="n"> visc</span><span class="o">-</span><span class="n">x range pos</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">100</span>
+<span class="nb">block gridpoint apply</span><span class="n"> visc</span><span class="o">-</span><span class="n">y range pos</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">100</span>
+<span class="nb">block gridpoint apply</span><span class="n"> visc</span><span class="o">-</span><span class="n">y range pos</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">100</span>
+
+<span class="nb">block face apply</span><span class="n"> stress</span><span class="o">-</span><span class="n">xz </span><span class="m m-Double">2.0</span><span class="n"> fish impulse range pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">100</span>
+
+<span class="nb">block gridpoint apply</span><span class="n"> visc range pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">100</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">0.4</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">"ff2"</span>
+
+<span class="n">model rest </span><span class="s">"ff1"</span>
+
+<span class="c">; 采用自由场边界运行</span>
+<span class="c">;</span>
+<span class="c">; --- 创建自由场 ---</span>
+<span class="c">;</span>
+<span class="nb">block dynamic</span><span class="n"> free</span><span class="o">-</span><span class="n">field  apply gap </span><span class="m m-Double">10</span><span class="n"> thick </span><span class="m m-Double">10</span>
+<span class="nb">block face apply</span><span class="n"> stress</span><span class="o">-</span><span class="n">xz </span><span class="m m-Double">2.0</span><span class="n"> fish impulse range pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">100</span>
+<span class="nb">block gridpoint apply</span><span class="n"> visc range pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">100</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n">  time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">0.4</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">"ff3"</span>
+
+<span class="nb">block dynamic</span><span class="n"> free</span><span class="o">-</span><span class="n">field list</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../3dechome.html"><span class="codename">3DEC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../options.html">Options</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="dynamic.html">Dynamic Analysis</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="dynamic_partdensscaling.html" title="previous chapter"> Partial Density Scaling for Dynamic Analysis</a> |    
+       <a href="dynamic_dynamicinput.html" title="next chapter">Application of Dynamic Input</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Boundary Conditions" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

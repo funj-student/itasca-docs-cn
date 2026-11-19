@@ -1,0 +1,1348 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>结构单元 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="seltool.html" rel="next" title="SEL Tool"/>
+<link href="../cyjoint/cyjoint.html" rel="prev" title="Continuously Yielding Joint Model In 3DEC"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="structural-elements">
+<span id="theory-sels"></span><h1>结构单元</h1>
+<div class="section" id="introduction">
+<h2>引言</h2>
+<p>岩土力学分析与设计的重要方面，是利用结构支护稳定土体或岩体。<em>支护</em>指用于限制洞室紧邻区域位移的工程材料。本节重点讨论对土体或岩体提供加固的支护，介绍 <span class="codename">3DEC</span> 专用支护单元。<span class="codename">3DEC</span> 以及 <span class="codename">FLAC3D</span> 和 <span class="codename">PFC</span> 也可使用其他支护类型，详见文档<a class="reference internal" href="../../../../../common/docproject/source/manual/program_guide/program_guide.html#programguide"><span class="std std-ref">程序指南</span>（Program Guide）</a> <span class="math">\(\rightarrow\)</span> <a class="reference internal" href="../../../../../common/sel/doc/manual/sels.html#structural-elements-overview"><span class="std std-ref">结构单元</span>（Structural Elements）</a>部分的以下各节。</p>
+<ul class="simple">
+<li><a class="reference internal" href="../../../../../common/sel/doc/manual/sel_manual/beams/beams.html#beam-structural-elements"><span class="std std-ref">梁结构单元</span>（Beam Structural Elements）</a></li>
+<li><a class="reference internal" href="../../../../../common/sel/doc/manual/sel_manual/cables/cables.html#cable-structural-elements"><span class="std std-ref">锚索结构单元</span>（Cable Structural Elements）</a></li>
+<li><a class="reference internal" href="../../../../../common/sel/doc/manual/sel_manual/piles/piles.html#pile-structural-elements"><span class="std std-ref">桩结构单元</span>（Pile Structural Elements）</a></li>
+<li><a class="reference internal" href="../../../../../common/sel/doc/manual/sel_manual/shells/shells.html#shell-structural-elements"><span class="std std-ref">壳结构单元</span>（Shell Structural Elements）</a></li>
+<li><a class="reference internal" href="../../../../../common/sel/doc/manual/sel_manual/geogrids/geogrids.html#geogrid-structural-elements"><span class="std std-ref">土工格栅结构单元</span>（Geogrid Structural Elements）</a></li>
+<li><a class="reference internal" href="../../../../../common/sel/doc/manual/sel_manual/liners/liners.html#liner-structural-elements"><span class="std std-ref">衬砌结构单元</span>（Liner Structural Elements）</a></li>
+</ul>
+<p>下面分别介绍 <span class="codename">3DEC</span> 专用加固类型。所有情况下，定义结构所需命令都很简单，但会调用功能强大且灵活的结构计算逻辑。该逻辑采用与程序其余部分相同的有限差分算法，而非矩阵求解方法，使结构能够适应大位移，并用于动力和静力分析。参阅“<a class="reference internal" href="../../options/dynamic/dynamic.html#dynamic-3dec"><span class="std std-ref">动力分析</span>（Dynamic Analysis）</a>”中介绍的动力分析选项。</p>
+</div>
+<div class="section" id="rock-reinforcement">
+<span id="id1"></span><h2>岩石加固</h2>
+<p>有多种加固类型，旨在不同地层条件下有效工作。一类是完全包裹于高强度、高刚度树脂或浆体中的钢筋或锚杆。其特点是：在杆身较短长度内即可产生较大抗拉伸轴向阻力；穿过滑移节理的单元还可产生较高抗剪阻力。第二类以水泥浆锚索或筋材为代表，对节理剪切的抵抗很小，而发展全部轴向荷载可能需要沿加固单元较长范围发生浆体变形。这两类分别称为局部加固和整体或空间广布加固。<span class="codename">3DEC</span> 已包含这两种岩石加固系统的特征行为。</p>
+</div>
+<div class="section" id="local-reinforcement-at-joints-sel-reinforcement-command">
+<span id="local-reinfs"></span><h2>节理处局部加固（<span class="fishcmd">sel reinforcement</span> 命令）</h2>
+<p>局部加固公式仅考虑加固单元穿越已有不连续面处的局部作用。该公式来自具有单个不连续面的优质岩石中，全长灌浆、未张拉加固单元的室内试验观察；这些观察表明，加固单元应变集中在跨不连续面处（Bjurstrom 1974；Pells 1974）。计算每个单元因所穿越不连续面两侧位移而产生的力，即可在计算模型中实现该行为。以下公式说明引自 Lorig（1985）。</p>
+<blockquote>
+<div><em>该公式采用简单力—位移关系，描述跨不连续面加固单元的剪切和轴向行为。通过考虑不连续面附近加固单元局部产生的简单几何变化，处理较大剪切位移。局部加固模型既可用于刚性块体，也可用于可变形块体，但最适合单个岩石块体变形相对于加固系统变形可忽略的情况。此时，可合理地将注意力集中于不连续面附近的加固作用。</em></div></blockquote>
+<div class="section" id="axial-behavior">
+<span id="theory-axial-behavior"></span><h3>轴向行为</h3>
+<p>过去，岩石加固单元的轴向试验主要采用拉拔试验，原因有二：</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>试验和结果解释方便；以及</li>
+<li>提供轴向约束，这是主流概念模型中加固的主要功能。</li>
+</ol>
+</div></blockquote>
+<p>因此，对轴向力—位移关系已形成较好的认识。通常用于表示岩石加固的轴向力—位移关系见<a href="#the-sel3-keov">图 1（Figure  1）</a>。</p>
+<div class="figure" id="the-sel3-keov">
+<img alt="../../../../../_images/sels-axial.png" src="../../../../../_images/sels-axial.png"/>
+<p class="caption"><span class="caption-text">图 1：局部加固系统的轴向行为。</span></p>
+</div>
+<p><a href="#the-sel3-keov">图 1（Figure  1）</a> 表示受拉和受压时响应相同，但并非所有加固系统都如此。</p>
+<p>若无拉拔试验结果，可采用 Gerdeen 等（1977）的以下理论表达式，估计全长黏结实心加固单元的轴向刚度 <span class="math">\(K_a\)</span>：</p>
+<div class="math" id="equation-the-sel3-mluw">
+<span class="eqno">(1)</span>\[K_a = \pi\ k\ d_1\]</div>
+<p>其中：</p>
+<blockquote>
+<div><p><span class="math">\(d\)</span><sub>1</sub> = 加固单元直径；</p>
+<p><span class="math">\(k\)</span> = <span class="math">\([{{1} \over {2}}\ G_g\ E_b\ /\ (d_2\ /\ d_1 - 1)]^{1/2}\)</span></p>
+<p><span class="math">\(G_g\)</span> = 浆体剪切模量；</p>
+<p><span class="math">\(E_b\)</span> = 加固材料杨氏模量；以及</p>
+<p><span class="math">\(d\)</span><sub>2</sub> = 钻孔直径。</p>
+</div></blockquote>
+<p>与有限元分析的比较（Gerdeen 等 1977）表明，式 <a class="reference internal" href="#equation-the-sel3-mluw">(1)</a> 往往略微高估轴向刚度。</p>
+<p>加固单元极限轴向承载力取决于多个因素，包括单元强度、黏结强度、孔壁粗糙度、浆体强度、岩石强度和钻孔直径。缺少实际试验结果时，可用经验关系估计极限锚固强度 <span class="math">\(P_{ult}\)</span>。Littlejohn 和 Bruce（1975）给出了水泥灌浆加固设计的一种关系：</p>
+<div class="math" id="equation-the-sel3-wxuy">
+<span class="eqno">(2)</span>\[P_{ult} = 0.1\ \sigma_c\ \pi\ d_2\ L\]</div>
+<p>其中：</p>
+<blockquote>
+<div><p><span class="math">\(\sigma_c\)</span> = 完整块状岩石的单轴抗压强度，取芯率为 100%，最大取 42 MPa，并假定水泥浆抗压强度不低于 42 MPa；以及</p>
+<p><span class="math">\(L\)</span> = 黏结长度。</p>
+</div></blockquote>
+</div>
+<div class="section" id="shear-behavior">
+<span id="theory-shear-behavior"></span><h3>剪切行为</h3>
+<p>认识到加固还会改变不连续面的剪切刚度和强度后，人们开展了加固不连续面的室内剪切试验。试验与理论研究表明，沿不连续面剪切会在加固单元中引起弯曲应力，并随从剪切面深入岩石的距离快速衰减。通常，在一至两个加固单元直径的距离内，弯曲应力就已很小。</p>
+<p>通常用于表示剪切行为的剪切力—位移关系见<a href="#the-sel3-cfsp">图 2（Figure  2）</a>。图中显示加固单元相对于所穿越不连续面及剪切方向处于不同产状时的代表性响应。</p>
+<p>若无实际试验结果，可采用 Gerdeen 等（1977）的以下表达式估计剪切刚度 <span class="math">\(K_s\)</span>：</p>
+<div class="math" id="equation-the-sel3-mpgr">
+<span class="eqno">(3)</span>\[K_s = E_b\ I\ \beta^3\]</div>
+<p>其中：</p>
+<blockquote>
+<div><p><span class="math">\(\beta\)</span> = <span class="math">\([K\ /\ (4\ E_b\ I)]^{1/4}\)</span>;</p>
+<p><span class="math">\(K\)</span> = <span class="math">\(2E_g\ /\ (d_2/d_1 - 1)\)</span>;</p>
+<p><span class="math">\(I\)</span> = 加固单元截面惯性矩；以及</p>
+<p><span class="math">\(E_g\)</span> = 浆体杨氏模量。</p>
+</div></blockquote>
+<div class="figure" id="the-sel3-cfsp">
+<img alt="../../../../../_images/sels-shear.png" src="../../../../../_images/sels-shear.png"/>
+<p class="caption"><span class="caption-text">图 2：加固系统的剪切行为。</span></p>
+</div>
+<p>可通过经验关系估计加固单元在相对于所穿越不连续面及剪切方向的不同方位下，最大剪切力 <span class="math">\(F_{s,b}^{max}\)</span>。例如，Bjurstrom（1974）利用花岗岩中垂直于不连续面的未灌浆加固单元剪切试验结果，建立表达式</p>
+<div class="math" id="equation-the-sel3-hcip">
+<span class="eqno">(4)</span>\[F_{s,b}^{max} = 0.67\ d_1^2\ (\sigma_b\ \sigma_c)^{1/2}\]</div>
+<p>其中，<span class="math">\(\sigma_b\)</span> = 加固单元屈服强度。</p>
+<p>St. John 和 Van Dillen（1983）评估最大抗剪阻力时，采用了 Azuar 等（1979）的结果。后者发现，对于垂直于不连续面的加固单元，最大剪切力约为其单轴抗拉强度与截面积乘积的一半；顺剪切方向倾斜时，剪切力提高至该乘积的 80% 至 90%。发生断裂的剪切位移，垂直情况约为两个单元直径，倾斜情况约为一个直径。St. John 和 Van Dillen 将断裂前强度和位移量差异解释为加固单元周围岩石破碎程度的影响。</p>
+</div>
+<div class="section" id="numerical-formulation">
+<h3>数值公式</h3>
+<p><span class="codename">3DEC</span> 模型假定，不连续面沿面剪切时，加固单元按<a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)...">图 #the-sel3-cfyt（<span class="varfloat"><span class="null">Figure #the-sel3-cfyt</span></span>）</a> 所示变形。跨越不连续面、且在剪切位移过程中改变方位的一小段加固单元，称为活动长度。假定的几何变化最早由 Haas（1976）在常规端部锚固单元推导中提出，Fuller 和 Cox（1978）在讨论全长灌浆加固时采用。</p>
+<div class="figure" id="the-sel3-cfyt">
+<img alt="../../../../../_images/sels-reinf-geom.png" src="../../../../../_images/sels-reinf-geom.png"/>
+<p class="caption"><span class="caption-text">图 3：剪切位移 <span class="math">\(\Delta u_s\)</span> 后假定的加固单元几何形状。</span></p>
+</div>
+<p>假定活动长度仅因不连续面剪切和法向位移引起的直接几何变化而改变方位。估计活动长度的方法见下一节。模型可视为在不连续接触面处设置两个弹簧，分别平行和垂直于加固轴线，如<a href="#the-sel3-ndhr">图 4（Figure  4）</a> 所示。剪切位移发生后，轴向弹簧平行于活动长度，剪切弹簧仍垂直于原始方位，见<a href="#the-sel3-ndhr">图 4（Figure  4）</a>。不连续面法向位移也会产生类似几何变化。</p>
+<div class="figure" id="the-sel3-ndhr">
+<img alt="../../../../../_images/sels-spring-orientation.png" src="../../../../../_images/sels-spring-orientation.png"/>
+<p class="caption"><span class="caption-text">图 4：表示加固单元的剪切与轴向弹簧，在剪切位移前后的方位。</span></p>
+</div>
+<p><span class="codename">3DEC</span> 表示轴向和剪切行为的力—位移模型，采用以轴向或剪切刚度及极限承载力描述的连续线性算法。注意，<span class="codename">3DEC</span> 的局部加固公式，是 <span class="codename">UDEC</span> 一般公式的简化版本，见 Itasca（2011）。</p>
+<p>描述轴向响应的力—位移关系为</p>
+<div class="math" id="equation-the-sel3-dbil">
+<span class="eqno">(5)</span>\[\Delta F_a = K_a \vert \Delta u_a \vert\]</div>
+<p>其中：</p>
+<blockquote>
+<div><p><span class="math">\(\Delta F_a\)</span> 为轴力增量；</p>
+<p><span class="math">\(\Delta u_a\)</span> 为轴向位移增量；以及</p>
+<p><span class="math">\(K_a\)</span> 为轴向刚度。</p>
+</div></blockquote>
+<p>该公式未通过降低刚度来考虑不连续面附近浆体和／或岩石压碎。</p>
+<p>可为轴力指定断裂极限。如果加固单元轴向拉应变超过指定应变极限，则将轴力设为零。</p>
+<p>剪切力—位移关系以增量形式描述为</p>
+<div class="math" id="equation-the-sel3-pctf">
+<span class="eqno">(6)</span>\[\Delta F_s = K_s \vert \Delta u_s \vert\]</div>
+<p>其中：</p>
+<blockquote>
+<div><p><span class="math">\(\Delta F_s\)</span> 为剪切力增量；</p>
+<p><span class="math">\(\Delta u_s\)</span> 为剪切位移增量；以及</p>
+<p><span class="math">\(K_s\)</span> 为剪切刚度。</p>
+</div></blockquote>
+<p>也可为剪切力指定断裂极限。如果加固单元相对剪应变超过指定应变极限，则将剪切力设为零。</p>
+<p>上述力—位移关系用于确定活动长度两端增量位移引起的弹簧力。将所得剪切力和轴力分解为平行和垂直于不连续面的分量，如<a href="#the-sel3-gnlg">图 5（Figure  5）</a> 所示，随后将力施加于相邻块体。</p>
+<div class="figure" id="the-sel3-gnlg">
+<img alt="../../../../../_images/sels-force-resolution.png" src="../../../../../_images/sels-force-resolution.png"/>
+<p class="caption"><span class="caption-text">图 5：将加固单元剪切力和轴力分解为平行与垂直于不连续面的分量。</span></p>
+</div>
+</div>
+<div class="section" id="estimation-of-active-length">
+<span id="theory-active-length"></span><h3>活动长度估计</h3>
+<p>为定义<a href="#the-sel3-cfyt">图 3（Figure  3）</a> 所示局部变形假设，需要估计活动长度。已有研究表明，活动长度在不连续面两侧各延伸约一至两个加固单元直径。没有试验数据时，可用理论分析结果定义活动长度。例如，Gerdeen 等（1977）定义弹性剪切刚度 <span class="math">\(K_s\)</span> 时，还确定了称为荷载传递长度或“衰减长度”的量 <em>l</em>。若 <span class="math">\(\rho_{max}\)</span> 为加固单元挠度与最大挠度之比，则其与荷载传递长度关系可表示为</p>
+<div class="math" id="equation-the-sel3-rczn">
+<span class="eqno">(7)</span>\[e^{- \beta \Large{l}} = \rho_{max}\]</div>
+<p>例如，挠度衰减至最大值 5% 的位置为</p>
+<div class="math" id="equation-the-sel3-difn">
+<span class="eqno">(8)</span>\[e^{- \beta \Large{l}} = 0.05\]</div>
+<p>或</p>
+<div class="math" id="equation-the-sel3-zjgs">
+<span class="eqno">(9)</span>\[l = 3 / \beta\]</div>
+<p>该方法针对垂直于剪切面的加固单元开发。Dight（1982）给出理论分析，确定剪切面至最大弯矩位置的距离，该位置对应加固单元塑性铰位置。该方法不限制加固单元相对于剪切面的方位。一项重要结果是，塑性铰距剪切面的距离似乎不随剪切位移显著变化，尤其对于典型加固系统，当位移大于 10 mm（0.4 in）时。这与前述几何变化假设一致。</p>
+</div>
+<div class="section" id="local-reinforcement-properties">
+<h3>局部加固属性</h3>
+<p><span class="codename">3DEC</span> 局部加固单元需要以下输入参数：</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><code class="xref fish fish-kwd docutils literal"><span class="pre">stiffness-axial</span></code>：轴向刚度［力／长度］；</li>
+<li><code class="xref fish fish-kwd docutils literal"><span class="pre">yield-tension-force</span></code>：极限轴向承载力［力］；</li>
+<li><code class="xref fish fish-kwd docutils literal"><span class="pre">rupture-axial-strain</span></code>：拉伸破坏应变，默认为无穷大［–］；</li>
+<li><code class="xref fish fish-kwd docutils literal"><span class="pre">stiffness-shear</span></code>：剪切刚度［力／长度］；</li>
+<li><code class="xref fish fish-kwd docutils literal"><span class="pre">yield-shear-force</span></code>：极限抗剪承载力［力］；</li>
+<li><code class="xref fish fish-kwd docutils literal"><span class="pre">rupture-shear-strain</span></code>：剪切破坏应变，默认为无穷大［–］；</li>
+<li><code class="xref fish fish-kwd docutils literal"><span class="pre">active-half-length</span></code>：活动长度的一半［长度］；</li>
+</ol>
+</div></blockquote>
+<p>轴向刚度和极限轴向承载力，通常按<a class="reference internal" href="#theory-axial-behavior"><span class="std std-ref">轴向行为</span>（Axial Behavior）</a>所述，通过最佳拟合拉拔试验确定。轴向力—位移关系保持恒定轴向刚度，直到达到极限轴向承载力。</p>
+<p>半活动长度值也可根据试验反算，见<a class="reference internal" href="#theory-shear-behavior"><span class="std std-ref">剪切行为</span>（Shear Behavior）</a>和<a class="reference internal" href="#theory-active-length"><span class="std std-ref">活动长度估计</span>（Estimation of Active Length）</a>。</p>
+</div>
+<div class="section" id="summary-of-commands-associated-with-local-reinforcement-elements">
+<h3>局部加固单元相关命令汇总</h3>
+<p>与局部加固单元相关的全部命令列于<a href="#the-sel3-huku">表 1（Table  1）</a>。详细说明见<a class="reference internal" href="../../../../block/doc/manual/sel_manual/sel_commands/sel_commands.html#sel-commands"><span class="std std-ref">命令</span>（Commands）</a>。</p>
+<table border="1" class="docutils" id="the-sel3-huku">
+<colgroup>
+<col width="100%"/>
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="../../../../block/doc/manual/sel_manual/sel_commands/sel.reinforcement/cmd_sel.reinforcement.create.html#command:sel.reinforcement.create" title="Create a reinforcement element. When reinforcement is used with fully deformable
+blocks, the blocks *must* be discretized into zones before reinforcement locations
+are specified..."><code class="xref fish fish-cmd docutils literal"><span class="pre">sel</span> <span class="pre">reinforcement</span> <span class="pre">create</span></code></a></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="../../../../block/doc/manual/sel_manual/sel_commands/sel.reinforcement/cmd_sel.reinforcement.group.html#command:sel.reinforcement.group" title="Assign reinforcement elements in the range to the group named  s1  in slot
+ s2  (if supplied)..."><code class="xref fish fish-cmd docutils literal"><span class="pre">sel</span> <span class="pre">reinforcement</span> <span class="pre">group</span></code></a></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="../../../../block/doc/manual/sel_manual/sel_commands/sel.reinforcement/cmd_sel.reinforcement.history.html#command:sel.reinforcement.history" title="Sample reinforcement responses.  The nodes of an element will be ordered counterclockwise
+with respect to the outside of the zone faces upon which the reinforcement was
+created..."><code class="xref fish fish-cmd docutils literal"><span class="pre">sel</span> <span class="pre">reinforcement</span> <span class="pre">history</span></code></a></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="../../../../block/doc/manual/sel_manual/sel_commands/sel.reinforcement/cmd_sel.reinforcement.list.html#command:sel.reinforcement.list" title="List data for axial reinforcement elements..."><code class="xref fish fish-cmd docutils literal"><span class="pre">sel</span> <span class="pre">reinforcement</span> <span class="pre">list</span></code></a></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="../../../../block/doc/manual/sel_manual/sel_commands/sel.reinforcement/cmd_sel.reinforcement.property.html#command:sel.reinforcement.property" title="Assign property values to reinforcement property `i`..."><code class="xref fish fish-cmd docutils literal"><span class="pre">sel</span> <span class="pre">reinforcement</span> <span class="pre">property</span></code></a></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="example-application-reinforced-slope">
+<h3>应用示例——加固边坡</h3>
+<p>重复<a class="reference internal" href="../../modeling/gettingstarted/tutorial.html#tutorialquickstart3dec"><span class="std std-ref">教程：快速入门</span>（Tutorial: Quick Start）</a>中的岩质边坡稳定性分析，采用局部加固单元表示岩石锚杆。添加两条水平局部加固线，使边坡稳定。一条从 (30,40,25) 延伸至 (70,40,25)，另一条从 (30,20,25) 延伸至 (70,20,25)。降低节理摩擦后，边坡仍保持稳定，如<a href="#the-sel3-jnzb">图 6（Figure  6）</a> 所示。坡面某点的 y 位移历程也显示，加固限制了运动，见<a href="#the-sel3-qfoz">图 7（Figure  7）</a>。本例输入命令列于示例 <a class="reference internal" href="#the-sel3-qmoq"><span class="std std-ref">reinforcement.dat</span></a>。</p>
+<p class="h2 rubric" id="the-sel3-qmoq">reinforcement.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'ROCK SLOPE STABILITY --- WEDGE STABLE WITH LOCAL REINFORCEMENT'</span>
+
+<span class="nb">block create</span><span class="n"> brick </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">80</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">30</span><span class="p">,</span><span class="m m-Double">80</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">50</span>
+<span class="nb">block group</span><span class="n"> </span><span class="s">"rock"</span>
+
+<span class="c">; 边坡两侧的边界块体</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">90</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">180</span><span class="n"> ori </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">90</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">180</span><span class="n"> ori </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">,</span><span class="m m-Double">0</span>
+<span class="nb">block hide</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">80</span><span class="n"> pos</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">30</span><span class="p">,</span><span class="m m-Double">0</span><span class="n"> pos</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">50</span>
+<span class="nb">block hide</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">80</span><span class="n"> pos</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">50</span><span class="p">,</span><span class="m m-Double">80</span><span class="n"> pos</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">50</span>
+<span class="nb">block group</span><span class="n">  </span><span class="s">"slope rock"</span>
+
+<span class="c">; 缓倾裂隙面</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">2.45</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">235</span><span class="n"> ori </span><span class="m m-Double">30</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">12.5</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">2.45</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">315</span><span class="n"> ori </span><span class="m m-Double">35</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">30</span>
+
+<span class="c">; 大倾角片理面</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">76</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">270</span><span class="n"> spac </span><span class="m m-Double">4</span><span class="n"> num </span><span class="m m-Double">5</span><span class="n"> ori </span><span class="m m-Double">38</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">12.5</span>
+<span class="nb">block hide</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">30</span><span class="p">,</span><span class="m m-Double">80</span><span class="n">  pos</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">50</span><span class="n"> pos</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">50</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">0</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">0</span><span class="n"> ori </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">10</span>
+<span class="nb">block hide</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">80</span><span class="n"> pos</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">30</span><span class="p">,</span><span class="m m-Double">80</span><span class="n"> pos</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">10</span>
+<span class="nb">block group</span><span class="n"> </span><span class="s">"excavation"</span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+
+<span class="nb">block hide</span><span class="n"> range group </span><span class="s">"rock"</span>
+<span class="nb">block hide</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x  </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">80</span><span class="n"> pos</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">50</span><span class="n"> pos</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">10</span>
+<span class="nb">block hide</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">55</span><span class="p">,</span><span class="m m-Double">80</span><span class="n"> pos</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">50</span><span class="n"> pos</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">50</span>
+<span class="nb">block hide</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x  </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">30</span><span class="n"> pos</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">50</span><span class="n"> pos</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">50</span>
+
+<span class="c">; 相交不连续面</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">70</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">200</span><span class="n"> ori </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">35</span><span class="p">,</span><span class="m m-Double">0</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">60</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">330</span><span class="n"> ori </span><span class="m m-Double">50</span><span class="p">,</span><span class="m m-Double">15</span><span class="p">,</span><span class="m m-Double">50</span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+
+<span class="c">; 固定边界块体并初始化重力</span>
+<span class="nb">block fix</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x  </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">80</span><span class="n"> pos</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">50</span><span class="n"> pos</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">10</span>
+<span class="nb">block fix</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">55</span><span class="p">,</span><span class="m m-Double">80</span><span class="n"> pos</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">50</span><span class="n"> pos</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">50</span>
+<span class="nb">block fix</span><span class="n"> range group </span><span class="s">"rock"</span>
+
+<span class="nb">block delete</span><span class="n"> range group </span><span class="s">"excavation"</span>
+
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">10</span>
+<span class="c">;</span>
+<span class="c">; 指定参数</span>
+<span class="nb">block property</span><span class="n"> density </span><span class="m m-Double">2000</span>
+
+<span class="nb">block contact generate-subcontacts</span>
+<span class="c">; 边界块体与边坡块体之间的摩擦角为 0</span>
+<span class="nb">block contact property</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1e9</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1e9</span><span class="n"> friction </span><span class="m m-Double">0</span>
+
+<span class="c">; 暂时为边坡块体设置较大摩擦角</span>
+<span class="nb">block hide</span><span class="n"> range group </span><span class="s">"rock"</span>
+<span class="nb">block contact property</span><span class="n"> friction </span><span class="m m-Double">89</span>
+<span class="nb">block contact material-table</span><span class="n"> default prop stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1e9</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                          stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1e9</span><span class="n"> fric </span><span class="m m-Double">6.0</span>
+
+<span class="c">; 设置潜在楔体的历程</span>
+<span class="nb">block hide</span><span class="n"> range plane dip </span><span class="m m-Double">70</span><span class="n"> dip</span><span class="o">-</span><span class="n">dir </span><span class="m m-Double">200</span><span class="n"> or </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">35</span><span class="p">,</span><span class="m m-Double">0</span><span class="n"> below</span>
+<span class="nb">block history</span><span class="n"> disp</span><span class="o">-</span><span class="n">z position </span><span class="m m-Double">30</span><span class="n"> </span><span class="m m-Double">30</span><span class="n"> </span><span class="m m-Double">30</span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">block hide</span><span class="n"> range group </span><span class="s">"rock"</span>
+<span class="nb">model </span><span class="ss">solve</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'slope'</span>
+
+<span class="c">; 添加局部加固</span>
+<span class="nb">sel reinforcement create</span><span class="n"> by</span><span class="o">-</span><span class="n">line </span><span class="p">(</span><span class="m m-Double">30</span><span class="n"> </span><span class="m m-Double">25</span><span class="n"> </span><span class="m m-Double">40</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">70</span><span class="n"> </span><span class="m m-Double">25</span><span class="n"> </span><span class="m m-Double">40</span><span class="p">)</span><span class="n"> property </span><span class="m m-Double">1</span>
+<span class="nb">sel reinforcement create</span><span class="n"> by</span><span class="o">-</span><span class="n">line </span><span class="p">(</span><span class="m m-Double">30</span><span class="n"> </span><span class="m m-Double">25</span><span class="n"> </span><span class="m m-Double">20</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">70</span><span class="n"> </span><span class="m m-Double">25</span><span class="n"> </span><span class="m m-Double">20</span><span class="p">)</span><span class="n"> property </span><span class="m m-Double">1</span>
+<span class="nb">sel reinforcement property</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">axial </span><span class="m m-Double">1e8</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                             active</span><span class="o">-</span><span class="n">half</span><span class="o">-</span><span class="n">length </span><span class="m m-Double">1.0</span><span class="n"> yield</span><span class="o">-</span><span class="n">tension</span><span class="o">-</span><span class="n">force </span><span class="m m-Double">1e8</span>
+
+<span class="nb">block contact property</span><span class="n"> friction </span><span class="m m-Double">6.0</span><span class="n"> </span><span class="c">;range group-int "slope rock" "slope rock"</span>
+
+<span class="nb">history purge</span>
+<span class="nb">block gridpoint initialize</span><span class="n"> displacement </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">5000</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'slope_st'</span>
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+<div class="figure" id="the-sel3-jnzb">
+<a class="reference internal image-reference" href="../../../../../_images/reinf-blocks.png"><img alt="../../../../../_images/reinf-blocks.png" src="../../../../../_images/reinf-blocks.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 6：通过加固稳定边坡。</span></p>
+</div>
+<div class="figure" id="the-sel3-qfoz">
+<a class="reference internal image-reference" href="../../../../../_images/reinf-his.png"><img alt="../../../../../_images/reinf-his.png" src="../../../../../_images/reinf-his.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 7：坡面 (30, 30, 30) 处的 z 位移历程。</span></p>
+</div>
+</div>
+</div>
+<div class="section" id="hybrid-bolts-sel-hybrid-command">
+<h2>混合锚杆（<span class="fishcmd">sel hybrid</span> 命令）</h2>
+<p>评估岩石加固提供的支护时，往往不仅要考虑其跨不连续面处的局部约束，还需考虑对完整岩石的约束；这些岩石可能在开挖周围破坏区域内发生非弹性变形。模拟破坏岩石的非弹性变形和／或锚索等加固系统时，会出现这种情况，其中黏结介质即浆体可能沿部分加固长度发生剪切破坏。</p>
+<p><span class="codename">3DEC</span> 锚索单元（<a class="reference internal" href="../../../../../common/sel/doc/manual/sel_manual/cables/cables.html#cable-structural-elements"><span class="std std-ref">锚索结构单元</span>（Cable Structural Elements）</a>）允许模拟沿其长度分布的抗剪阻力，该阻力来自浆体与锚索或宿主介质之间的黏结抗剪作用。假定锚索分为若干长度为 <span class="math">\(L\)</span> 的线段，各段端部设置节点。每段质量集中到节点，如<a href="#the-sel3-rqpm">图 8（Figure  8）</a> 所示。通过结构节点与其所在块体网格单元之间的弹簧／滑块连接表示抗剪阻力。</p>
+<p>使用锚索逻辑必须指定可变形块体，而且必须在安装锚索单元之前，使块体成为可变形体。每个结构节点关联一个有限体积网格单元，用于计算锚索与网格单元之间的剪切力。</p>
+<div class="figure" id="the-sel3-rqpm">
+<img alt="../../../../../_images/sels-bonded-reinf.png" src="../../../../../_images/sels-bonded-reinf.png"/>
+<p class="caption"><span class="caption-text">图 8：考虑环状浆体剪切行为的全长黏结加固单元概念力学表示。</span></p>
+</div>
+<p>锚索行为的完整说明见<a class="reference internal" href="../../../../../common/sel/doc/manual/sel_manual/cables/cables.html#cable-structural-elements"><span class="std std-ref">锚索结构单元</span>（Cable Structural Elements）</a>。</p>
+<p>基本锚索单元不能抵抗垂直于锚索的剪切。但锚索用于模拟锚杆时，众所周知，跨越节理的锚杆会对节理剪切提供一定阻力。Dight（1982）提出五种产生该效应的机制：</p>
+<ol class="arabic simple">
+<li>岩石锚杆通过销钉作用产生侧向阻力，从而提高抗剪阻力</li>
+<li>岩石锚杆预应力使法向应力增加</li>
+<li>节理剪胀使岩石锚杆产生轴力，从而增加法向应力</li>
+<li>侧向伸长使岩石锚杆产生轴力，从而增加法向应力</li>
+<li>岩石锚杆轴力沿节理方向的分量提高抗剪阻力</li>
+</ol>
+<p><span class="codename">3DEC</span> 锚索能够表现效应 2 至 5，但不能表现效应 1。销钉作用实际上是一组复杂力学效应的统称，包括钢锚杆弯曲、浆体压碎、周围岩石压碎等，见<a class="reference internal" href="#hybrid-mechanism"><span class="std std-ref">图 9</span>（Figure 9）</a>。<span class="codename">3DEC</span> 不尝试再现全部这些效应，而是以剪切弹簧简单模拟销钉作用，抵抗锚杆穿越断层处的滑移。因此，混合锚杆是锚索单元与加固单元的组合。</p>
+<div class="figure align-center" id="hybrid-mechanism">
+<img alt="../../../../../_images/hybrid_mechanism.png" src="../../../../../_images/hybrid_mechanism.png"/>
+<p class="caption"><span class="caption-text">图 9：采用销钉加固的岩石节理抗力机制（引自 Ferrero，1995）。</span></p>
+</div>
+<p>锚索部分的公式与<a class="reference internal" href="../../../../../common/sel/doc/manual/sel_manual/cables/cables.html#cable-structural-elements"><span class="std std-ref">锚索结构单元</span>（Cable Structural Elements）</a>完全相同。销钉公式几乎与局部加固（<a class="reference internal" href="#local-reinfs"><span class="std std-ref">局部加固</span>（Local Reinforcement）</a>）相同，但需注意以下区别：</p>
+<ul class="simple">
+<li>销钉弹簧没有轴向分量，因为假定锚索本身提供轴向力。</li>
+<li>无论锚索相对于节理处于何种方位，剪切弹簧始终平行于节理，以避免产生虚假轴向力分量。</li>
+<li>销钉断裂，即剪应变超过极限时，所属锚索也在同一位置断裂</li>
+<li>抗剪强度可依赖方位，见下文</li>
+</ul>
+<p>销钉剪切力—位移关系由式 <a class="reference internal" href="#equation-the-sel3-pctf">(6)</a> 以增量形式描述。可为剪切力指定屈服强度，且该强度可依赖方位，见下文。超过屈服强度后，销钉表现为塑性，随着剪切位移继续增大，抗剪阻力保持恒定。还可指定断裂应变极限。如果加固单元相对剪应变超过指定极限，则将剪切力设为零。如前所述，所属锚索也会断裂，其轴力设为 0。</p>
+<p>通过插值到网格单元面节点，将剪切力施加到节理两侧的块体面。销钉公式仅适用于已划分网格的可变形块体。</p>
+<div class="section" id="geometry">
+<h3>几何</h3>
+<p>默认情况下，混合锚杆各段长度恒定。通过 <a class="reference internal" href="../../../../block/doc/manual/sel_manual/sel_commands/sel.hybrid/cmd_sel.hybrid.create.html#command:sel.hybrid.create" title="Create a hybrid bolt element. Note that when hybrid reinforcement is used with
+fully deformable blocks, the blocks must be discretized into zones before reinforcement
+locations are specified..."><code class="xref fish fish-cmd docutils literal"><span class="pre">sel</span> <span class="pre">hybrid</span> <span class="pre">create</span></code></a> 命令，用户可用 <a class="reference internal" href="../../../../../flac3d/zone/doc/manual/zone_manual/zone_commands/cmd_zone.list.html#kwd:segments" title="Specifies the number of points to distribute evenly along the profile line from
+ begin  to  end ...">分段数（<code class="xref fish fish-kwd docutils literal"><span class="pre">segments</span></code>）</a> 指定分段数，或用 <code class="xref fish fish-kwd docutils literal"><span class="pre">segment-length</span></code> 指定近似段长。使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">segment-length</span></code> 时，为保证分段数为整数且各段等长，实际段长可能略有不同。</p>
+<p><code class="xref fish fish-kwd docutils literal"><span class="pre">dowel-length</span></code> 参数为销钉段长度。该长度仅用于计算剪应变，即剪切位移／<code class="xref fish fish-kwd docutils literal"><span class="pre">dowel-length</span></code>，不影响计算力或节点布置。见<a href="#hybrid-geometry">图 10（Figure  10）</a>。</p>
+<div class="figure align-center" id="hybrid-geometry">
+<img alt="../../../../../_images/hybrid_geometry.png" src="../../../../../_images/hybrid_geometry.png"/>
+<p class="caption"><span class="caption-text">图 10：穿过三条节理的混合锚杆。左图显示锚索分段和节点，右图显示节点和销钉段（黑线）。</span></p>
+</div>
+<p>断层附近的节点分布会影响锚杆行为。可以创建混合锚杆，同时确保每个块体即每对节理之间至少有一个节点。这通过调用带 <code class="xref fish fish-kwd docutils literal"><span class="pre">spacing</span> <span class="pre">variable</span></code> 关键字的 <code class="xref fish fish-cmd docutils literal"><span class="pre">hybrid</span> <span class="pre">create</span></code> 命令实现。此模式中，<code class="xref fish fish-kwd docutils literal"><span class="pre">segment-length</span></code> 规定块体内部即节理之间的锚索段长，<code class="xref fish fish-kwd docutils literal"><span class="pre">dowel-length</span></code> 给出跨越节理的锚杆单元长度。若未给出 <code class="xref fish fish-kwd docutils literal"><span class="pre">dowel-length</span></code>，则默认为 <code class="xref fish fish-kwd docutils literal"><span class="pre">segment-length</span></code>。示例见<a href="#hybrid-geometry2">图 11（Figure  11）</a>。如果块体小于 0.1×`dowel-length`，则不在其内部布置节点。如果大于 0.1×`dowel-length`、但小于 2×`dowel-length`，则在块体中间布置单个节点。<code class="xref fish fish-kwd docutils literal"><span class="pre">dowel-length</span></code> 也是计算剪应变所用的销钉段长度，即剪切位移／<code class="xref fish fish-kwd docutils literal"><span class="pre">dowel-length</span></code>。警告：使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">spacing</span> <span class="pre">variable</span></code> 时，如果节理间距很小，可能创建出锚索段极短的锚杆。由于很小位移便可产生较大轴向应变，这些短段容易在低应力下断裂。如有此顾虑，应使用默认设置（<code class="xref fish fish-kwd docutils literal"><span class="pre">spacing</span> <span class="pre">constant</span></code>）。</p>
+<div class="figure align-center" id="hybrid-geometry2">
+<img alt="../../../../../_images/hybrid_geometry2.png" src="../../../../../_images/hybrid_geometry2.png"/>
+</div>
+<p>一般而言，标定采用的节点间距应等于实际 <span class="codename">3DEC</span> 问题中的间距。特别应使 <code class="xref fish fish-kwd docutils literal"><span class="pre">dowel-length</span></code> 相对于块体尺寸足够小，以尽量在整个模型中保持恒定。如果指定 <code class="xref fish fish-kwd docutils literal"><span class="pre">segment-length</span></code>/<code class="xref fish fish-kwd docutils literal"><span class="pre">dowel-length</span></code> 相对于块体尺寸过大，<span class="codename">3DEC</span> 会自动减小它（使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">spacing</span> <span class="pre">variable</span></code> 时），或锚杆可能遗漏某些密集节理的影响（使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">spacing</span> <span class="pre">constant</span></code> 时），导致标定行为与大型模型中的锚杆行为显著不同。</p>
+</div>
+<div class="section" id="hybrid-bolt-properties">
+<h3>混合锚杆属性</h3>
+<p>混合锚杆的锚索部分具有 11 项属性。参数选择建议见锚索属性部分（<a class="reference internal" href="../../../../../common/sel/doc/manual/sel_manual/cables/cables.html#cable-properties"><span class="std std-ref">锚索属性</span>（Cable Properties）</a>）：</p>
+<ol class="arabic simple">
+<li><span class="cmdkey">density</span>，质量密度 <span class="math">\(ρ\)</span>，可选，启用动力模式或重力时需要［M/L<sup>3</sup>］</li>
+<li><span class="cmdkey">young</span>，杨氏模量 <span class="math">\(E\)</span>［F/L<sup>2</sup>］</li>
+<li><span class="cmdkey">grout-cohesion</span>，单位长度上的注浆黏结强度（力），<span class="math">\(c_g\)</span> [F/L]</li>
+<li><span class="cmdkey">grout-friction</span>，浆体摩擦角，<span class="math">\(ϕ_g\)</span> [度]</li>
+<li><span class="cmdkey">grout-stiffness</span>，单位长度浆体刚度 <span class="math">\(k_g\)</span>［F/L<sup>2</sup>］</li>
+<li><span class="cmdkey">perimeter</span>，浆体外露周长，<span class="math">\(p_g\)</span> [L]</li>
+<li><span class="cmdkey">thermal-expansion</span>，热膨胀系数，<span class="math">\(α_t\)</span> [1/T]（可选，用于热分析）</li>
+<li><span class="cmdkey">cross-sectional-area</span>，截面积 <span class="math">\(A\)</span>［L<sup>2</sup>］</li>
+<li><span class="cmdkey">yield-compression</span>，抗压屈服强度（力），<span class="math">\(F_c\)</span> [F]</li>
+<li><span class="cmdkey">yield-tension</span>，抗拉屈服强度（力），<span class="math">\(F_t\)</span> [F]</li>
+<li><span class="cmdkey">rupture-tension-strain</span>，拉伸应变极限，[-]</li>
+</ol>
+<p>混合锚杆还有三项与销钉段有关的附加属性：</p>
+<ol class="arabic simple">
+<li><span class="cmdkey">dowel-stiffness</span>，杆体的剪切刚度，[F/L]</li>
+<li><span class="cmdkey">dowel-yield</span>，杆体剪力屈服极限，[F]</li>
+<li><span class="cmdkey">dowel-strainlimit</span>，销钉剪切应变极限，[-]</li>
+</ol>
+<p>这些属性通常通过室内剪切试验标定选取。<span class="codename">3DEC</span> 发行版将包含一个易用的标定工具，即将推出。</p>
+</div>
+<div class="section" id="calibration">
+<h3>标定</h3>
+<div class="section" id="influence-of-segment-length-and-dowel-length">
+<h4>分段长度与销钉长度的影响</h4>
+<p>对于一组固定参数，改变节点间距主要影响轴向和剪切断裂位移，可通过改变轴向和剪切临界应变重新调整；同时也会影响锚杆刚度。对于给定节理剪切位移或轴向张开量，节点间距越小，锚杆反应越刚硬，因为前述机制（4）增强，即侧向伸长导致岩石锚杆轴力增加，进而提高法向应力。可相应调整剪切和轴向刚度，但标定存在限制：段长越小，轴向刚度对锚杆剪切响应的影响越大。对于给定节理剪切位移，节点间距越小，轴向应变相对于剪应变越大。如果将 <code class="xref fish fish-kwd docutils literal"><span class="pre">segment-length</span></code> 固定为 <code class="xref fish fish-kwd docutils literal"><span class="pre">dowel-length</span></code>，这是标定无法消除的几何效应。总体而言，必须认识到，锚杆微观轴向行为会强烈影响宏观剪切行为。</p>
+</div>
+<div class="section" id="the-calibration-steps">
+<h4>标定步骤</h4>
+<p>混合锚杆模型属性通常通过垂直于节理锚杆的简单剪切和拉拔试验标定，见下例。<a href="#the-sel3-hica">表 2（Table  2）</a> 列出标定前应定义、且模拟期间必须保持恒定以保证标定有效的参数。</p>
+<table border="1" class="colwidths-given icg1 docutils" id="the-sel3-hica">
+<colgroup>
+<col width="33%"/>
+<col width="33%"/>
+<col width="33%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head"><span class="codename">3DEC</span> 参数</th>
+<th class="head">说明</th>
+<th class="head">取决于</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="xref fish fish-kwd docutils literal"><span class="pre">cross-sectional-area</span></code></td>
+<td>锚索截面积</td>
+<td>支护设计</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="../../../../../common/sel/doc/manual/sel_manual/links/commands/cmd_structure.link.property.html#kwd:perimeter" title="The effective perimeter of the structure connected to the link for the purposes
+of calculating properties.  The default value is  0.0   This value applies
+to the shear-yield model..."><code class="xref fish fish-kwd docutils literal"><span class="pre">perimeter</span></code></a></td>
+<td>钻孔周长。仅当 <code class="xref fish fish-kwd docutils literal"><span class="pre">grout-friction</span></code> &gt; 0 时需要</td>
+<td>钻孔直径</td>
+</tr>
+<tr class="row-even"><td><code class="xref fish fish-kwd docutils literal"><span class="pre">segment-length</span></code></td>
+<td>块体内部混合锚杆节点间距</td>
+<td>模型几何，尤其是用于模拟岩体的块体几何。<code class="xref fish fish-kwd docutils literal"><span class="pre">segment-length</span></code> 应足够小，使多数块体中至少有一至两个节点</td>
+</tr>
+<tr class="row-odd"><td><code class="xref fish fish-kwd docutils literal"><span class="pre">dowel-length</span></code></td>
+<td>混合锚杆的销钉段长度。默认 = <code class="xref fish fish-kwd docutils literal"><span class="pre">segment-length</span></code>。采用 <code class="xref fish fish-kwd docutils literal"><span class="pre">spacing</span> <span class="pre">variable</span></code> 时，也根据该值计算最小混合锚杆段长，即 <code class="xref fish fish-kwd docutils literal"><span class="pre">dowel-length</span></code>/10</td>
+<td>与 <code class="xref fish fish-kwd docutils literal"><span class="pre">segment-length</span></code> 相同</td>
+</tr>
+<tr class="row-even"><td><code class="xref fish fish-kwd docutils literal"><span class="pre">grout-friction</span></code></td>
+<td>可选参数。浆体材料摩擦角［度］</td>
+<td>浆体属性</td>
+</tr>
+</tbody>
+</table>
+<p><a href="#hybrid-sheartest">图 12（Figure  12）</a> 显示典型简单剪切试验结果及相应阶段。简单剪切试验是研究锚杆剪切行为的经典试验，此处用于标定。</p>
+<div class="figure align-center" id="hybrid-sheartest">
+<img alt="../../../../../_images/hybrid_sheartest.png" src="../../../../../_images/hybrid_sheartest.png"/>
+<p class="caption"><span class="caption-text">图 12：混合锚杆标定。典型简单剪切试验曲线及相应阶段。</span></p>
+</div>
+<p><a href="#the-sel3-hyc2">表 3（Table  3）</a> 列出为在简单剪切试验中获得所需混合锚杆行为，应调整的关键参数。</p>
+<table border="1" class="colwidths-given icg1 docutils" id="the-sel3-hyc2">
+<caption><span class="caption-text">表 3：混合锚杆标定：简单剪切试验各阶段的关键参数</span></caption>
+<colgroup>
+<col width="33%"/>
+<col width="33%"/>
+<col width="33%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">阶段</th>
+<th class="head">主要影响</th>
+<th class="head">次要影响</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>弹性阶段（1）</td>
+<td><code class="xref fish fish-kwd docutils literal"><span class="pre">dowel-stiffness</span></code></td>
+<td><code class="xref fish fish-kwd docutils literal"><span class="pre">young</span></code> <code class="xref fish fish-kwd docutils literal"><span class="pre">grout-stiffness</span></code></td>
+</tr>
+<tr class="row-odd"><td>弹性阶段结束</td>
+<td><code class="xref fish fish-kwd docutils literal"><span class="pre">dowel-yield</span></code></td>
+<td> </td>
+</tr>
+<tr class="row-even"><td>屈服阶段（2）</td>
+<td><code class="xref fish fish-kwd docutils literal"><span class="pre">grout-stiffness</span></code></td>
+<td><code class="xref fish fish-kwd docutils literal"><span class="pre">young</span></code></td>
+</tr>
+<tr class="row-odd"><td>屈服阶段结束／塑性阶段（3）</td>
+<td><code class="xref fish fish-kwd docutils literal"><span class="pre">grout-cohesion</span></code></td>
+<td><a class="reference internal" href="../../../../../common/sel/doc/manual/sel_manual/links/commands/cmd_structure.link.property.html#kwd:yield-tension" title="The limiting positive value of force, generated by negative relative displacement
+(target - source).  The default value is  0.0 .  This value applies to
+the normal-yield model..."><code class="xref fish fish-kwd docutils literal"><span class="pre">yield-tension</span></code></a></td>
+</tr>
+<tr class="row-even"><td>塑性阶段结束</td>
+<td><code class="xref fish fish-kwd docutils literal"><span class="pre">dowel-strainlimit</span></code></td>
+<td> </td>
+</tr>
+</tbody>
+</table>
+<p><a href="#hybrid-pulltest">图 13（Figure  13）</a> 显示典型简单剪切试验结果及相应阶段。拉拔试验是研究锚杆拉伸行为的经典试验，此处用于标定。</p>
+<div class="figure align-center" id="hybrid-pulltest">
+<img alt="../../../../../_images/hybrid_pulltest.png" src="../../../../../_images/hybrid_pulltest.png"/>
+<p class="caption"><span class="caption-text">图 13：混合锚杆标定。典型拉拔试验曲线及相应阶段。</span></p>
+</div>
+<p><a href="#the-sel3-hyc3">表 4（Table  4）</a> 列出为在简单拉拔试验中获得所需混合锚杆行为，应调整的关键参数。</p>
+<table border="1" class="colwidths-given icg1 docutils" id="the-sel3-hyc3">
+<caption><span class="caption-text">表 4：混合锚杆标定：拉拔试验各阶段的关键参数</span></caption>
+<colgroup>
+<col width="33%"/>
+<col width="33%"/>
+<col width="33%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">阶段</th>
+<th class="head">主要影响</th>
+<th class="head">次要影响</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>弹性阶段（1）</td>
+<td><code class="xref fish fish-kwd docutils literal"><span class="pre">young</span></code> <code class="xref fish fish-kwd docutils literal"><span class="pre">grout-stiffness</span></code></td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td>弹性阶段结束</td>
+<td><code class="xref fish fish-kwd docutils literal"><span class="pre">grout-cohesion</span></code></td>
+<td> </td>
+</tr>
+<tr class="row-even"><td>屈服阶段（2）</td>
+<td><code class="xref fish fish-kwd docutils literal"><span class="pre">grout-cohesion</span></code></td>
+<td><code class="xref fish fish-kwd docutils literal"><span class="pre">young</span></code></td>
+</tr>
+<tr class="row-odd"><td>屈服阶段结束／塑性阶段（3）</td>
+<td><a class="reference internal" href="../../../../../common/sel/doc/manual/sel_manual/links/commands/cmd_structure.link.property.html#kwd:yield-tension" title="The limiting positive value of force, generated by negative relative displacement
+(target - source).  The default value is  0.0 .  This value applies to
+the normal-yield model..."><code class="xref fish fish-kwd docutils literal"><span class="pre">yield-tension</span></code></a> 或 <code class="xref fish fish-kwd docutils literal"><span class="pre">grout-cohesion</span></code></td>
+<td> </td>
+</tr>
+<tr class="row-even"><td>塑性阶段结束</td>
+<td><code class="xref fish fish-kwd docutils literal"><span class="pre">dowel-strainlimit</span></code></td>
+<td> </td>
+</tr>
+</tbody>
+</table>
+<p>标定混合锚杆时，应记住以下几点：
+begin{itemize}
+item 确保节点数量足够、锚索长度足够长，不影响标定结果。即锚杆应足够长，能够充分发挥承载能力，而不是在达到该阶段之前就沿全长滑移。
+item 如果锚索应变极限相对于销钉很低，则无论轴向还是剪切断裂，始终由锚索轴向断裂引发。
+item 对于给定节理位移，节点间距强烈影响锚杆行为。标定采用的节点间距应等于实际 <span class="codename">3DEC</span> 问题中使用的间距。尤其应使销钉长度相对于块体尺寸较小，以尽量在整个模型中保持恒定。如果指定 <span class="math">\(segment-length\)</span>/<span class="math">\(dowel-length\)</span> 相对于块体过大，<span class="codename">3DEC</span> 会自动减小它（<span class="math">\(spacing\)</span> = <span class="math">\(variable\)</span> 时），或锚杆可能遗漏某些密集节理的影响（<span class="math">\(spacing\)</span> = <span class="math">\(constant\)</span> 时），导致标定行为与大型模型中的锚杆行为显著不同。
+end{itemize}</p>
+</div>
+<div class="section" id="orientation-dependent-shear-strength">
+<h4>依赖方位的抗剪强度</h4>
+<p>现场岩石锚杆可能承受不同方向剪切与轴向作用的组合和／或先后作用。只有少数文献研究跨节理锚杆倾角对其行为的影响。混合锚杆模型并非旨在再现所有可能条件下岩石锚杆行为的全部复杂性，而是以简单方式考虑锚杆在节理交点处产生的抗剪阻力，同时准确再现试验观察到的岩体支护作用。本节讨论给定参数组下，3dec| 简单剪切试验中的倾角效应，并与文献观测比较。
+室内试验表明：
+begin{itemize}
+item 加锚节理的最大抗剪强度随节理摩擦角增大。
+item 对于给定节理摩擦角，加锚节理最大抗剪强度随锚杆倾角变化。
+item 倾斜锚杆比垂直锚杆反应更刚硬。
+item 锚杆垂直于节理时，极限位移最大。
+item 摩擦角很低时，锚杆倾角不影响最大阻力。
+item 随倾斜程度增加，约束效应增强，而黏聚项减小。
+end{itemize}</p>
+<p><a href=".html#hybrid-shear_angle">图 （Figure）</a><code class="xref fnum docutils literal"><span class="pre">Figure</span> <span class="pre">#hybrid-shear_angle</span></code> 显示摩擦角为 40 度、锚杆倾角从 10 至 130 度变化时的简单剪切试验结果。</p>
+<div class="figure align-center" id="hybrid-shear-angle">
+<a class="reference internal image-reference" href="../../../../../_images/hybrid_shear_angle.png"><img alt="../../../../../_images/hybrid_shear_angle.png" src="../../../../../_images/hybrid_shear_angle.png" style="width: 500px;"/></a>
+<p class="caption"><span class="caption-text">图 14：节理摩擦角为 40 度时，锚杆倾角对简单剪切试验的影响。倾角 &gt; 90 度表示锚杆朝剪切反方向倾斜。</span></p>
+<div class="legend"><a href=".html#hybrid-pull_angle">图 （Figure）</a><code class="xref fnum docutils literal"><span class="pre">Figure</span> <span class="pre">#hybrid-pull_angle</span></code> 显示两种倾角，即 70 度和 90 度的简单拉拔试验结果。</div>
+</div>
+<div class="figure align-center" id="hybrid-pull-angle">
+<a class="reference internal image-reference" href="../../../../../_images/hybrid_pull_angle.png"><img alt="../../../../../_images/hybrid_pull_angle.png" src="../../../../../_images/hybrid_pull_angle.png" style="width: 500px;"/></a>
+<p class="caption"><span class="caption-text">图 15：锚杆倾角对拉拔试验的影响。</span></p>
+</div>
+<p>与试验观察到的岩石锚杆行为相似，<span class="codename">3DEC</span> 混合锚杆表现如下：
+begin{itemize}
+item 倾斜锚杆比垂直锚杆反应更刚硬。这是几何效应：相对于节理法线，锚杆越倾斜，给定剪切位移增量产生的锚索轴力增量越大。
+item 锚杆从垂直方向转开时，约束即摩擦效应增强，而黏聚项，即销钉作用和锚索剪切作用减小。
+item 导致锚杆破坏的极限剪切位移随倾角变化。锚杆垂直于节理时，极限剪切位移最大，此时直接取决于输入的销钉剪切断裂应变，即最大剪切位移 = 最大销钉应变 × 销钉长度。锚杆更加倾斜时（<a href=".html#hybrid-shear_angle">图 （Figure）</a><code class="xref fnum docutils literal"><span class="pre">Figure</span> <span class="pre">#hybrid-shear_angle</span></code> 中 <span class="math">\(\theta\)</span> &gt; 70 度），由于锚索单元伸长更快，锚索轴向断裂应变极限会先于销钉应变极限达到。锚杆越倾斜，锚索达到轴向应变极限所需的节理剪切位移越小。
+end{itemize}</p>
+<p>注意，断裂控制从销钉剪切极限转为锚索轴向极限时的倾角，取决于输入值。如果锚索应变极限相对于销钉很低，断裂始终由锚索轴向断裂引起。如果锚索应变极限为无穷大，则无论方位如何，始终由销钉剪应变极限控制。</p>
+<p>还对朝剪切反方向倾斜的锚杆开展剪切试验，即<a href=".html#hybrid-shear_angle">图 （Figure）</a><code class="xref fnum docutils literal"><span class="pre">Figure</span> <span class="pre">#hybrid-shear_angle</span></code> 中倾角 &gt; 90°。这些情况下，节理剪切使锚索单元受压而非伸长，因此锚杆作用于节理的唯一力来自销钉单元。弹性阶段结束、销钉达到屈服值后，力不再增加，除非锚索单元转动足够大、再次被拉伸；<span class="math">\(theta\)</span> = 110° 的试验末期就是这种情况。</p>
+<p><a href=".html#hybrid-pull_angle">图 （Figure）</a><code class="xref fnum docutils literal"><span class="pre">Figure</span> <span class="pre">#hybrid-pull_angle</span></code> 给出垂直于节理及略倾斜锚杆（<span class="math">\(theta\)</span> = 70°）的拉拔试验结果。锚杆倾斜时，拉动块体产生的给定位移增量，比垂直锚杆引起的伸长量更小，因此刚度略低。同一几何效应也使倾斜锚杆的最大轴向位移约 31 mm，高于垂直锚杆的约 29 mm。锚杆垂直于节理，即平行拉动方向时，最大荷载等于锚索屈服承载力，本例为 18 吨。锚杆倾斜时，最大荷载等于该值在拉动方向的投影。相对于锚杆屈服承载力，倾斜程度越大，最大荷载越低。</p>
+<p>针对倾斜锚杆受剪的可用试验结果很少。定性而言，<span class="codename">3DEC</span> 混合锚杆再现了文献分析或试验结果中的大多数倾角效应。定量而言，考虑到模型目标精度，我们认为其行为合理，且处于少数可用试验观测的数量级内。</p>
+</div>
+<div class="section" id="effect-of-joint-friction-angle-on-bolt-load-capacity">
+<h4>节理摩擦角对锚杆承载力的影响</h4>
+<p>简单剪切试验中，锚杆作用于节理的三项力贡献为销钉单元抗剪阻力 Fd、锚索抗剪阻力 FcS，以及锚索法向力引起的附加摩擦力 FcN。若锚杆倾角为 <span class="math">\(\theta_1\)</span>，其中 90 度对应垂直于节理，节理摩擦角为 <span class="math">\(\phi\)</span> 度，则理论最大锚杆贡献为：</p>
+<div class="math" id="equation-the-sel3-hfri">
+<span class="eqno">(10)</span>\[Maximum Bolt Contribution = F_d + F_c \cos \theta_1 + + F_c \sin \theta_1 \tan \phi\]</div>
+<p>其中：</p>
+<blockquote>
+<div><p><span class="math">\(F_c\)</span> = 锚索单元中的轴力，最大值为输入的锚索屈服值；</p>
+<p><span class="math">\(F_d\)</span> = 销钉单元中的力，最大值为输入的销钉屈服值</p>
+</div></blockquote>
+<p>第一项表示抗剪阻力 FcS，第二项表示法向分量 FcN。</p>
+<p>因此，<span class="codename">3DEC</span> 混合锚杆贡献取决于摩擦角和锚杆倾角。考虑简单剪切试验中锚杆会转动几度，<a href="#hybrid-friction">图 16（Figure  16）</a> 估计不同倾角和摩擦角下，混合锚杆产生的三项力。与试验观察的岩石锚杆行为类似，<span class="codename">3DEC</span> 混合锚杆表现如下：
+begin{itemize}
+item 给定节理摩擦角下，加锚节理最大抗剪强度随锚杆倾角变化。摩擦角为 40 度时，最大值出现在约 45 度，比垂直锚杆增加约 30%。
+item 加锚节理最大抗剪强度随节理摩擦角变化；摩擦越大，最大抗剪强度越高。
+end{itemize}</p>
+<div class="figure align-center" id="hybrid-friction">
+<a class="reference internal image-reference" href="../../../../../_images/hybrid_friction.png"><img alt="../../../../../_images/hybrid_friction.png" src="../../../../../_images/hybrid_friction.png" style="width: 500px;"/></a>
+<p class="caption"><span class="caption-text">图 16：五种节理摩擦角，即 0、20、30、40 和 50 度下，锚杆作用各分量随倾角的变化。锚杆倾角 90 度对应垂直于节理。</span></p>
+</div>
+</div>
+</div>
+<div class="section" id="calibration-tool">
+<h3>标定工具</h3>
+<p>本文档提供混合锚杆<a class="reference external" href="../../../../../_static/icg_tools/cable-prop-tool.html">标定工具（calibration tool）</a>，方便依据室内数据选择锚杆属性。工具也包含不同锚杆类型的默认属性，并提供自身文档，见工具中出现的“？”标记。</p>
+</div>
+<div class="section" id="summary-of-commands-associated-with-hybrid-bolts">
+<h3>混合锚杆相关命令汇总</h3>
+<p>混合锚杆相关的全部命令列于<a href="#the-sel3-hypr">表 5（Table  5）</a>，详细说明见<a class="reference internal" href="../../../../block/doc/manual/sel_manual/sel_commands/sel_commands.html#sel-commands"><span class="std std-ref">命令</span>（Commands）</a>。</p>
+<table border="1" class="docutils" id="the-sel3-hypr">
+<caption><span class="caption-text">表 5：混合锚杆标定：标定过程之前需定义的参数</span></caption>
+<colgroup>
+<col width="100%"/>
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><a class="reference internal" href="../../../../block/doc/manual/sel_manual/sel_commands/sel.hybrid/cmd_sel.hybrid.change.html#command:sel.hybrid.change" title="Change attributes of hybrid bolt elements..."><code class="xref fish fish-cmd docutils literal"><span class="pre">sel</span> <span class="pre">hybrid</span> <span class="pre">change</span></code></a></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="../../../../block/doc/manual/sel_manual/sel_commands/sel.hybrid/cmd_sel.hybrid.create.html#command:sel.hybrid.create" title="Create a hybrid bolt element. Note that when hybrid reinforcement is used with
+fully deformable blocks, the blocks must be discretized into zones before reinforcement
+locations are specified..."><code class="xref fish fish-cmd docutils literal"><span class="pre">sel</span> <span class="pre">hybrid</span> <span class="pre">create</span></code></a></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="../../../../block/doc/manual/sel_manual/sel_commands/sel.hybrid/cmd_sel.hybrid.delete.html#command:sel.hybrid.delete" title="Delete all hybrid bolt elements in the range. Disconnected nodes will also be
+deleted..."><code class="xref fish fish-cmd docutils literal"><span class="pre">sel</span> <span class="pre">hybrid</span> <span class="pre">delete</span></code></a></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="../../../../block/doc/manual/sel_manual/sel_commands/sel.hybrid/cmd_sel.hybrid.group.html#command:sel.hybrid.group" title="Assign hybrid bolt elements in the range to the group named  s1  in slot
+ s2  (if supplied)..."><code class="xref fish fish-cmd docutils literal"><span class="pre">sel</span> <span class="pre">hybrid</span> <span class="pre">group</span></code></a></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="../../../../block/doc/manual/sel_manual/sel_commands/sel.hybrid/cmd_sel.hybrid.history.html#command:sel.hybrid.history" title="Sample hybrid bolt responses. If a hybrid bolt is created using the  sel.hybrid.create 
+command, then the nodes of each element so created will be ordered such that
+the overall bolt direction goes from the first point to the second point (i.e.,
+the nodal connectivity of each element will be ordered such that the direction
+from end-1 to end-2 corresponds with the direction from the begin point to the
+end point)..."><code class="xref fish fish-cmd docutils literal"><span class="pre">sel</span> <span class="pre">hybrid</span> <span class="pre">history</span></code></a></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="../../../../block/doc/manual/sel_manual/sel_commands/sel.hybrid/cmd_sel.hybrid.list.html#command:sel.hybrid.list" title="List data for reinforcing elements (hybrids) that model shear behavior of grout
+annulus..."><code class="xref fish fish-cmd docutils literal"><span class="pre">sel</span> <span class="pre">hybrid</span> <span class="pre">list</span></code></a></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="../../../../block/doc/manual/sel_manual/sel_commands/sel.hybrid/cmd_sel.hybrid.node.html#command:sel.hybrid.node" title="Set conditions on hybrid bolt nodes..."><code class="xref fish fish-cmd docutils literal"><span class="pre">sel</span> <span class="pre">hybrid</span> <span class="pre">node</span></code></a></td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="../../../../block/doc/manual/sel_manual/sel_commands/sel.hybrid/cmd_sel.hybrid.property.html#command:sel.hybrid.property" title="Assign property values to hybrid bolt property `i`..."><code class="xref fish fish-cmd docutils literal"><span class="pre">sel</span> <span class="pre">hybrid</span> <span class="pre">property</span></code></a></td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="../../../../block/doc/manual/sel_manual/sel_commands/sel.hybrid/cmd_sel.hybrid.update.html#command:sel.hybrid.update" title="Set the number of cycles between updating the geometry and node positions of
+hybrid bolts (default = 10). Large strain only..."><code class="xref fish fish-cmd docutils literal"><span class="pre">sel</span> <span class="pre">hybrid</span> <span class="pre">update</span></code></a></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="example-application-simple-shear-test">
+<h3>应用示例：简单剪切试验</h3>
+<p>用两个块体模拟简单剪切试验（<a href="#the-sel3-ht01">图 17（Figure  17）</a>）。限制左块体底部的竖直运动，并使右块体顶部以恒速向下移动。一根混合锚杆从左向右跨越节理。施加 1 MPa 法向应力，节理摩擦角设为 40 度，黏聚力为 0。混合锚杆销钉段屈服强度设为 0.063 MN，应变极限为 0.41。<a href="#the-sel3-ht04">图 18（Figure  18）</a> 显示锚杆贡献与剪切位移的关系。锚杆贡献实质上是剪应力减去摩擦强度（<span class="math">\(\sigma_n \tan \phi\)</span>）。约 7 mm 剪切位移时，销钉段屈服；约 3.5 cm 时，锚索自身拉伸屈服；最后，剪切位移约 4.1 cm 后，销钉断裂，锚杆失效。</p>
+<div class="figure" id="the-sel3-ht01">
+<a class="reference internal image-reference" href="../../../../../_images/blocks-shear.png"><img alt="../../../../../_images/blocks-shear.png" src="../../../../../_images/blocks-shear.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 17：剪切试验中的块体与锚杆布置。图示为锚杆断裂后模型。</span></p>
+</div>
+<div class="figure" id="the-sel3-ht04">
+<a class="reference internal image-reference" href="../../../../../_images/boltcont_shear.png"><img alt="../../../../../_images/boltcont_shear.png" src="../../../../../_images/boltcont_shear.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 18：剪切试验中的锚杆贡献。</span></p>
+</div>
+<p class="h2 rubric" id="the-sel3-htf2">blocks.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;</span>
+<span class="c">;建立用于复合锚杆标定的模型</span>
+<span class="c">;</span>
+<span class="nb">model new</span>
+<span class="nb">fish automatic-create</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10000</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="c">;</span>
+<span class="nb">fish define</span><span class="ni"> params</span>
+<span class="ni"> </span>
+<span class="ni">  </span><span class="c">; 块体尺寸</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> block_lenH </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.95</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> block_lenV </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> edge_length_</span><span class="p">=</span><span class="m m-Double">0.125</span><span class="ni"> </span><span class="c">; 网格单元尺寸</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="c">; 块体参数</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> ymod_</span><span class="p">=</span><span class="m m-Double">40e9</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> pratio_</span><span class="p">=</span><span class="m m-Double">0.25</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> dens_</span><span class="p">=</span><span class="m m-Double">2500</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="c">; 节理参数</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> jkn_</span><span class="p">=</span><span class="m m-Double">3e11</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> jks_</span><span class="p">=</span><span class="m m-Double">3e11</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> jfric_</span><span class="p">=</span><span class="m m-Double">40.0</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="c">;复合锚杆参数</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> area_</span><span class="p">=</span><span class="m m-Double">201e-6</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> e_</span><span class="p">=</span><span class="m m-Double">1.4e11</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> grout_stiff_</span><span class="p">=</span><span class="m m-Double">3e8</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> grout_strength_</span><span class="p">=</span><span class="m m-Double">2e5</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> cable_yield_</span><span class="p">=</span><span class="m m-Double">100e3</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> cable_strain_limit_</span><span class="p">=</span><span class="m m-Double">0.2</span><span class="ni">  </span><span class="c">; 拉伸</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> dowel_stiffness_</span><span class="p">=</span><span class="m m-Double">1.0e7</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> dowel_yield_</span><span class="p">=</span><span class="m m-Double">62.8e3</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> dowel_strain_limit_</span><span class="p">=</span><span class="m m-Double">0.41</span><span class="ni"> </span><span class="c">; 剪切</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> dowel_length_</span><span class="p">=</span><span class="m m-Double">0.1</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> segment_length_</span><span class="p">=</span><span class="m m-Double">0.1</span>
+
+<span class="ni">  </span><span class="c">; 计算得到的参数</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> bolt_len</span><span class="p">=</span><span class="ni">block_lenH</span><span class="o">*</span><span class="m m-Double">2.</span>
+<span class="nb">end</span>
+<span class="ni">[params]</span>
+
+<span class="p">=====================================================</span>
+
+<span class="c">;</span>
+<span class="c">;创建两个块体 </span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[block_lenH]</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[block_lenH]</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[block_lenV]</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="ni">[block_lenH]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">2</span><span class="o">*</span><span class="ni">block_lenH]</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[block_lenH]</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[block_lenV]</span>
+<span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="ni">[edge_length_]</span><span class="n">  </span>
+
+<span class="c">; 网格单元和接触参数</span>
+<span class="nb">block zone cmodel</span><span class="n"> elastic</span>
+<span class="nb">block zone property</span><span class="n"> young </span><span class="ni">[ymod_]</span><span class="n"> poisson </span><span class="ni">[pratio_]</span><span class="n"> density </span><span class="ni">[dens_]</span><span class="n"> </span>
+
+<span class="nb">block contact jmodel</span><span class="n"> assign mohr</span>
+<span class="nb">block contact property</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="ni">[jkn_]</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="ni">[jks_]</span><span class="n"> friction </span><span class="ni">[jfric_]</span><span class="n"> </span>
+<span class="nb">block contact mat-table</span><span class="n"> default prop stiffness</span><span class="o">-</span><span class="n">normal </span><span class="ni">[jkn_]</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="ni">[jks_]</span><span class="n"> friction </span><span class="ni">[jfric_]</span>
+<span class="c">;</span>
+
+<span class="c">; 施加共用边界条件 </span>
+<span class="nb">block hide</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[block_lenH]</span><span class="n"> not</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">;</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">1000</span><span class="n"> </span><span class="m m-Double">1000</span>
+
+<span class="c">; 采用组合阻尼以消除振动。 </span>
+<span class="nb">block mech</span><span class="n"> damp combined</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'blocks'</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="the-sel3-htf1">shear_test.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;;-------------------------------------------------------------------------------------------</span>
+<span class="c">;;		剪切试验</span>
+<span class="c">;;-------------------------------------------------------------------------------------------</span>
+<span class="n">model rest </span><span class="s">'blocks'</span>
+
+<span class="c">; 定义剪切加载参数</span>
+<span class="nb">fish def</span><span class="ni"> params_shear</span>
+
+<span class="ni">  </span><span class="c">; 边界条件</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> normal_stress </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0e6</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> zvel_</span><span class="p">=</span><span class="o">-</span><span class="m m-Double">1e-2</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="c">; 计算值</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> normal_force </span><span class="p">=</span><span class="ni"> normal_stress </span><span class="o">*</span><span class="ni"> block_lenH</span><span class="o">*</span><span class="ni">block_lenV</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> friction_force </span><span class="p">=</span><span class="ni"> normal_force</span><span class="o">*</span><span class="k">math.tan</span><span class="p">(</span><span class="ni">jfric_</span><span class="o">*</span><span class="k">math.degrad</span><span class="p">)</span>
+<span class="nb">end</span>
+<span class="ni">[params_shear]</span>
+
+<span class="c">; 边界条件</span>
+<span class="nb">block face apply</span><span class="n"> stress</span><span class="o">-</span><span class="n">xx </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">normal_stress]</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span>
+<span class="nb">block face apply</span><span class="n"> stress</span><span class="o">-</span><span class="n">xx </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">1.</span><span class="o">*</span><span class="ni">normal_stress]</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="ni">[block_lenH</span><span class="o">*</span><span class="m m-Double">2.</span><span class="ni">]</span>
+<span class="c">;</span>
+<span class="nb">block hide</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[block_lenH]</span>
+<span class="nb">block gridpoint group</span><span class="n"> </span><span class="s">'top'</span><span class="n"> range pos</span><span class="o">-</span><span class="n">z </span><span class="ni">[block_lenV]</span><span class="n"> </span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">model </span><span class="ss">solve</span>
+<span class="c">;</span>
+<span class="nb">block gridpoint initialize</span><span class="n"> displacement </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block contact reset</span><span class="n"> displacement</span>
+<span class="c">;</span>
+<span class="c">; 施加剪切荷载</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="ni">[zvel_]</span><span class="n"> range group </span><span class="s">'top'</span>
+<span class="c">;</span>
+<span class="c">; 用于计算锚杆抗剪贡献的函数</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> max_force </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> bolt_contribution </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">]</span>
+<span class="c">;</span>
+<span class="nb">fish define</span><span class="ni"> reaction_force</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> temp_ </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> gi </span><span class="k">block.gp.list</span>
+<span class="ni">      </span><span class="k">if</span><span class="ni"> </span><span class="k">block.gp.group</span><span class="p">(</span><span class="ni">gi</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'top'</span>
+<span class="ni">        temp_ </span><span class="p">=</span><span class="ni"> temp_ </span><span class="o">-</span><span class="ni"> </span><span class="k">block.gp.force.reaction.z</span><span class="p">(</span><span class="ni">gi</span><span class="p">)</span>
+<span class="ni">      </span><span class="k">end_if</span>
+<span class="ni">  </span><span class="k">end_loop</span>
+<span class="ni">  reaction_force </span><span class="p">=</span><span class="ni"> temp_</span>
+<span class="ni">  bolt_contribution </span><span class="p">=</span><span class="ni">  temp_ </span><span class="o">-</span><span class="ni"> friction_force</span>
+<span class="nb">end</span>
+<span class="c">;</span>
+<span class="nb">fish history</span><span class="n"> reaction_force</span>
+<span class="nb">fish history</span><span class="n"> bolt_contribution</span>
+<span class="nb">block history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">z </span><span class="sx">...</span>
+<span class="n">  position </span><span class="ni">[</span><span class="m m-Double">1.5</span><span class="o">*</span><span class="ni">block_lenH]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">block_lenH]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">block_lenV]</span>
+<span class="nb">model history</span><span class="n"> mechanical unbalanced</span><span class="o">-</span><span class="n">maximum</span>
+<span class="nb">history interval</span><span class="n"> </span><span class="m m-Double">1000</span>
+<span class="c">;</span>
+
+<span class="c">;运行试验，在断裂时停止</span>
+<span class="nb">fish def</span><span class="ni"> run_it</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> test_ </span><span class="p">=</span><span class="ni"> </span><span class="sx">true</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> max_force </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">1e12</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">while</span><span class="ni"> test_ </span><span class="p">=</span><span class="ni"> </span><span class="sx">true</span>
+<span class="k">    command</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">10000</span>
+<span class="k">    end_command</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> max_force </span><span class="o">&lt;</span><span class="ni"> bolt_contribution</span>
+<span class="ni">      max_force </span><span class="p">=</span><span class="ni"> bolt_contribution</span>
+<span class="ni">    </span><span class="k">else</span>
+<span class="ni">      </span><span class="k">if</span><span class="ni"> bolt_contribution </span><span class="o">&lt;</span><span class="ni"> max_force</span><span class="o">/</span><span class="m m-Double">10.</span>
+<span class="ni"> 		test_ </span><span class="p">=</span><span class="ni"> </span><span class="sx">false</span>
+<span class="ni"> 	 </span><span class="k">end_if</span>
+<span class="ni">   </span><span class="k">end_if</span>
+<span class="ni">  </span><span class="k">end_loop</span>
+<span class="nb">end</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'ini_shear.sav'</span>
+
+<span class="p">=================================================================</span>
+
+<span class="c">; 测试垂直锚杆，角度为 90 度</span>
+<span class="c">; 修改 dincl_，以测试其他锚杆角度</span>
+<span class="c">;</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'ini_shear'</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> dincl_</span><span class="p">=</span><span class="m m-Double">90.</span><span class="ni">]</span>
+
+<span class="c">;创建锚杆</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> x1 </span><span class="p">=</span><span class="ni"> block_lenH</span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">bolt_len</span><span class="o">*</span><span class="k">math.sin</span><span class="p">(</span><span class="ni">dincl_</span><span class="o">*</span><span class="k">math.degrad</span><span class="p">)</span><span class="o">+</span><span class="m m-Double">0.001</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> y1 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">block_lenH]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> z1 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">block_lenV</span><span class="o">+</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">bolt_len</span><span class="o">*</span><span class="k">math.cos</span><span class="p">(</span><span class="ni">dincl_</span><span class="o">*</span><span class="k">math.degrad</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> x2 </span><span class="p">=</span><span class="ni"> block_lenH</span><span class="o">+</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">bolt_len</span><span class="o">*</span><span class="k">math.sin</span><span class="p">(</span><span class="ni">dincl_</span><span class="o">*</span><span class="k">math.degrad</span><span class="p">)</span><span class="o">-</span><span class="m m-Double">0.001</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> y2 </span><span class="p">=</span><span class="ni"> y1]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> z2 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">block_lenV</span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">bolt_len</span><span class="o">*</span><span class="k">math.cos</span><span class="p">(</span><span class="ni">dincl_</span><span class="o">*</span><span class="k">math.degrad</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> bolt_beg</span><span class="p">=</span><span class="ni">vector</span><span class="p">(</span><span class="ni">x1</span><span class="p">,</span><span class="ni">y1</span><span class="p">,</span><span class="ni">z1</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> bolt_end</span><span class="p">=</span><span class="ni">vector</span><span class="p">(</span><span class="ni">x2</span><span class="p">,</span><span class="ni">y2</span><span class="p">,</span><span class="ni">z2</span><span class="p">)</span><span class="ni">]</span>
+
+<span class="nb">sel hybrid create</span><span class="n"> by</span><span class="o">-</span><span class="n">line </span><span class="ni">[bolt_beg]</span><span class="n"> </span><span class="ni">[bolt_end]</span><span class="n"> property </span><span class="m m-Double">1</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  segment</span><span class="o">-</span><span class="n">length </span><span class="ni">[segment_length_]</span><span class="n"> dowel</span><span class="o">-</span><span class="n">length </span><span class="ni">[dowel_length_]</span>
+
+<span class="c">; 锚索参数</span>
+<span class="nb">sel hybrid prop</span><span class="n"> </span><span class="m m-Double">1</span><span class="n">  cross</span><span class="o">-</span><span class="n">sectional</span><span class="o">-</span><span class="n">area </span><span class="ni">[area_]</span><span class="n"> young </span><span class="ni">[e_]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  grout</span><span class="o">-</span><span class="n">stiffness </span><span class="ni">[grout_stiff_]</span><span class="n"> grout</span><span class="o">-</span><span class="n">cohesion </span><span class="ni">[grout_strength_]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  yield</span><span class="o">-</span><span class="n">tension </span><span class="ni">[cable_yield_]</span><span class="n"> rupture</span><span class="o">-</span><span class="n">tension</span><span class="o">-</span><span class="n">strain </span><span class="ni">[cable_strain_limit_]</span>
+<span class="n">  </span>
+<span class="c">; 销钉参数</span>
+<span class="nb">sel hybrid prop</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> dowel</span><span class="o">-</span><span class="n">stiffness </span><span class="ni">[dowel_stiffness_]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  dowel</span><span class="o">-</span><span class="n">yield </span><span class="ni">[dowel_yield_]</span><span class="n"> dowel</span><span class="o">-</span><span class="n">strainlimit </span><span class="ni">[dowel_strain_limit_]</span>
+
+<span class="c">;在两端设置托板</span>
+<span class="nb">sel hybrid node</span><span class="n"> attach range pos</span><span class="o">-</span><span class="n">x </span><span class="ni">[bolt_beg</span><span class="o">-&gt;</span><span class="ni">x]</span>
+<span class="nb">sel hybrid node</span><span class="n"> attach range pos</span><span class="o">-</span><span class="n">x </span><span class="ni">[bolt_end</span><span class="o">-&gt;</span><span class="ni">x]</span><span class="n"> </span>
+
+<span class="c">;运行试验，在断裂时停止</span>
+<span class="ni">[run_it]</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'shear-90'</span>
+
+<span class="nb">program </span><span class="se">return</span>
+
+<span class="p">=================================================================</span>
+
+<span class="c">; 测试 70 度锚杆</span>
+<span class="c">;</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'ini_shear'</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> dincl_</span><span class="p">=</span><span class="m m-Double">70.</span><span class="ni">]</span>
+
+<span class="c">;创建倾斜锚杆</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> x1 </span><span class="p">=</span><span class="ni"> block_lenH</span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">bolt_len</span><span class="o">*</span><span class="k">math.sin</span><span class="p">(</span><span class="ni">dincl_</span><span class="o">*</span><span class="k">math.degrad</span><span class="p">)</span><span class="o">+</span><span class="m m-Double">0.001</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> y1 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">block_lenH]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> z1 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">block_lenV</span><span class="o">+</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">bolt_len</span><span class="o">*</span><span class="k">math.cos</span><span class="p">(</span><span class="ni">dincl_</span><span class="o">*</span><span class="k">math.degrad</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> x2 </span><span class="p">=</span><span class="ni"> block_lenH</span><span class="o">+</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">bolt_len</span><span class="o">*</span><span class="k">math.sin</span><span class="p">(</span><span class="ni">dincl_</span><span class="o">*</span><span class="k">math.degrad</span><span class="p">)</span><span class="o">-</span><span class="m m-Double">0.001</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> y2 </span><span class="p">=</span><span class="ni"> y1]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> z2 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">block_lenV</span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">bolt_len</span><span class="o">*</span><span class="k">math.cos</span><span class="p">(</span><span class="ni">dincl_</span><span class="o">*</span><span class="k">math.degrad</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> bolt_beg</span><span class="p">=</span><span class="ni">vector</span><span class="p">(</span><span class="ni">x1</span><span class="p">,</span><span class="ni">y1</span><span class="p">,</span><span class="ni">z1</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> bolt_end</span><span class="p">=</span><span class="ni">vector</span><span class="p">(</span><span class="ni">x2</span><span class="p">,</span><span class="ni">y2</span><span class="p">,</span><span class="ni">z2</span><span class="p">)</span><span class="ni">]</span>
+
+<span class="nb">sel hybrid create</span><span class="n"> by</span><span class="o">-</span><span class="n">line </span><span class="ni">[bolt_beg]</span><span class="n"> </span><span class="ni">[bolt_end]</span><span class="n"> property </span><span class="m m-Double">1</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  segment</span><span class="o">-</span><span class="n">length </span><span class="ni">[segment_length_]</span><span class="n"> dowel</span><span class="o">-</span><span class="n">length </span><span class="ni">[dowel_length_]</span>
+
+<span class="c">; 锚索参数</span>
+<span class="nb">sel hybrid prop</span><span class="n"> </span><span class="m m-Double">1</span><span class="n">  cross</span><span class="o">-</span><span class="n">sectional</span><span class="o">-</span><span class="n">area </span><span class="ni">[area_]</span><span class="n"> young </span><span class="ni">[e_]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  grout</span><span class="o">-</span><span class="n">stiffness </span><span class="ni">[grout_stiff_]</span><span class="n"> grout</span><span class="o">-</span><span class="n">cohesion </span><span class="ni">[grout_strength_]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  yield</span><span class="o">-</span><span class="n">tension </span><span class="ni">[cable_yield_]</span><span class="n"> rupture</span><span class="o">-</span><span class="n">tension</span><span class="o">-</span><span class="n">strain </span><span class="ni">[cable_strain_limit_]</span>
+<span class="n">  </span>
+<span class="c">; 销钉参数</span>
+<span class="nb">sel hybrid prop</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> dowel</span><span class="o">-</span><span class="n">stiffness </span><span class="ni">[dowel_stiffness_]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  dowel</span><span class="o">-</span><span class="n">yield </span><span class="ni">[dowel_yield_]</span><span class="n"> dowel</span><span class="o">-</span><span class="n">strainlimit </span><span class="ni">[dowel_strain_limit_]</span>
+
+<span class="c">;在两端设置托板</span>
+<span class="nb">sel hybrid node</span><span class="n"> attach range pos</span><span class="o">-</span><span class="n">x </span><span class="ni">[bolt_beg</span><span class="o">-&gt;</span><span class="ni">x]</span>
+<span class="nb">sel hybrid node</span><span class="n"> attach range pos</span><span class="o">-</span><span class="n">x </span><span class="ni">[bolt_end</span><span class="o">-&gt;</span><span class="ni">x]</span><span class="n"> </span>
+
+<span class="c">;运行试验，在断裂时停止</span>
+<span class="ni">[run_it]</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'shear-70'</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="example-application-simple-pullout-test">
+<h3>应用示例：简单拉拔试验</h3>
+<p>拉拔试验采用与简单剪切试验相同的块体和锚杆布置。此时不施加法向应力，右块体右边界以恒速向右移动。<a href="#the-sel3-ht06">图 19（Figure  19）</a> 显示试验结束时的块体与锚索布置。<a href="#the-sel3-ht07a">图 20（Figure  20）</a> 显示锚杆贡献。由于节理没有抗拉强度，锚杆贡献直接等于右边界施加的拉力。曲线显示初始弹性轴向变形，随后在约 2 mm 位移时开始浆体破坏。最终，拉动 3 mm 后锚索拉伸屈服，此后锚杆表现为塑性，贡献不再增加。</p>
+<div class="figure" id="the-sel3-ht06">
+<a class="reference internal image-reference" href="../../../../../_images/blocks-pullout.png"><img alt="../../../../../_images/blocks-pullout.png" src="../../../../../_images/blocks-pullout.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 19：拉拔试验中的块体与锚杆布置。图示为锚杆拔出后模型。</span></p>
+</div>
+<div class="figure" id="the-sel3-ht07a">
+<a class="reference internal image-reference" href="../../../../../_images/boltcont_pull.png"><img alt="../../../../../_images/boltcont_pull.png" src="../../../../../_images/boltcont_pull.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 20：拉拔试验中的锚杆贡献。</span></p>
+</div>
+<p class="h2 rubric" id="the-sel3-htf3">pullout.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;;-------------------------------------------------------------------------------------------</span>
+<span class="c">;;		拉拔试验</span>
+<span class="c">;;-------------------------------------------------------------------------------------------</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'blocks'</span>
+<span class="c">;</span>
+<span class="c">; 定义拉拔试验参数</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> xvel_ </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1e-3</span><span class="ni">]</span>
+<span class="c">;</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span>
+<span class="c">;</span>
+<span class="nb">block hide</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[block_lenH]</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span>
+<span class="nb">block gridpoint group</span><span class="n"> </span><span class="s">'right'</span><span class="n"> range pos</span><span class="o">-</span><span class="n">x </span><span class="ni">[block_lenH]</span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">;</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="ni">[xvel_]</span><span class="n"> range group </span><span class="s">'right'</span>
+<span class="c">;</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> max_force </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> bolt_contribution </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">]</span>
+<span class="c">;</span>
+<span class="nb">fish define</span><span class="ni"> reaction_force</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> temp_ </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> gi </span><span class="k">block.gp.list</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> </span><span class="k">block.gp.group</span><span class="p">(</span><span class="ni">gi</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'right'</span>
+<span class="ni">        temp_ </span><span class="p">=</span><span class="ni"> temp_ </span><span class="o">+</span><span class="ni"> </span><span class="k">block.gp.force.reaction.x</span><span class="p">(</span><span class="ni">gi</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">end_if</span>
+<span class="ni">  </span><span class="k">end_loop</span>
+<span class="ni">  reaction_force </span><span class="p">=</span><span class="ni"> </span><span class="k">math.abs</span><span class="p">(</span><span class="ni">temp_</span><span class="p">)</span>
+<span class="ni">  bolt_contribution </span><span class="p">=</span><span class="ni">  </span><span class="k">math.abs</span><span class="p">(</span><span class="ni">temp_</span><span class="p">)</span><span class="c">; - friction_force    </span>
+<span class="nb">end</span>
+<span class="c">;</span>
+<span class="nb">fish history</span><span class="n"> reaction_force</span>
+<span class="nb">fish history</span><span class="n"> bolt_contribution</span>
+<span class="nb">block history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">x </span><span class="sx">...</span>
+<span class="n">  position </span><span class="ni">[</span><span class="m m-Double">2</span><span class="o">*</span><span class="ni">block_lenH]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">block_lenH]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">block_lenV]</span>
+<span class="nb">model history</span><span class="n"> mechanical unbalanced</span><span class="o">-</span><span class="n">maximum</span>
+<span class="nb">history interval</span><span class="n"> </span><span class="m m-Double">200</span>
+
+<span class="c">;运行试验的 FISH 函数，在断裂时停止</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> gp_monitor </span><span class="p">=</span><span class="ni"> </span><span class="k">block.gp.near</span><span class="p">(</span><span class="m m-Double">2</span><span class="o">*</span><span class="ni">block_lenH</span><span class="p">,</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">block_lenH</span><span class="p">,</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">block_lenV</span><span class="p">)</span><span class="ni">]</span>
+
+<span class="nb">fish def</span><span class="ni"> run_it</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> test_ </span><span class="p">=</span><span class="ni"> </span><span class="sx">true</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">while</span><span class="ni"> test_ </span><span class="p">=</span><span class="ni"> </span><span class="sx">true</span>
+<span class="k">    command</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">10000</span>
+<span class="k">    end_command</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> </span><span class="k">math.mag</span><span class="p">(</span><span class="k">block.gp.dis</span><span class="p">(</span><span class="ni">gp_monitor</span><span class="p">))</span><span class="ni"> </span><span class="o">&gt;</span><span class="ni"> </span><span class="m m-Double">1e-2</span>
+<span class="ni">      test_ </span><span class="p">=</span><span class="ni"> </span><span class="sx">false</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">end_loop</span>
+<span class="nb">end</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'ini_pull'</span>
+<span class="c">;</span>
+<span class="p">=================================================================</span>
+<span class="c">;</span>
+<span class="c">; 测试垂直锚杆，角度为 90 度</span>
+<span class="c">; 修改 dincl_，以测试其他锚杆角度</span>
+<span class="c">;</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'ini_pull'</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> dincl_</span><span class="p">=</span><span class="m m-Double">90.</span><span class="ni">]</span>
+
+<span class="c">;创建锚杆</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> x1 </span><span class="p">=</span><span class="ni"> block_lenH</span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">bolt_len</span><span class="o">*</span><span class="k">math.sin</span><span class="p">(</span><span class="ni">dincl_</span><span class="o">*</span><span class="k">math.degrad</span><span class="p">)</span><span class="o">+</span><span class="m m-Double">0.001</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> y1 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">block_lenH]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> z1 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">block_lenV</span><span class="o">+</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">bolt_len</span><span class="o">*</span><span class="k">math.cos</span><span class="p">(</span><span class="ni">dincl_</span><span class="o">*</span><span class="k">math.degrad</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> x2 </span><span class="p">=</span><span class="ni"> block_lenH</span><span class="o">+</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">bolt_len</span><span class="o">*</span><span class="k">math.sin</span><span class="p">(</span><span class="ni">dincl_</span><span class="o">*</span><span class="k">math.degrad</span><span class="p">)</span><span class="o">-</span><span class="m m-Double">0.001</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> y2 </span><span class="p">=</span><span class="ni"> y1]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> z2 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">block_lenV</span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">bolt_len</span><span class="o">*</span><span class="k">math.cos</span><span class="p">(</span><span class="ni">dincl_</span><span class="o">*</span><span class="k">math.degrad</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> bolt_beg</span><span class="p">=</span><span class="ni">vector</span><span class="p">(</span><span class="ni">x1</span><span class="p">,</span><span class="ni">y1</span><span class="p">,</span><span class="ni">z1</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> bolt_end</span><span class="p">=</span><span class="ni">vector</span><span class="p">(</span><span class="ni">x2</span><span class="p">,</span><span class="ni">y2</span><span class="p">,</span><span class="ni">z2</span><span class="p">)</span><span class="ni">]</span>
+
+<span class="nb">sel hybrid create</span><span class="n"> by</span><span class="o">-</span><span class="n">line </span><span class="ni">[bolt_beg]</span><span class="n"> </span><span class="ni">[bolt_end]</span><span class="n"> property </span><span class="m m-Double">1</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  segment</span><span class="o">-</span><span class="n">length </span><span class="ni">[segment_length_]</span><span class="n"> dowel</span><span class="o">-</span><span class="n">length </span><span class="ni">[dowel_length_]</span>
+
+<span class="c">; 锚索参数</span>
+<span class="nb">sel hybrid prop</span><span class="n"> </span><span class="m m-Double">1</span><span class="n">  cross</span><span class="o">-</span><span class="n">sectional</span><span class="o">-</span><span class="n">area </span><span class="ni">[area_]</span><span class="n"> young </span><span class="ni">[e_]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  grout</span><span class="o">-</span><span class="n">stiffness </span><span class="ni">[grout_stiff_]</span><span class="n"> grout</span><span class="o">-</span><span class="n">cohesion </span><span class="ni">[grout_strength_]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  yield</span><span class="o">-</span><span class="n">tension </span><span class="ni">[cable_yield_]</span><span class="n"> rupture</span><span class="o">-</span><span class="n">tension</span><span class="o">-</span><span class="n">strain </span><span class="ni">[cable_strain_limit_]</span>
+<span class="n">  </span>
+<span class="c">; 销钉参数</span>
+<span class="nb">sel hybrid prop</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> dowel</span><span class="o">-</span><span class="n">stiffness </span><span class="ni">[dowel_stiffness_]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  dowel</span><span class="o">-</span><span class="n">yield </span><span class="ni">[dowel_yield_]</span><span class="n"> dowel</span><span class="o">-</span><span class="n">strainlimit </span><span class="ni">[dowel_strain_limit_]</span>
+<span class="n">  </span>
+<span class="ni">[run_it]</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'pull-90'</span>
+
+<span class="nb">program </span><span class="se">return</span>
+
+<span class="p">===============================================================================</span>
+
+<span class="c">;倾斜锚杆，角度为 70 度</span>
+
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'ini_pull'</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> dincl_</span><span class="p">=</span><span class="m m-Double">70.</span><span class="ni">]</span>
+
+<span class="c">;创建倾斜锚杆</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> x1 </span><span class="p">=</span><span class="ni"> block_lenH</span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">bolt_len</span><span class="o">*</span><span class="k">math.sin</span><span class="p">(</span><span class="ni">dincl_</span><span class="o">*</span><span class="k">math.degrad</span><span class="p">)</span><span class="o">+</span><span class="m m-Double">0.001</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> y1 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">block_lenH]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> z1 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">block_lenV</span><span class="o">+</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">bolt_len</span><span class="o">*</span><span class="k">math.cos</span><span class="p">(</span><span class="ni">dincl_</span><span class="o">*</span><span class="k">math.degrad</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> x2 </span><span class="p">=</span><span class="ni"> block_lenH</span><span class="o">+</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">bolt_len</span><span class="o">*</span><span class="k">math.sin</span><span class="p">(</span><span class="ni">dincl_</span><span class="o">*</span><span class="k">math.degrad</span><span class="p">)</span><span class="o">-</span><span class="m m-Double">0.001</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> y2 </span><span class="p">=</span><span class="ni"> y1]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> z2 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">block_lenV</span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">bolt_len</span><span class="o">*</span><span class="k">math.cos</span><span class="p">(</span><span class="ni">dincl_</span><span class="o">*</span><span class="k">math.degrad</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> bolt_beg</span><span class="p">=</span><span class="ni">vector</span><span class="p">(</span><span class="ni">x1</span><span class="p">,</span><span class="ni">y1</span><span class="p">,</span><span class="ni">z1</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> bolt_end</span><span class="p">=</span><span class="ni">vector</span><span class="p">(</span><span class="ni">x2</span><span class="p">,</span><span class="ni">y2</span><span class="p">,</span><span class="ni">z2</span><span class="p">)</span><span class="ni">]</span>
+
+<span class="nb">sel hybrid create</span><span class="n"> by</span><span class="o">-</span><span class="n">line </span><span class="ni">[bolt_beg]</span><span class="n"> </span><span class="ni">[bolt_end]</span><span class="n"> property </span><span class="m m-Double">1</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  segment</span><span class="o">-</span><span class="n">length </span><span class="ni">[segment_length_]</span><span class="n"> dowel</span><span class="o">-</span><span class="n">length </span><span class="ni">[dowel_length_]</span>
+
+<span class="c">; 锚索参数</span>
+<span class="nb">sel hybrid prop</span><span class="n"> </span><span class="m m-Double">1</span><span class="n">  cross</span><span class="o">-</span><span class="n">sectional</span><span class="o">-</span><span class="n">area </span><span class="ni">[area_]</span><span class="n"> young </span><span class="ni">[e_]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  grout</span><span class="o">-</span><span class="n">stiffness </span><span class="ni">[grout_stiff_]</span><span class="n"> grout</span><span class="o">-</span><span class="n">cohesion </span><span class="ni">[grout_strength_]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  yield</span><span class="o">-</span><span class="n">tension </span><span class="ni">[cable_yield_]</span><span class="n"> rupture</span><span class="o">-</span><span class="n">tension</span><span class="o">-</span><span class="n">strain </span><span class="ni">[cable_strain_limit_]</span>
+<span class="n">  </span>
+<span class="c">; 销钉参数</span>
+<span class="nb">sel hybrid prop</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> dowel</span><span class="o">-</span><span class="n">stiffness </span><span class="ni">[dowel_stiffness_]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  dowel</span><span class="o">-</span><span class="n">yield </span><span class="ni">[dowel_yield_]</span><span class="n"> dowel</span><span class="o">-</span><span class="n">strainlimit </span><span class="ni">[dowel_strain_limit_]</span>
+<span class="n">  </span>
+<span class="ni">[run_it]</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'pull-70'</span>
+<span class="c">;-------------------------------------------------------------------------------------------</span>
+
+<span class="c">;文件结束</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="example-application-simple-tunnel">
+<h3>应用示例：简单隧道</h3>
+<p>模拟一个半径为 1 m 的简单圆形隧道，采用长度 2 m 的 2.5D 模型，并假定四分之一对称。这是黏结块体模型，将网格单元转为四面体块体，再在黏结块体集合上叠加一组节理。</p>
+<p>通过在隧道表面施加逐渐减小的反力模拟部分开挖，再于移除反力之前安装混合锚杆。安装五根长度为 4 m 的混合锚杆。锚索布置见<a href="#the-sel3-ht07b">图 21（Figure  21）</a>。</p>
+<p>所得节理剪切位移和销钉剪切力见<a href="#the-sel3-ht08">图 22（Figure  22）</a>。</p>
+<div class="figure" id="the-sel3-ht07b">
+<a class="reference internal image-reference" href="../../../../../_images/tunnel-bolts.png"><img alt="../../../../../_images/tunnel-bolts.png" src="../../../../../_images/tunnel-bolts.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 21：隧道模型剖面中的节理与锚杆。</span></p>
+</div>
+<div class="figure" id="the-sel3-ht08">
+<a class="reference internal image-reference" href="../../../../../_images/tunnel-dowels.png"><img alt="../../../../../_images/tunnel-dowels.png" src="../../../../../_images/tunnel-dowels.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 22：求解后的节理剪切位移和销钉剪切力。</span></p>
+</div>
+<p class="h2 rubric" id="the-sel3-htf4">tunnel.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 采用复合锚杆支护的简单隧道算例</span>
+<span class="c">;</span>
+<span class="nb">model new</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10000</span>
+<span class="nb">block create</span><span class="n"> tunnel length </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> blocks</span><span class="o">-</span><span class="n">radial </span><span class="m m-Double">8</span><span class="n"> blocks</span><span class="o">-</span><span class="n">tangential </span><span class="m m-Double">2</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  boundary </span><span class="m m-Double">8</span><span class="n"> radius</span><span class="o">-</span><span class="n">ratio </span><span class="m m-Double">1.1</span>
+<span class="c">;</span>
+<span class="c">; 四分之一隧道</span>
+<span class="nb">block delete</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">100</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block delete</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">100</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="c">;</span>
+<span class="nb">block zone generate</span><span class="n"> center </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> edgelength</span><span class="o">-</span><span class="n">center </span><span class="m m-Double">0.1</span><span class="n"> distance </span><span class="m m-Double">9</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  edgelength</span><span class="o">-</span><span class="n">distance </span><span class="m m-Double">0.5</span>
+<span class="c">;</span>
+<span class="c">; 将网格单元作为块体导出到文件 poly.dat</span>
+<span class="nb">block zone list</span><span class="n"> poly</span>
+
+<span class="p">=========================================</span>
+<span class="nb">model new</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10000</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="c">;</span>
+<span class="nb">block tolerance</span><span class="n"> </span><span class="m m-Double">0.001</span>
+<span class="c">;</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'poly'</span>
+<span class="c">;</span>
+<span class="c">; 加入一组节理</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">30</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">90</span><span class="n"> spacing </span><span class="m m-Double">0.5</span><span class="n"> number </span><span class="m m-Double">20</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  jointset</span><span class="o">-</span><span class="n">id </span><span class="m m-Double">999</span>
+<span class="c">;</span>
+<span class="nb">block zone generate</span><span class="n"> center </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> edgelength</span><span class="o">-</span><span class="n">center </span><span class="m m-Double">0.1</span><span class="n"> distance </span><span class="m m-Double">9</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  edgelength</span><span class="o">-</span><span class="n">distance </span><span class="m m-Double">0.5</span>
+<span class="c">;</span>
+<span class="nb">block zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">block zone property</span><span class="n"> density </span><span class="m m-Double">2600</span><span class="n"> bulk </span><span class="m m-Double">1e9</span><span class="n"> shear </span><span class="m m-Double">3e8</span>
+
+<span class="c">; 四面体之间的节理</span>
+<span class="nb">block contact property</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1e11</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1e11</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  friction </span><span class="m m-Double">40.0</span><span class="n"> cohesion </span><span class="m m-Double">1e3</span><span class="n"> tension </span><span class="m m-Double">1e2</span>
+<span class="c">;</span>
+<span class="c">; 断层</span>
+<span class="nb">block contact property</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1e10</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1e10</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  friction </span><span class="m m-Double">40.0</span><span class="n"> range joint</span><span class="o">-</span><span class="n">set </span><span class="m m-Double">999</span>
+
+<span class="c">; 新接触</span>
+<span class="nb">block contact material-table</span><span class="n"> default property stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1e10</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1e10</span><span class="n"> friction </span><span class="m m-Double">40.0</span>
+<span class="c">;</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">9</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">9</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">1</span>
+<span class="c">;</span>
+<span class="nb">block insitu</span><span class="n"> stress </span><span class="o">-</span><span class="m m-Double">5e6</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">3e6</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">3e6</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="c">;</span>
+<span class="nb">model </span><span class="ss">solve</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'initial'</span>
+
+<span class="c">;model restore 'initial'</span>
+<span class="c">;</span>
+<span class="nb">block group</span><span class="n"> </span><span class="s">'rock'</span>
+<span class="nb">block group</span><span class="n"> </span><span class="s">'tunnel'</span><span class="n"> range cylinder end</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> end</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> radius </span><span class="m m-Double">1</span>
+<span class="c">;</span>
+<span class="c">; 识别隧道表面</span>
+
+<span class="c">; 修改面分组以便绘图</span>
+<span class="nb">block face group</span><span class="n"> </span><span class="s">'surface'</span><span class="n"> range group</span><span class="o">-</span><span class="n">int </span><span class="s">'rock'</span><span class="n"> </span><span class="s">'tunnel'</span>
+
+<span class="c">; 修改网格点分组以便施加反力</span>
+<span class="nb">block gridpoint group</span><span class="n"> </span><span class="s">'surface'</span><span class="n"> range group</span><span class="o">-</span><span class="n">int </span><span class="s">'rock'</span><span class="n"> </span><span class="s">'tunnel'</span>
+<span class="c">;</span>
+<span class="nb">block delete</span><span class="n"> range cylinder end</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> end</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> radius </span><span class="m m-Double">1</span>
+<span class="c">;</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="c">;</span>
+<span class="nb">fish define</span><span class="ni"> bound_his_ini</span>
+<span class="ni">  bound_his_start </span><span class="p">=</span><span class="ni"> </span><span class="k">global.step</span>
+<span class="nb">end</span>
+<span class="ni">[bound_his_ini]</span>
+<span class="c">;</span>
+<span class="c">; 用于逐步减小反力的函数</span>
+<span class="nb">fish define</span><span class="ni"> bound_his</span>
+<span class="ni">  </span><span class="c">; 非线性，在约 10000 个计算步内趋近于 0</span>
+<span class="ni">  bound_his </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.95</span><span class="o">^</span><span class="p">((</span><span class="k">global.step</span><span class="o">-</span><span class="ni">bound_his_start</span><span class="p">)</span><span class="o">/</span><span class="m m-Double">10.0</span><span class="p">)</span>
+<span class="nb">end</span>
+<span class="c">;</span>
+<span class="nb">block gridpoint apply</span><span class="n"> reaction fish bound_his range group </span><span class="s">'surface'</span>
+<span class="nb">fish history</span><span class="n"> bound_his</span>
+<span class="c">;</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'pre-bolt'</span>
+
+<span class="nb">fish define</span><span class="ni"> install_cables</span>
+<span class="ni">  tol </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.01</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> i </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span>
+<span class="ni">    angle </span><span class="p">=</span><span class="ni"> </span><span class="k">math.pi</span><span class="o">*</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">i</span><span class="o">/</span><span class="m m-Double">6.0</span>
+<span class="ni">    p1x </span><span class="p">=</span><span class="ni"> </span><span class="k">math.cos</span><span class="p">(</span><span class="ni">angle</span><span class="p">)</span><span class="o">+</span><span class="ni">tol</span>
+<span class="ni">    p1z </span><span class="p">=</span><span class="ni"> </span><span class="k">math.sin</span><span class="p">(</span><span class="ni">angle</span><span class="p">)</span><span class="o">+</span><span class="ni">tol</span>
+<span class="ni">    p2x </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">4.0</span><span class="o">*</span><span class="k">math.cos</span><span class="p">(</span><span class="ni">angle</span><span class="p">)</span>
+<span class="ni">    p2z </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">4.0</span><span class="o">*</span><span class="k">math.sin</span><span class="p">(</span><span class="ni">angle</span><span class="p">)</span>
+<span class="k">    command</span>
+<span class="nb">      sel hybrid create</span><span class="n"> by</span><span class="o">-</span><span class="n">line </span><span class="ni">[p1x]</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[p1z]</span><span class="n">  </span><span class="ni">[p2x]</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[p2z]</span><span class="n"> prop </span><span class="m m-Double">1</span><span class="n"> seg </span><span class="m m-Double">20</span><span class="n"> dowel</span><span class="o">-</span><span class="n">len </span><span class="m m-Double">0.025</span>
+<span class="k">    end_command</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="k">end_loop</span>
+<span class="nb">end</span>
+<span class="ni">[install_cables]</span>
+<span class="c">;</span>
+<span class="c">; 锚索参数</span>
+<span class="nb">sel hybrid property</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> cross</span><span class="o">-</span><span class="n">sectional</span><span class="o">-</span><span class="n">area </span><span class="m m-Double">181e-6</span><span class="n"> young </span><span class="m m-Double">98.6e11</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">   yield</span><span class="o">-</span><span class="n">tension </span><span class="m m-Double">5e6</span><span class="n"> grout</span><span class="o">-</span><span class="n">stiffness </span><span class="m m-Double">1.12e9</span><span class="n"> grout</span><span class="o">-</span><span class="n">cohesion </span><span class="m m-Double">1.75e9</span>
+<span class="n">   </span>
+<span class="c">; 销钉参数</span>
+<span class="nb">sel hybrid property</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> dowel</span><span class="o">-</span><span class="n">stiffness </span><span class="m m-Double">2e10</span><span class="n"> dowel</span><span class="o">-</span><span class="n">yield </span><span class="m m-Double">5e5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  dowel</span><span class="o">-</span><span class="n">strainlimit </span><span class="m m-Double">0.015</span>
+<span class="c">;</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio </span><span class="m m-Double">1e-5</span><span class="n"> or cycles </span><span class="m m-Double">5000</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'hybrid'</span>
+<span class="c">;</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="modeling-considerations">
+<h2>建模注意事项</h2>
+<div class="section" id="material-properties">
+<h3>材料属性</h3>
+<p>创建加固或混合锚杆单元（<a class="reference internal" href="../../../../block/doc/manual/sel_manual/sel_commands/sel.reinforcement/cmd_sel.reinforcement.create.html#command:sel.reinforcement.create" title="Create a reinforcement element. When reinforcement is used with fully deformable
+blocks, the blocks *must* be discretized into zones before reinforcement locations
+are specified..."><code class="xref fish fish-cmd docutils literal"><span class="pre">sel</span> <span class="pre">reinforcement</span> <span class="pre">create</span></code></a>、<a class="reference internal" href="../../../../block/doc/manual/sel_manual/sel_commands/sel.hybrid/cmd_sel.hybrid.create.html#command:sel.hybrid.create" title="Create a hybrid bolt element. Note that when hybrid reinforcement is used with
+fully deformable blocks, the blocks must be discretized into zones before reinforcement
+locations are specified..."><code class="xref fish fish-cmd docutils literal"><span class="pre">sel</span> <span class="pre">hybrid</span> <span class="pre">create</span></code></a>）时，通过 <code class="xref fish fish-kwd docutils literal"><span class="pre">property</span></code> 关键字赋予属性编号。所有量必须采用一致单位制，见<a href="#the-sel3-uruu">表 6（Table  6）</a>。注意，对于加固或混合锚杆单元，刚度单位为［力／位移］，强度单位为［力］。</p>
+<table border="1" class="colwidths-given icg1 docutils" id="the-sel3-uruu">
+<caption><span class="caption-text">表 6：单位制——加固单元</span></caption>
+<colgroup>
+<col width="20%"/>
+<col width="20%"/>
+<col width="10%"/>
+<col width="10%"/>
+<col width="10%"/>
+<col width="10%"/>
+<col width="10%"/>
+<col width="10%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">属性</th>
+<th class="head">单位</th>
+<th class="head"> </th>
+<th class="head"> </th>
+<th class="head">SI</th>
+<th class="head"> </th>
+<th class="head">英制</th>
+<th class="head"> </th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>面积</td>
+<td>长度<sup>2</sup></td>
+<td>m<sup>2</sup></td>
+<td>m<sup>2</sup></td>
+<td>m<sup>2</sup></td>
+<td>cm<sup>2</sup></td>
+<td>ft<sup>2</sup></td>
+<td>in<sup>2</sup></td>
+</tr>
+<tr class="row-odd"><td>黏结刚度</td>
+<td>力／长度／位移</td>
+<td>N/m/m</td>
+<td>kN/m/m</td>
+<td>MN/m/m</td>
+<td>Mdynes/cm/cm</td>
+<td>lb<sub>f</sub>/ft/ft</td>
+<td>lb<sub>f</sub>/in/in</td>
+</tr>
+<tr class="row-even"><td>黏结强度</td>
+<td>力／长度</td>
+<td>N/m</td>
+<td>kN/m</td>
+<td>MN/m</td>
+<td>Mdynes/cm</td>
+<td>lb<sub>f</sub>/ft</td>
+<td>lb<sub>f</sub>/in</td>
+</tr>
+<tr class="row-odd"><td>密度</td>
+<td>质量／体积</td>
+<td>kg/m<sup>3</sup></td>
+<td>10<sup>3</sup> kg/m<sup>3</sup></td>
+<td>10<sup>6</sup> kg/m<sup>3</sup></td>
+<td>10<sup>6</sup> g/m<sup>3</sup></td>
+<td>lb<sub>f</sub>/ft<sup>2</sup></td>
+<td>psi</td>
+</tr>
+<tr class="row-even"><td>弹性模量</td>
+<td>应力</td>
+<td>Pa</td>
+<td>kPa</td>
+<td>MPa</td>
+<td>bar</td>
+<td>lb<sub>f</sub>/ft<sup>2</sup></td>
+<td>psi</td>
+</tr>
+<tr class="row-odd"><td>刚度</td>
+<td>力/位移</td>
+<td>N/m</td>
+<td>kN/m</td>
+<td>MN/m</td>
+<td>Mdynes/cm</td>
+<td>lb<sub>f</sub>/ft</td>
+<td>lb<sub>f</sub>/in</td>
+</tr>
+<tr class="row-even"><td>屈服强度</td>
+<td>力</td>
+<td>N</td>
+<td>kN</td>
+<td>MN</td>
+<td>Mdynes</td>
+<td>lb<sub>f</sub></td>
+<td>lb<sub>f</sub></td>
+</tr>
+</tbody>
+</table>
+<script>
+   //and now, some filth of the highest order (colspanning)
+   $('#the-sel3-uruu').css("background-color","white");
+   $('#the-sel3-uruu thead tr:nth-child(1) th:nth-child(3)').remove();
+   $('#the-sel3-uruu thead tr:nth-child(1) th:nth-child(3)').remove();
+   $('#the-sel3-uruu thead tr:nth-child(1) th:nth-child(4)').remove();
+   $('#the-sel3-uruu thead tr:nth-child(1) th:nth-child(3)').attr("colspan","4");
+   $('#the-sel3-uruu thead tr:nth-child(1) th:nth-child(5)').remove();
+   $('#the-sel3-uruu thead tr:nth-child(1) th:nth-child(4)').attr("colspan","2");
+</script></div>
+<div class="section" id="symmetry-conditions">
+<h3>对称条件</h3>
+<p>位于对称平面上的结构单元，其模量和刚度应采用完整属性值；截面积和屈服强度则应比不在对称面上的相同单元降低 50%。施加于对称面结构单元的荷载，也应比非对称面位置的相同荷载降低 50%。</p>
+</div>
+<div class="section" id="equilibrium-conditions">
+<h3>平衡条件</h3>
+<p>用户必须判断模型何时达到平衡。涉及结构单元的问题，可通过所有常规准则判断平衡，例如历程、速度场等。</p>
+</div>
+<div class="section" id="sign-convention">
+<h3>符号约定</h3>
+<p>所有结构单元的轴力均以受压为正。剪切力的符号约定与网格单元剪应力相反。混合锚杆单元的轴向位移在受压加载时为正；局部加固单元的轴向位移在受拉加载时为正。</p>
+</div>
+</div>
+<div class="section" id="references">
+<h2>参考文献</h2>
+<p>Bjurstrom, S.《采用灌浆未张拉锚杆加固的硬岩节理抗剪强度》，载于<span class="bi">第三届国际岩石力学大会论文集</span>，第 II 卷，B 部分，第 1194-1199 页。华盛顿特区：美国国家科学院（1974）。</p>
+<p>Dight, P. M.《露天矿岩壁稳定性的改进》。博士学位论文，莫纳什大学（1982）。</p>
+<p>Fuller, P. G., and R. H. T. Cox.《基于节理位移控制的岩石加固设计——新概念》，载于<span class="bi">第三届澳大利亚隧道会议论文集（澳大利亚悉尼，1978）</span>，第 28-35 页。悉尼：澳大利亚工程师学会（1978）。</p>
+<p>Gerdeen, J. C. 等。《采用全树脂灌浆未张拉锚杆加固层状矿山顶板的锚杆支护方案设计准则》，美国矿务局，OFR 46(4)-80（1977）。</p>
+<p>Haas, C. J.《岩石锚杆抗剪阻力》，<em>Trans. Soc. Min. Eng. AIME</em>，<span class="bi">260</span>(1)，32-41（1976）。</p>
+<p>Hyett, A. J., W. F. Bawden and R. D. Reichert.《岩体约束对全长灌浆锚索黏结强度的影响》，<em>Int. J. Rock Mech. Min. Sci. &amp; Geomech. Abstr.</em>，<span class="bi">29</span>(5)，503-524（1992）。</p>
+<p>Itasca Consulting Group Inc.《<em>UDEC（通用离散元程序）</em>》，5.0 版。明尼阿波利斯：ICG（2011）。</p>
+<p>Littlejohn, G. S., and D. A. Bruce.《岩石锚杆——技术现状。第一部分：设计》，<em>Ground Engineering</em>，<span class="bi">8</span>(3)，25-32（1975）。</p>
+<p>Lorig, L. J.《硬岩中全长黏结被动岩石加固的简单数值表示》，<em>Computers and Geotechnics</em>，<span class="bi">1</span>，79-97（1985）。</p>
+<p>法国研究小组（Azuar、Debreuille、Habib、Londe、Panet 和 Salembier）。《被动钢筋加固岩体》，载于<span class="bi">第四届 ISRM 大会论文集（瑞士蒙特勒，1979 年 9 月）</span>，第 1 卷，第 23-30 页。鹿特丹：A. A. Balkema 及瑞士土与岩石力学学会（1979）。</p>
+<p>Pells, P. J. N.《全长黏结岩石锚杆的行为》，载于<span class="bi">第三届国际岩石力学大会论文集</span>，第 2 卷，第 1212-1217 页（1974）。</p>
+<p>St. John, C. M., and D. E. Van Dillen.《岩石锚杆：新的数值表示及其在隧道设计中的应用》，载于<span class="bi">《岩石力学——理论、试验与实践》（第 24 届美国岩石力学研讨会论文集，得克萨斯 A&amp;M 大学，1983 年 6 月）</span>，第 13-26 页。纽约：Association of Engineering Geologists（1983）。</p>
+<div class="toctree-wrapper hide compound">
+</div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../3dechome.html"><span class="codename">3DEC</span></a> »</li>
+<li class="nav-item nav-item-2"><a accesskey="U" href="../theory.html"><span class="codename">3DEC</span> Theory and Background</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../cyjoint/cyjoint.html" title="previous chapter"> Continuously Yielding Joint Model In <span class="codename">3DEC</span></a> |    
+       <a href="seltool.html" title="next chapter">SEL Tool</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Structural Elements" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

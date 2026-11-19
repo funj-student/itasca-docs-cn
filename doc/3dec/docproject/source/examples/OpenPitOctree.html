@@ -1,0 +1,273 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>采用八叉树划分的露天矿 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../search.html" rel="search" title="Search"/>
+<link href="SlidingBlock.html" rel="next" title="Sliding and Toppling Blocks"/>
+<link href="OpenPitFaceblocks.html" rel="prev" title="Open Pit with Face Blocks"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="open-pit-with-octree-blocking">
+<span id="dec-openpitoctree"></span><h1>采用八叉树划分的露天矿</h1>
+<p class="h2 rubric">问题描述</p>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">要在 <span class="codename">3DEC</span> 中查看此项目，请使用菜单命令 <span class="menuselection">Help ► Examples…</span>。选择“3DEC/ ExampleApplications/ FE / Octree_pit”，然后选择“octree_pit.prj”进行加载。所用的<a class="reference internal" href="#octreepit-datafiles"><span class="std std-ref">主数据文件</span>（main data files）</a>显示在本示例的末尾。所有数据文件都可在该项目中找到。</p>
+</div>
+<p>本示例将介绍用于导入几何集并创建露天矿 <span class="codename">3DEC</span> 模型的基本命令。本教程使用由等高线创建的预定义几何。所用几何为立体光刻（<a href="#id1"><span class="problematic" id="id2">*</span></a>.stl）文件类型，<span class="codename">3DEC</span> 能够导入该类型（前提是它们为拼接的形状）。本教程包含的三个 <a href="#id3"><span class="problematic" id="id4">*</span></a>.stl 文件为“pit.stl”“ore.stl”和“tunnel.stl”。3DEC 也可以用同样的方式导入 AutoCAD 图形交换格式（dxf）文件。</p>
+<p class="h2 rubric"><span class="codename">3DEC</span> 模型几何</p>
+<p>模型的构建从一个大的块体开始，通过将其切割成更小的块体来定义露天矿几何。使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">block</span> <span class="pre">create</span> <span class="pre">brick</span></code> 命令并提供 x、y、z 界限。该模型采用英制单位，因此块体坐标以英尺计。在创建第一个块体之前，使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">block</span> <span class="pre">tolerance</span></code> 命令指定一个总体模型容差。默认容差设置为 0.0012 × 模型在 x、y、z 方向的平均尺寸。对本示例，默认值过大，因此需要更小的值。</p>
+<p>接下来，将初始砖块切割成更小的块体（6x6x3）。这将提高模型几何的分辨率，也会加快网格生成。可以用一系列 <code class="xref fish fish-kwd docutils literal"><span class="pre">block</span> <span class="pre">cut</span></code> 命令来完成，但使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">block</span> <span class="pre">densify</span></code> 命令更为简单。</p>
+<p>用该命令生成的节理并非地质节理，只是用于定义几何。因此使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">join</span></code> 关键字将块体跨节理连接起来。此时的块体如<a class="reference internal" href="#openpitoctree1"><span class="std std-ref">图 1</span>（Figure 1）</a>所示</p>
+<div class="figure align-center" id="openpitoctree1">
+<a class="reference internal image-reference" href="../../../../_images/octree-pit_blocks1.png"><img alt="../../../../_images/octree-pit_blocks1.png" src="../../../../_images/octree-pit_blocks1.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 1：构成露天矿模型的初始块体</span></p>
+</div>
+<div class="section" id="geometries">
+<h2>几何</h2>
+<p>既然块体模型已经创建，现在就可以导入预定义的几何。首先，将 <a href="#id5"><span class="problematic" id="id6">*</span></a>.stl 文件复制到你的项目文件夹中。<a href="#id7"><span class="problematic" id="id8">*</span></a>.stl 文件位于程序安装目录下的“DataFiles3D3DECExampleApplicationsOctree_pit”文件夹中。使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">geometry</span> <span class="pre">import</span></code> 命令导入这些几何。</p>
+<p>也可以通过 File → Open Item 导入文件，但要注意，如果重新执行数据文件“pit_zoned.3ddat”（你即将这样做），几何将不会被导入，因为使用 File 菜单不会在数据文件中生成所需的命令。</p>
+<p>现在可以通过在 User Defined Data 下添加 Geometry 绘图项来绘制导入的几何。确保在 Plot Item Attributes 的 Imported Sets 下两组均被勾选。几何如<a class="reference internal" href="#openpitoctree2"><span class="std std-ref">图 2</span>（Figure 2）</a>所示。</p>
+<div class="figure align-center" id="openpitoctree2">
+<a class="reference internal image-reference" href="../../../../_images/octree-pit-geometries.png"><img alt="../../../../_images/octree-pit-geometries.png" src="../../../../_images/octree-pit-geometries.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：导入的露天矿与矿体几何。</span></p>
+</div>
+<p>现在再次使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">block</span> <span class="pre">densify</span></code> 命令为模拟创建更高分辨率的块体模型。带 <code class="xref fish fish-kwd docutils literal"><span class="pre">repeat</span></code> 关键字和 <code class="xref fish fish-kwd docutils literal"><span class="pre">range</span> <span class="pre">geometry</span></code> 的 <code class="xref fish fish-kwd docutils literal"><span class="pre">densify</span> <span class="pre">block</span></code> 命令会自动在几何附近切割块体，并生成八叉树网格。八叉树网格基于将空间不断细分为六面体块体。本情况下，范围为露天矿与矿体几何。</p>
+<p>该操作迭代地查找与几何接触的块体（dist 0 extent）并将其分割为 8 个块体。该操作重复 4 次，以确保关注区域内的块体足够小、能够定义露天矿和矿体几何。<code class="xref fish fish-kwd docutils literal"><span class="pre">gradlimit</span></code> 关键字确保相邻块体的加密程度相差不超过一级（即确保不会出现大块体紧邻极小块的组合）。使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">join</span></code> 关键字连接块体。更多信息见 <a class="reference internal" href="../../../block/doc/manual/block_manual/block_commands/block/cmd_block.densify.html#command:block.densify" title="Increase block density. Within the given range, subdivide blocks to increase
+density of blocking. Blocks are subdivided by cutting joints parallel to the
+global `x`, `y`, `z` axes unless the  tetrahedra  keyword is given..."><code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">densify</span></code></a>。</p>
+<p>接下来，我们引入一条地质断层，倾角为 60^{circ}，倾向为 250^{circ}，原点为 (14200, -24300, -270)，使该断层位于露天矿之外并向其倾斜。此时的模型如<a class="reference internal" href="#openpitoctree3"><span class="std std-ref">图 3</span>（Figure 3）</a>所示。</p>
+<div class="figure align-center" id="openpitoctree3">
+<a class="reference internal image-reference" href="../../../../_images/octree-pit_blocks2.png"><img alt="../../../../_images/octree-pit_blocks2.png" src="../../../../_images/octree-pit_blocks2.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 3：加密并切割断层后构成露天矿模型的块体。</span></p>
+</div>
+</div>
+<div class="section" id="zoning-and-properites">
+<h2>网格划分与属性</h2>
+<p>既然几何和断层已经创建，就可以进行四面体网格划分。我们希望露天矿和矿体几何附近网格较细，而随着同心远离露天矿网格逐渐变粗。为此，首先建立分组以定义不同区域，然后使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">block</span> <span class="pre">zone</span> <span class="pre">generate</span></code> 命令为不同分组指定不同的棱边长度。</p>
+<p>我们希望为矿体区域和周围岩石赋予不同属性。可以使用命令 <code class="xref fish fish-kwd docutils literal"><span class="pre">block</span> <span class="pre">zone</span> <span class="pre">group</span> <span class="pre">'ore_zones'</span> <span class="pre">range</span> <span class="pre">geometry-space</span> <span class="pre">'ore'</span> <span class="pre">count</span> <span class="pre">odd</span></code> 将位于矿体几何内部的网格单元分组。</p>
+<p><code class="xref fish fish-kwd docutils literal"><span class="pre">range</span> <span class="pre">geometry</span></code> 从每个网格单元的中心投射一条射线，并统计与几何的交点数目。默认射线方向为竖直向上（0, 0, 1）。使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">count</span> <span class="pre">odd</span></code> 关键字时，如果投射射线的交点数为奇数（即网格单元位于几何内部），则将该网格单元加入该分组。</p>
+<p>所得的网格单元分组如<a class="reference internal" href="#openpitoctree4"><span class="std std-ref">图 4</span>（Figure 4）</a>所示……</p>
+<div class="figure align-center" id="openpitoctree4">
+<a class="reference internal image-reference" href="../../../../_images/octree-pit-zones.png"><img alt="../../../../_images/octree-pit-zones.png" src="../../../../_images/octree-pit-zones.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 4：显示网格单元分组的已划分网格模型。为便于观察，切去了模型的四分之一。</span></p>
+</div>
+<p>然后按下表为网格单元赋予属性：</p>
+<p>节理属性也赋予该断层。赋予 20^{circ} 的摩擦角和 1000 lbf/ft^2 的黏聚力。</p>
+</div>
+<div class="section" id="initial-and-boundary-conditions">
+<h2>初始条件与边界条件</h2>
+<p>现在模型需要初始化重力、地应力和边界条件。这通过以下命令完成：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">32.17</span>
+<span class="c">;</span>
+<span class="nb">block insitu</span><span class="n"> topography ratio</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">1</span><span class="n"> ratio</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">1</span>
+<span class="c">;</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">10000</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">16000</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">27000</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">21000</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">1620</span>
+</pre></div>
+</div>
+<p>重力参数设为沿 z 轴负方向 32.17 ft/sec2（x 和 y 分量为 0）。使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">block</span> <span class="pre">insitu</span> <span class="pre">topography</span></code> 命令根据岩石密度、深度和重力确定地应力。应力为各向同性（<code class="xref fish fish-kwd docutils literal"><span class="pre">ratio-x</span></code> 和 <code class="xref fish fish-kwd docutils literal"><span class="pre">ratio-y</span></code> 设为 1。</p>
+<p>使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">block</span> <span class="pre">gridpoint</span> <span class="pre">apply</span></code> 命令建立边界条件。模型边界在垂直于边界的方向上速度限制为零。模型顶部可自由运动。</p>
+<p>最后一步是打开节点混合离散化（<code class="xref fish fish-kwd docutils literal"><span class="pre">block</span> <span class="pre">zone</span> <span class="pre">nodal-mixed-discretizaton</span> <span class="pre">on</span></code>。这是一种数值技术，用于从四面体网格单元获得更准确的塑性结果。</p>
+<p>随后求解模型并保存。</p>
+</div>
+<div class="section" id="excavation">
+<h2>开挖</h2>
+<p>下一步是对露天矿区域内的材料进行分组。首先重置块体分组，并将所有块体赋予名为“default.”的分组。然后使用与赋予“ore”网格单元分组类似的方法，将露天矿内的块体赋予名为“pit”的分组。注意，必须将投射光线的方向改为向下，以便识别露天矿上方的块体。所得的块体分组如<a class="reference internal" href="#openpitoctree5"><span class="std std-ref">图 5</span>（Figure 5）</a>所示。</p>
+<div class="figure align-center" id="openpitoctree5">
+<a class="reference internal image-reference" href="../../../../_images/octree-pit_blocks3.png"><img alt="../../../../_images/octree-pit_blocks3.png" src="../../../../_images/octree-pit_blocks3.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 5：显示块体分组的已划分网格模型。为便于观察，切去了模型的四分之一。</span></p>
+</div>
+<p>现在可以移除露天矿材料。由于露天矿几何内的块体先前已分组，因此可以方便地开挖由“pit_blocks”分组指定的范围（<code class="xref fish fish-kwd docutils literal"><span class="pre">block</span> <span class="pre">excavate</span> <span class="pre">range</span> <span class="pre">group</span> <span class="pre">'pit_blocks'</span></code>。
+接下来，重置节理和网格点位移，因为我们不关心初始应力安装过程中产生的位移。最后使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">model</span> <span class="pre">solve</span> <span class="pre">elastic</span></code> 求解模型。<code class="xref fish fish-kwd docutils literal"><span class="pre">elastic</span></code> 关键字会使模型首先在所有节理和网格单元均设为弹性（不破坏）的情况下求解，然后用真实的网格单元与节理强度再次求解。这有助于防止因整个露天矿一次开挖所产生的非真实瞬时应力变化而引起虚假破坏。</p>
+<p class="h2 rubric">结果</p>
+<p>所得的网格点位移如<a class="reference internal" href="#openpitoctree6"><span class="std std-ref">图 6</span>（Figure 6）</a>所示。位移总体向上，反映了岩石被移除后的回弹。</p>
+<p>节理位移如<a class="reference internal" href="#openpitoctree7"><span class="std std-ref">图 7</span>（Figure 7）</a>所示。节理位移量小且位置较深，表明露天矿开挖并未在断层上引起明显滑动。</p>
+<div class="figure align-center" id="openpitoctree6">
+<a class="reference internal image-reference" href="../../../../_images/octree-pit-disp.png"><img alt="../../../../_images/octree-pit-disp.png" src="../../../../_images/octree-pit-disp.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 6：露天矿模型中的位移</span></p>
+</div>
+<div class="figure align-center" id="openpitoctree7">
+<a class="reference internal image-reference" href="../../../../_images/octree-pit-joint.png"><img alt="../../../../_images/octree-pit-joint.png" src="../../../../_images/octree-pit-joint.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 7：露天矿模型中某节理上的剪切位移</span></p>
+</div>
+</div>
+<div class="section" id="painting">
+<h2>绘制</h2>
+<p>模型求解完成后，可以通过绘制特定位置上的量来进行分析后处理。<span class="codename">3DEC</span> 具备将数据“绘制”到导入的几何表面上的功能。假设露天矿下方有一条关键隧洞，我们希望了解该隧洞上的位移。隧洞本身并未实际建模，但我们可以通过将位移绘制到隧洞表面上来估算隧洞位置处的开挖影响。</p>
+<p>我们导入一个隧洞几何“tunnel.stl”。可将不同属性“绘制”到已有几何集上，如同这些几何是拟建而未建，或者这些要素存在但未被建模。我们将使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">geometry</span></code> 命令的 <code class="xref fish fish-kwd docutils literal"><span class="pre">paint-extra-block</span></code> 关键字把位移数据绘制到隧洞上。</p>
+<p>结果如<a class="reference internal" href="#openpitoctree8"><span class="std std-ref">图 8</span>（Figure 8）</a>所示。</p>
+<div class="figure align-center" id="openpitoctree8">
+<a class="reference internal image-reference" href="../../../../_images/octree-pit-tunnel.png"><img alt="../../../../_images/octree-pit-tunnel.png" src="../../../../_images/octree-pit-tunnel.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 8：绘制到拟建隧洞上的位移</span></p>
+</div>
+<p class="h2 rubric" id="octreepit-datafiles">数据文件</p>
+<p class="rubric" id="octreepit-dat"><strong>octree_pit.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; ---- 露天坑开挖模型算例 ----</span>
+<span class="nb">model new</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10000</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+
+<span class="nb">block tolerance</span><span class="n"> </span><span class="m m-Double">0.01</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="p">(</span><span class="m m-Double">10000</span><span class="p">,</span><span class="m m-Double">16000</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">27000</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">21000</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1620</span><span class="p">,</span><span class="m m-Double">380</span><span class="p">)</span>
+<span class="c">;</span>
+<span class="nb">block densify</span><span class="n"> segments </span><span class="m m-Double">6</span><span class="n"> </span><span class="m m-Double">6</span><span class="n"> </span><span class="m m-Double">3</span><span class="n"> join</span>
+<span class="c">;</span>
+<span class="c">; --- 导入几何对象，并在坑壁和矿体边界附近加密块体 --</span>
+<span class="nb">geometry import</span><span class="n"> </span><span class="s">'pit.stl'</span>
+<span class="nb">geometry import</span><span class="n"> </span><span class="s">'ore.stl'</span>
+<span class="c">;</span>
+<span class="nb">block densify</span><span class="n"> gradient</span><span class="o">-</span><span class="n">limit repeat </span><span class="m m-Double">4</span><span class="n"> join </span><span class="sx">...</span>
+<span class="n">  range geometry</span><span class="o">-</span><span class="n">distance </span><span class="s">'pit'</span><span class="n"> set </span><span class="s">'ore'</span><span class="n"> gap </span><span class="m m-Double">0</span><span class="n"> extent</span>
+<span class="c">;</span>
+<span class="c">; --- 添加节理 ---</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">60</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">250</span><span class="n"> origin </span><span class="m m-Double">14200</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">24300</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">270</span>
+<span class="c">;</span>
+<span class="c">;</span>
+<span class="c">; --- 为块体划分网格 ---</span>
+<span class="nb">block group</span><span class="n"> </span><span class="s">'coarse_zone'</span><span class="n"> range geometry</span><span class="o">-</span><span class="n">distance </span><span class="s">'pit'</span><span class="n"> set </span><span class="s">'ore'</span><span class="n"> gap </span><span class="m m-Double">500</span>
+<span class="nb">block group</span><span class="n"> </span><span class="s">'fine_zone'</span><span class="n"> range geometry</span><span class="o">-</span><span class="n">distance </span><span class="s">'pit'</span><span class="n"> set </span><span class="s">'ore'</span><span class="n"> gap </span><span class="m m-Double">100</span>
+<span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="m m-Double">50</span><span class="n"> range group </span><span class="s">'fine_zone'</span>
+<span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="m m-Double">100</span><span class="n"> range group </span><span class="s">'coarse_zone'</span>
+<span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="m m-Double">200</span>
+<span class="c">;</span>
+<span class="nb">block zone group</span><span class="n"> </span><span class="s">'ore_zones'</span><span class="n"> range geometry</span><span class="o">-</span><span class="n">space </span><span class="s">'ore'</span><span class="n"> count odd</span>
+<span class="c">;</span>
+<span class="c">; --- 设置参数 ---</span>
+<span class="nb">block zone cmodel</span><span class="n"> assign mohr</span><span class="o">-</span><span class="n">coulomb</span>
+<span class="nb">block zone property</span><span class="n"> bulk </span><span class="m m-Double">2.5e8</span><span class="n"> shear </span><span class="m m-Double">1.5e8</span><span class="n"> density </span><span class="m m-Double">5.4</span>
+<span class="nb">block zone property</span><span class="n"> cohesion </span><span class="m m-Double">25000</span><span class="n"> friction </span><span class="m m-Double">60</span><span class="n"> tension </span><span class="m m-Double">4000</span>
+<span class="nb">block zone property</span><span class="n"> bulk </span><span class="m m-Double">5e7</span><span class="n"> shear </span><span class="m m-Double">2.3e7</span><span class="n"> density </span><span class="m m-Double">3.5</span><span class="n"> range group </span><span class="s">'ore_zones'</span>
+<span class="nb">block zone property</span><span class="n"> cohesion </span><span class="m m-Double">3000</span><span class="n"> fric </span><span class="m m-Double">35</span><span class="n"> tens </span><span class="m m-Double">50</span><span class="n"> range group </span><span class="s">'ore_zones'</span>
+<span class="c">;</span>
+<span class="nb">block contact property</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1e7</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">6e6</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  friction </span><span class="m m-Double">20</span><span class="n"> cohesion </span><span class="m m-Double">1000</span><span class="n"> tension </span><span class="m m-Double">0</span>
+<span class="nb">block contact material-table</span><span class="n"> default property stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1e7</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">6e6</span>
+<span class="c">;</span>
+<span class="c">; --- 设置初始条件和边界条件 ---</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">32.17</span>
+<span class="c">;</span>
+<span class="nb">block insitu</span><span class="n"> topography ratio</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">1</span><span class="n"> ratio</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">1</span>
+<span class="c">;</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">10000</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">16000</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">27000</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">21000</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">1620</span>
+<span class="c">;</span>
+<span class="c">; --- 启用节点混合离散（NMD）---</span>
+<span class="nb">block zone nodal-mixed-discretization</span><span class="n"> </span><span class="sx">on</span>
+<span class="c">;</span>
+<span class="c">; --- 求解初始状态 ---</span>
+<span class="nb">model </span><span class="ss">solve</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'pit_initial'</span>
+
+<span class="p">==================================================</span>
+<span class="c">;</span>
+<span class="nb">block group</span><span class="n"> </span><span class="s">'default'</span>
+<span class="nb">block group</span><span class="n"> </span><span class="s">'pit_blocks'</span><span class="n"> range geometry</span><span class="o">-</span><span class="n">space </span><span class="s">'pit'</span><span class="n"> count </span><span class="m m-Double">1</span><span class="n"> direction </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="c">;</span>
+<span class="c">; --- 开挖并求解 ---</span>
+<span class="nb">block excavate</span><span class="n"> range group </span><span class="s">'pit_blocks'</span>
+<span class="nb">block gridpoint initialize</span><span class="n"> displacement </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block contact reset</span><span class="n"> displacement</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> elastic</span>
+
+<span class="p">=================================================</span>
+<span class="c">;</span>
+<span class="c">; --- 将位移映射到拟建隧道上 ---</span>
+<span class="nb">geometry import</span><span class="n"> </span><span class="s">'tunnel.stl'</span>
+<span class="nb">geometry select</span><span class="n"> </span><span class="s">'tunnel'</span>
+<span class="nb">geometry paint-extra-block</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> displacement component magnitude</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'pit_solve'</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../3dechome.html"><span class="codename">3DEC</span></a> »</li>
+<li class="nav-item nav-item-2"><a accesskey="U" href="examples.html">Examples</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="OpenPitFaceblocks.html" title="previous chapter"> Open Pit with Face Blocks</a> |    
+       <a href="SlidingBlock.html" title="next chapter">Sliding and Toppling Blocks</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Open Pit with Octree Blocking" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../_static/icgscripts.js"></script>
+</body>
+</html>

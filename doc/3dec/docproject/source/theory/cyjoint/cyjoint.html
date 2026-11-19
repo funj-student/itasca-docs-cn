@@ -1,0 +1,655 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>3DEC 中的连续屈服节理模型 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="../3dectheory/theory_sels.html" rel="next" title="Structural Elements"/>
+<link href="../creep/creep.html" rel="prev" title="Power Law Creeping Joint Model In 3DEC"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="continuously-yielding-joint-model-in-3dec">
+<span id="yieldingjmodels-3dec"></span><h1><span class="codename">3DEC</span> 中的连续屈服节理模型</h1>
+<div class="section" id="background">
+<h2>背景</h2>
+<p>实际问题的数值模拟可能使节理经历非常复杂的加载路径。为拟合室内试验而开发的经验模型，仅能给出简单加载条件下的响应。更一般的情况需要在曲线之间插值，或采用其他任意假设。Cundall 和 Hart（1984）提出的连续屈服节理模型，旨在简单模拟节理受剪渐进损伤的内部机制。该模型还采用类似 Dafalias 和 Herrmann（1982）土体模型的“边界面”概念，为动力模拟提供连续滞回阻尼。Cundall 和 Lemos（1990）报道了使用该模型研究地震事件诱发岩石断层失稳的应用。</p>
+</div>
+<div class="section" id="formulation">
+<h2>公式</h2>
+<p>与标准莫尔—库仑节理模型相比，连续屈服模型尝试考虑实际试验中的某些非线性行为，例如节理剪切损伤、法向刚度对法向应力的依赖，以及剪胀角随塑性剪切位移减小，因此被认为更“符合实际”。主要特征包括：</p>
+<ol class="arabic simple">
+<li>剪应力—剪切位移曲线始终趋向节理的“目标”抗剪强度，即曲线瞬时梯度直接取决于强度与应力之差。</li>
+<li>目标抗剪强度随累积塑性位移连续减小，后者为损伤的度量。</li>
+<li>剪胀角取为表观摩擦角与残余摩擦角之差，其中表观摩擦角由当前剪应力和法向应力确定。</li>
+</ol>
+<p>这些假设使模型自动表现岩石节理常见的峰值—残余行为。此外，无论应变水平多小，卸载与再加载循环均表现滞回。</p>
+<p>模型描述如下。法向加载响应以增量形式表示为</p>
+<div class="math" id="equation-cyj-mdls-orms">
+<span class="eqno">(1)</span>\[Δ\sigma_n = k_n\ Δu_n \ ,\]</div>
+<p>其中，法向刚度 <span class="math">\(k_n\)</span> 为</p>
+<div class="math" id="equation-cyj-mdls-amrs">
+<span class="eqno">(2)</span>\[k_n = a_n\ \sigma^{e_n}_n \ ,\]</div>
+<p>表示观测到的刚度随法向应力增大而提高，其中 an 和 en 为模型参数。通常假定抗拉强度为零。</p>
+<p>对于剪切加载，模型从剪切开始即表现不可逆非线性行为。<a href="#cyj-mdls-mxxs">图 1（Figure  1）</a> 显示恒定法向应力下单调加载的典型应力—位移曲线。剪应力增量计算为</p>
+<div class="math" id="equation-cyj-mdls-riqm">
+<span class="eqno">(3)</span>\[Δ\tau = Fk_s\ Δu_s \ ,\]</div>
+<p>其中，剪切刚度 <span class="math">\(k_s\)</span> 也可取为法向应力函数。例如，</p>
+<div class="math" id="equation-cyj-mdls-pomz">
+<span class="eqno">(4)</span>\[k_s = a_s\ \sigma^{e_s}_n \ .\]</div>
+<p>式 <a class="reference internal" href="#equation-cyj-mdls-amrs">(2)</a> 和 <a class="reference internal" href="#equation-cyj-mdls-pomz">(4)</a> 定义的刚度函数，是与试验数据一致的最简单函数。如有需要，可替换为双曲线关系等更复杂函数。</p>
+<div class="figure" id="cyj-mdls-mxxs">
+<a class="reference internal image-reference" href="../../../../../_images/cyjointmodel.png"><img alt="../../../../../_images/cyjointmodel.png" src="../../../../../_images/cyjointmodel.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 1：连续屈服节理模型的剪应力—位移曲线及边界抗剪强度</span></p>
+</div>
+<p>式 <a class="reference internal" href="#equation-cyj-mdls-riqm">(3)</a> 中的切线模量由因子 <span class="math">\(F\)</span> 控制，该因子取决于实际应力曲线至目标或边界强度曲线 <span class="math">\(\tau_m\)</span> 的距离，如<a href="#cyj-mdls-mxxs">图 1（Figure  1）</a> 所示。</p>
+<div class="math" id="equation-cyj-mdls-raal">
+<span class="eqno">(5)</span>\[F\ =\ {{(1-\tau/\tau_m)} \over {1-r}}\]</div>
+<p>因子 <span class="math">\(r\)</span> 初始为零，用于在荷载反向后立即恢复弹性刚度，即当 sgn(<span class="math">\(Δu_s\)</span>) 不等于 sgn(<span class="math">\(Δu^{(old)}_s\)</span>) 时，将 <span class="math">\(r\)</span> 设为 <span class="math">\(\tau/\tau_m\)</span>，因而使 <span class="math">\(F\)</span> 为 1。实际中，将 <span class="math">\(r\)</span> 限制为 0.75，避免剪应力近似等于边界强度时产生数值噪声。边界强度为</p>
+<div class="math" id="equation-cyj-mdls-qnoq">
+<span class="eqno">(6)</span>\[\tau_m\ =\ \sigma_n\ \tan\phi_m\ \rm{sgn}(\Delta u_s)\]</div>
+<p>参数 <span class="math">\(\phi_m\)</span> 可理解为节理以最大剪胀角剪胀时对应的摩擦角。随着损伤积累，该角按以下方程连续降低：</p>
+<div class="math" id="equation-cyj-mdls-qirs">
+<span class="eqno">(7)</span>\[Δ\phi_m = −1/R\ (\phi_m − \phi)\ Δu^p_s \ ,\]</div>
+<p>其中，塑性位移增量定义为</p>
+<div class="math" id="equation-cyj-mdls-zzoa">
+<span class="eqno">(8)</span>\[Δu^p_s = (1 − F)\ |Δu_s|\]</div>
+<p><span class="math">\(\phi\)</span> 为岩石表面的基本摩擦角。<span class="math">\(R\)</span> 为表示节理粗糙度的材料参数，量纲为长度。</p>
+<p><span class="math">\(\phi_m\)</span> 也可理解为没有损伤，即没有凸起被剪断时的有效摩擦角。但动员相应强度之前，需要一定剪切位移，而这会减小 <span class="math">\(\phi_m\)</span>。</p>
+<p>具有长度量纲的参数 <span class="math">\(R\)</span>，控制 <span class="math">\(\phi_m\)</span> 随塑性剪切位移降低的速率。<span class="math">\(R\)</span> 较小时，<span class="math">\(\phi_m\)</span> 快速减小；R 较大时，<span class="math">\(\phi_m\)</span> 降低较慢，因此峰值应力更大。边界强度等于剪应力时达到峰值。此后 F 为负，节理进入软化阶段。更复杂模型中，<span class="math">\(R\)</span> 应取决于 <span class="math">\(\sigma_n\)</span>。</p>
+<p>式 <a class="reference internal" href="#equation-cyj-mdls-qirs">(7)</a> 给出的 <span class="math">\(\phi_m\)</span> 增量关系，等价于</p>
+<div class="math" id="equation-cyj-mdls-zkrm">
+<span class="eqno">(9)</span>\[\phi_m = (\phi^{(i)}_{m} - \phi)\ \exp(-u_s^p / R) + \phi\]</div>
+<p>其中，<span class="math">\(\phi^{(i)}_m\)</span> 为 <span class="math">\(\phi_m\)</span> 初始值，表示节理原位状态。</p>
+<p>塑性位移 <span class="math">\(u^p_s\)</span> 始终增加。其计算采用所施加位移中，扣除与初始刚度对应位移后的剩余部分；初始刚度见式 <a class="reference internal" href="#equation-cyj-mdls-pomz">(4)</a>。用模型拟合试验结果时，可将 <span class="math">\(\phi_m\)</span> 初始值作为参数，物理上对应试样初始预剪切或损伤。</p>
+<p>有效剪胀角计算为</p>
+<div class="math" id="equation-cyj-mdls-orma">
+<span class="eqno">(10)</span>\[i = \tan^{-1}(\vert\tau \vert/\sigma_n) - \phi\]</div>
+<p>即应力高于残余强度水平时都会发生剪胀，并由实际表观摩擦角确定。目前公式在剪切方向反转伴随法向应力大幅变化时，可能产生不可接受的结果。例如，先在给定 <span class="math">\(\sigma_n\)</span> 下剪切，再在无剪切运动时显著降低法向应力，随后反向剪切。如果 <span class="math">\(\sigma_n\)</span> 变化使边界强度大幅下降，或采用应力相关剪切刚度，则原则上可能出现卸载曲线高于加载曲线，导致能量产生。需要进一步研究和修改模型以避免这一问题。在此之前，对于 <span class="math">\(\sigma_n\)</span> 大幅降低的情况，应谨慎使用该模型。</p>
+</div>
+<div class="section" id="states">
+<h2>状态</h2>
+<p>每个子接触都有相应破坏状态。可以绘制破坏状态（:kwd:<a href="#id1"><span class="problematic" id="id2">``</span></a>Joint Subcontact` 绘图项），也可通过 <span class="codename">FISH</span>（<a class="reference internal" href="../../../../block/doc/manual/block_manual/block_fish/block.subcontact/fish_block.subcontact.state.html#function:block.subcontact.state" title="Get/set the subcontact state indicator...">子接触状态（<code class="xref fish fish-func docutils literal"><span class="pre">block.subcontact.state</span></code>）</a>）查询。通过 <span class="codename">FISH</span> 查询时，状态用 64 位变量表示，每一位对应一种可能状态。连续屈服模型的可能状态见下表。</p>
+<table border="1" class="colwidths-given icg1 docutils" id="failurestates-cy">
+<colgroup>
+<col width="59%"/>
+<col width="15%"/>
+<col width="26%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">连续屈服模型破坏状态</th>
+<th class="head">值</th>
+<th class="head">标签</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>当前发生剪切破坏</td>
+<td>1</td>
+<td>slip-n</td>
+</tr>
+<tr class="row-odd"><td>当前发生拉伸破坏</td>
+<td>2</td>
+<td>tension-n</td>
+</tr>
+<tr class="row-even"><td>过去发生过剪切破坏</td>
+<td>4</td>
+<td>slip-p</td>
+</tr>
+<tr class="row-odd"><td>过去发生过拉伸破坏</td>
+<td>8</td>
+<td>tension-p</td>
+</tr>
+<tr class="row-even"><td>峰前状态</td>
+<td>16</td>
+<td>pre_peak</td>
+</tr>
+<tr class="row-odd"><td>峰后状态</td>
+<td>32</td>
+<td>post_peak</td>
+</tr>
+<tr class="row-even"><td>处于残余强度</td>
+<td>64</td>
+<td>residual</td>
+</tr>
+<tr class="row-odd"><td>卸载</td>
+<td>128</td>
+<td>discharge</td>
+</tr>
+</tbody>
+</table>
+<p>通过置位不同位，可组合多种状态。例如，过去曾拉伸破坏、当前正在剪切破坏的子接触，其状态值为 8 + 1 = 9。值为 0 表示未破坏，即弹性状态。</p>
+</div>
+<div class="section" id="summary-of-continuously-yielding-model-parameters">
+<h2>连续屈服模型参数汇总</h2>
+<p>连续屈服模型相关参数汇总于<a href="#cytable-1">表 2（Table  2）</a>。<span class="codename">3DEC</span> 通过 <code class="xref fish fish-kwd docutils literal"><span class="pre">block</span> <span class="pre">contact</span> <span class="pre">jmodel</span> <span class="pre">assign</span> <span class="pre">continuously-yielding</span></code> 命令使用该模型。</p>
+<table border="1" class="colwidths-given stripes underrow docutils" id="cytable-1">
+<caption><span class="caption-text">表 2：连续屈服节理模型相关参数</span></caption>
+<colgroup>
+<col width="22%"/>
+<col width="56%"/>
+<col width="22%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">参数</th>
+<th class="head">说明</th>
+<th class="head">关键字</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><span class="math">\(a_n\)</span></td>
+<td>节理法向刚度（输入）</td>
+<td><code class="xref fish fish-kwd docutils literal"><span class="pre">kn-initial</span></code></td>
+</tr>
+<tr class="row-odd"><td><span class="math">\(e_n\)</span></td>
+<td>节理法向刚度指数（输入）</td>
+<td><code class="xref fish fish-kwd docutils literal"><span class="pre">exponent-normal</span></code></td>
+</tr>
+<tr class="row-even"><td><span class="math">\(a_s\)</span></td>
+<td>节理剪切刚度（输入）</td>
+<td><code class="xref fish fish-kwd docutils literal"><span class="pre">ks-initial</span></code></td>
+</tr>
+<tr class="row-odd"><td><span class="math">\(e_s\)</span></td>
+<td>节理剪切刚度指数（输入）</td>
+<td><code class="xref fish fish-kwd docutils literal"><span class="pre">exponent-shear</span></code></td>
+</tr>
+<tr class="row-even"><td><span class="math">\(R\)</span></td>
+<td>节理粗糙度参数（输入）</td>
+<td><code class="xref fish fish-kwd docutils literal"><span class="pre">roughness</span></code></td>
+</tr>
+<tr class="row-odd"><td><span class="math">\(\phi^{(i)}_m\)</span></td>
+<td>节理初始摩擦角（输入）</td>
+<td><code class="xref fish fish-kwd docutils literal"><span class="pre">friction-initial</span></code></td>
+</tr>
+<tr class="row-even"><td><span class="math">\(\phi\)</span></td>
+<td>固有摩擦角</td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td><span class="math">\(\phi_m\)</span></td>
+<td>有效摩擦角</td>
+<td> </td>
+</tr>
+<tr class="row-even"><td><span class="math">\(k_n\)</span></td>
+<td>定义为 <span class="math">\(\sigma_n\)</span> 函数的法向刚度</td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td><span class="math">\(k_s\)</span></td>
+<td>定义为 <span class="math">\(\sigma_n\)</span> 函数的剪切刚度</td>
+<td> </td>
+</tr>
+<tr class="row-even"><td><span class="math">\(\tau\)</span></td>
+<td>节理上的剪应力</td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td><span class="math">\(\tau_m\)</span></td>
+<td>破坏或“边界”剪应力</td>
+<td> </td>
+</tr>
+<tr class="row-even"><td><span class="math">\(Δu_s\)</span></td>
+<td>当前剪切位移增量</td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td><span class="math">\(Δu^{(old)}_s\)</span></td>
+<td>上一剪切位移增量</td>
+<td> </td>
+</tr>
+<tr class="row-even"><td><span class="math">\(u^{(p)}_s\)</span></td>
+<td>累积塑性剪切位移</td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td><span class="math">\(r\)</span></td>
+<td>上次反向时的应力比，初始 <span class="math">\(r\)</span> = 0</td>
+<td> </td>
+</tr>
+<tr class="row-even"><td><span class="math">\(i\)</span></td>
+<td>有效剪胀角</td>
+<td> </td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="properties">
+<span id="cyjmproperties"></span><h2>属性</h2>
+<dl class="command">
+<dt id="command:continuously-yielding">
+<span class="cmdname"><span class="hide">c</span><span class="hide">o</span><span class="hide">n</span><span class="hide">t</span><span class="hide">i</span><span class="hide">n</span><span class="hide">u</span><span class="hide">o</span><span class="hide">u</span><span class="hide">s</span><span class="hide">l</span><span class="hide">y</span><span class="hide">-</span><span class="hide">y</span><span class="hide">i</span><span class="hide">e</span><span class="hide">l</span><span class="hide">d</span><span class="hide">i</span><span class="hide">n</span><span class="hide">g</span><span class="hide"> </span></span></dt>
+<dd><dl class="keyword">
+<dt id="kwd:continuously-yielding.al">
+<span class="cmdkey"><span class="null">a</span><span class="null">l</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>加载参数（只读）</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:continuously-yielding.exponent-normal">
+<span class="cmdkey"><span class="null">e</span><span class="null">x</span><span class="null">p</span><span class="null">o</span><span class="null">n</span><span class="null">e</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="null">n</span><span class="null">o</span><span class="null">r</span><span class="null">m</span><span class="null">a</span><span class="null">l</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>节理法向刚度指数（输入）</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:continuously-yielding.exponent-shear">
+<span class="cmdkey"><span class="null">e</span><span class="null">x</span><span class="null">p</span><span class="null">o</span><span class="null">n</span><span class="null">e</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="null">s</span><span class="null">h</span><span class="null">e</span><span class="null">a</span><span class="null">r</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>节理剪切刚度指数（输入）</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:continuously-yielding.friction-initial">
+<span class="cmdkey"><span class="null">f</span><span class="null">r</span><span class="null">i</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="null">i</span><span class="null">n</span><span class="null">i</span><span class="null">t</span><span class="null">i</span><span class="null">a</span><span class="null">l</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>节理初始摩擦角，单位为度（输入）</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:continuously-yielding.friction-residual">
+<span class="cmdkey"><span class="null">f</span><span class="null">r</span><span class="null">i</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="null">r</span><span class="null">e</span><span class="null">s</span><span class="null">i</span><span class="null">d</span><span class="null">u</span><span class="null">a</span><span class="null">l</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>节理残余摩擦角，单位为度（输入）</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:continuously-yielding.kn-current">
+<span class="cmdkey"><span class="null">k</span><span class="null">n</span><span class="null">-</span><span class="null">c</span><span class="null">u</span><span class="null">r</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">t</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>当前节理法向刚度（只读）</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:continuously-yielding.kn-initial">
+<span class="cmdkey"><span class="null">k</span><span class="null">n</span><span class="null">-</span><span class="null">i</span><span class="null">n</span><span class="null">i</span><span class="null">t</span><span class="null">i</span><span class="null">a</span><span class="null">l</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>节理初始法向刚度（输入）</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:continuously-yielding.kn-maximum">
+<span class="cmdkey"><span class="null">k</span><span class="null">n</span><span class="null">-</span><span class="null">m</span><span class="null">a</span><span class="null">x</span><span class="null">i</span><span class="null">m</span><span class="null">u</span><span class="null">m</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>节理最大法向刚度（输入）</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:continuously-yielding.kn-minimum">
+<span class="cmdkey"><span class="null">k</span><span class="null">n</span><span class="null">-</span><span class="null">m</span><span class="null">i</span><span class="null">n</span><span class="null">i</span><span class="null">m</span><span class="null">u</span><span class="null">m</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>节理最小法向刚度（输入）</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:continuously-yielding.ks-current">
+<span class="cmdkey"><span class="null">k</span><span class="null">s</span><span class="null">-</span><span class="null">c</span><span class="null">u</span><span class="null">r</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">t</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>当前节理剪切刚度（只读）</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:continuously-yielding.ks-initial">
+<span class="cmdkey"><span class="null">k</span><span class="null">s</span><span class="null">-</span><span class="null">i</span><span class="null">n</span><span class="null">i</span><span class="null">t</span><span class="null">i</span><span class="null">a</span><span class="null">l</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>节理初始剪切刚度（输入）</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:continuously-yielding.ks-maximum">
+<span class="cmdkey"><span class="null">k</span><span class="null">s</span><span class="null">-</span><span class="null">m</span><span class="null">a</span><span class="null">x</span><span class="null">i</span><span class="null">m</span><span class="null">u</span><span class="null">m</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>节理最大剪切刚度（输入）</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:continuously-yielding.ks-minimum">
+<span class="cmdkey"><span class="null">k</span><span class="null">s</span><span class="null">-</span><span class="null">m</span><span class="null">i</span><span class="null">n</span><span class="null">i</span><span class="null">m</span><span class="null">u</span><span class="null">m</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>节理最小剪切刚度（输入）</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:continuously-yielding.plastic-strain">
+<span class="cmdkey"><span class="null">p</span><span class="null">l</span><span class="null">a</span><span class="null">s</span><span class="null">t</span><span class="null">i</span><span class="null">c</span><span class="null">-</span><span class="null">s</span><span class="null">t</span><span class="null">r</span><span class="null">a</span><span class="null">i</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>塑性剪应变（只读）</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:continuously-yielding.roughness">
+<span class="cmdkey"><span class="null">r</span><span class="null">o</span><span class="null">u</span><span class="null">g</span><span class="null">h</span><span class="null">n</span><span class="null">e</span><span class="null">s</span><span class="null">s</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>节理粗糙度参数（输入）</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:continuously-yielding.sdisp-peak">
+<span class="cmdkey"><span class="null">s</span><span class="null">d</span><span class="null">i</span><span class="null">s</span><span class="null">p</span><span class="null">-</span><span class="null">p</span><span class="null">e</span><span class="null">a</span><span class="null">k</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>最大剪应力处的剪切位移大小（只读）</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:continuously-yielding.sdisp-residual">
+<span class="cmdkey"><span class="null">s</span><span class="null">d</span><span class="null">i</span><span class="null">s</span><span class="null">p</span><span class="null">-</span><span class="null">r</span><span class="null">e</span><span class="null">s</span><span class="null">i</span><span class="null">d</span><span class="null">u</span><span class="null">a</span><span class="null">l</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>开始达到残余剪应力时的剪切位移大小（只读）</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:continuously-yielding.sdisp">
+<span class="cmdkey"><span class="null">s</span><span class="null">d</span><span class="null">i</span><span class="null">s</span><span class="null">p</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>上次卸载开始时的剪切位移大小（只读）</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:continuously-yielding.sstress-maximum">
+<span class="cmdkey"><span class="null">s</span><span class="null">s</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">s</span><span class="null">s</span><span class="null">-</span><span class="null">m</span><span class="null">a</span><span class="null">x</span><span class="null">i</span><span class="null">m</span><span class="null">u</span><span class="null">m</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>边界剪应力（只读）</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:continuously-yielding.sstress-peak">
+<span class="cmdkey"><span class="null">s</span><span class="null">s</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">s</span><span class="null">s</span><span class="null">-</span><span class="null">p</span><span class="null">e</span><span class="null">a</span><span class="null">k</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>峰值剪应力（只读）</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:continuously-yielding.tol">
+<span class="cmdkey"><span class="null">t</span><span class="null">o</span><span class="null">l</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>判断残余状态的容差，默认为 1e-5（输入）</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:continuously-yielding.ussisref">
+<span class="cmdkey"><span class="null">u</span><span class="null">s</span><span class="null">s</span><span class="null">i</span><span class="null">s</span><span class="null">r</span><span class="null">e</span><span class="null">f</span><span class="null"> </span></span><a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>参考剪切位移大小（只读）</p>
+</dd></dl>
+</dd></dl>
+</div>
+<div class="section" id="example-applications">
+<h2>工程应用算例</h2>
+<p>以下直剪试验应用示例演示连续屈服节理模型的使用。</p>
+<p>研究对 <span class="math">\(\phi\)</span>，即节理初始摩擦角，采用两种不同假设的影响。第一个示例假定初始摩擦角为 59.3◦，第二个取为 40.1◦。下列问题参数适用于两个示例。</p>
+<table border="1" class="colwidths-given docutils" id="id3">
+<caption><span class="caption-text">表 3：直剪试验采用的连续屈服模型属性</span></caption>
+<colgroup>
+<col width="25%"/>
+<col width="50%"/>
+<col width="25%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">属性关键字</th>
+<th class="head">说明</th>
+<th class="head">值</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>density</td>
+<td><span class="math">\(\rho\)</span>（块体质量密度）</td>
+<td>2600 kg/m<sup>3</sup></td>
+</tr>
+<tr class="row-odd"><td>剪切</td>
+<td><span class="math">\(G\)</span>（块体剪切模量）</td>
+<td>3 GPa</td>
+</tr>
+<tr class="row-even"><td>kn-initial</td>
+<td><span class="math">\(a_n\)</span>（节理法向刚度）</td>
+<td>100 GPa/m</td>
+</tr>
+<tr class="row-odd"><td>ks-initial</td>
+<td><span class="math">\(a_s\)</span>（节理剪切刚度）</td>
+<td>100 GPa/m</td>
+</tr>
+<tr class="row-even"><td>exponent-normal</td>
+<td><span class="math">\(e_n\)</span>（节理法向刚度指数）</td>
+<td>0.0</td>
+</tr>
+<tr class="row-odd"><td>exponent-shear</td>
+<td><span class="math">\(e_s\)</span>（节理剪切刚度指数）</td>
+<td>0.0</td>
+</tr>
+<tr class="row-even"><td>friction-initial</td>
+<td><span class="math">\(\phi\)</span>（节理固有摩擦角）</td>
+<td>59.3◦ 和 40.1◦</td>
+</tr>
+<tr class="row-odd"><td>roughtness</td>
+<td><span class="math">\(R\)</span>（节理粗糙度参数）</td>
+<td>0.1 mm</td>
+</tr>
+<tr class="row-even"><td>bulk</td>
+<td><span class="math">\(K\)</span>（块体体积模量）</td>
+<td>4 GPa</td>
+</tr>
+</tbody>
+</table>
+<p><a href="#cyj-mdls-drra">图 2（Figure  2）</a> 显示直剪试验模型。首先在节理上施加恒定法向应力 10 MPa，然后使上部块体以恒定水平速度移动。使用 <span class="codename">FISH</span> 函数 <code class="xref fish fish-func docutils literal"><span class="pre">av_str</span></code>，计算节理平均法向和剪切应力，以及法向和剪切位移。两试验的数据文件见示例 2.1 和 2.2。</p>
+<div class="figure" id="cyj-mdls-drra">
+<a class="reference internal image-reference" href="../../../../../_images/blocks8.png"><img alt="../../../../../_images/blocks8.png" src="../../../../../_images/blocks8.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：直剪试验的 <span class="codename">3DEC</span> 模型</span></p>
+</div>
+<p>图 3(a) 显示节理初始摩擦角为 59.3◦ 时，剪应力与剪切位移的关系；该假设下法向位移与剪切位移关系见图 3(b)。初始摩擦角为 40.1◦ 时，相应关系分别见图 4(a) 和图 4(b)。</p>
+<div class="centerfigs docutils container">
+<a class="center reference internal image-reference" href="../../../../../_images/shearstress-1.png"><img alt="../../../../../_images/shearstress-1.png" class="center" src="../../../../../_images/shearstress-1.png" style="width: 80%;"/></a>
+<p>（a）剪应力（MPa）—剪切位移（m）图</p>
+<a class="center reference internal image-reference" href="../../../../../_images/normaldisp-1.png"><img alt="../../../../../_images/normaldisp-1.png" class="center" src="../../../../../_images/normaldisp-1.png" style="width: 80%;"/></a>
+<p>（b）法向位移（m）—剪切位移（m）图</p>
+</div>
+<p class="caption"><span class="caption-text">图 3：初始节理摩擦角为 59.3◦ 的连续屈服模型直剪试验结果</span></p>
+<div class="centerfigs docutils container">
+<a class="reference internal image-reference" href="../../../../../_images/shearstress-2.png"><img alt="../../../../../_images/shearstress-2.png" src="../../../../../_images/shearstress-2.png" style="width: 80%;"/></a>
+<p>（a）剪应力（MPa）—剪切位移（m）图</p>
+<a class="reference internal image-reference" href="../../../../../_images/normaldisp-2.png"><img alt="../../../../../_images/normaldisp-2.png" src="../../../../../_images/normaldisp-2.png" style="width: 80%;"/></a>
+<p>（b）法向位移（m）—剪切位移（m）图</p>
+</div>
+<p class="caption"><span class="caption-text">图 4：初始节理摩擦角为 40.1◦ 的连续屈服模型直剪试验结果</span></p>
+<script>
+   //and now, some filth of the highest order (setting a style-sheet attribute)
+   $("div.centerfigs").css({"text-align":"center","margin-top":"2rem"});
+</script><div class="section" id="data-files">
+<h3>数据文件</h3>
+<p><strong>cy_1.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">;   文件 cy_1.dat</span>
+<span class="c">;   连续屈服节理模型</span>
+<span class="c">;   直剪试验</span>
+<span class="c">;   较高的峰值应力</span>
+<span class="c">;</span>
+<span class="nb">block create</span><span class="n"> brick  </span><span class="o">-</span><span class="m m-Double">0.15</span><span class="p">,</span><span class="m m-Double">0.15</span><span class="n">  </span><span class="o">-</span><span class="m m-Double">0.15</span><span class="p">,</span><span class="m m-Double">0.15</span><span class="n">  </span><span class="o">-</span><span class="m m-Double">0.10</span><span class="p">,</span><span class="m m-Double">0.0</span>
+<span class="nb">block zone gen</span><span class="n">  edge  </span><span class="m m-Double">1.0</span>
+<span class="nb">block create</span><span class="n"> brick  </span><span class="o">-</span><span class="m m-Double">0.10</span><span class="p">,</span><span class="m m-Double">0.10</span><span class="n">   </span><span class="o">-</span><span class="m m-Double">0.1</span><span class="p">,</span><span class="m m-Double">0.10</span><span class="n">   </span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.10</span>
+<span class="nb">block zone gen</span><span class="n">  edge  </span><span class="m m-Double">0.2</span>
+<span class="c">;</span>
+<span class="nb">block zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">block zone prop</span><span class="n">  density </span><span class="p">=</span><span class="m m-Double">0.0026</span><span class="n">  bulk</span><span class="p">=</span><span class="m m-Double">4000</span><span class="n">   shear</span><span class="p">=</span><span class="m m-Double">3000</span>
+<span class="c">;</span>
+<span class="c">;  C-Y 节理模型</span>
+<span class="nb">block contact jmodel</span><span class="n"> assign cyjm</span>
+<span class="nb">block contact prop</span><span class="n"> kn</span><span class="o">-</span><span class="n">initial</span><span class="p">=</span><span class="m m-Double">100000</span><span class="n">  ks</span><span class="o">-</span><span class="n">initial</span><span class="p">=</span><span class="m m-Double">100000</span><span class="n">  friction</span><span class="o">-</span><span class="n">residual</span><span class="p">=</span><span class="m m-Double">30.0</span>
+<span class="nb">block contact prop</span><span class="n">  exponent</span><span class="o">-</span><span class="n">normal</span><span class="p">=</span><span class="m m-Double">0.0</span><span class="n">     exponent</span><span class="o">-</span><span class="n">shear</span><span class="p">=</span><span class="m m-Double">0.0</span>
+<span class="nb">block contact prop</span><span class="n"> roughness</span><span class="p">=</span><span class="m m-Double">1.0e-4</span>
+<span class="nb">block contact prop</span><span class="n"> friction</span><span class="o">-</span><span class="n">initial</span><span class="p">=</span><span class="m m-Double">59.3</span>
+<span class="c">;</span>
+<span class="nb">block hide</span><span class="n"> range pos</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">.1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> vel</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0.01</span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">;</span>
+<span class="c">; 法向荷载</span>
+<span class="nb">block face apply</span><span class="n"> stress </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">20</span><span class="n">  </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.1</span>
+<span class="c">;</span>
+<span class="nb">model </span><span class="ss">step</span><span class="n"> </span><span class="m m-Double">100</span>
+
+<span class="c">; 用于计算平均剪应力和平均法向应力的函数</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'sstav.fis'</span>
+<span class="c">;</span>
+<span class="nb">block contact reset</span><span class="n"> disp</span>
+<span class="nb">block gridpoint ini</span><span class="n"> disp </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+
+<span class="c">; 剪切荷载</span>
+<span class="nb">block hide</span><span class="n"> range pos</span><span class="o">-</span><span class="n">z  </span><span class="o">-</span><span class="m m-Double">.1</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block gridpoint apply</span><span class="n">  vel</span><span class="o">-</span><span class="n">x</span><span class="p">=</span><span class="m m-Double">0.005</span><span class="n"> range pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">.1</span><span class="n"> </span><span class="m m-Double">1.1</span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">block gridpoint apply</span><span class="n">  vel</span><span class="o">-</span><span class="n">y</span><span class="p">=</span><span class="m m-Double">0.0</span><span class="n">   range pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">.1</span><span class="n"> </span><span class="m m-Double">1.1</span>
+<span class="c">;</span>
+<span class="n">his interval </span><span class="m m-Double">5</span>
+<span class="n">model hist  mechanical unbal</span><span class="o">-</span><span class="n">max</span>
+<span class="n">fish hist name </span><span class="s">'Shear Stress'</span><span class="n"> sstav</span>
+<span class="n">fish hist name </span><span class="s">'Normal Stress'</span><span class="n"> nstav</span>
+<span class="n">fish hist name </span><span class="s">'Normal Displacement'</span><span class="n">  njdisp</span>
+<span class="n">fish hist name </span><span class="s">'Shear Displacement'</span><span class="n"> sjdisp</span>
+<span class="n">fish hist name </span><span class="s">'Bounding Shear Stress'</span><span class="n"> tau_m</span>
+<span class="nb">model </span><span class="ss">cyc</span><span class="n"> </span><span class="m m-Double">15000</span>
+
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+<p><strong>cy_2.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+
+<span class="c">;   文件 cy_2.dat</span>
+<span class="c">;   连续屈服节理模型</span>
+<span class="c">;   直剪试验</span>
+<span class="c">;   较低的峰值应力</span>
+<span class="c">;</span>
+<span class="nb">block create</span><span class="n"> brick  </span><span class="o">-</span><span class="m m-Double">0.15</span><span class="p">,</span><span class="m m-Double">0.15</span><span class="n">  </span><span class="o">-</span><span class="m m-Double">0.15</span><span class="p">,</span><span class="m m-Double">0.15</span><span class="n">  </span><span class="o">-</span><span class="m m-Double">0.10</span><span class="p">,</span><span class="m m-Double">0.0</span>
+<span class="nb">block zone gen</span><span class="n">  edge  </span><span class="m m-Double">1.0</span>
+<span class="nb">block create</span><span class="n"> brick  </span><span class="o">-</span><span class="m m-Double">0.10</span><span class="p">,</span><span class="m m-Double">0.10</span><span class="n">   </span><span class="o">-</span><span class="m m-Double">0.1</span><span class="p">,</span><span class="m m-Double">0.10</span><span class="n">   </span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.10</span>
+<span class="nb">block zone gen</span><span class="n">  edge  </span><span class="m m-Double">0.2</span>
+<span class="c">;</span>
+<span class="nb">block zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">block zone prop</span><span class="n">  density </span><span class="p">=</span><span class="m m-Double">0.0026</span><span class="n">  bulk</span><span class="p">=</span><span class="m m-Double">4000</span><span class="n">   shear</span><span class="p">=</span><span class="m m-Double">3000</span>
+<span class="c">;</span>
+<span class="c">;  C-Y 节理模型</span>
+<span class="nb">block contact jmodel</span><span class="n"> assign cyjm</span>
+<span class="nb">block contact prop</span><span class="n"> kn</span><span class="o">-</span><span class="n">initial</span><span class="p">=</span><span class="m m-Double">100000</span><span class="n"> ks</span><span class="o">-</span><span class="n">initial</span><span class="p">=</span><span class="m m-Double">100000</span><span class="n"> friction</span><span class="o">-</span><span class="n">residual</span><span class="p">=</span><span class="m m-Double">30.0</span>
+<span class="nb">block contact prop</span><span class="n"> exponent</span><span class="o">-</span><span class="n">norm</span><span class="p">=</span><span class="m m-Double">0.0</span><span class="n"> exponent</span><span class="o">-</span><span class="n">shear</span><span class="p">=</span><span class="m m-Double">0.0</span>
+<span class="nb">block contact prop</span><span class="n"> roughness</span><span class="p">=</span><span class="m m-Double">1.0e-4</span>
+<span class="nb">block contact prop</span><span class="n"> friction</span><span class="o">-</span><span class="n">initial</span><span class="p">=</span><span class="m m-Double">40.1</span>
+
+<span class="c">;</span>
+<span class="nb">block hide</span><span class="n"> range pos</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">.1</span>
+<span class="nb">block gridpoint apply</span><span class="n"> vel</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> vel</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0.01</span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">;</span>
+<span class="c">; 法向荷载</span>
+<span class="nb">block face apply</span><span class="n"> stress </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">20</span><span class="n">  </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range pos</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.1</span>
+<span class="c">;</span>
+<span class="nb">model </span><span class="ss">step</span><span class="n"> </span><span class="m m-Double">100</span>
+
+<span class="c">; 用于计算平均剪应力和平均法向应力的函数</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'sstav.fis'</span>
+<span class="c">;</span>
+<span class="nb">block contact reset</span><span class="n"> disp</span>
+<span class="nb">block gridpoint ini</span><span class="n"> disp </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+
+<span class="c">; 剪切荷载</span>
+<span class="nb">block hide</span><span class="n"> range pos</span><span class="o">-</span><span class="n">z  </span><span class="o">-</span><span class="m m-Double">.1</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block gridpoint apply</span><span class="n">  vel</span><span class="o">-</span><span class="n">x</span><span class="p">=</span><span class="m m-Double">0.005</span><span class="n"> range pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">.1</span><span class="n"> </span><span class="m m-Double">1.1</span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">block gridpoint apply</span><span class="n">  vel</span><span class="o">-</span><span class="n">y</span><span class="p">=</span><span class="m m-Double">0.0</span><span class="n">   range pos</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">.1</span><span class="n"> </span><span class="m m-Double">1.1</span>
+<span class="c">;</span>
+<span class="n">his interval </span><span class="m m-Double">5</span>
+<span class="n">model hist  mechanical unbal</span><span class="o">-</span><span class="n">max</span>
+<span class="n">fish hist name </span><span class="s">'Shear Stress'</span><span class="n"> sstav</span>
+<span class="n">fish hist name </span><span class="s">'Normal Stress'</span><span class="n"> nstav</span>
+<span class="n">fish hist name </span><span class="s">'Normal Displacement'</span><span class="n">  njdisp</span>
+<span class="n">fish hist name </span><span class="s">'Shear Displacement'</span><span class="n"> sjdisp</span>
+<span class="n">fish hist name </span><span class="s">'Bounding Shear Stress'</span><span class="n"> tau_m</span>
+<span class="nb">model </span><span class="ss">cyc</span><span class="n"> </span><span class="m m-Double">10000</span>
+
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="references">
+<h2>参考文献</h2>
+<p>Cundall, P. A., and R. D. Hart.《块体试验 1 的非弹性岩体行为分析：第二阶段——节理行为表征（最终报告）》。Itasca 咨询集团报告，Rockwell Hanford Operations，分包合同 SA-957（1984）。</p>
+<p>Cundall, P. A., and J. V. Lemos.《采用连续屈服节理模型数值模拟断层失稳》，载于<span class="bi">《矿山岩爆与地震活动》</span>，第 147-152 页。C. Fairhurst 主编。鹿特丹：A. A. Balkema（1990）。</p>
+<p>Dafalias, Y. F., and L. R. Herrmann.《土体塑性的边界面公式》，载于<span class="bi">《土力学——瞬态与循环荷载》</span>，第 10 卷，第 253-282 页。奇切斯特：John Wiley &amp; Sons（1982）。</p>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../3dechome.html"><span class="codename">3DEC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../theory.html"><span class="codename">3DEC</span> Theory and Background</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../cmodels/constitutivemodelsin3dec.html">Constitutive Models in <span class="codename">3DEC</span></a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../creep/creep.html" title="previous chapter"> Power Law Creeping Joint Model In <span class="codename">3DEC</span></a> |    
+       <a href="../3dectheory/theory_sels.html" title="next chapter">Structural Elements</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Continuously Yielding Joint Model In 3DEC" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>
