@@ -1,0 +1,344 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>颗粒集合体中的波传播 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../../search.html" rel="search" title="Search"/>
+<link href="../rrlinear_contact_model/flat_surface/cmrrlinear_flatsurface.html" rel="next" title="Rolling Resistance Linear Contact Model: Single Ball on a Flat Surface"/>
+<link href="../hertz_contact_model/cmhertz_single.html" rel="prev" title="Hertz Contact Model: Complex Loading Paths"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="wave-propagation-in-particle-assemblies">
+<span id="waveprop"></span><span id="ver-wavp"></span><h1>颗粒集合体中的波传播</h1>
+<p class="h2 rubric">问题描述</p>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">本算例的项目文件可在 <span class="codename">PFC</span> 中查看或运行。<a class="footnote-reference" href="#id3" id="id1">[1]</a>所用的<a class="reference internal" href="#ver-wavp-datafiles"><span class="std std-ref">数据文件</span>（data files）</a>列于本算例末尾。</p>
+</div>
+<p>波在离散体集合体中的传播通常是色散的。也就是说，视波速依波长而定，特别是对于接近平均颗粒尺寸的波长。对于较长的波长，其传播特性类似于没有内部长度尺度的连续弹性介质中的传播。以下算例说明了平面波通过由 50 个相互黏结的颗粒串成的一维“杆”的传播过程。杆的右端为自由端，左端为“静态边界”，可吸收任何入射波形。同时在左端边界注入一个输入脉冲。为吸收波，左端边界以介质的声阻抗 <span class="math">\(Cρ\)</span> 作为终止条件，其中 <span class="math">\(C\)</span> 为波速，<span class="math">\(ρ\)</span> 为密度。下面将对此作更详细的讨论。</p>
+<p>为了建立连续体参数与颗粒参数之间的等效关系，我们假定颗粒串等效于一连续弹性杆。等效杆在 3D 中具有半径为 <span class="math">\(R\)</span> 的圆形截面，在 2D 中具有高度为 <span class="math">\(2R\)</span>、厚度为单位厚度的矩形截面，其中 <span class="math">\(R\)</span> 为颗粒半径。在轴向方向上，每个颗粒在 3D 中对应于长度为 <span class="math">\(2R\)</span> 的实心圆柱体，在 2D 中对应于长度为 <span class="math">\(2R\)</span> 的实心矩形棱柱。杨氏模量表示为</p>
+<div class="math" id="equation-ver-wavp-youngs_modulus">
+<span class="eqno">(1)</span>\[\begin{split}E={\sigma\over\epsilon}= \begin{cases}
+                           {F \over 2R}\cdot{2R \over u}  &amp; \mbox{, 2D}
+                         \\
+                           {F \over \pi R^2}\cdot{2R\over u}   &amp; \mbox{, 3D}
+                         \end{cases}\end{split}\]</div>
+<p>其中 <span class="math">\(F\)</span> 为接触力，<span class="math">\(u\)</span> 为接触位移。注意到对于某个接触有 <span class="math">\(F/u = k_n\)</span><span class="math">\(/2\)</span>（其中 <span class="math">\(k_n\)</span> 是为颗粒定义的法向刚度），可得</p>
+<div class="math" id="equation-ver-wavp-youngs_2">
+<span class="eqno">(2)</span>\[\begin{split}E = \begin{cases}
+      {k_n \over 2}       &amp; \mbox{, 2D}
+    \\
+      {k_n \over \pi R}   &amp; \mbox{, 3D}
+    \end{cases}\end{split}\]</div>
+<p>等效颗粒密度 <span class="math">\(u̇\)</span> 通过令颗粒质量等于等效杆单元的质量求得，由此得到</p>
+<div class="math" id="equation-ver-wavp-particlemass">
+<span class="eqno">(3)</span>\[ \begin{align}\begin{aligned}{4\over3}\pi R^3 = 2R \pi R^2\rho\\\begin{split}\rho_{\rm ball} = \begin{cases}
+                    {4 \over \pi} {\rho} &amp; \mbox{, 2D}
+                  \\
+                    {3 \over 2} {\rho}   &amp; \mbox{, 3D}
+                  \end{cases}\end{split}\end{aligned}\end{align} \]</div>
+<p>对于纵波，</p>
+<div class="math" id="equation-ver-wavp-longitudinalwaves">
+<span class="eqno">(4)</span>\[C =  \sqrt{E/\rho}\]</div>
+<p>代入公式 <a class="reference internal" href="#equation-ver-wavp-youngs_2">(2)</a> 并重新整理：</p>
+<div class="math" id="equation-ver-wavp-substituting">
+<span class="eqno">(5)</span>\[\begin{split}k_n =  \begin{cases}
+         2 R \rho C^2 &amp; \mbox{, 2D}
+       \\
+         \pi R\rho C^2   &amp; \mbox{, 3D}
+       \end{cases}\end{split}\]</div>
+<p>给定杆的波速和密度，所需的颗粒刚度与颗粒密度即可分别由公式 <a class="reference internal" href="#equation-ver-wavp-substituting">(5)</a> 和公式 <a class="reference internal" href="#equation-ver-wavp-particlemass">(3)</a> 求得。</p>
+<p>对于连续介质中的平面波，应力与颗粒速度 <span class="math">\(u̇\)</span> 之间通过声阻抗 <span class="math">\(Cρ\)</span> 相联系：</p>
+<div class="math" id="equation-ver-wavp-acousticimpedance">
+<span class="eqno">(6)</span>\[\sigma = -C\rho\dot u\]</div>
+<p>若在人工边界上强制满足这一关系，则边界将吸收所有入射的动能量（因为该边界的本构行为与杆件无限延伸时的本构行为完全相同）。在方程 <a class="reference internal" href="#equation-ver-wavp-acousticimpedance">(6)</a> 中将 <span class="math">\(σ\)</span> 替换为 {二维下为 <span class="math">\(F/2R\)</span>，三维下为 <span class="math">\(F/πR²\)</span>}，即可得到边界力 <span class="math">\(F\)</span> 与速度之间的关系：</p>
+<div class="math" id="equation-ver-wavp-relation_boundary">
+<span class="eqno">(7)</span>\[\begin{split}F = \begin{cases}
+      - 2 R  C \rho \dot u    &amp; \mbox{, 2D}
+    \\
+      - \pi R^2 C \rho \dot u   &amp; \mbox{, 3D}
+    \end{cases}\end{split}\]</div>
+<p>为施加给定的速度脉冲 <span class="math">\(U̇(t)\)</span>，在边界上叠加两倍的等效力（其中系数 2 体现了能量在“真实”杆件与“虚拟”杆件之间的均等分配，后者由端部阻抗表示）：</p>
+<div class="math" id="equation-ver-wavp-relation_inject">
+<span class="eqno">(8)</span>\[\begin{split}F = \begin{cases}
+      2 R  C \rho (2\dot U(t)-\dot u)    &amp; \mbox{, 2D}
+    \\
+      \pi R^2 C \rho (2\dot U(t)-\dot u)   &amp; \mbox{, 3D}
+    \end{cases}\end{split}\]</div>
+<p>最后，为保证真实部分与虚拟部分之间的对称性，将边界颗粒的质量设为其余颗粒质量的一半。</p>
+<p class="h2 rubric">数值模型</p>
+<p>数据文件“<a class="reference internal" href="#ver-wavp-doc2d"><span class="std std-ref">wave_propagation.dat (2D)</span></a>”和“<a class="reference internal" href="#ver-wavp-doc3d"><span class="std std-ref">wave_propagation.dat (3D)</span></a>”分别模拟二维和三维中由一排 50 个黏结颗粒组成的杆件内的波传播。输入脉冲的时间历程为</p>
+<div class="math" id="equation-timehistory_waveprop">
+<span class="eqno">(9)</span>\[\dot U(t)={A\over2}\bigl(1-\cos(2\pi f t)\bigr)\]</div>
+<p>式中 <span class="math">\(A\)</span> 为脉冲的振幅，<span class="math">\(f\)</span> 为频率。脉冲的持续时间为 1<span class="math">\(/f\)</span>，在脉冲持续时间之后，<span class="math">\(U̇\)</span>（施加于 <span class="codename">PFC</span> 模型的速度）设为零。参数 <span class="math">\(R, ρ, C, f\)</span> 和 <span class="math">\(A\)</span> 在“<a class="reference internal" href="#ver-wavp-doc2d"><span class="std std-ref">wave_propagation.dat (2D)</span></a>”和“<a class="reference internal" href="#ver-wavp-doc3d"><span class="std std-ref">wave_propagation.dat (3D)</span></a>”的初始段中设置。</p>
+<p>使用 <span class="codename">PFC</span> 执行这些数据文件时，会生成图 <a href=".html#ver-wavp-wave2"></a><code class="xref fnum docutils literal"><span class="pre">#ver-wavp-wave2</span></code>（二维模型）
+和图 <a href="#ver-wavp-wave3"> 2</a>（三维模型）所示的时间历程。三条曲线分别对应杆件的左端、中部和右端。相邻峰值之间的时间间隔为 0.25 s，由此验证波速确如预期为 100 m/sec（因为测点之间的距离为 25 m）。右端的时间历程显示峰值速度为输入速度的两倍，这正是自由表面反射的正确响应。第四个峰值对应于向左侧边界传播的反射波。波“穿过”左边界（第五个峰值）；此后不再出现脉冲，表明静态边界条件已吸收入射能量。主脉冲后缘处的轻微振荡是介质离散性质的结果。若减小波长，则这些振荡相对于主脉冲振幅的幅度将会增大。这并非数值假象，而是离散介质的正确响应。</p>
+<p>更多细节请参阅文献 <a class="reference internal" href="#lysmer1969" id="id2">[Lysmer1969]</a>。</p>
+<div class="enlarge figure" id="ver-wavp-wavew2">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d-verif-wave.png"><img alt="../../../../../../../_images/p2d-verif-wave.png" src="../../../../../../../_images/p2d-verif-wave.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 1：杆件中三个点处的速度历程：“输入”端、中部以及自由端（二维模型）。</span></p>
+</div>
+<div class="enlarge figure" id="ver-wavp-wave3">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d-verif-wave.png"><img alt="../../../../../../../_images/p3d-verif-wave.png" src="../../../../../../../_images/p3d-verif-wave.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：杆件中三个点处的速度历程：“输入”端、中部以及自由端（三维模型）。</span></p>
+</div>
+<p class="h2 rubric">参考文献</p>
+<table class="docutils citation" frame="void" id="lysmer1969" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[Lysmer1969]</a></td><td>Lysmer, J., and R. L. Kuhlemeyer. “Finite Dynamic Model for Infinite Media,” <em>J. Eng. Mech.</em>, <span class="bi">95</span>(EM4), 859-877 (1969).</td></tr>
+</tbody>
+</table>
+<p class="h2 rubric" id="ver-wavp-datafiles">数据文件</p>
+<p class="h3 rubric" id="ver-wavp-doc3d">wave_propagation.dat (3D)</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'Wave Propagation in Particle Assemblies (3D)'</span>
+
+<span class="nb">fish define</span><span class="ni"> makeTheBar</span>
+<span class="ni">  </span><span class="c">; 给定参数 ...</span>
+<span class="ni">  NumBalls </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">50</span>
+<span class="ni">  BallRadius </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span>
+<span class="ni">  BarDensity </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1000.0</span>
+<span class="ni">  WaveSpeed </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">100.0</span>
+<span class="ni">  Freq </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">4.0</span><span class="ni"> </span><span class="c">; 脉冲频率</span>
+<span class="ni">  Amplitude </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.1</span><span class="ni"> </span><span class="c">; 脉冲峰值速度 (m/sec)</span>
+<span class="ni">  </span><span class="c">; 导出参数 ...</span>
+<span class="ni">  BallDensity </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">3.0</span><span class="ni"> </span><span class="o">*</span><span class="ni"> BarDensity </span><span class="o">/</span><span class="ni"> </span><span class="m m-Double">2.0</span>
+<span class="ni">  HalfDensity </span><span class="p">=</span><span class="ni"> BallDensity </span><span class="o">/</span><span class="ni"> </span><span class="m m-Double">2.0</span>
+<span class="ni">  ContactStiff </span><span class="p">=</span><span class="ni"> WaveSpeed</span><span class="o">*</span><span class="ni">WaveSpeed </span><span class="o">*</span><span class="ni"> </span><span class="k">math.pi</span><span class="ni"> </span><span class="o">*</span><span class="ni"> BarDensity </span><span class="o">*</span><span class="ni"> BallRadius</span>
+<span class="ni">  Impedance </span><span class="p">=</span><span class="ni"> </span><span class="k">math.pi</span><span class="ni"> </span><span class="o">*</span><span class="ni"> BallRadius</span><span class="o">*</span><span class="ni">BallRadius </span><span class="o">*</span><span class="ni"> WaveSpeed </span><span class="o">*</span><span class="ni"> BarDensity</span>
+<span class="ni">  </span><span class="c">; 创建集合体</span>
+<span class="ni">  XBall </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> nn </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="ni">NumBalls</span><span class="p">)</span>
+<span class="k">    command</span>
+<span class="nb">      ball create</span><span class="n"> id</span><span class="p">=</span><span class="ni">[nn]</span><span class="n"> rad</span><span class="p">=</span><span class="ni">[BallRadius]</span><span class="n"> position</span><span class="o">-</span><span class="n">x</span><span class="p">=</span><span class="ni">[XBall]</span><span class="n"> </span>
+<span class="k">    endcommand</span>
+<span class="ni">    XBall </span><span class="p">=</span><span class="ni"> XBall </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">2.0</span><span class="ni"> </span><span class="o">*</span><span class="ni"> BallRadius</span>
+<span class="ni">  endLoop</span>
+<span class="ni">  LHAddress  </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">  MidAddress </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.find</span><span class="p">(</span><span class="ni">NumBalls</span><span class="o">/</span><span class="m m-Double">2</span><span class="p">)</span>
+<span class="ni">  EndAddress </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.find</span><span class="p">(</span><span class="ni">NumBalls</span><span class="p">)</span>
+<span class="ni">  check_endvel </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> Wave </span><span class="c">; 输入波形</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> </span><span class="k">mech.time.total</span><span class="ni"> </span><span class="o">&gt;</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni"> </span><span class="o">/</span><span class="ni"> Freq</span>
+<span class="ni">    Wave </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">else</span>
+<span class="ni">    Wave </span><span class="p">=</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">       </span><span class="p">(</span><span class="m m-Double">1.0</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">math.cos</span><span class="p">(</span><span class="m m-Double">2.0</span><span class="o">*</span><span class="k">math.pi</span><span class="o">*</span><span class="ni">Freq</span><span class="o">*</span><span class="k">mech.time.total</span><span class="p">))</span><span class="ni"> </span><span class="o">*</span><span class="ni"> Amplitude </span><span class="o">/</span><span class="ni"> </span><span class="m m-Double">2.0</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> InputWave</span>
+<span class="ni">  </span><span class="k">whilestepping</span>
+<span class="ni">  </span><span class="k">ball.force.app</span><span class="p">(</span><span class="ni">LHAddress</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">     Impedance </span><span class="o">*</span><span class="ni"> </span><span class="p">(</span><span class="m m-Double">2.0</span><span class="ni"> </span><span class="o">*</span><span class="ni"> Wave </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.vel</span><span class="p">(</span><span class="ni">LHAddress</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">))</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> LeftHandVelocity</span>
+<span class="ni">  LeftHandVelocity </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.vel</span><span class="p">(</span><span class="ni">LHAddress</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">  MiddleVelocity   </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.vel</span><span class="p">(</span><span class="ni">MidAddress</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">  EndVelocity      </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.vel</span><span class="p">(</span><span class="ni">EndAddress</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">  ProblemTime </span><span class="p">=</span><span class="ni"> </span><span class="k">mech.time.total</span>
+<span class="ni">  check_endvel </span><span class="p">=</span><span class="ni"> </span><span class="k">math.max</span><span class="p">(</span><span class="ni">check_endvel</span><span class="p">,</span><span class="ni">EndVelocity</span><span class="p">)</span>
+<span class="nb">end</span>
+
+<span class="c">;---------------------------------------------------------------</span>
+<span class="nb">program echo</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">2.0</span><span class="n"> </span><span class="m m-Double">52.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2.0</span><span class="n"> </span><span class="m m-Double">2.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2.0</span><span class="n"> </span><span class="m m-Double">2.0</span><span class="n"> cond d d d</span>
+<span class="nb">contact cmat</span><span class="n"> default model LinearCBond</span>
+<span class="ni">[MakeTheBar]</span>
+<span class="nb">program echo</span><span class="p">=</span><span class="sx">on</span>
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="ni">[BallDensity]</span><span class="n"> </span>
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="ni">[HalfDensity]</span><span class="n"> range id</span><span class="p">=</span><span class="m m-Double">1</span>
+<span class="nb">ball property</span><span class="n"> </span><span class="s">'kn'</span><span class="n"> </span><span class="ni">[ContactStiff]</span><span class="n"> </span>
+<span class="nb">model clean</span>
+<span class="nb">contact method</span><span class="n"> bond</span>
+<span class="n">               </span>
+<span class="nb">ball fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y velocity</span><span class="o">-</span><span class="n">z spin</span><span class="o">-</span><span class="n">x spin</span><span class="o">-</span><span class="n">y spin</span><span class="o">-</span><span class="n">z</span>
+<span class="nb">history interval</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">fish history</span><span class="n"> LeftHandVelocity </span>
+<span class="nb">fish history</span><span class="n"> MiddleVelocity </span>
+<span class="nb">fish history</span><span class="n"> EndVelocity </span>
+<span class="nb">fish history</span><span class="n"> ProblemTime</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> elastic only time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">2.0</span><span class="n"> </span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'wave-final'</span>
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="ver-wavp-doc2d">wave_propagation.dat (2D)</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'Wave Propagation in Particle Assemblies (2D)'</span>
+
+<span class="nb">fish define</span><span class="ni"> makeTheBar</span>
+<span class="ni">  </span><span class="c">; 给定参数 ...</span>
+<span class="ni">  NumBalls </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">50</span>
+<span class="ni">  BallRadius </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span>
+<span class="ni">  BarDensity </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1000.0</span>
+<span class="ni">  WaveSpeed </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">100.0</span>
+<span class="ni">  Freq </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">4.0</span><span class="ni"> </span><span class="c">; 脉冲频率</span>
+<span class="ni">  Amplitude </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.1</span><span class="ni"> </span><span class="c">; 脉冲峰值速度 (m/sec)</span>
+<span class="ni">  </span><span class="c">; 导出参数 ...</span>
+<span class="ni">  BallDensity </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">4.0</span><span class="o">*</span><span class="ni">BarDensity </span><span class="o">/</span><span class="ni"> </span><span class="k">math.pi</span>
+<span class="ni">  HalfDensity </span><span class="p">=</span><span class="ni"> BallDensity </span><span class="o">/</span><span class="ni"> </span><span class="m m-Double">2.0</span>
+<span class="ni">  ContactStiff </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2.0</span><span class="o">*</span><span class="ni">WaveSpeed</span><span class="o">^</span><span class="m m-Double">2</span><span class="ni"> </span><span class="o">*</span><span class="ni"> BarDensity</span>
+<span class="ni">  Impedance </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2.0</span><span class="o">*</span><span class="ni">BallRadius </span><span class="o">*</span><span class="ni"> WaveSpeed </span><span class="o">*</span><span class="ni"> BarDensity</span>
+<span class="ni">  </span><span class="c">; 创建集合体</span>
+<span class="ni">  XBall </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="k">  command</span>
+<span class="nb">    model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">2.0</span><span class="n"> </span><span class="m m-Double">52.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2.0</span><span class="n"> </span><span class="m m-Double">2.0</span><span class="n"> cond d d</span>
+<span class="k">  endcommand</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> nn </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="ni">NumBalls</span><span class="p">)</span>
+<span class="k">    command</span>
+<span class="nb">      ball create</span><span class="n"> id</span><span class="p">=</span><span class="ni">[nn]</span><span class="n"> rad</span><span class="p">=</span><span class="ni">[BallRadius]</span><span class="n"> position</span><span class="o">-</span><span class="n">x</span><span class="p">=</span><span class="ni">[XBall]</span>
+<span class="k">    endcommand</span>
+<span class="ni">    XBall </span><span class="p">=</span><span class="ni"> XBall </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">2.0</span><span class="ni"> </span><span class="o">*</span><span class="ni"> BallRadius</span>
+<span class="ni">  endLoop</span>
+<span class="ni">  LHAddress </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">  MidAddress </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.find</span><span class="p">(</span><span class="ni">NumBalls</span><span class="o">/</span><span class="m m-Double">2</span><span class="p">)</span>
+<span class="ni">  EndAddress </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.find</span><span class="p">(</span><span class="ni">NumBalls</span><span class="p">)</span>
+<span class="ni">  check_endvel </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> Wave </span><span class="c">; 输入波形</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> </span><span class="k">mech.time.total</span><span class="ni"> </span><span class="o">&gt;</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni"> </span><span class="o">/</span><span class="ni"> Freq</span>
+<span class="ni">    Wave </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">else</span>
+<span class="ni">    Wave </span><span class="p">=</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">       </span><span class="p">(</span><span class="m m-Double">1.0</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">math.cos</span><span class="p">(</span><span class="m m-Double">2.0</span><span class="o">*</span><span class="k">math.pi</span><span class="o">*</span><span class="ni">Freq</span><span class="o">*</span><span class="k">mech.time.total</span><span class="p">))</span><span class="ni"> </span><span class="o">*</span><span class="ni"> Amplitude </span><span class="o">/</span><span class="ni"> </span><span class="m m-Double">2.0</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> InputWave</span>
+<span class="ni">  </span><span class="k">whilestepping</span>
+<span class="ni">  </span><span class="k">ball.force.app</span><span class="p">(</span><span class="ni">LHAddress</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">     Impedance </span><span class="o">*</span><span class="ni"> </span><span class="p">(</span><span class="m m-Double">2.0</span><span class="ni"> </span><span class="o">*</span><span class="ni"> Wave </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.vel</span><span class="p">(</span><span class="ni">LHAddress</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">))</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> LeftHandVelocity</span>
+<span class="ni">  LeftHandVelocity </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.vel</span><span class="p">(</span><span class="ni">LHAddress</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">  MiddleVelocity </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.vel</span><span class="p">(</span><span class="ni">MidAddress</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">  EndVelocity </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.vel</span><span class="p">(</span><span class="ni">EndAddress</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">  ProblemTime </span><span class="p">=</span><span class="ni"> </span><span class="k">mech.time.total</span>
+<span class="ni">  check_endvel </span><span class="p">=</span><span class="ni"> </span><span class="k">math.max</span><span class="p">(</span><span class="ni">check_endvel</span><span class="p">,</span><span class="ni">EndVelocity</span><span class="p">)</span>
+<span class="nb">end</span>
+
+<span class="c">;---------------------------------------------------------------</span>
+<span class="nb">program echo</span><span class="n"> </span><span class="sx">off</span>
+<span class="ni">[MakeTheBar]</span>
+<span class="nb">contact cmat</span><span class="n"> default model linearcbond</span>
+<span class="nb">program echo</span><span class="p">=</span><span class="sx">on</span>
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="ni">[BallDensity]</span><span class="n"> </span>
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="ni">[HalfDensity]</span><span class="n"> range id</span><span class="p">=</span><span class="m m-Double">1</span>
+<span class="nb">ball property</span><span class="n"> </span><span class="s">'kn'</span><span class="n"> </span><span class="ni">[ContactStiff]</span><span class="n"> </span>
+<span class="nb">model clean</span>
+<span class="nb">contact method</span><span class="n"> bond gap </span><span class="m m-Double">0.0</span>
+<span class="nb">ball fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y spin</span>
+<span class="nb">history interval</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">fish history</span><span class="n"> LeftHandVelocity</span>
+<span class="nb">fish history</span><span class="n"> MiddleVelocity</span>
+<span class="nb">fish history</span><span class="n"> EndVelocity </span>
+<span class="nb">fish history</span><span class="n"> ProblemTime</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> elastic only age </span><span class="m m-Double">2.0</span>
+<span class="nb">program </span><span class="se">return</span><span class="n"> </span>
+</pre></div>
+</div>
+<p class="endnotesection rubric">尾注</p>
+<table class="docutils footnote" frame="void" id="id3" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><p class="first">要在 <span class="codename">PFC</span> 中查看本项目，请使用程序菜单。</p>
+<p><span class="menuselection">帮助 ▼ 算例…</span></p>
+<p class="last">  ⮡    PFC <br/>
+    ⮡    验证 <br/>
+      ⮡    WavePropagation <br/>
+        ⮡    WavePropagation.prj</p>
+</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../pfc_model_components/pfc_examples.html">Examples</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../verification.html">Verification Problems</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../hertz_contact_model/cmhertz_single.html" title="previous chapter"> Hertz Contact Model: Complex Loading Paths</a> |    
+       <a href="../rrlinear_contact_model/flat_surface/cmrrlinear_flatsurface.html" title="next chapter">Rolling Resistance Linear Contact Model: Single Ball on a Flat Surface</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Wave Propagation in Particle Assemblies" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

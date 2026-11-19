@@ -1,0 +1,318 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>循环计算 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="datastructure_validation.html" rel="next" title="-10.0 - Validate Data Structures"/>
+<link href="model_components.html" rel="prev" title="Model Components"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="cycling">
+<span id="pfccycles"></span><span id="cycles"></span><h1>循环计算</h1>
+<p class="h2 rubric">引言</p>
+<p>离散元（DEM）公式体系是对牛顿运动定律的一种显式、按时间步进求解的方法。模型状态通过执行一系列计算循环而在时间上向前推进。
+每个循环由一系列称为 <a class="reference internal" href="#cycle-sequence-pfc"><span class="std std-ref">循环序列</span>（cycle sequence）</a> 的操作组成。本节阐述执行一系列循环的过程（包括循环序列的终止），以及 <span class="codename">PFC</span> 的循环序列。</p>
+<p class="h2 rubric" id="series-of-cycles">执行一系列循环</p>
+<p>在 <span class="codename">PFC</span> 中，通过调用 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.cycle.html#command:model.cycle" title="Execute timesteps. The synonym  model.step  may also be used.  This is
+the equivalent of calling  model.solve  with the  cycles  keyword
+set to  i ...">执行计算时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">cycle</span></code>）</a> 或 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令来启动一系列循环。循环将持续进行，直到达到一个或多个 <em>求解限制（solve limit）</em>。
+使用 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.cycle.html#command:model.cycle" title="Execute timesteps. The synonym  model.step  may also be used.  This is
+the equivalent of calling  model.solve  with the  cycles  keyword
+set to  i ...">执行计算时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">cycle</span></code>）</a> 命令时，将创建一个单独的求解限制（对应指定的循环数），并检验其是否完成。另一方面，使用 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令时，可以同时指定多个求解限制。当至少满足一个求解限制时，循环即告终止。
+<span class="codename">PFC</span> 中内置了若干求解限制（详情请参阅 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 文档）。此外，还可以将一个或多个 <span class="codename">FISH</span> 函数指定为求解限制，从而支持自定义的循环终止准则。
+下图给出了执行一系列循环过程的示意图。</p>
+<div class="figure align-center" id="fig-series-of-cycles-pfc">
+<img alt="../../../../../../_images/series_of_cycles1.svg" src="../../../../../../_images/series_of_cycles1.svg"/><p class="caption"><span class="caption-text">图 1：一系列循环的示意图。
+单个计算循环持续进行，直到满足一个或多个求解限制。</span></p>
+</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p>在初始化阶段，会创建/删除接触，重置循环期间使用的变量，
+并检查模型状态的有效性，以确认可以开始循环。例如，
+若任何球颗粒或刚性团簇的质量为 0，则无法进行循环，因为结果将是未定义的。
+每个计算循环中都会执行一系列操作，称为循环序列（见 <a class="reference internal" href="#cycle-sequence-pfc"><span class="std std-ref">下文</span>（below）</a>）。
+计算循环完成后，会检查求解限制，若达到或超过一个或多个限制，则循环终止。若未达到
+任何求解限制，则会执行更多的计算循环。在收尾阶段，会创建/删除接触，
+并更新需要校验的数据结构，以确保在将交互式控制台
+返回给用户以供进一步输入之前，模型状态是一致的。</p>
+<p>请注意，可以从 <a class="reference internal" href="../../../../../../common/docproject/source/manual/program_guide/mechanics/datafiles/editor_pane/editoroverview.html#editorpane"><span class="std std-ref">编辑器窗格</span>（The Editor Pane）</a> 的工具栏中手动终止循环，也可以在循环过程中
+按下 <code class="kbd docutils literal"><span class="pre">Shift+Esc</span></code> 组合键来终止。若请求手动终止循环，则会先完成当前计算循环并执行收尾阶段，然后
+将控制权返回给用户。</p>
+<p class="h2 rubric" id="cycle-sequence-pfc">循环序列</p>
+<p>每个计算循环中执行的操作序列称为循环序列。
+循环序列由一组有序的操作组成，其中每个操作都被赋予一个浮点数，称为 <em>循环点</em>。下表列出了具体的操作
+及其对应的循环点。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<table border="1" class="icgcyclepoints docutils" id="id1">
+<caption><span class="caption-text">表 1：循环操作及关联循环点</span></caption>
+<colgroup>
+<col width="14%"/>
+<col width="86%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">循环点</th>
+<th class="head">循环操作</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>-10.0</td>
+<td><a class="reference internal" href="datastructure_validation.html#datastructure-validation"><span class="std std-ref">校验数据结构</span>（Validate data structures）</a></td>
+</tr>
+<tr class="row-odd"><td>0.0</td>
+<td><a class="reference internal" href="timestep_constraints.html#timestep-constraints"><span class="std std-ref">确定时间步</span>（Timestep determination）</a></td>
+</tr>
+<tr class="row-even"><td>10.0</td>
+<td><a class="reference internal" href="law_of_motion.html#law-of-motion"><span class="std std-ref">运动定律（或更新热体）</span>（Law of motion (or update thermal bodies)）</a></td>
+</tr>
+<tr class="row-odd"><td>15.0</td>
+<td><a class="reference internal" href="body_coupling.html#body-coupling"><span class="std std-ref">各过程之间的体耦合</span>（Body coupling between processes）</a></td>
+</tr>
+<tr class="row-even"><td>20.0</td>
+<td><a class="reference internal" href="advance_time.html#advance-time"><span class="std std-ref">推进时间</span>（Advance time）</a></td>
+</tr>
+<tr class="row-odd"><td>30.0</td>
+<td><a class="reference internal" href="cellspace_update.html#cellspace-update"><span class="std std-ref">更新空间搜索数据结构</span>（Update spatial searching data structures）</a></td>
+</tr>
+<tr class="row-even"><td>35.0</td>
+<td><a class="reference internal" href="update_contacts.html#update-contacts"><span class="std std-ref">创建/删除接触</span>（Create/delete contacts）</a></td>
+</tr>
+<tr class="row-odd"><td>40.0</td>
+<td><a class="reference internal" href="force_displacement.html#force-displacement"><span class="std std-ref">力-位移定律（或热接触更新）</span>（Force-displacement law (or thermal contact update)）</a></td>
+</tr>
+<tr class="row-even"><td>42.0</td>
+<td><a class="reference internal" href="deterministic_accumulation.html#deterministic-accumulation"><span class="std std-ref">累积确定性量</span>（Accumulate deterministic quantities）</a></td>
+</tr>
+<tr class="row-odd"><td>45.0</td>
+<td><a class="reference internal" href="contact_coupling.html#contact-coupling"><span class="std std-ref">各过程之间的接触耦合</span>（Contact coupling between processes）</a></td>
+</tr>
+<tr class="row-even"><td>60.0</td>
+<td>运动方程的第二遍计算（<span class="codename">PFC</span> 中不使用）</td>
+</tr>
+<tr class="row-odd"><td>70.0</td>
+<td>热计算（<span class="codename">PFC</span> 中不使用）</td>
+</tr>
+<tr class="row-even"><td>80.0</td>
+<td>流体计算（<span class="codename">PFC</span> 中不使用）</td>
+</tr>
+</tbody>
+</table>
+<style>
+
+/* start: table style icgcyclepoints */
+
+table.icgcyclepoints {
+    border-color: black;
+    border-left: 0;
+    border-right: 0;
+    border-collapse:collapse;
+    margin-left: auto;
+    margin-right: auto;
+    width: 80%
+}
+
+table.icgcyclepoints th,td {
+    border-color: black;
+}
+
+table.icgcyclepoints caption {
+    margin-bottom: .8em;
+    font-weight: bold;
+}
+
+table.icgcyclepoints th.head{
+    border-color: black;
+    background-color: #E5F3FF;
+    color: #004d8c;
+    text-align: center;
+}
+
+table.icgcyclepoints td:first-child {
+    text-align: right;
+}
+
+table.icgcyclepoints tr:first-child+td {
+    border-bottom:thick dotted #ff0000;
+}
+table.icgcyclepoints tr:nth-child(2) {
+    border-bottom:thick dotted #ff0000;
+}
+
+table.icgcyclepoints tr:first-child+tr+tr+tr+tr+tr+tr+tr {
+    background-color: #FF0000;
+}
+table.icgcyclepoints tr:nth-child(8) {
+    background-color: #FF0000;
+}
+
+table.icgcyclepoints tr:first-child+tr+tr+tr+tr+tr+tr+tr+tr {
+    background-color: #FF0000;
+}
+table.icgcyclepoints tr:nth-child(9) {
+    background-color: #FF0000;
+}
+
+
+table.icgcyclepoints tr:first-child+tr+tr+tr+tr+tr+tr+tr+tr+tr+tr {
+    color: #a8a8a8;
+    font-style: italic;
+}
+table.icgcyclepoints tr:nth-child(11) {
+    color: #a8a8a8;
+    font-style: italic;
+}
+table.icgcyclepoints tr:first-child+tr+tr+tr+tr+tr+tr+tr+tr+tr+tr+tr {
+    color: #a8a8a8;
+    font-style: italic;
+}
+table.icgcyclepoints tr:nth-child(12) {
+    color: #a8a8a8;
+    font-style: italic;
+}
+table.icgcyclepoints tr:first-child+tr+tr+tr+tr+tr+tr+tr+tr+tr+tr+tr+tr {
+    color: #a8a8a8;
+    font-style: italic;
+}
+table.icgcyclepoints tr:nth-child(13) {
+    color: #a8a8a8;
+    font-style: italic;
+}
+
+
+/* end: table style icgcyclepoints */
+
+</style><div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p>引入该系统是为了能够方便地向循环序列中添加其他操作。此外，循环点可以简单地标识循环序列中的操作，
+从而可以借助 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/fish/commands/cmd_fish.callback.html#command:fish.callback" title="Add/remove functions to be executed in response to callback events...">设置FISH回调命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fish</span> <span class="pre">callback</span></code>）</a> 命令，按严格的顺序在循环期间的各个位置插入 <span class="codename">FISH</span> 回调以供执行。
+无法在循环点恰好等于任何预定义循环点的位置安装回调。同样需要注意的是，
+无法在循环点 40.0 与 42.0 之间安装回调，并且用户只能
+通过回调在循环点 0.0 之前创建/销毁模型组件。这些约束是
+必要的，可保护用户免于引入可能导致未定义行为的回调。例如，
+若用户在确定时步之后创建球颗粒，则与该球颗粒新形成的
+接触将不会用于确定稳定时步。由此产生的力和力矩
+可能在下一个循环中导致系统失稳。
+教程“<a class="reference internal" href="../../examples/tutorials/callbacks/callbacks.html#tuto-callbacks"><span class="std std-ref">使用 FISH 回调</span>（Using FISH Callbacks）</a>”演示了 <span class="codename">FISH</span> 回调的用法。</p>
+<p>以下是对每个循环操作的说明。最后三个循环操作未在 <span class="codename">PFC</span> 中使用，
+将不予讨论。这些循环点之所以存在，是因为其他 Itasca
+程序中的运算顺序与 <span class="codename">PFC</span> 并不相同。<span class="codename">PFC</span> 不使用这些额外的操作。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="datastructure_validation.html">-10.0 - 验证数据结构（-10.0 - Validate Data Structures）</a></li>
+<li class="toctree-l1"><a class="reference internal" href="timestep_constraints.html">0.0 - 时间步确定（0.0 - Timestep Determination）</a></li>
+<li class="toctree-l1"><a class="reference internal" href="law_of_motion.html">10.0 - 运动定律（10.0 - Law of Motion）</a></li>
+<li class="toctree-l1"><a class="reference internal" href="body_coupling.html">15.0 - 物体耦合（15.0 - Body Coupling）</a></li>
+<li class="toctree-l1"><a class="reference internal" href="advance_time.html">20.0 - 推进时间（20.0 - Advance Time）</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cellspace_update.html">30.0 - 更新空间搜索数据结构（30.0 - Update Spatial Searching Data Structures）</a></li>
+<li class="toctree-l1"><a class="reference internal" href="update_contacts.html">35.0 - 创建/删除接触（35.0 - Create/delete Contacts）</a></li>
+<li class="toctree-l1"><a class="reference internal" href="force_displacement.html">40.0 - 力-位移定律（40.0 - Force-displacement Law）</a></li>
+<li class="toctree-l1"><a class="reference internal" href="deterministic_accumulation.html">42.0 - 累积确定性量（42.0 - Accumulate Deterministic Quantities）</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contact_coupling.html">45.0 - 接触耦合（45.0 - Contact Coupling）</a></li>
+</ul>
+</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p>– <a class="reference internal" href="energy_and_dissipation_mechanisms.html#pfc-energy-dissipation"><span class="std std-ref">下一节：能量与耗散机制</span>（Next Section: Energy and Dissipation Mechanisms）</a> –</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../numerical_simulations_with_pfc.html">Numerical Simulations with <span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="pfc_model_formulation.html"><span class="codename">PFC</span> Model Formulation</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="model_components.html" title="previous chapter"> Model Components</a> |    
+       <a href="datastructure_validation.html" title="next chapter">-10.0 - Validate Data Structures</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Cycling" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

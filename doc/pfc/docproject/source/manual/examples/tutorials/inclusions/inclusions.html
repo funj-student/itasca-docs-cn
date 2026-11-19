@@ -1,0 +1,321 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>基体中的夹杂物 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../../search.html" rel="search" title="Search"/>
+<link href="../hopper/hopper.html" rel="next" title="Hopper Discharge"/>
+<link href="../granulometry/granulometry.html" rel="prev" title="Replicating a Particle Size Distribution"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="inclusions-in-a-matrix">
+<span id="tut-incs"></span><span id="p2d-tuto-soft-inclusions"></span><span id="index-0"></span><h1>基体中的夹杂物</h1>
+<p class="h2 rubric">引言</p>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">本算例的项目文件可在 <span class="codename">PFC</span> 中查看或运行。<a class="footnote-reference" href="#id2" id="id1">[1]</a>所用的<a class="reference internal" href="#tut-incs-datafiles"><span class="std std-ref">数据文件</span>（data files）</a>列于本算例末尾。</p>
+</div>
+<p>对具有均匀力学性质的黏结颗粒模型（BPM）进行无侧限压缩试验。对试样中的选定区域（夹杂物）赋予较小或较大的刚度参数，然后重复该试验。本教程演示 <a class="reference internal" href="../../../pfc_model_components/contacts/cmat_description.html#cmat"><span class="std std-ref">接触模型分配表（CMAT）</span>（Contact Model Assignment Table (CMAT)）</a> 的高级用法，以构建具有力学性质空间分布的复杂材料。使用了 <a class="reference internal" href="../../../../../../../common/contactmodel/linear/doc/manual/cmlinear.html#cmlinear"><span class="std std-ref">linear</span></a> 和 <a class="reference internal" href="../../../../../../../common/contactmodel/linearpbond/doc/manual/cmlinearpbond.html#cmlinearpbond">线性平行黏结（<span class="std std-ref">linear parallel bond</span>）</a> 接触模型。也可使用 <a class="reference internal" href="../../../numerical_simulations_with_pfc/material_modeling_support_for_pfc.html#material-modeling-support-for-pfc"><span class="std std-ref">材料建模支持</span>（material-modeling support）</a> 包创建和测试 BPM；不过，需要对其进行修改才能加入夹杂物。</p>
+<p class="h2 rubric">数值模型</p>
+<p>本例的完整数据文件（2D）为“<a class="reference internal" href="#tut-incs-datafile2d"><span class="std std-ref">inclusions.dat (2D)</span></a>”。下文讨论该文件中的部分行。构造黏结颗粒试样的初始阶段不再讨论，因为其过程与“<a class="reference internal" href="../generating_a_bonded_assembly/generating_a_bonded_assembly.html#cmlinearpond-simple"><span class="std std-ref">生成黏结集合体</span>（Generating a Bonded Assembly）</a>”教程中给出的过程类似。请注意，球颗粒已使用 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.distribute.html#command:ball.distribute" title="Distribute balls with overlaps..."><code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">distribute</span></code></a> 命令生成，并且全部分配了 <em>matrix</em> 分组标识符。</p>
+<p>以下所示的行创建顶部和底部墙压板，为其指定竖向速度，并设置历程监测。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 为试验做准备：添加上下压板并设置监测</span>
+<span class="nb">contact cmat</span><span class="n"> default type </span><span class="s">'ball-facet'</span><span class="n"> model linear </span><span class="sx">...</span>
+<span class="n">        property kn </span><span class="m m-Double">1e8</span><span class="n"> ks </span><span class="m m-Double">5e7</span><span class="n"> fric </span><span class="m m-Double">0.25</span>
+<span class="nb">wall generate</span><span class="n"> id </span><span class="m m-Double">1</span><span class="n"> plane position </span><span class="m m-Double">0.0</span><span class="n">  </span><span class="m m-Double">4.015</span>
+<span class="nb">wall generate</span><span class="n"> id </span><span class="m m-Double">2</span><span class="n"> plane position </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4.015</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">0.005</span><span class="n"> range id </span><span class="m m-Double">1</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y  </span><span class="m m-Double">0.005</span><span class="n"> range id </span><span class="m m-Double">2</span>
+<span class="nb">wall history</span><span class="n"> force</span><span class="o">-</span><span class="n">contact</span><span class="o">-</span><span class="n">y id </span><span class="m m-Double">1</span>
+<span class="nb">wall history</span><span class="n"> force</span><span class="o">-</span><span class="n">contact</span><span class="o">-</span><span class="n">y id </span><span class="m m-Double">2</span>
+<span class="nb">wall history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">y id </span><span class="m m-Double">2</span>
+<span class="nb">ball attribute</span><span class="n"> displacement </span><span class="m m-Double">0.0</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'initial1'</span>
+</pre></div>
+</div>
+<p>初始系统如 <a href="#tut-incs-init1">图 1（Figure  1）</a> 所示。</p>
+<div class="figure" id="tut-incs-init1">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d-inclusions-init1.png"><img alt="../../../../../../../_images/p2d-inclusions-init1.png" src="../../../../../../../_images/p2d-inclusions-init1.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 1：压缩前具有均匀性质的初始黏结系统。</span></p>
+</div>
+<p>第一次压缩试验通过以下各行执行：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 执行单轴抗压试验（激活碎片追踪）</span>
+<span class="nb">fragment register</span><span class="n"> ball</span><span class="o">-</span><span class="n">ball</span>
+<span class="nb">fragment activate</span><span class="n"> time </span><span class="m m-Double">0.1</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time </span><span class="m m-Double">5.0</span><span class="n"> </span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'final1'</span>
+</pre></div>
+</div>
+<p>请注意，启用 <a class="reference internal" href="../../../general_components/fragment/fragment.html#fragment-manual"><span class="std std-ref">破碎块体追踪</span>（fragment tracking）</a> 以监测试验过程中 BPM 的破碎情况。最终状态如 <a href="#tut-incs-final1">图 2（Figure  2）</a> 所示。</p>
+<div class="figure" id="tut-incs-final1">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d-inclusions-final1.png"><img alt="../../../../../../../_images/p2d-inclusions-final1.png" src="../../../../../../../_images/p2d-inclusions-final1.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：压缩后具有均匀性质的系统最终状态。</span></p>
+</div>
+<p>接下来，修改初始 BPM，以在选定的模型区域中模拟夹杂物：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 使用组来识别夹杂物 </span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'initial1'</span>
+<span class="nb">ball group</span><span class="n"> </span><span class="s">'inclusions'</span><span class="n"> range circle center </span><span class="m m-Double">1.0</span><span class="n"> </span><span class="m m-Double">3.0</span><span class="n"> rad </span><span class="m m-Double">0.5</span>
+<span class="nb">ball group</span><span class="n"> </span><span class="s">'inclusions'</span><span class="n"> range circle center </span><span class="o">-</span><span class="m m-Double">0.5</span><span class="n"> </span><span class="m m-Double">1.0</span><span class="n"> rad </span><span class="m m-Double">0.5</span>
+<span class="nb">ball group</span><span class="n"> </span><span class="s">'inclusions'</span><span class="n"> range circle center </span><span class="m m-Double">0.5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1.5</span><span class="n"> rad </span><span class="m m-Double">0.5</span>
+<span class="nb">ball group</span><span class="n"> </span><span class="s">'inclusions'</span><span class="n"> range circle center </span><span class="o">-</span><span class="m m-Double">1.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">3.0</span><span class="n"> rad </span><span class="m m-Double">0.5</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'initial-groups'</span>
+</pre></div>
+</div>
+<p>夹杂物内部的球颗粒被赋予 <em>inclusions</em> 分组标识符。</p>
+<p>压缩前的系统如 <a href="#tut-incs-groups">图 3（Figure  3）</a> 所示。</p>
+<div class="figure" id="tut-incs-groups">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d-inclusions-groups.png"><img alt="../../../../../../../_images/p2d-inclusions-groups.png" src="../../../../../../../_images/p2d-inclusions-groups.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 3：压缩前含软夹杂物的初始系统。</span></p>
+</div>
+<p>接下来，修改夹杂物内部和基体内部的接触属性。分组标识符用于识别位于基体内部和夹杂物内部的接触。需要 <a class="reference internal" href="../../../../../../../common/contact/doc/contact_manual/contact_commands/cmd_cmat.apply.html#command:contact.cmat.apply" title="Apply the CMAT to existing contacts. Visit each contact in the specified range
+and override its contact model according to the CMAT..."><code class="xref fish fish-cmd docutils literal"><span class="pre">contact</span> <span class="pre">cmat</span> <span class="pre">apply</span></code></a> 命令来将修改后的默认 CMAT 条目应用于已有接触。随后重复进行压缩试验。在这种情况下，夹杂物比基体更软。另一段与之对应的命令（此处未显示——请参阅下文的完整数据文件清单）重复这些操作，以生成刚度大于基体的夹杂物。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 修改接触模型参数 - 更软的夹杂物</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">ball model linear </span><span class="sx">...</span>
+<span class="n">        property kn </span><span class="m m-Double">1e7</span><span class="n"> ks </span><span class="m m-Double">5e6</span><span class="n"> fric </span><span class="m m-Double">0.25</span><span class="n"> lin_mode </span><span class="m m-Double">1</span>
+<span class="nb">contact cmat</span><span class="n"> add </span><span class="m m-Double">1</span><span class="n"> model linearpbond </span><span class="sx">...</span>
+<span class="n">                   property kn </span><span class="m m-Double">1e8</span><span class="n"> ks </span><span class="m m-Double">5e7</span><span class="n"> fric </span><span class="m m-Double">0.25</span><span class="n"> lin_mode </span><span class="m m-Double">1</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                   pb_kn </span><span class="m m-Double">1e8</span><span class="n"> pb_ks </span><span class="m m-Double">5e7</span><span class="n"> pb_ten </span><span class="m m-Double">2e5</span><span class="n"> pb_coh </span><span class="m m-Double">5e4</span><span class="n"> pb_fa </span><span class="m m-Double">20</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">             range group </span><span class="s">'matrix'</span><span class="n"> matches </span><span class="m m-Double">2</span>
+<span class="nb">contact cmat</span><span class="n"> add </span><span class="m m-Double">2</span><span class="n"> model linearpbond </span><span class="sx">...</span>
+<span class="n">                   property kn </span><span class="m m-Double">1e7</span><span class="n"> ks </span><span class="m m-Double">5e6</span><span class="n"> fric </span><span class="m m-Double">0.25</span><span class="n"> lin_mode </span><span class="m m-Double">1</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                   pb_kn </span><span class="m m-Double">1e7</span><span class="n"> pb_ks </span><span class="m m-Double">5e6</span><span class="n"> pb_ten </span><span class="m m-Double">2e4</span><span class="n"> pb_coh </span><span class="m m-Double">5e3</span><span class="n"> pb_fa </span><span class="m m-Double">20</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">             range group </span><span class="s">'inclusions'</span><span class="n"> matches </span><span class="m m-Double">2</span>
+<span class="nb">contact cmat</span><span class="n"> apply</span>
+<span class="nb">contact method</span><span class="n"> bond gap </span><span class="m m-Double">0.0</span>
+
+<span class="c">; 重复单轴抗压试验</span>
+<span class="nb">fragment register</span><span class="n"> ball</span><span class="o">-</span><span class="n">ball</span>
+<span class="nb">fragment activate</span><span class="n"> time </span><span class="m m-Double">0.1</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time </span><span class="m m-Double">5.0</span><span class="n"> </span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'final2'</span>
+</pre></div>
+</div>
+<p><a href="#tut-incs-final2">图 4</a> 和 <a href="#tut-incs-final3">图 5</a> 分别显示了夹杂物比基体更软和更硬两种情况下压缩后的模型。可以看出，破坏起始于软夹杂物附近，由此产生的应力集中驱动破坏穿过相邻的软夹杂物，如 <a href="#tut-incs-final2">图 4（Figure  4）</a> 所示。请注意，所有软夹杂物中均已发生一定程度的破坏。另一方面，对于硬夹杂物的情况（<a href="#tut-incs-final3">图 5（Figure  5）</a>），破坏主要发生在基体中以及夹杂物/基体边界处。</p>
+<div class="figure" id="tut-incs-final2">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d-inclusions-final2.png"><img alt="../../../../../../../_images/p2d-inclusions-final2.png" src="../../../../../../../_images/p2d-inclusions-final2.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 4：压缩后含软夹杂物的最终系统。</span></p>
+</div>
+<div class="figure" id="tut-incs-final3">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d-inclusions-final3.png"><img alt="../../../../../../../_images/p2d-inclusions-final3.png" src="../../../../../../../_images/p2d-inclusions-final3.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 5：压缩后含硬夹杂物的最终系统。</span></p>
+</div>
+<p>对于全部三种情况，<a href="#tut-incs-tables">图 6（Figure  6）</a> 展示了作用于顶部压板的接触力合力 <em>y</em> 分量随压板 <em>y</em> 位移的变化过程。软夹杂物显著降低了 BPM 的屈服强度以及峰后响应。另一方面，硬夹杂物对这些响应几乎没有影响。</p>
+<div class="figure" id="tut-incs-tables">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d-inclusions-tables.png"><img alt="../../../../../../../_images/p2d-inclusions-tables.png" src="../../../../../../../_images/p2d-inclusions-tables.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 6：作用于顶部压板的力 y 分量随压板位移的变化历程，分别对应均匀材料（绿色）、软夹杂材料（红色）和硬夹杂材料（蓝色）三种情况。</span></p>
+</div>
+<p class="h2 rubric">讨论</p>
+<p>本教程介绍了如何使用 <a class="reference internal" href="../../../pfc_model_components/contacts/cmat_description.html#cmat"><span class="std std-ref">接触模型分配表（CMAT）</span>（Contact Model Assignment Table (CMAT)）</a> 构建具有非均质力学性质的复杂模型。文中讨论了在均匀材料以及含软、硬夹杂物的非均质材料上进行的无侧限压缩试验结果。</p>
+<p class="h2 rubric" id="tut-incs-datafiles">数据文件</p>
+<p class="h3 rubric" id="tut-incs-datafile2d">inclusions.dat (2D)</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：inclusions.dat (2D)</span>
+<span class="c">;</span>
+<span class="c">;  PFC2D 教程 - 演示使用 CMAT 构建复杂材料，</span>
+<span class="c">;  其力学性质具有空间分布</span>
+<span class="c">;</span>
+<span class="c">;=========================================================================</span>
+<span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'Soft and Stiff Inclusions in a Matrix'</span>
+
+<span class="c">; 构建初始黏结颗粒模型</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">5</span><span class="n">  </span>
+<span class="nb">contact cmat</span><span class="n"> default model linear property kn </span><span class="m m-Double">1e5</span>
+
+<span class="nb">wall generate</span><span class="n"> box </span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">2</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">4</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+<span class="nb">ball distribute</span><span class="n"> porosity </span><span class="m m-Double">0.08</span><span class="n"> radius </span><span class="m m-Double">0.05</span><span class="n"> </span><span class="m m-Double">0.07</span><span class="n"> box </span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">2</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> group </span><span class="s">'matrix'</span>
+<span class="nb">ball attribute</span><span class="n"> position mult </span><span class="m m-Double">0.9</span>
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="m m-Double">1000.0</span><span class="n"> damp </span><span class="m m-Double">0.7</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span><span class="n"> calm </span><span class="m m-Double">10</span>
+<span class="nb">model mechanical</span><span class="n"> timestep scale</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+<span class="nb">model mechanical</span><span class="n"> timestep auto</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+
+<span class="nb">contact cmat</span><span class="n"> default model linearpbond </span><span class="sx">...</span>
+<span class="n">                   property kn </span><span class="m m-Double">1e8</span><span class="n"> ks </span><span class="m m-Double">5e7</span><span class="n"> fric </span><span class="m m-Double">0.25</span><span class="n"> lin_mode </span><span class="m m-Double">1</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                   pb_kn </span><span class="m m-Double">1e8</span><span class="n"> pb_ks </span><span class="m m-Double">5e7</span><span class="n"> pb_ten </span><span class="m m-Double">2e5</span><span class="n"> pb_coh </span><span class="m m-Double">5e4</span><span class="n"> pb_fa </span><span class="m m-Double">20</span>
+
+<span class="nb">contact cmat</span><span class="n"> apply</span>
+<span class="nb">contact method</span><span class="n"> bond gap </span><span class="m m-Double">0.0</span>
+<span class="nb">wall delete</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> elastic ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+
+<span class="c">; excerpt-hkht-start</span>
+<span class="c">; 为试验做准备：添加上下压板并设置监测</span>
+<span class="nb">contact cmat</span><span class="n"> default type </span><span class="s">'ball-facet'</span><span class="n"> model linear </span><span class="sx">...</span>
+<span class="n">        property kn </span><span class="m m-Double">1e8</span><span class="n"> ks </span><span class="m m-Double">5e7</span><span class="n"> fric </span><span class="m m-Double">0.25</span>
+<span class="nb">wall generate</span><span class="n"> id </span><span class="m m-Double">1</span><span class="n"> plane position </span><span class="m m-Double">0.0</span><span class="n">  </span><span class="m m-Double">4.015</span>
+<span class="nb">wall generate</span><span class="n"> id </span><span class="m m-Double">2</span><span class="n"> plane position </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4.015</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">0.005</span><span class="n"> range id </span><span class="m m-Double">1</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y  </span><span class="m m-Double">0.005</span><span class="n"> range id </span><span class="m m-Double">2</span>
+<span class="nb">wall history</span><span class="n"> force</span><span class="o">-</span><span class="n">contact</span><span class="o">-</span><span class="n">y id </span><span class="m m-Double">1</span>
+<span class="nb">wall history</span><span class="n"> force</span><span class="o">-</span><span class="n">contact</span><span class="o">-</span><span class="n">y id </span><span class="m m-Double">2</span>
+<span class="nb">wall history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">y id </span><span class="m m-Double">2</span>
+<span class="nb">ball attribute</span><span class="n"> displacement </span><span class="m m-Double">0.0</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'initial1'</span>
+<span class="c">; excerpt-hkht-end</span>
+
+<span class="c">; excerpt-ubcs-start</span>
+<span class="c">; 执行单轴抗压试验（激活碎片追踪）</span>
+<span class="nb">fragment register</span><span class="n"> ball</span><span class="o">-</span><span class="n">ball</span>
+<span class="nb">fragment activate</span><span class="n"> time </span><span class="m m-Double">0.1</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time </span><span class="m m-Double">5.0</span><span class="n"> </span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'final1'</span>
+<span class="c">; excerpt-ubcs-end</span>
+
+<span class="c">; excerpt-wepg-start</span>
+<span class="c">; 使用组来识别夹杂物 </span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'initial1'</span>
+<span class="nb">ball group</span><span class="n"> </span><span class="s">'inclusions'</span><span class="n"> range circle center </span><span class="m m-Double">1.0</span><span class="n"> </span><span class="m m-Double">3.0</span><span class="n"> rad </span><span class="m m-Double">0.5</span>
+<span class="nb">ball group</span><span class="n"> </span><span class="s">'inclusions'</span><span class="n"> range circle center </span><span class="o">-</span><span class="m m-Double">0.5</span><span class="n"> </span><span class="m m-Double">1.0</span><span class="n"> rad </span><span class="m m-Double">0.5</span>
+<span class="nb">ball group</span><span class="n"> </span><span class="s">'inclusions'</span><span class="n"> range circle center </span><span class="m m-Double">0.5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1.5</span><span class="n"> rad </span><span class="m m-Double">0.5</span>
+<span class="nb">ball group</span><span class="n"> </span><span class="s">'inclusions'</span><span class="n"> range circle center </span><span class="o">-</span><span class="m m-Double">1.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">3.0</span><span class="n"> rad </span><span class="m m-Double">0.5</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'initial-groups'</span>
+<span class="c">; excerpt-wepg-end</span>
+
+<span class="c">; excerpt-iljg-start</span>
+<span class="c">; 修改接触模型参数 - 更软的夹杂物</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">ball model linear </span><span class="sx">...</span>
+<span class="n">        property kn </span><span class="m m-Double">1e7</span><span class="n"> ks </span><span class="m m-Double">5e6</span><span class="n"> fric </span><span class="m m-Double">0.25</span><span class="n"> lin_mode </span><span class="m m-Double">1</span>
+<span class="nb">contact cmat</span><span class="n"> add </span><span class="m m-Double">1</span><span class="n"> model linearpbond </span><span class="sx">...</span>
+<span class="n">                   property kn </span><span class="m m-Double">1e8</span><span class="n"> ks </span><span class="m m-Double">5e7</span><span class="n"> fric </span><span class="m m-Double">0.25</span><span class="n"> lin_mode </span><span class="m m-Double">1</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                   pb_kn </span><span class="m m-Double">1e8</span><span class="n"> pb_ks </span><span class="m m-Double">5e7</span><span class="n"> pb_ten </span><span class="m m-Double">2e5</span><span class="n"> pb_coh </span><span class="m m-Double">5e4</span><span class="n"> pb_fa </span><span class="m m-Double">20</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">             range group </span><span class="s">'matrix'</span><span class="n"> matches </span><span class="m m-Double">2</span>
+<span class="nb">contact cmat</span><span class="n"> add </span><span class="m m-Double">2</span><span class="n"> model linearpbond </span><span class="sx">...</span>
+<span class="n">                   property kn </span><span class="m m-Double">1e7</span><span class="n"> ks </span><span class="m m-Double">5e6</span><span class="n"> fric </span><span class="m m-Double">0.25</span><span class="n"> lin_mode </span><span class="m m-Double">1</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                   pb_kn </span><span class="m m-Double">1e7</span><span class="n"> pb_ks </span><span class="m m-Double">5e6</span><span class="n"> pb_ten </span><span class="m m-Double">2e4</span><span class="n"> pb_coh </span><span class="m m-Double">5e3</span><span class="n"> pb_fa </span><span class="m m-Double">20</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">             range group </span><span class="s">'inclusions'</span><span class="n"> matches </span><span class="m m-Double">2</span>
+<span class="nb">contact cmat</span><span class="n"> apply</span>
+<span class="nb">contact method</span><span class="n"> bond gap </span><span class="m m-Double">0.0</span>
+
+<span class="c">; 重复单轴抗压试验</span>
+<span class="nb">fragment register</span><span class="n"> ball</span><span class="o">-</span><span class="n">ball</span>
+<span class="nb">fragment activate</span><span class="n"> time </span><span class="m m-Double">0.1</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time </span><span class="m m-Double">5.0</span><span class="n"> </span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'final2'</span>
+<span class="c">; excerpt-iljg-end</span>
+
+<span class="c">; 修改接触模型参数 - 更硬的夹杂物</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'initial-groups'</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">ball model linear </span><span class="sx">...</span>
+<span class="n">        property kn </span><span class="m m-Double">1e8</span><span class="n"> ks </span><span class="m m-Double">5e7</span><span class="n"> fric </span><span class="m m-Double">0.25</span><span class="n"> lin_mode </span><span class="m m-Double">1</span>
+<span class="nb">contact cmat</span><span class="n"> add </span><span class="m m-Double">1</span><span class="n"> model linearpbond </span><span class="sx">...</span>
+<span class="n">                   property kn </span><span class="m m-Double">1e8</span><span class="n"> ks </span><span class="m m-Double">5e7</span><span class="n"> fric </span><span class="m m-Double">0.25</span><span class="n"> lin_mode </span><span class="m m-Double">1</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                   pb_kn </span><span class="m m-Double">1e8</span><span class="n"> pb_ks </span><span class="m m-Double">5e7</span><span class="n"> pb_ten </span><span class="m m-Double">2e5</span><span class="n"> pb_coh </span><span class="m m-Double">5e4</span><span class="n"> pb_fa </span><span class="m m-Double">20</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">             range group </span><span class="s">'matrix'</span><span class="n"> matches </span><span class="m m-Double">2</span>
+<span class="nb">contact cmat</span><span class="n"> add </span><span class="m m-Double">2</span><span class="n"> model linearpbond </span><span class="sx">...</span>
+<span class="n">                   property kn </span><span class="m m-Double">1e9</span><span class="n"> ks </span><span class="m m-Double">5e8</span><span class="n"> fric </span><span class="m m-Double">0.25</span><span class="n"> lin_mode </span><span class="m m-Double">1</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                   pb_kn </span><span class="m m-Double">1e9</span><span class="n"> pb_ks </span><span class="m m-Double">5e8</span><span class="n"> pb_ten </span><span class="m m-Double">2e6</span><span class="n"> pb_coh </span><span class="m m-Double">5e5</span><span class="n"> pb_fa </span><span class="m m-Double">20</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">             range group </span><span class="s">'inclusions'</span><span class="n"> matches </span><span class="m m-Double">2</span>
+<span class="nb">contact cmat</span><span class="n"> apply</span>
+<span class="nb">contact method</span><span class="n"> bond gap </span><span class="m m-Double">0.0</span>
+
+<span class="c">; 重复单轴抗压试验</span>
+<span class="nb">fragment register</span><span class="n"> ball</span><span class="o">-</span><span class="n">ball</span>
+<span class="nb">fragment activate</span><span class="n"> time </span><span class="m m-Double">0.1</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time </span><span class="m m-Double">5.0</span><span class="n"> </span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'final3'</span>
+
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：inclusions.dat (2D)</span>
+</pre></div>
+</div>
+<p class="endnotesection rubric">尾注</p>
+<table class="docutils footnote" frame="void" id="id2" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><p class="first">要在 <span class="codename">PFC</span> 中查看本项目，请使用程序菜单。</p>
+<p><span class="menuselection">帮助 ▼ 算例…</span></p>
+<p class="last">  ⮡   PFC <br/>
+    ⮡   教程 <br/>
+      ⮡   基体中的夹杂物 <br/>
+        ⮡   Inclusions.prj</p>
+</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../pfc_model_components/pfc_examples.html">Examples</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../tutorials.html">Tutorials</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../granulometry/granulometry.html" title="previous chapter"> Replicating a Particle Size Distribution</a> |    
+       <a href="../hopper/hopper.html" title="next chapter">Hopper Discharge</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Inclusions in a Matrix" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

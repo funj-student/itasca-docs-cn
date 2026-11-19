@@ -1,0 +1,654 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>浅基础 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../../search.html" rel="search" title="Search"/>
+<link href="../joint_slip/jointslip.html" rel="next" title="Slip on a Fault"/>
+<link href="../pingpong/PingPong.html" rel="prev" title="Table Tennis"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="shallow-foundation">
+<span id="tut-foot"></span><span id="footing"></span><span id="index-0"></span><h1>浅基础</h1>
+<p class="h2 rubric">引言</p>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">本算例的项目文件可在 <span class="codename">PFC</span> 中查看或运行。<a class="footnote-reference" href="#id2" id="id1">[1]</a>所用的<a class="reference internal" href="#tut-foot-datafiles"><span class="std std-ref">数据文件</span>（data files）</a>列于本算例末尾。</p>
+</div>
+<p>本教程面向希望开始尝试将 <span class="codename">PFC</span> 应用于岩土工程场景的新用户。该示例涉及确定置于球颗粒集合体上的粗糙条形基础的承载力。</p>
+<p>在本示例中，对基础施加恒定的竖向速度并保持固定时长，同时监测由此产生的荷载。为便于演示，模型较为粗糙，且球颗粒集合体的空间范围有限。</p>
+<div class="figure" id="tut-foot-footingview">
+<a class="reference internal image-reference" href="../../../../../../../_images/footingView3D.png"><img alt="../../../../../../../_images/footingView3D.png" src="../../../../../../../_images/footingView3D.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 1：球颗粒集合体之上的基础三维模型。</span></p>
+</div>
+<p>在第二阶段，模拟基础附近存在浅埋隧道的情形。讨论了两种配置：安装隧道加固与不安装隧道加固。</p>
+<p class="h2 rubric">球颗粒集合体的制备</p>
+<p>将讨论文件“<a class="reference internal" href="#tut-foot-footing-datafile3d"><span class="std std-ref">Footing.dat (3D)</span></a>”中包含的所有命令行。用户也可以交互式地运行此问题：从键盘键入命令，在每条命令行末尾按 <code class="kbd docutils literal"><span class="pre">Enter</span></code>，并直接查看结果。此外，用户可以在 <span class="codename">PFC</span> 编辑器中打开这些数据文件，高亮要运行的数据文件行，然后按 <code class="kbd docutils literal"><span class="pre">Ctrl+Shift+E</span></code> 执行选中的代码行。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+
+<span class="c">;设置计算域范围与边界条件</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">25</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">6</span><span class="p">,</span><span class="m m-Double">6</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">6</span><span class="p">,</span><span class="m m-Double">20</span><span class="p">)</span>
+<span class="nb">model domain</span><span class="n"> condition destroy</span>
+</pre></div>
+</div>
+<p>创建 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/domain_manual/domain.html#domain">域（<span class="std std-ref">domain</span>）</a>，并定义其尺寸。在模拟过程中，球颗粒和墙体必须保持在指定的计算域内。如果球颗粒或墙面片触及计算域，由于指定了 <code class="docutils literal"><span class="pre">destroy</span></code> 条件，它将被销毁（更多细节请参阅 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.domain.html#command:model.domain" title="Specify the domain boundaries and conditions.  DFN fractures only exist within
+the domain extent...">设置模型域命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">domain</span></code>）</a> 命令）。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">wall generate</span><span class="n"> box </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">24</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">5</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">17</span><span class="p">)</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+<span class="nb">ball generate</span><span class="n"> box </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">24</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">5</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">10</span><span class="p">)</span><span class="n"> number </span><span class="m m-Double">2000</span><span class="n"> radius </span><span class="m m-Double">0.40</span>
+</pre></div>
+</div>
+<p>使用 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/wall_manual/wall_commands/cmd_wall_generate.html#command:wall.generate" title="Generate walls with specified shapes. The wall shapes include: {box, circle,
+and point in 2D; box, cone, cylinder, disk, line, plane, point, polygon, and
+sphere in 3D}..."><code class="xref fish fish-cmd docutils literal"><span class="pre">wall</span> <span class="pre">generate</span></code></a> 命令生成试样边界。创建一个长方体并指定其尺寸。在此长方体内部，使用 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.generate.html#command:ball.generate" title="Generate non-overlapping balls. The process ceases when the target number of
+balls are    created or when the number of attempts to place balls without overlap
+is achieved. By    default, the ball positions and radii are drawn from uniform
+distributions throughout the    model domain. As a result, the set of balls
+generated is affected by the state of the    random-number generator (see  model.random ).
+The..."><code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">generate</span></code></a> 命令生成一团尺寸相同的球颗粒。在调用 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.generate.html#command:ball.generate" title="Generate non-overlapping balls. The process ceases when the target number of
+balls are    created or when the number of attempts to place balls without overlap
+is achieved. By    default, the ball positions and radii are drawn from uniform
+distributions throughout the    model domain. As a result, the set of balls
+generated is affected by the state of the    random-number generator (see  model.random ).
+The..."><code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">generate</span></code></a> 命令之前将随机种子设为 10001，以便每当运行该模型时球颗粒的位置和半径都相同。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">ball model linearpbond </span><span class="sx">...</span>
+<span class="n">        property fric </span><span class="m m-Double">0.577</span><span class="n"> kn </span><span class="m m-Double">1e8</span><span class="n"> ks </span><span class="m m-Double">1e8</span><span class="n">             </span><span class="sx">...</span>
+<span class="n">        pb_kn </span><span class="m m-Double">1e8</span><span class="n"> pb_ks </span><span class="m m-Double">1e8</span><span class="n"> pb_ten </span><span class="m m-Double">1e6</span><span class="n">                </span><span class="sx">...</span>
+<span class="n">        pb_coh </span><span class="m m-Double">1e6</span><span class="n"> pb_rmul </span><span class="m m-Double">0.8</span><span class="n"> dp_nratio </span><span class="m m-Double">0.2</span>
+
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">facet model linear     </span><span class="sx">...</span>
+<span class="n">        property fric </span><span class="m m-Double">0.09</span><span class="n"> kn </span><span class="m m-Double">1e8</span><span class="n"> ks </span><span class="m m-Double">1e8</span><span class="n">              </span><span class="sx">...</span>
+<span class="n">        dp_nratio </span><span class="m m-Double">0.2</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="../../../pfc_model_components/contacts/cmat_description.html#cmat"><span class="std std-ref">接触模型分配表（CMAT）</span>（Contact Model Assignment Table (CMAT)）</a> 必须在每个 <span class="codename">PFC</span> 模型中填写，模型对象才能发生相互作用，因为每个接触在通过 CMAT 创建时都会被分配一个接触模型。CMAT 的默认槽位是为球颗粒-球颗粒接触和球颗粒-面片接触定义的。球颗粒-面片接触填充为 <a class="reference internal" href="../../../../../../../common/contactmodel/linear/doc/manual/cmlinear.html#cmlinear"><span class="std std-ref">线性接触模型</span>（linear contact model）</a>。而球颗粒-球颗粒接触则由 <a class="reference internal" href="../../../../../../../common/contactmodel/linearpbond/doc/manual/cmlinearpbond.html#cmlinearpbond"><span class="std std-ref">线性平行黏结接触模型</span>（linear parallel bond contact model）</a> 填充。平行黏结在调用 <a class="reference internal" href="../../../../../../../common/contact/doc/contact_manual/contact_commands/cmd_contact.method.html#command:contact.method" title="Call a contact method. The method, along with its specific list of pairs of
+argument names and values, is invoked..."><code class="xref fish fish-cmd docutils literal"><span class="pre">contact</span> <span class="pre">method</span></code></a> <code class="docutils literal"><span class="pre">bond</span></code> 之后、且集合体达到平衡后安装。这一操作使球颗粒集合体能够近似为固体材料。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">ball attribute</span><span class="n"> density </span><span class="m m-Double">2000</span><span class="n"> radius multiply </span><span class="m m-Double">1.4</span>
+</pre></div>
+</div>
+<p>最后分配球颗粒的密度属性，并修改球颗粒半径。<a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.attribute.html#command:ball.attribute" title="Set the value of ball attributes. This command is a synonym for the  ball.initialize 
+command. Individual attributes can be listed with the  ball.list  command
+and all attributes can be visualized..."><code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">attribute</span></code></a> 命令分配球颗粒的力学属性（即位置、速度、密度等）。<a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.property.html#command:ball.property" title="|..."><code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">property</span></code></a> 命令则分配表面属性，这些属性可通过继承机制用于分配接触模型属性（即 <code class="docutils literal"><span class="pre">kn</span></code>、<code class="docutils literal"><span class="pre">ks</span></code>、<code class="docutils literal"><span class="pre">fric</span></code>）。当前模型未使用该机制。球颗粒半径通过将原始半径乘以大于 1 的系数来增大（使用 <code class="docutils literal"><span class="pre">multiply</span></code> 关键字）。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">history interval</span><span class="n"> </span><span class="m m-Double">5</span>
+<span class="nb">ball history</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z position </span><span class="m m-Double">12</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">5</span>
+<span class="nb">model history</span><span class="n"> mechanical unbalanced</span><span class="o">-</span><span class="n">maximum</span>
+</pre></div>
+</div>
+<p>在初始平衡过程中，跟踪最靠近试样中心的球颗粒的 <em>z</em> 向速度以及不平衡力（参见“<a class="reference internal" href="../../../../../../../common/kernel/doc/manual/history_manual/history.html#history-manual"><span class="std std-ref">历程</span>（History）</a>”一节）。在静力分析中评估系统稳定性时，这些信息可能很有用。这些量每五个计算循环以表格形式记录一次（参见 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/history_manual/history_commands/cmd_history.interval.html#command:history.interval" title="Specifies the history-sampling interval...">设置历程采样间隔命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">history</span> <span class="pre">interval</span></code>）</a> 命令）。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model mechanical</span><span class="n"> timestep scale</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">9.81</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span><span class="n"> calm </span><span class="m m-Double">50</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+</pre></div>
+</div>
+<p>时步缩放通过带有 <code class="docutils literal"><span class="pre">scale</span></code> 关键字的 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.mechanical.html#kwd:model.mechanical.timestep" title=".. kwd:: Automatic...">模型力学时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">mechanical</span> <span class="pre">timestep</span></code>）</a> 命令启用。该算法对球颗粒的质量和速度进行缩放，以快速达到平衡状态。请注意，重力不受时步缩放影响，且应力路径可能并不真实。在重力初始化之后，会执行若干计算步。请注意 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.cycle.html#command:model.cycle" title="Execute timesteps. The synonym  model.step  may also be used.  This is
+the equivalent of calling  model.solve  with the  cycles  keyword
+set to  i ...">执行计算时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">cycle</span></code>）</a> 命令中 <code class="docutils literal"><span class="pre">calm</span></code> 关键字的使用。该操作每隔 50 个计算步将球颗粒的平动和转动速度归零；这是避免因显著重叠而产生过大速度的便捷方法。最后，通过 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 达到平均比值为 1e-5 的平衡状态。</p>
+<p>如 <a href=".html#unbalancedforce">图 （Figure）</a><code class="xref fnum docutils literal"><span class="pre">Figure</span> <span class="pre">#unbalancedforce</span></code> 所示，模型相对快速地达到了平衡状态。</p>
+<div class="figure" id="tut-foot-unbalancedforce">
+<a class="reference internal image-reference" href="../../../../../../../_images/unbalanced.png"><img alt="../../../../../../../_images/unbalanced.png" src="../../../../../../../_images/unbalanced.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：不平衡力的演化。</span></p>
+</div>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">wall delete</span><span class="n"> range set id </span><span class="m m-Double">2</span>
+<span class="nb">wall generate</span><span class="n"> group </span><span class="s">'footing'</span><span class="n"> box </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">5</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">12</span><span class="p">,</span><span class="m m-Double">20</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>删除长方体的顶面片（使用 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/wall_manual/wall_commands/cmd_wall_delete.html#command:wall.delete" title="Delete walls and/or facets. If neither the  walls  nor  facets 
+keywords are given, then facets are deleted..."><code class="xref fish fish-cmd docutils literal"><span class="pre">wall</span> <span class="pre">delete</span></code></a> 命令）。在试样上方使用 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/wall_manual/wall_commands/cmd_wall_generate.html#command:wall.generate" title="Generate walls with specified shapes. The wall shapes include: {box, circle,
+and point in 2D; box, cone, cylinder, disk, line, plane, point, polygon, and
+sphere in 3D}..."><code class="xref fish fish-cmd docutils literal"><span class="pre">wall</span> <span class="pre">generate</span></code></a> 命令创建基础。请注意，使用 <code class="docutils literal"><span class="pre">group</span></code> 关键字为新创建的面片指定分组标识符。所得的构型如 <a href=".html#footingview">图 （Figure）</a><code class="xref fnum docutils literal"><span class="pre">Figure</span> <span class="pre">#footingview</span></code> 所示。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">contact method</span><span class="n"> bond gap </span><span class="m m-Double">0.0</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'Assembly'</span>
+</pre></div>
+</div>
+<p>如上所述，使用 <a class="reference internal" href="../../../../../../../common/contact/doc/contact_manual/contact_commands/cmd_contact.method.html#command:contact.method" title="Call a contact method. The method, along with its specific list of pairs of
+argument names and values, is invoked..."><code class="xref fish fish-cmd docutils literal"><span class="pre">contact</span> <span class="pre">method</span></code></a> <code class="docutils literal"><span class="pre">bond</span></code> 在满足间隙条件的接触中安装平行黏结。在本例中，间隙上限为 0.0，这意味着在球颗粒相互重叠的所有球颗粒-球颗粒接触处都会安装平行黏结。若线性平行黏结模型也应用于球颗粒-面片接触，则这些接触中也会安装平行黏结。与 <span class="codename">PFC 4.0</span> 不同，在 <span class="codename">PFC 6.0</span> 中球颗粒可以黏结到墙面片上。此时保存模拟结果以供后续使用。</p>
+<p class="h2 rubric">基础的安装</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">0.25</span><span class="n"> range group </span><span class="s">'footing'</span>
+<span class="nb">wall history</span><span class="n"> force</span><span class="o">-</span><span class="n">contact</span><span class="o">-</span><span class="n">z id </span><span class="m m-Double">7</span>
+
+<span class="c">; 时间步设为动力模拟的自动值，</span>
+<span class="c">; 并额外模拟 5 秒。模型在模拟结束时 </span>
+<span class="c">; 保存。</span>
+<span class="nb">model mechanical</span><span class="n"> timestep auto</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time </span><span class="m m-Double">10.0</span>
+
+<span class="c">; 再次求解至平衡状态</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.0</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+</pre></div>
+</div>
+<p>基础的竖向速度保持不变，并监测由此施加在球颗粒集合体上的荷载。竖向接触力也通过历程进行监测。由于应力路径对于判断加载响应很重要，故将时步设为自动模式；这是一种动力现象。使用 <code class="docutils literal"><span class="pre">time</span></code> 求解限制额外模拟 10 秒的模型时间（参见 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令）。基础安装完成后，将墙体速度归零，并再次求解模型至平衡。</p>
+<p><a href=".html#forces">图 （Figure）</a><code class="xref fnum docutils literal"><span class="pre">Figure</span> <span class="pre">#forces</span></code> 显示了加载后球颗粒集合体中接触力的分布。</p>
+<div class="figure" id="tut-foot-forces">
+<a class="reference internal image-reference" href="../../../../../../../_images/Forces.png"><img alt="../../../../../../../_images/forces.png" src="../../../../../../../_images/Forces.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 3：加载后球颗粒集合体中接触力的分布。</span></p>
+</div>
+<p class="h2 rubric">浅埋隧道的开挖</p>
+<p>下面讨论文件“<a class="reference internal" href="#tut-foot-tunnel-datafile3d"><span class="std std-ref">Tunnel.dat (3D)</span></a>”和“<a class="reference internal" href="#tut-foot-lining-datafile3d"><span class="std std-ref">Lining.dat (3D)</span></a>”。为了从平衡后的模型中开挖隧道，必须先用 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.restore.html#command:model.restore" title="Restore program-state information. The state information, resulting from a previous...">恢复模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">restore</span></code>）</a> 恢复模型，然后在空间 <a class="reference internal" href="../../../../../../../common/module/doc/manual/range_manual/range_commands/rangephrasereference.html" title="range">范围（<code class="xref fish fish-tok docutils literal"><span class="pre">range</span></code>）</a> 中删除若干球颗粒。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 恢复施加基础荷载之前的状态</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'Assembly'</span>
+
+<span class="c">; 通过 'delete' 命令与 </span>
+<span class="c">; 'range group' 命令开挖一条圆柱形隧道</span>
+<span class="nb">ball group</span><span class="n"> </span><span class="s">'Tunnel'</span><span class="n"> range cylinder end</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">16.0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">6.0</span><span class="p">,</span><span class="m m-Double">6.0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     end</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">16.0</span><span class="p">,</span><span class="m m-Double">6.0</span><span class="p">,</span><span class="m m-Double">6.0</span><span class="p">)</span><span class="n"> radius </span><span class="m m-Double">3.0</span>
+<span class="nb">ball delete</span><span class="n"> range group </span><span class="s">'Tunnel'</span>
+
+<span class="c">; 执行若干循环，以验证隧道开挖后模型是 </span>
+<span class="c">; 稳定的。模型在此阶段保存。</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'StableTunnel'</span>
+</pre></div>
+</div>
+<p>所有中心位于指定圆柱体内的球颗粒都被赋予分组标识符
+<em>Tunnel</em> 并被删除。另一种做法是直接在 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.delete.html#command:ball.delete" title="|..."><code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">delete</span></code></a> 命令中给出圆柱形 <a class="reference internal" href="../../../../../../../common/module/doc/manual/range_manual/range_commands/rangephrasereference.html" title="range">范围（<code class="xref fish fish-tok docutils literal"><span class="pre">range</span></code>）</a>。必须执行一个 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.cycle.html#command:model.cycle" title="Execute timesteps. The synonym  model.step  may also be used.  This is
+the equivalent of calling  model.solve  with the  cycles  keyword
+set to  i ...">执行计算时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">cycle</span></code>）</a>，才能使由模型构型变化产生的接触力累积到球颗粒上。（若不执行该循环，后续的 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令将立即停止，因为接触施加在球颗粒上的力将处于平衡状态。）此时构型是稳定的（参见 <a href=".html#tunnelview">图 （Figure）</a><code class="xref fnum docutils literal"><span class="pre">Figure</span> <span class="pre">#tunnelview</span></code>），可以开展进一步的试验。</p>
+<div class="figure" id="tut-foot-tunnelview">
+<a class="reference internal image-reference" href="../../../../../../../_images/tunnelView.png"><img alt="../../../../../../../_images/tunnelView.png" src="../../../../../../../_images/tunnelView.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 4：开挖隧道后的模型构型。</span></p>
+</div>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;最后通过基础对集合体加载。隧道会发生什么变化？</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">0.25</span><span class="n"> range group </span><span class="s">'footing'</span>
+
+<span class="nb">model mechanical</span><span class="n"> timestep auto</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time </span><span class="m m-Double">10.0</span>
+
+<span class="c">; 再次求解至平衡状态</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.0</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+</pre></div>
+</div>
+<p>基础施加的荷载导致未支护隧道发生灾难性破坏。<a href=".html#tunnelclosed">图 （Figure）</a><code class="xref fnum docutils literal"><span class="pre">Figure</span> <span class="pre">#tunnelclosed</span></code> 显示了破坏后的构型。</p>
+<div class="figure" id="tut-foot-tunnelclosed">
+<a class="reference internal image-reference" href="../../../../../../../_images/tunnelclosed.png"><img alt="../../../../../../../_images/tunnelclosed.png" src="../../../../../../../_images/tunnelclosed.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 5：在未支护的浅埋隧道附近安装基础后的构型。</span></p>
+</div>
+<p>在模拟的第二阶段，引入衬砌以加固隧道。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model restore</span><span class="n"> </span><span class="s">'StableTunnel'</span>
+
+<span class="c">; 为开挖周边安装衬砌支护，方法是给隧道周围的接触指定更高的 </span>
+<span class="c">; 黏聚力和抗拉强度。</span>
+
+<span class="c">; 创建名为 'Lining' 的接触组</span>
+<span class="nb">contact group</span><span class="n"> </span><span class="s">'Lining'</span><span class="n"> range cylinder end</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">16.0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">6.0</span><span class="p">,</span><span class="m m-Double">6.0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">        end</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">16.0</span><span class="p">,</span><span class="m m-Double">6.0</span><span class="p">,</span><span class="m m-Double">6.0</span><span class="p">)</span><span class="n"> radius </span><span class="m m-Double">4.0</span>
+
+<span class="c">; 为组 'Lining' 的接触定义一组新参数</span>
+<span class="nb">contact property</span><span class="n"> fric </span><span class="m m-Double">0.18</span><span class="n"> kn </span><span class="m m-Double">1e8</span><span class="n"> ks </span><span class="m m-Double">1e8</span><span class="n">            </span><span class="sx">...</span>
+<span class="n">        pb_kn </span><span class="m m-Double">1e8</span><span class="n"> pb_ks </span><span class="m m-Double">1e8</span><span class="n"> pb_ten </span><span class="m m-Double">1e10</span><span class="n">             </span><span class="sx">...</span>
+<span class="n">        pb_coh </span><span class="m m-Double">1e10</span><span class="n"> pb_rmul </span><span class="m m-Double">1.0</span><span class="n"> dp_nratio </span><span class="m m-Double">0.2</span><span class="n">       </span><span class="sx">...</span>
+<span class="n">        range group </span><span class="s">'Lining'</span>
+
+<span class="c">; 再次通过基础对集合体加载。与未衬砌隧道的</span>
+<span class="c">; 情况相比有哪些差异？</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">0.25</span><span class="n"> range group </span><span class="s">'footing'</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'Lining'</span>
+
+<span class="nb">model mechanical</span><span class="n"> timestep auto</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time </span><span class="m m-Double">10.0</span>
+
+<span class="c">; 再次求解至平衡状态</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.0</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'LinedTunnel'</span>
+</pre></div>
+</div>
+<p>隧道衬砌通过修改与开挖面直接相邻的那些接触的接触属性来模拟。当基于 <a class="reference internal" href="../../../../../../../common/module/doc/manual/range_manual/range_commands/rangephrasereference.html" title="range">范围（<code class="xref fish fish-tok docutils literal"><span class="pre">range</span></code>）</a> 为接触赋予分组标识符时，可采用多种不同的准则来判定接触是否属于该分组。可以规定：只要接触的一端或两端位于指定范围内，该接触即属于该分组。<a href=".html#lining">图 （Figure）</a><code class="xref fnum docutils literal"><span class="pre">Figure</span> <span class="pre">#lining</span></code> 通过显示平行黏结的黏聚强度来展示这一做法的效果。</p>
+<div class="figure" id="tut-foot-lining">
+<a class="reference internal image-reference" href="../../../../../../../_images/lining.png"><img alt="../../../../../../../_images/lining.png" src="../../../../../../../_images/lining.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 6：浅埋隧道的衬砌加固。</span></p>
+</div>
+<p>与前几项试验一样，赋予基础恒定的 <em>z</em> 向速度并保持固定时长，然后将其速度归零，并将系统求解至平衡。<a href=".html#linedtunnel">图 （Figure）</a><code class="xref fnum docutils literal"><span class="pre">Figure</span> <span class="pre">#linedtunnel</span></code> 显示了加固的效果。沿隧道边界较大的黏聚强度使该构型在承受附加荷载的情况下仍能保持稳定。</p>
+<div class="figure" id="tut-foot-linedtunnel">
+<a class="reference internal image-reference" href="../../../../../../../_images/linedtunnel.png"><img alt="../../../../../../../_images/linedtunnel.png" src="../../../../../../../_images/linedtunnel.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 7：在支护的浅埋
+隧道附近安装基础后的模型构型。</span></p>
+</div>
+<p class="h2 rubric">讨论</p>
+<p>本简单教程说明如何利用 <span class="codename">PFC</span> 研究一个岩土工程问题。在箱体中使球颗粒集合体达到平衡，并施加黏结以形成简单的材料。随后安装基础，以检验三种不同构型的稳定性：1) 未扰动构型；2) 含浅埋未支护隧道的构型；3) 含浅埋支护隧道的构型。</p>
+<p class="h2 rubric" id="tut-foot-datafiles">数据文件</p>
+<p class="h3 rubric" id="tut-foot-footing-datafile3d">Footing.dat (3D)</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：Footing.dat (3D)</span>
+<span class="c">;</span>
+<span class="c">;  创建球体集合并安装浅基础</span>
+<span class="c">;=========================================================================</span>
+
+<span class="c">; excerpt-drmx-start</span>
+<span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+
+<span class="c">;设置计算域范围与边界条件</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">25</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">6</span><span class="p">,</span><span class="m m-Double">6</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">6</span><span class="p">,</span><span class="m m-Double">20</span><span class="p">)</span>
+<span class="nb">model domain</span><span class="n"> condition destroy</span>
+<span class="c">; excerpt-drmx-end</span>
+
+<span class="c">;生成一个盒子以及由 2000 个等尺寸球组成的球云</span>
+<span class="c">; excerpt-gpnp-start</span>
+<span class="nb">wall generate</span><span class="n"> box </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">24</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">5</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">17</span><span class="p">)</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+<span class="nb">ball generate</span><span class="n"> box </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">24</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">5</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">10</span><span class="p">)</span><span class="n"> number </span><span class="m m-Double">2000</span><span class="n"> radius </span><span class="m m-Double">0.40</span>
+<span class="c">; excerpt-gpnp-end</span>
+
+<span class="c">; 修改接触模型分配表的默认槽位</span>
+<span class="c">; 此处对所有接触选择线性接触模型 (kn=1e8)，</span>
+<span class="c">; 球-球接触除外，对其指定 linearpbond 模型。</span>
+<span class="c">; 注意，在未调用 bond 接触方法之前（该调用稍后进行），</span>
+<span class="c">; linearpbond 模型中只有线性部分被激活</span>
+<span class="c">; excerpt-dfof-start</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">ball model linearpbond </span><span class="sx">...</span>
+<span class="n">        property fric </span><span class="m m-Double">0.577</span><span class="n"> kn </span><span class="m m-Double">1e8</span><span class="n"> ks </span><span class="m m-Double">1e8</span><span class="n">             </span><span class="sx">...</span>
+<span class="n">        pb_kn </span><span class="m m-Double">1e8</span><span class="n"> pb_ks </span><span class="m m-Double">1e8</span><span class="n"> pb_ten </span><span class="m m-Double">1e6</span><span class="n">                </span><span class="sx">...</span>
+<span class="n">        pb_coh </span><span class="m m-Double">1e6</span><span class="n"> pb_rmul </span><span class="m m-Double">0.8</span><span class="n"> dp_nratio </span><span class="m m-Double">0.2</span>
+
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">facet model linear     </span><span class="sx">...</span>
+<span class="n">        property fric </span><span class="m m-Double">0.09</span><span class="n"> kn </span><span class="m m-Double">1e8</span><span class="n"> ks </span><span class="m m-Double">1e8</span><span class="n">              </span><span class="sx">...</span>
+<span class="n">        dp_nratio </span><span class="m m-Double">0.2</span>
+<span class="c">; excerpt-dfof-end</span>
+
+<span class="c">;定义球的密度并增大其半径</span>
+<span class="c">; excerpt-wpbs-start</span>
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="m m-Double">2000</span><span class="n"> radius multiply </span><span class="m m-Double">1.4</span>
+<span class="c">; excerpt-wpbs-end</span>
+
+<span class="c">;定义若干历程变量，以绘制集合体中某个球的速度和</span>
+<span class="c">;不平衡力。历程变量每 5 个循环记录一次。</span>
+<span class="c">; excerpt-wpmn-start</span>
+<span class="nb">history interval</span><span class="n"> </span><span class="m m-Double">5</span>
+<span class="nb">ball history</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z position </span><span class="m m-Double">12</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">5</span>
+<span class="nb">model history</span><span class="n"> mechanical unbalanced</span><span class="o">-</span><span class="n">maximum</span>
+<span class="c">; excerpt-wpmn-end</span>
+
+<span class="c">; 为更快达到稳定构型，启用了密度缩放。</span>
+<span class="c">; 施加重力</span>
+<span class="c">; excerpt-fohe-start</span>
+<span class="nb">model mechanical</span><span class="n"> timestep scale</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">9.81</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span><span class="n"> calm </span><span class="m m-Double">50</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+<span class="c">; excerpt-fohe-end</span>
+
+<span class="c">; 创建盒状基础</span>
+<span class="c">; 名称 'footing' 与相应的墙体组关联</span>
+<span class="c">; excerpt-yiex-start</span>
+<span class="nb">wall delete</span><span class="n"> range set id </span><span class="m m-Double">2</span>
+<span class="nb">wall generate</span><span class="n"> group </span><span class="s">'footing'</span><span class="n"> box </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">5</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">12</span><span class="p">,</span><span class="m m-Double">20</span><span class="p">)</span>
+<span class="c">; excerpt-yiex-end</span>
+
+
+<span class="c">; 最后安装平行黏结。对球-球接触，</span>
+<span class="c">; LinearPBond 模型处于激活状态。模拟在此阶段保存，</span>
+<span class="c">; 以便后续可以恢复</span>
+<span class="c">; excerpt-incx-start</span>
+<span class="nb">contact method</span><span class="n"> bond gap </span><span class="m m-Double">0.0</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'Assembly'</span>
+<span class="c">; excerpt-incx-end</span>
+
+<span class="c">; 假定基础以恒定速度沉降</span>
+<span class="c">; 基础底面的接触力在模拟过程中被 </span>
+<span class="c">; 记录</span>
+<span class="c">; excerpt-oybj-start</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">0.25</span><span class="n"> range group </span><span class="s">'footing'</span>
+<span class="nb">wall history</span><span class="n"> force</span><span class="o">-</span><span class="n">contact</span><span class="o">-</span><span class="n">z id </span><span class="m m-Double">7</span>
+
+<span class="c">; 时间步设为动力模拟的自动值，</span>
+<span class="c">; 并额外模拟 5 秒。模型在模拟结束时 </span>
+<span class="c">; 保存。</span>
+<span class="nb">model mechanical</span><span class="n"> timestep auto</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time </span><span class="m m-Double">10.0</span>
+
+<span class="c">; 再次求解至平衡状态</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.0</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+<span class="c">; excerpt-oybj-end</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'Footing'</span>
+
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：Footing.dat (3D)</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="tut-foot-tunnel-datafile3d">Tunnel.dat (3D)</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：Tunnel.dat (3D)</span>
+<span class="c">;</span>
+<span class="c">;  开挖无支护隧道</span>
+<span class="c">;=========================================================================</span>
+
+<span class="c">; excerpt-hldb-start</span>
+<span class="c">; 恢复施加基础荷载之前的状态</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'Assembly'</span>
+
+<span class="c">; 通过 'delete' 命令与 </span>
+<span class="c">; 'range group' 命令开挖一条圆柱形隧道</span>
+<span class="nb">ball group</span><span class="n"> </span><span class="s">'Tunnel'</span><span class="n"> range cylinder end</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">16.0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">6.0</span><span class="p">,</span><span class="m m-Double">6.0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     end</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">16.0</span><span class="p">,</span><span class="m m-Double">6.0</span><span class="p">,</span><span class="m m-Double">6.0</span><span class="p">)</span><span class="n"> radius </span><span class="m m-Double">3.0</span>
+<span class="nb">ball delete</span><span class="n"> range group </span><span class="s">'Tunnel'</span>
+
+<span class="c">; 执行若干循环，以验证隧道开挖后模型是 </span>
+<span class="c">; 稳定的。模型在此阶段保存。</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'StableTunnel'</span>
+<span class="c">; excerpt-hldb-end</span>
+
+<span class="c">; excerpt-tiwq-start</span>
+<span class="c">;最后通过基础对集合体加载。隧道会发生什么变化？</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">0.25</span><span class="n"> range group </span><span class="s">'footing'</span>
+
+<span class="nb">model mechanical</span><span class="n"> timestep auto</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time </span><span class="m m-Double">10.0</span>
+
+<span class="c">; 再次求解至平衡状态</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.0</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+<span class="c">; excerpt-tiwq-end</span>
+
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'UnlinedTunnel'</span>
+
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：Tunnel.dat (3D)</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="tut-foot-lining-datafile3d">Lining.dat (3D)</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：Lining.dat (3D)</span>
+<span class="c">;</span>
+<span class="c">;  为隧道安装衬砌支护</span>
+<span class="c">;=========================================================================</span>
+
+<span class="c">; excerpt-phqs-start</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'StableTunnel'</span>
+
+<span class="c">; 为开挖周边安装衬砌支护，方法是给隧道周围的接触指定更高的 </span>
+<span class="c">; 黏聚力和抗拉强度。</span>
+
+<span class="c">; 创建名为 'Lining' 的接触组</span>
+<span class="nb">contact group</span><span class="n"> </span><span class="s">'Lining'</span><span class="n"> range cylinder end</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">16.0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">6.0</span><span class="p">,</span><span class="m m-Double">6.0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">        end</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">16.0</span><span class="p">,</span><span class="m m-Double">6.0</span><span class="p">,</span><span class="m m-Double">6.0</span><span class="p">)</span><span class="n"> radius </span><span class="m m-Double">4.0</span>
+
+<span class="c">; 为组 'Lining' 的接触定义一组新参数</span>
+<span class="nb">contact property</span><span class="n"> fric </span><span class="m m-Double">0.18</span><span class="n"> kn </span><span class="m m-Double">1e8</span><span class="n"> ks </span><span class="m m-Double">1e8</span><span class="n">            </span><span class="sx">...</span>
+<span class="n">        pb_kn </span><span class="m m-Double">1e8</span><span class="n"> pb_ks </span><span class="m m-Double">1e8</span><span class="n"> pb_ten </span><span class="m m-Double">1e10</span><span class="n">             </span><span class="sx">...</span>
+<span class="n">        pb_coh </span><span class="m m-Double">1e10</span><span class="n"> pb_rmul </span><span class="m m-Double">1.0</span><span class="n"> dp_nratio </span><span class="m m-Double">0.2</span><span class="n">       </span><span class="sx">...</span>
+<span class="n">        range group </span><span class="s">'Lining'</span>
+
+<span class="c">; 再次通过基础对集合体加载。与未衬砌隧道的</span>
+<span class="c">; 情况相比有哪些差异？</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">0.25</span><span class="n"> range group </span><span class="s">'footing'</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'Lining'</span>
+
+<span class="nb">model mechanical</span><span class="n"> timestep auto</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time </span><span class="m m-Double">10.0</span>
+
+<span class="c">; 再次求解至平衡状态</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.0</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'LinedTunnel'</span>
+<span class="c">; excerpt-phqs-end</span>
+
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：Lining.dat (3D)</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="tut-foot-footing-datafile2d">Footing.dat (2D)</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：Footing.dat (2D)</span>
+<span class="c">;</span>
+<span class="c">;  创建集合体并安装浅基础</span>
+<span class="c">;=========================================================================</span>
+
+<span class="n">new</span>
+
+<span class="c">;设置计算域范围与边界条件</span>
+<span class="nb">domain extent</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">25</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">6</span><span class="p">,</span><span class="m m-Double">20</span><span class="p">)</span>
+<span class="nb">domain condition</span><span class="n"> destroy</span>
+
+<span class="c">;生成一个盒子以及由 2000 个等尺寸球组成的球云</span>
+<span class="nb">wall generate</span><span class="n"> box </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">24</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">17</span><span class="p">)</span>
+<span class="n">set random </span><span class="m m-Double">10001</span>
+<span class="nb">ball generate</span><span class="n"> box </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">24</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">10</span><span class="p">)</span><span class="n"> number </span><span class="m m-Double">2000</span><span class="n"> radius </span><span class="m m-Double">0.1250</span>
+
+<span class="c">; 修改接触模型分配表的默认槽位</span>
+<span class="c">; 这里对所有接触类型选用线性接触模型 (kn=1e6)，但 </span>
+<span class="c">; 球-球接触除外，对其指定 linearpbond 模型。</span>
+<span class="c">; 注意，在未调用 bond 接触方法之前（该调用稍后进行）， </span>
+<span class="c">; linearpbond 模型中只有线性部分被激活</span>
+<span class="nb">cmat default</span><span class="n"> type ball</span><span class="o">-</span><span class="n">ball model linearpbond   </span><span class="sx">...</span>
+<span class="n">        property fric </span><span class="m m-Double">0.577</span><span class="n"> kn </span><span class="m m-Double">1e8</span><span class="n"> ks </span><span class="m m-Double">1e8</span><span class="n">       </span><span class="sx">...</span>
+<span class="n">        pb_kn </span><span class="m m-Double">1e8</span><span class="n"> pb_ks </span><span class="m m-Double">1e8</span><span class="n"> pb_ten </span><span class="m m-Double">1e6</span><span class="n">          </span><span class="sx">...</span>
+<span class="n">        pb_coh </span><span class="m m-Double">1e6</span><span class="n"> pb_rmul </span><span class="m m-Double">0.8</span><span class="n"> dp_nratio </span><span class="m m-Double">0.2</span>
+
+<span class="nb">cmat default</span><span class="n"> type ball</span><span class="o">-</span><span class="n">facet model linear       </span><span class="sx">...</span>
+<span class="n">    property kn </span><span class="m m-Double">1e8</span><span class="n"> ks </span><span class="m m-Double">1e8</span><span class="n"> fric </span><span class="m m-Double">0.09</span><span class="n">            </span><span class="sx">...</span>
+<span class="n">    dp_nratio </span><span class="m m-Double">0.2</span>
+
+<span class="c">;定义球的密度并增大其半径</span>
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="m m-Double">2000</span><span class="n"> radius multiply </span><span class="m m-Double">1.4</span>
+
+<span class="c">;定义若干历程变量，以绘制集合体中某个球的速度和 </span>
+<span class="c">;不平衡力。历程变量每 5 个循环记录一次。</span>
+<span class="n">set hist_rep </span><span class="m m-Double">5</span>
+<span class="n">history ball yvelocity </span><span class="m m-Double">12</span><span class="n"> </span><span class="m m-Double">5</span>
+<span class="n">history mechanical solve unbalanced</span>
+
+<span class="c">; 为更快达到稳定构型，启用了密度缩放。</span>
+<span class="c">; 施加重力</span>
+<span class="n">set timestep scale</span>
+<span class="n">set gravity </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">9.81</span>
+<span class="n">cycle </span><span class="m m-Double">1000</span><span class="n"> calm </span><span class="m m-Double">50</span>
+<span class="n">solve aratio </span><span class="m m-Double">1e-5</span>
+
+<span class="c">; 创建盒状基础</span>
+<span class="c">; 名称 'footing' 与相应的墙体组关联</span>
+<span class="nb">wall delete</span><span class="n"> range set id </span><span class="m m-Double">3</span>
+<span class="nb">wall generate</span><span class="n"> group footing box </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">11</span><span class="p">,</span><span class="m m-Double">20</span><span class="p">)</span>
+
+<span class="c">; 最后安装平行黏结。对球-球接触，</span>
+<span class="c">; LinearPBond 模型处于激活状态。模拟在此阶段保存，</span>
+<span class="c">; 以便后续可以恢复</span>
+<span class="nb">contact method</span><span class="n"> bond gap </span><span class="m m-Double">0.0</span>
+
+<span class="n">save Assembly</span>
+
+<span class="c">; 假定基础以恒定速度沉降</span>
+<span class="c">; 基础底面的接触力在模拟期间被记录 </span>
+<span class="c">; 保存。</span>
+<span class="nb">wall attribute</span><span class="n"> yvelocity </span><span class="o">-</span><span class="m m-Double">0.25</span><span class="n"> range group footing</span>
+<span class="n">history wall yforce</span><span class="o">-</span><span class="n">contact id </span><span class="m m-Double">7</span>
+
+<span class="c">; 时间步设为动力模拟的自动值，</span>
+<span class="c">; 并额外模拟 5 秒。模型在模拟结束时 </span>
+<span class="c">; 保存。</span>
+<span class="n">set timestep auto</span>
+<span class="n">solve time </span><span class="m m-Double">10.0</span>
+
+<span class="c">; 再次求解至平衡状态</span>
+<span class="nb">wall attribute</span><span class="n"> yvelocity </span><span class="m m-Double">0.0</span>
+<span class="n">solve aratio </span><span class="m m-Double">1e-4</span>
+
+<span class="n">save Footing</span>
+
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：Footing.dat (2D)</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="tut-foot-tunnel-datafile2d">Tunnel.dat (2D)</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：Tunnel.dat (2D)</span>
+<span class="c">;</span>
+<span class="c">;  开挖无支护隧道</span>
+<span class="c">;=========================================================================</span>
+
+<span class="c">; 恢复施加基础荷载之前的状态</span>
+<span class="n">restore Assembly</span>
+
+<span class="nb">ball group</span><span class="n"> Tunnel range circle center </span><span class="m m-Double">16.0</span><span class="n"> </span><span class="m m-Double">5.0</span><span class="n"> radius </span><span class="m m-Double">3.0</span>
+<span class="nb">ball delete</span><span class="n"> range group Tunnel</span>
+
+<span class="c">; 执行若干循环，以验证隧道开挖后模型是 </span>
+<span class="c">; 稳定的。模型在此阶段保存。</span>
+<span class="n">cycle </span><span class="m m-Double">1</span>
+<span class="n">solve aratio </span><span class="m m-Double">1e-4</span>
+
+<span class="n">save StableTunnel</span>
+
+<span class="c">;最后通过基础对集合体加载。隧道会发生什么变化？</span>
+<span class="nb">wall attribute</span><span class="n"> yvelocity </span><span class="o">-</span><span class="m m-Double">0.25</span><span class="n"> range group footing</span>
+
+<span class="n">set timestep auto</span>
+<span class="n">solve time </span><span class="m m-Double">10.0</span>
+
+<span class="c">; 再次求解至平衡状态</span>
+<span class="nb">wall attribute</span><span class="n"> yvelocity </span><span class="m m-Double">0.0</span>
+<span class="n">solve aratio </span><span class="m m-Double">1e-4</span>
+
+
+<span class="n">save UnlinedTunnel</span>
+
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：Tunnel.dat (2D)</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="tut-foot-lining-datafile2d">Lining.dat (2D)</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：Lining.dat (2D)</span>
+<span class="c">;</span>
+<span class="c">;  为隧道安装衬砌支护</span>
+<span class="c">;=========================================================================</span>
+<span class="n">restore StableTunnel</span>
+
+<span class="n">contact groupbehavior contact</span>
+
+<span class="nb">contact group</span><span class="n"> Lining range circle center </span><span class="m m-Double">16.0</span><span class="n"> </span><span class="m m-Double">5.0</span><span class="n"> radius </span><span class="m m-Double">4.0</span>
+
+<span class="nb">contact property</span><span class="n"> fric </span><span class="m m-Double">0.18</span><span class="n"> kn </span><span class="m m-Double">1e8</span><span class="n"> ks </span><span class="m m-Double">1e8</span><span class="n">        </span><span class="sx">...</span>
+<span class="n">        pb_kn </span><span class="m m-Double">1e8</span><span class="n"> pb_ks </span><span class="m m-Double">1e8</span><span class="n"> pb_ten </span><span class="m m-Double">1e10</span><span class="n">         </span><span class="sx">...</span>
+<span class="n">        pb_coh </span><span class="m m-Double">1e10</span><span class="n"> pb_rmul </span><span class="m m-Double">1.0</span><span class="n"> dp_nratio </span><span class="m m-Double">0.2</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">        range group Lining</span>
+
+<span class="nb">wall attribute</span><span class="n"> yvelocity </span><span class="o">-</span><span class="m m-Double">0.25</span><span class="n"> range group footing</span>
+
+<span class="n">save Lining</span>
+
+<span class="n">set timestep auto</span>
+<span class="n">solve time </span><span class="m m-Double">10.0</span>
+
+<span class="nb">wall attribute</span><span class="n"> yvelocity </span><span class="m m-Double">0.0</span>
+<span class="n">solve aratio </span><span class="m m-Double">1e-4</span>
+
+<span class="n">save LinedTunnel</span>
+
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：Lining.dat (2D)</span>
+</pre></div>
+</div>
+<p class="endnotesection rubric">尾注</p>
+<table class="docutils footnote" frame="void" id="id2" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><p class="first">要在 <span class="codename">PFC</span> 中查看本项目，请使用程序菜单。</p>
+<p><span class="menuselection">帮助 ▼ 算例…</span></p>
+<p class="last">  ⮡   PFC <br/>
+    ⮡   教程 <br/>
+      ⮡   基础 <br/>
+        ⮡   Footing.prj</p>
+</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../pfc_model_components/pfc_examples.html">Examples</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../tutorials.html">Tutorials</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../pingpong/PingPong.html" title="previous chapter"> Table Tennis</a> |    
+       <a href="../joint_slip/jointslip.html" title="next chapter">Slip on a Fault</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Shallow Foundation" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

@@ -1,0 +1,237 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>PFC 中的能量与耗散机制 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="../material_modeling_support_for_pfc.html" rel="next" title="Material Modeling Support For PFC"/>
+<link href="contact_coupling.html" rel="prev" title="45.0 - Contact Coupling"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="energy-and-dissipation-mechanisms-in-pfc">
+<span id="pfc-energy-dissipation"></span><h1>PFC 中的能量与耗散机制</h1>
+<p class="h2 rubric" id="energy-tracking">能量跟踪</p>
+<p>能量跟踪通过 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.energy.html#command:model.energy" title="Specify the energy tracking state. Currently only mechanical energies can be
+tracked...">设置能量跟踪命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">energy</span></code>）</a> 命令启用。每个循环都会为 <a class="reference internal" href="../../pfc_model_components/balls/balls.html#ball"><span class="std std-ref">球颗粒</span>（balls）</a>、<a class="reference internal" href="../../pfc_model_components/clumps/clumps.html#clump"><span class="std std-ref">刚性团簇</span>（clumps）</a>、<a class="reference internal" href="../../pfc_model_components/walls/walls.html#wall"><span class="std std-ref">墙</span>（walls）</a> 和 <a class="reference internal" href="../../pfc_model_components/contacts/contacts.html#contact-manual"><span class="std std-ref">接触</span>（contacts）</a> 累积能量。机械能分为两类：体能量与接触能量。
+这些能量可通过 <a class="reference internal" href="../../../../../pfcmodule/doc/manual/ball_manual/ball_fish/ball_utilities/fish_ball.energy.html#function:ball.energy" title="Get the ball total energy contribution. This is the sum over all balls of the
+energy with...">球体能量（<code class="xref fish fish-func docutils literal"><span class="pre">ball.energy</span></code>）</a>、<a class="reference internal" href="../../../../../pfcmodule/doc/manual/clump_manual/clump_fish/clump_utilities/fish_clump.energy.html#function:clump.energy" title="Get the clump total energy contribution. This is the sum over all clumps of
+the energy with...">刚性团簇能量（<code class="xref fish fish-func docutils literal"><span class="pre">clump.energy</span></code>）</a>、<a class="reference internal" href="../../../../../pfcmodule/doc/manual/wall_manual/wall_fish/wall_utilities/fish_wall.energy.html#function:wall.energy" title="Get the wall total energy contribution. This is the sum over all walls of the
+energy with...">墙体总能量贡献（<code class="xref fish fish-func docutils literal"><span class="pre">wall.energy</span></code>）</a> 和
+<a class="reference internal" href="../../../../../../common/contact/doc/contact_manual/contact_fish/contact_intrinsics/fish_contact.energy.html#function:contact.energy" title="Get the current value of an energy partition. The second argument  s  refers
+to an energy..."><code class="xref fish fish-func docutils literal"><span class="pre">contact.energy</span></code></a> <span class="codename">FISH</span> 函数获取。每一类能量的总和可通过
+<code class="xref fish fish-func docutils literal"><span class="pre">mech.energy</span></code> <span class="codename">FISH</span> 函数获取。</p>
+<p>力学体能量是指与体的运动相关的能量。对于球颗粒和刚性团簇，这些能量包括：
+由体力产生的能量，其中体力定义为重力荷载以及施加的力和力矩（记为 <em>energy-body</em>），
+由局部阻尼耗散的能量（记为 <em>energy-damp</em>）以及动能（记为 <em>energy-kinetic</em>）。
+对于墙，则累积边界功（记为 <em>energy-boundary</em>）。在每个时步，边界功等于作用在墙上的力与增量位移的点积，
+以及作用在墙上的力矩与增量角位移的点积之和。</p>
+<p>力学接触能量是指由接触模型定义的能量。力学接触模型的列表在“<a class="reference internal" href="../../pfc_model_components/contacts/contact_models.html#contact-models"><span class="std std-ref">接触模型</span>（Contact Models）</a>”一节中给出。
+在每种接触模型的文档中都存在一个 <em>能量</em> 表。这些表包括 <a class="reference internal" href="../../../../../../common/contactmodel/linear/doc/manual/cmlinear.html#cmlinear-entable"><span class="std std-ref">线性</span>（linear）</a>、<a class="reference internal" href="../../../../../../common/contactmodel/linearcbond/doc/manual/cmlinearcbond.html#cmlinearcbond-entable"><span class="std std-ref">线性接触黏结</span>（linear contact
+bond）</a>、
+<a class="reference internal" href="../../../../../../common/contactmodel/linearpbond/doc/manual/cmlinearpbond.html#cmlinearpbond-entable"><span class="std std-ref">线性平行黏结</span>（linear parallel bond）</a>、<a class="reference internal" href="../../../../../../common/contactmodel/hertz/doc/manual/cmhertz.html#cmhertz-entable"><span class="std std-ref">赫兹</span>（hertz）</a>、<a class="reference internal" href="../../../../../../common/contactmodel/hysteretic/doc/manual/cmhysteretic.html#cmhysteretic-entable"><span class="std std-ref">滞回</span>（hysteretic）</a>、<a class="reference internal" href="../../../../../../common/contactmodel/smoothjoint/doc/manual/cmsmoothjoint.html#cmsmoothjoint-entable"><span class="std std-ref">光滑节理</span>（smooth joint）</a> 和 <a class="reference internal" href="../../../../../../common/contactmodel/flatjoint/doc/manual/cmflatjoint.html#cmflatjoint-entable"><span class="std std-ref">平节理</span>（flat joint）</a> 能量表。
+对于所有内置接触模型，能量列表包括：<em>energy-adhesive</em>、<em>energy-dashpot</em>、<em>energy-pbstrain</em>、<em>energy-rrstrain</em>、<em>energy-rrslip</em>、<em>energy-slip</em> 和 <em>energy-strain</em>。</p>
+<p class="h2 rubric" id="mechanical-damping">力学阻尼</p>
+<p>供给颗粒系统的能量通过 <a class="reference internal" href="../../pfc_model_components/contacts/contact_models.html#contact-models"><span class="std std-ref">接触模型</span>（contact models）</a> 以摩擦滑动或黏性阻尼的形式耗散。然而，这些耗散机制
+可能不足以在合理的循环次数内达到稳态解。一种称为 <em>局部阻尼</em> 的基于体的阻尼方案
+可用于移除额外的动能。局部阻尼作用于每个球颗粒或刚性团簇，
+施加大小与不平衡力成正比的阻尼力。</p>
+<p>对于密实集合体，可以使用非零的局部阻尼来建立平衡并进行
+准静态变形模拟。当需要对密实集合体进行动力模拟时，
+宜采用基于接触模型的阻尼策略，并将局部阻尼系数设置为
+0.0 或一个较小的值。对于涉及颗粒自由飞行和/或颗粒间
+碰撞的问题，局部阻尼并不适用，应采用基于接触模型的阻尼策略。
+如果模拟以快速碰撞为主，则应考虑使用 <a class="reference internal" href="../../../../../../common/contactmodel/hysteretic/doc/manual/cmhysteretic.html#cmhysteretic"><span class="std std-ref">滞回</span>（hysteretic）</a> 接触模型，以获得符合实际的能量耗散。</p>
+<p class="h2 rubric">局部阻尼</p>
+<p><span class="codename">PFC</span> 中使用的局部阻尼与 <a class="reference internal" href="#cundall1987" id="id1">[Cundall1987]</a> 中描述的阻尼类似。在运动方程（平动见 <a class="reference internal" href="law_of_motion.html#translation-eom"><span class="std std-ref">此处</span>（here）</a>，
+转动见 <a class="reference internal" href="law_of_motion.html#rotation-eom"><span class="std std-ref">此处</span>（here）</a>）中加入一个阻尼力项，使阻尼后的运动方程可写为</p>
+<div class="math" id="equation-formulation_mechanical_damping_eq1">
+<span class="eqno">(1)</span>\[\begin{split}{\cal F}_{(i)} + \mathbf{F^d}_{(i)} &amp;= {\cal M}_{(i)} {\cal A}_{(i)};         \quad i=1\ldots6
+\\
+{\cal M}_{(i)} {\cal A}_{(i)} &amp;= \begin{cases}
+                                         m \ddot{ \mathbf{x}}_{(i)},  &amp;{\rm for} \ i = 1\ldots3; \\
+                                         \mathbf{I} \dot{\pmb{\omega}}_{(i-3)}, &amp;{\rm for} \ i = 4\ldots6
+                             \end{cases}\\\end{split}\]</div>
+<p>式中，<span class="math">\({\cal F}_{(i)}\)</span>、<span class="math">\({\cal M}_{(i)}\)</span> 和 <span class="math">\({\cal A}_{(i)}\)</span> 分别为广义力、质量和
+加速度分量。<span class="math">\({\cal F}_{(i)}\)</span> 包含重力所作的贡献，
+<span class="math">\(\mathbf{F^d}_{(i)}\)</span> 为阻尼力：</p>
+<div class="math" id="equation-formulation_mechanical_damping_eq2">
+<span class="eqno">(2)</span>\[\begin{split}\mathbf{F^d}_{(i)}  &amp;= -\alpha \left| {\cal F}_{(i)} \right| {\rm sign} \left( {\cal V}_{(i)}
+\right);  \quad i = 1\ldots6
+\\
+{\rm sign}(y) &amp;= \begin{cases}
+                   +1, &amp;{\rm if} \ y &gt; 0; \\
+                   -1, &amp;{\rm if} \ y &lt; 0; \\
+                    0, &amp;{\rm if} \ y = 0
+                 \end{cases}\\\end{split}\]</div>
+<p>用广义速度表示为：</p>
+<div class="math" id="equation-formulation_mechanical_damping_eq3">
+<span class="eqno">(3)</span>\[\begin{split}{\cal V}_{(i)} =  \begin{cases}
+                      \dot{\mathbf{x}}_{(i)},    &amp;{\rm for} \ i = 1\dots3; \\
+                      \pmb{\omega}_{(i-3)},  &amp;{\rm for} \ i = 4\dots6
+                    \end{cases}\\\end{split}\]</div>
+<p>阻尼力由阻尼常数 <span class="math">\(\alpha\)</span> 控制，其默认值为 0.0；可分别使用 <span class="cmdkey">damp</span> 关键字在
+<a class="reference internal" href="../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.attribute.html#command:ball.attribute" title="Set the value of ball attributes. This command is a synonym for the  ball.initialize 
+command. Individual attributes can be listed with the  ball.list  command
+and all attributes can be visualized..."><code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">attribute</span></code></a> 或 <a class="reference internal" href="../../../../../pfcmodule/doc/manual/clump_manual/clump_commands/cmd_clump_attribute.html#command:clump.attribute" title="Set the value of clump attributes. This command is a synonym for the  clump.initialize 
+command. Individual attributes can be listed with the  clump.list  command
+and all attributes can be visualized..."><code class="xref fish fish-cmd docutils literal"><span class="pre">clump</span> <span class="pre">attribute</span></code></a> 命令中为每个球颗粒或刚性团簇单独指定该常数。</p>
+<p>这种形式的阻尼具有以下优点：</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>只有加速运动才会受到阻尼；因此，稳态运动不会产生
+错误的阻尼力。</li>
+<li>阻尼常数 <span class="math">\(\alpha\)</span> 是无量纲量。</li>
+<li>由于阻尼与频率无关，集合体中具有不同自振周期的区域
+会使用相同的阻尼常数而受到同等的阻尼。</li>
+</ol>
+</div></blockquote>
+<p class="h2 rubric">与滞回阻尼的相似性</p>
+<p>局部阻尼公式与滞回阻尼类似，在滞回阻尼中，每个循环的能量损失与该循环执行的速率无关。
+以下分析将说明这种相似性。考察方程 <a class="reference internal" href="#equation-formulation_mechanical_damping_eq2">(2)</a> 可以看出，阻尼力总是阻碍运动，
+但其大小按合成的广义力进行缩放，而不像黏性阻尼那样按速度大小进行缩放。
+方程 <a class="reference internal" href="#equation-formulation_mechanical_damping_eq1">(1)</a> 可根据 <span class="math">\({\cal F}_{(i)}\)</span> 与 <span class="math">\({\cal V}_{(i)}\)</span> 的相对符号写成两种形式。
+当二者符号相同时，运动方程为</p>
+<div class="math" id="equation-formulation_mechanical_damping_eq4">
+<span class="eqno">(4)</span>\[{\cal A}_{(i)} = {{\cal F}_{(i)} (1 - \alpha) \over {\cal M}_{(i)}}\]</div>
+<p>而当二者符号相反时，运动方程为</p>
+<div class="math" id="equation-formulation_mechanical_damping_eq5">
+<span class="eqno">(5)</span>\[{\cal A}_{(i)} = {{\cal F}_{(i)} (1 + \alpha) \over {\cal M}_{(i)}}\]</div>
+<p>这些方程可用表观质量表示为</p>
+<div class="math" id="equation-formulation_mechanical_damping_eq6">
+<span class="eqno">(6)</span>\[{\cal A}_{(i)} = {{\cal F}_{(i)} / {\cal M}_{(i)}^+}  \quad{\rm and}\quad {\cal A}_{(i)} = {{\cal F}_{(i)} / {\cal M}_{(i)}^-}\]</div>
+<p>式中，<span class="math">\({\cal M}_{(i)}^+ = {\cal M}_{(i)} / (1-\alpha)\)</span> 与 <span class="math">\({\cal M}_{(i)}^- = {\cal M}_{(i)} / (1+\alpha)\)</span>。</p>
+<p><a class="reference internal" href="timestep_constraints.html#fig-timestep-1"><span class="std std-ref">此</span>（this）</a> 图（位于“<a class="reference internal" href="timestep_constraints.html#timestep-constraints"><span class="std std-ref">时步确定</span>（Timestep Determination）</a>”一节）所示的单自由度质量-弹簧系统，
+在给定初始位移使 <span class="math">\(x = a\)</span> 在 <span class="math">\(t = 0\)</span> 时，其运动如下图所示。对于这种运动，
+在每个循环中速度为零的两个时刻，表观质量增大；在速度最大的两个时刻，表观质量减小。
+阻尼的作用方式是每个循环移除两次动能。在速度峰值处，部分运动质量被移除并舍弃。
+请注意，加速度不存在不连续，因为在移除质量的瞬间加速度为零。
+每个循环移除的能量等于 <span class="math">\(B\)</span> 点处动能降量的两倍，或</p>
+<div class="math" id="equation-formulation_mechanical_damping_eq7">
+<span class="eqno">(7)</span>\[\Delta W_{(i)} = 2 \left[\textstyle{1\over2} \left( {\cal M}_{(i)}^+ - {\cal M}_{(i)}^- \right) {\cal V}_{(i)}^2 \right]\]</div>
+<p>而移除瞬间的平均动能为</p>
+<div class="math" id="equation-formulation_mechanical_damping_eq8">
+<span id="formulation-mechanical-damping-eq8"></span><span class="eqno">(8)</span>\[W_{(i)} = \textstyle{1\over4} \left( {\cal M}_{(i)}^+ + {\cal M}_{(i)}^- \right) {\cal V}_{(i)}^2\]</div>
+<p>式中，<span class="math">\({\cal V}_{(i)}\)</span> 为方程 <a class="reference internal" href="#equation-formulation_mechanical_damping_eq3">(3)</a> 给出的
+广义速度。</p>
+<div class="figure align-center" id="id3">
+<span id="fig-mass-spring"></span><a class="reference internal image-reference" href="../../../../../../_images/mass_spring.png"><img alt="../../../../../../_images/mass_spring.png" src="../../../../../../_images/mass_spring.png" style="width: 425pt;"/></a>
+<p class="caption"><span class="caption-text">图 1：单个质量-弹簧系统的运动。</span></p>
+</div>
+<p>每个循环内损失的能量与最大储存能量之比称为“比损耗”
+(<a class="reference internal" href="#kolsky1963" id="id2">[Kolsky1963]</a>)。注意到以下事实后，即可用阻尼常数表示比损耗：
+对于单自由度系统，或对于单一模态的振动，峰值动能
+与峰值储存能量相同。因此，比损耗可以写为</p>
+<div class="math" id="equation-formulation_mechanical_damping_eq9">
+<span class="eqno">(9)</span>\[{\Delta W_{(i)} \over W_{(i)}} = { 4\left( {\cal M}_{(i)}^+ - {\cal M}_{(i)}^- \right) \over
+ {\cal M}_{(i)}^+ + {\cal M}_{(i)}^- } = 4\alpha\]</div>
+<p>对于较小的阻尼值，临界阻尼比 <span class="math">\(D\)</span> 可以用比损耗
+表示为</p>
+<div class="math" id="equation-formulation_mechanical_damping_eq10">
+<span class="eqno">(10)</span>\[D = { {\Delta W_{(i)} / W_{(i)}} \over 4\pi } = { \alpha \over \pi }\]</div>
+<p>对于 <span class="math">\(\alpha = 0.7\)</span> 的取值，临界阻尼比的近似值因此为 0.22。</p>
+<p>方程 <a class="reference internal" href="#equation-formulation_mechanical_damping_eq9">(9)</a>
+可以通过分别对一个和三个堆叠颗粒施加突加
+重力，并让每个系统振动至平衡来验证。两个试验给出的 <span class="math">\(\Delta W / W\)</span>
+值近似相同，这证实了阻尼与频率无关。然而，对于
+多个模态同时活跃的系统，由 <span class="codename">PFC</span> 计算得到的响应可能不会
+对每个模态表现出相同的阻尼。</p>
+<p>局部阻尼不适用于在重力作用下自由飞行的颗粒。对于大量颗粒由指定速度
+边界条件驱动的系统，局部阻尼也可能
+不适用。</p>
+<p class="rubric">参考文献</p>
+<table class="docutils citation" frame="void" id="cundall1987" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[Cundall1987]</a></td><td>Cundall, P. A.，“岩石与土体结构的离散元模型”，载于 <em>《工程岩石力学中的分析与计算
+方法》</em>，第 4 章，第 129-163 页。E. T. Brown 编. London: Allen &amp; Unwin., 1987.</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="kolsky1963" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[Kolsky1963]</a></td><td>Kolsky, H. <span class="bi">《固体中的应力波》</span>. New York: Dover Publications, 1963.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../numerical_simulations_with_pfc.html">Numerical Simulations with <span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="pfc_model_formulation.html"><span class="codename">PFC</span> Model Formulation</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="contact_coupling.html" title="previous chapter"> 45.0 - Contact Coupling</a> |    
+       <a href="../material_modeling_support_for_pfc.html" title="next chapter">Material Modeling Support For <span class="codename">PFC</span></a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Energy and Dissipation Mechanisms in PFC" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

@@ -1,0 +1,440 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>利用裂隙跟踪裂纹的单轴压缩破碎分析 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../../search.html" rel="search" title="Search"/>
+<link href="../../../../../../../common/geometry/doc/manual/geometry.html" rel="next" title="Geometry"/>
+<link href="../../../../../../../common/contact/doc/fragment_manual/fragment_fish/fragment_intrinsics/fish_fragment.vol.html" rel="prev" title="fragment.vol"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="fragmentation-analysis-during-a-uniaxial-compression-with-crack-tracking-using-fractures">
+<span id="exap-fragment"></span><h1>利用裂隙跟踪裂纹的单轴压缩破碎分析</h1>
+<p class="h2 rubric">问题描述</p>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">本算例的项目文件可在 <span class="codename">PFC</span> 中查看或运行。<a class="footnote-reference" href="#id2" id="id1">[1]</a>所用的<a class="reference internal" href="#exap-fragment-datafile3d"><span class="std std-ref">数据文件</span>（data files）</a>列于本算例末尾。</p>
+</div>
+<p>先生成一个简单的黏结颗粒集合体，再在无侧限单轴压缩条件下加载至破坏。本算例旨在说明如何使用 <span class="codename">PFC</span> 内置工具跟踪破碎过程。有关黏结集合体的具体构建过程，请参阅“<a class="reference internal" href="../../tutorials/generating_a_bonded_assembly/generating_a_bonded_assembly.html#cmlinearpond-simple"><span class="std std-ref">生成黏结颗粒集合体</span>（Generating a Bonded Assembly）</a>”教程及<a class="reference internal" href="../../../numerical_simulations_with_pfc/material_modeling_support_for_pfc.html#material-modeling-support-for-pfc"><span class="std std-ref">材料建模支持</span>（material-modeling support）</a>工具包。</p>
+<p class="h2 rubric"><span class="codename">PFC3D</span> 模型</p>
+<p>首先，采用与“<a class="reference internal" href="../../tutorials/generating_a_bonded_assembly/generating_a_bonded_assembly.html#cmlinearpond-simple"><span class="std std-ref">生成黏结颗粒集合体</span>（Generating a Bonded Assembly）</a>”一节类似的方法生成 <span class="codename">PFC3D</span> 黏结颗粒集合体。压缩前的初始状态见<a href="#exap-fragment-system-initial">图 1（Figure  1）</a>。图中接触按属性 <a class="reference internal" href="../../../../../../../common/contactmodel/linearpbond/doc/manual/cmlinearpbond.html#cmlinearpbond-proptable">平行粘结状态（<span class="std std-ref">pb_state</span>）</a> 的数值着色，数值为 3 表示已安装平行黏结；为便于观察，对接触作了平移显示。</p>
+<div class="figure align-center" id="exap-fragment-system-initial">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d-fragment-system-initial.png"><img alt="../../../../../../../_images/p3d-fragment-system-initial.png" src="../../../../../../../_images/p3d-fragment-system-initial.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 1：初始状态。接触按 <a class="reference internal" href="../../../../../../../common/contactmodel/linearpbond/doc/manual/cmlinearpbond.html#cmlinearpbond-proptable">平行粘结状态（<span class="std std-ref">pb_state</span>）</a> 着色，并作平移显示以便观察。</span></p>
+</div>
+<p>进行单轴压缩时，将集合体置于上下两块墙体压板之间，为压板指定沿 <em>z</em> 方向大小相等、方向相反的速度，并运行模型直至达到目标模型时间。通过两条历程监测试样施加在压板上的力的大小，用以衡量试样所承受的压应力。</p>
+<p>采用不同设置重复进行三次压缩。</p>
+<ul class="simple">
+<li><strong>CASE 0</strong> 为常规计算。</li>
+<li>在 <strong>CASE 1</strong> 中启用<a class="reference internal" href="../../../general_components/fragment/fragment.html#fragment-manual"><span class="std std-ref">破碎块体功能</span>（fragment logic）</a>，并通过 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.result.html#command:ball.results" title="Modify the usage of the ball results logic. This logic allows for a reduced
+version of the...">设置球体结果输出（<code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">results</span></code>）</a> 命令，在模拟过程中每隔 0.1 个时间单位保存部分状态信息。</li>
+<li>在 <strong>CASE 2</strong> 中，除使用<a class="reference internal" href="../../../general_components/fragment/fragment.html#fragment-manual"><span class="std std-ref">破碎块体功能</span>（fragment logic）</a>和 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.result.html#command:ball.results" title="Modify the usage of the ball results logic. This logic allows for a reduced
+version of the...">设置球体结果输出（<code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">results</span></code>）</a> 命令外，还为线性平行黏结的 <a class="reference internal" href="../../../../../../../common/contactmodel/linearpbond/doc/manual/cmlinearpbond.html#cmlinearpbond-cbtable"><span class="std std-ref">bond_break</span></a> 回调事件注册一个 <span class="codename">FISH</span> 函数。该函数监测黏结断裂事件，并使用<a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn.html#dfn-manual"><span class="std std-ref">离散裂隙网络功能</span>（Discrete Fracture Network logic）</a>创建裂隙，以存储断裂的位置、尺寸和方位。此外，仅在发生黏结断裂事件时计算破碎块体，并且仅在系统中破碎块体数量发生变化时保存球颗粒结果状态。用于建立该裂纹跟踪环境的 <span class="codename">FISH</span> 函数实现在“<a class="reference internal" href="#exap-fragment-fracture-datafile3d"><span class="std std-ref">fracture.fis</span></a>”中。</li>
+</ul>
+<p class="h2 rubric">模型结果</p>
+<p>三种工况得到相同结果。<strong>CASE 2</strong> 的最终状态见<a href="#exap-fragment-system-final3">图 2（Figure  2）</a>，为便于观察，接触和裂隙被平移至右侧显示。部分黏结接触发生拉伸破坏和剪切破坏，最终导致试样的宏观破坏。如<a href="#exap-fragment-wforce">图 3（Figure  3）</a>所示，两块压板上的作用力大小相等，且反映出试样的脆性特征。</p>
+<div class="figure align-center" id="exap-fragment-system-final3">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d-fragment-system-final2.png"><img alt="../../../../../../../_images/p3d-fragment-system-final2.png" src="../../../../../../../_images/p3d-fragment-system-final2.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：加载后的系统状态（CASE 3）。右侧为按破碎块体索引着色的球颗粒。左侧为按 <a class="reference internal" href="../../../../../../../common/contactmodel/linearpbond/doc/manual/cmlinearpbond.html#cmlinearpbond-proptable">平行粘结状态（<span class="std std-ref">pb_state</span>）</a> 着色的接触，以及按剪切／拉伸破坏模式着色的裂隙，均经过平移显示以便观察。</span></p>
+</div>
+<div class="figure align-center" id="exap-fragment-wforce">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d-fragment-wforce.png"><img alt="../../../../../../../_images/p3d-fragment-wforce.png" src="../../../../../../../_images/p3d-fragment-wforce.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 3：压板上测得的力的大小随时间变化的曲线。</span></p>
+</div>
+<p>启用破碎块体功能后，即可按球颗粒所属破碎块体的索引进行着色。该功能还提供其他实用工具，详细说明请参阅“<a class="reference internal" href="../../../general_components/fragment/fragment.html#fragment-manual"><span class="std std-ref">破碎块体</span>（Fragment）</a>”一节。例如，<a href="#exap-fragment-fragvol-final2">图 4（Figure  4）</a>给出了模拟过程中监测到的最大破碎块体体积相对于初始值的变化，初始状态下该块体即为整个集合体。</p>
+<div class="figure align-center" id="exap-fragment-fragvol-final2">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d-fragment-fragvol-final2.png"><img alt="../../../../../../../_images/p3d-fragment-fragvol-final2.png" src="../../../../../../../_images/p3d-fragment-fragvol-final2.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 4：最大破碎块体体积相对于其初始值的变化。</span></p>
+</div>
+<p>对于 <strong>CASE 2</strong> 和 <strong>CASE 3</strong>，模拟过程中已间歇保存球颗粒构型和破碎块体索引，因此可使用 <span class="codename">FISH</span> 函数 <a class="reference internal" href="#exap-fragment-post-treat-datafile3d">生成影片工况 1（<span class="std std-ref">make_movie_case1</span>）</a>（对应 <strong>CASE 1</strong>）和 <a class="reference internal" href="#exap-fragment-post-treat-datafile3d">生成影片工况 2（<span class="std std-ref">make_movie_case2</span>）</a>（对应 <strong>CASE 2</strong>）创建动画。这展示了如何将<a class="reference internal" href="../../../general_components/fragment/fragment.html#fragment-manual"><span class="std std-ref">破碎块体功能</span>（fragment logic）</a>与 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.result.html#command:ball.results" title="Modify the usage of the ball results logic. This logic allows for a reduced
+version of the...">设置球体结果输出（<code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">results</span></code>）</a> 命令结合，用于深入分析结果。不过，需要注意这两项功能的内存开销。<strong>CASE 1</strong> 和 <strong>CASE 2</strong> 的最终模型状态文件（SAV）均比 <strong>CASE 0</strong> 更大，其中 <strong>CASE 1</strong> 超过其 10 倍。采用 <strong>CASE 2</strong> 中的自定义函数来保存模型结果可以节省内存。也可将结果构型保存为二进制文件，而不是存储在 RAM 中，使模型内存占用保持在合理水平。</p>
+<p class="h2 rubric">结束语</p>
+<p>本算例说明了使用 <span class="codename">PFC</span> 对黏结颗粒模型开展单轴压缩试验的步骤，也说明了如何将<a class="reference internal" href="../../../general_components/fragment/fragment.html#fragment-manual"><span class="std std-ref">破碎块体</span>（Fragment）</a>和<a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn.html#dfn-manual"><span class="std std-ref">离散裂隙网络</span>（Discrete Fracture Network）</a>功能与 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.result.html#command:ball.results" title="Modify the usage of the ball results logic. This logic allows for a reduced
+version of the...">设置球体结果输出（<code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">results</span></code>）</a> 命令相结合，在模拟过程中跟踪破碎过程，并间歇存储相关信息，以供后续处理使用。</p>
+<p class="h2 rubric" id="exap-fragment-datafile3d">fragment.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：fragment.dat</span>
+<span class="c">;</span>
+<span class="c">; 说明 Fragment、DFN 和模型结果逻辑的用法</span>
+<span class="c">; 以研究黏结颗粒模型的破碎过程。</span>
+<span class="c">;</span>
+<span class="c">;=============================================================================</span>
+<span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">model precision</span><span class="n"> </span><span class="m m-Double">15</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'Fragmentation of a Bonded Particle Model'</span>
+
+<span class="c">;-----------------------------------------------------------------------------</span>
+<span class="c">; --------------- 初始阶段：创建黏结试样 ---------------</span>
+<span class="c">;-----------------------------------------------------------------------------</span>
+
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">7.5</span><span class="n"> </span><span class="m m-Double">7.5</span><span class="n"> condition destroy</span>
+<span class="nb">contact cmat</span><span class="n"> default model linear property kn </span><span class="m m-Double">1e7</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">ball model linearpbond </span><span class="sx">...</span>
+<span class="n">                                    property kn </span><span class="m m-Double">5e6</span><span class="n"> proximity </span><span class="m m-Double">0.1</span>
+
+<span class="nb">wall generate</span><span class="n"> box </span><span class="o">-</span><span class="m m-Double">2.5</span><span class="n"> </span><span class="m m-Double">2.5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2.5</span><span class="n"> </span><span class="m m-Double">2.5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">5</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+<span class="nb">ball distribute</span><span class="n"> porosity </span><span class="m m-Double">0.3</span><span class="n"> radius </span><span class="m m-Double">0.25</span><span class="n"> </span><span class="m m-Double">0.3</span><span class="n"> box </span><span class="o">-</span><span class="m m-Double">2.5</span><span class="n"> </span><span class="m m-Double">2.5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2.5</span><span class="n"> </span><span class="m m-Double">2.5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">5</span>
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="m m-Double">1.0e3</span><span class="n"> damp </span><span class="m m-Double">0.7</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">2000</span><span class="n"> calm </span><span class="m m-Double">10</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> calm </span><span class="m m-Double">1000</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">5e-3</span>
+
+<span class="nb">contact method</span><span class="n"> bond gap </span><span class="m m-Double">0.1</span>
+<span class="nb">contact property</span><span class="n"> pb_kn </span><span class="m m-Double">1e7</span><span class="n"> pb_ks </span><span class="m m-Double">1e7</span><span class="n"> pb_ten </span><span class="m m-Double">4e5</span><span class="n"> pb_coh </span><span class="m m-Double">4e5</span><span class="n"> pb_fa </span><span class="m m-Double">20.0</span>
+
+<span class="nb">wall delete</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">facet model linear </span><span class="sx">...</span>
+<span class="n">                                     property kn </span><span class="m m-Double">1e7</span><span class="n"> ks </span><span class="m m-Double">1e7</span><span class="n"> fric </span><span class="m m-Double">0.5</span>
+
+<span class="nb">wall generate</span><span class="n"> id </span><span class="m m-Double">1</span><span class="n"> name </span><span class="s">'top'</span><span class="n"> polygon </span><span class="o">-</span><span class="m m-Double">4.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4.0</span><span class="n"> </span><span class="m m-Double">5.0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                      </span><span class="o">-</span><span class="m m-Double">4.0</span><span class="n">  </span><span class="m m-Double">4.0</span><span class="n"> </span><span class="m m-Double">5.0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                       </span><span class="m m-Double">4.0</span><span class="n">  </span><span class="m m-Double">4.0</span><span class="n"> </span><span class="m m-Double">5.0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                       </span><span class="m m-Double">4.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4.0</span><span class="n"> </span><span class="m m-Double">5.0</span>
+
+
+<span class="nb">wall generate</span><span class="n"> id </span><span class="m m-Double">2</span><span class="n"> name </span><span class="s">'bottom'</span><span class="n"> polygon </span><span class="o">-</span><span class="m m-Double">4.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5.0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                         </span><span class="o">-</span><span class="m m-Double">4.0</span><span class="n">  </span><span class="m m-Double">4.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5.0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                          </span><span class="m m-Double">4.0</span><span class="n">  </span><span class="m m-Double">4.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5.0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                          </span><span class="m m-Double">4.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5.0</span>
+
+<span class="nb">wall attribute</span><span class="n"> rotation</span><span class="o">-</span><span class="n">center </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n">  </span><span class="m m-Double">5.0</span><span class="n"> range position</span><span class="o">-</span><span class="n">z  </span><span class="m m-Double">5.0</span>
+<span class="nb">wall attribute</span><span class="n"> rotation</span><span class="o">-</span><span class="n">center </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5.0</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">5.0</span>
+<span class="nb">model clean</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> elastic ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">5e-3</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.0</span><span class="n"> gradient </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.001</span>
+<span class="nb">model history</span><span class="n"> name </span><span class="s">'1'</span><span class="n"> mechanical time</span><span class="o">-</span><span class="n">total</span>
+<span class="nb">wall history</span><span class="n"> name </span><span class="s">'2'</span><span class="n"> force</span><span class="o">-</span><span class="n">contact id </span><span class="m m-Double">1</span>
+<span class="nb">wall history</span><span class="n"> name </span><span class="s">'3'</span><span class="n"> force</span><span class="o">-</span><span class="n">contact id </span><span class="m m-Double">2</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'initial'</span>
+
+<span class="c">;-----------------------------------------------------------------------------</span>
+<span class="c">; ------------ 工况 0：不追踪碎片 - 无球结果 ------------</span>
+<span class="c">;-----------------------------------------------------------------------------</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time </span><span class="m m-Double">50.0</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'final-case0'</span>
+
+<span class="c">;-----------------------------------------------------------------------------</span>
+<span class="c">; ------------ 工况 1：连续更新碎片并记录球结果 ------</span>
+<span class="c">;-----------------------------------------------------------------------------</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'initial'</span>
+
+<span class="nb">fragment register</span><span class="n"> ball</span><span class="o">-</span><span class="n">ball</span>
+<span class="nb">fragment activate</span><span class="n"> time </span><span class="m m-Double">0.1</span>
+<span class="nb">model mechanical</span><span class="n"> time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">0.0</span>
+<span class="n">model result interval mechanical </span><span class="m m-Double">0.1</span>
+<span class="n">ball result add</span><span class="o">-</span><span class="n">attribute fragment</span>
+<span class="n">wall result add</span><span class="o">-</span><span class="n">attribute velocity</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time </span><span class="m m-Double">50.0</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'final-case1'</span>
+
+<span class="c">;program call post_treat.fis</span>
+<span class="c">;[make_movie_case1]</span>
+
+<span class="c">;-----------------------------------------------------------------------------</span>
+<span class="c">; ------------ 工况 2：自定义更新破碎块体与球结果 -----------</span>
+<span class="c">;-----------------------------------------------------------------------------</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'initial'</span>
+
+<span class="nb">program call</span><span class="n"> </span><span class="s">'fracture.fis'</span>
+<span class="ni">[track_init]</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time </span><span class="m m-Double">50.0</span>
+<span class="ni">[track_end]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'final-case2'</span>
+
+<span class="c">;program call post_treat.fis</span>
+<span class="c">;[make_movie_case2]</span>
+
+<span class="nb">program </span><span class="se">return</span><span class="n"> </span>
+<span class="c">;=============================================================================</span>
+<span class="c">; 文件结束：fragment.dat</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="exap-fragment-fracture-datafile3d">fracture.fis</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：fracture.fis</span>
+<span class="c">;</span>
+<span class="c">; 用于追踪 BPM 中破碎过程的简单环境。</span>
+<span class="c">; 监测 LinearPBond 模型的 "bond_break" 事件并将其转化为裂隙。</span>
+<span class="c">; 使用破碎块体与球结果逻辑记录破碎块体 ID </span>
+<span class="c">;</span>
+<span class="c">;=============================================================================</span>
+
+<span class="nb">fish define</span><span class="ni"> add_crack</span><span class="p">(</span><span class="ni">entries</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> contact    </span><span class="p">=</span><span class="ni"> entries</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> mode       </span><span class="p">=</span><span class="ni"> entries</span><span class="p">(</span><span class="m m-Double">2</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> strength   </span><span class="p">=</span><span class="ni"> entries</span><span class="p">(</span><span class="m m-Double">3</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> frac_pos   </span><span class="p">=</span><span class="ni"> </span><span class="k">contact.pos</span><span class="p">(</span><span class="ni">contact</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> norm       </span><span class="p">=</span><span class="ni"> </span><span class="k">contact.normal</span><span class="p">(</span><span class="ni">contact</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> dfn_label  </span><span class="p">=</span><span class="ni"> </span><span class="s">'crack'</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> frac_dip</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> frac_dipdir</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> frac_size </span><span class="p">=</span><span class="ni"> </span><span class="k">contact.prop</span><span class="p">(</span><span class="ni">contact</span><span class="p">,</span><span class="s">'pb_radius'</span><span class="p">)</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> len2 </span><span class="p">=</span><span class="ni"> </span><span class="k">math.sqrt</span><span class="p">(</span><span class="k">comp.x</span><span class="p">(</span><span class="ni">norm</span><span class="p">)</span><span class="o">*</span><span class="k">comp.x</span><span class="p">(</span><span class="ni">norm</span><span class="p">)</span><span class="o">+</span><span class="k">comp.y</span><span class="p">(</span><span class="ni">norm</span><span class="p">)</span><span class="o">*</span><span class="k">comp.y</span><span class="p">(</span><span class="ni">norm</span><span class="p">))</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> len2 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">    len2 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  frac_dipdir </span><span class="p">=</span><span class="ni"> </span><span class="k">math.atan2</span><span class="p">(</span><span class="k">comp.x</span><span class="p">(</span><span class="ni">norm</span><span class="p">)</span><span class="o">/</span><span class="ni">len2</span><span class="p">,</span><span class="k">comp.y</span><span class="p">(</span><span class="ni">norm</span><span class="p">)</span><span class="o">/</span><span class="ni">len2</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> </span><span class="k">math.degrad</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> len3 </span><span class="p">=</span><span class="ni"> </span><span class="k">math.sqrt</span><span class="p">(</span><span class="ni">len2</span><span class="o">*</span><span class="ni">len2</span><span class="o">+</span><span class="k">comp.z</span><span class="p">(</span><span class="ni">norm</span><span class="p">)</span><span class="o">*</span><span class="k">comp.z</span><span class="p">(</span><span class="ni">norm</span><span class="p">))</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> len3 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">    len3 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  frac_dip </span><span class="p">=</span><span class="ni"> </span><span class="k">math.atan2</span><span class="p">(</span><span class="ni">len2</span><span class="o">/</span><span class="ni">len3</span><span class="p">,</span><span class="k">comp.z</span><span class="p">(</span><span class="ni">norm</span><span class="p">)</span><span class="o">/</span><span class="ni">len3</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> </span><span class="k">math.degrad</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> frac_dip</span><span class="o">&lt;</span><span class="m m-Double">0.0</span>
+<span class="ni">    frac_dip </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni">frac_dip</span>
+<span class="ni">    frac_dipdir </span><span class="p">=</span><span class="ni"> frac_dipdir </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">180.0</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> frac_dip</span><span class="o">&gt;</span><span class="m m-Double">90.0</span>
+<span class="ni">    frac_dip </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">180.0</span><span class="o">-</span><span class="ni">frac_dip</span>
+<span class="ni">    frac_dipdir </span><span class="p">=</span><span class="ni"> frac_dipdir </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">180.0</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> frac_dipdir</span><span class="o">&lt;</span><span class="m m-Double">0.0</span>
+<span class="ni">    frac_dipdir </span><span class="p">=</span><span class="ni"> frac_dipdir </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">360.0</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> frac_dipdir </span><span class="o">&gt;</span><span class="ni"> </span><span class="m m-Double">360.0</span>
+<span class="ni">    frac_dipdir </span><span class="p">=</span><span class="ni"> frac_dipdir </span><span class="o">-</span><span class="ni"> </span><span class="m m-Double">360.0</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> mode </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span><span class="ni"> </span><span class="k">then</span><span class="ni"> </span>
+<span class="ni">    </span><span class="c">; 拉伸破坏</span>
+<span class="ni">    dfn_label </span><span class="p">=</span><span class="ni"> dfn_label </span><span class="o">+</span><span class="ni"> </span><span class="s">'_tension'</span>
+<span class="ni">  </span><span class="k">else</span><span class="ni"> </span><span class="k">if</span><span class="ni"> mode </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">    </span><span class="c">; 剪切破坏</span>
+<span class="ni">    dfn_label </span><span class="p">=</span><span class="ni"> dfn_label </span><span class="o">+</span><span class="ni"> </span><span class="s">'_shear'</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> arg </span><span class="p">=</span><span class="ni"> </span><span class="k">array.create</span><span class="p">(</span><span class="m m-Double">5</span><span class="p">)</span>
+<span class="ni">  arg</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'disk'</span>
+<span class="ni">  arg</span><span class="p">(</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> frac_pos</span>
+<span class="ni">  arg</span><span class="p">(</span><span class="m m-Double">3</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> frac_size</span>
+<span class="ni">  arg</span><span class="p">(</span><span class="m m-Double">4</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> frac_dip</span>
+<span class="ni">  arg</span><span class="p">(</span><span class="m m-Double">5</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> frac_dipdir </span>
+
+<span class="ni">  </span><span class="k">global</span><span class="ni"> dfn </span><span class="p">=</span><span class="ni"> </span><span class="k">dfn.find</span><span class="p">(</span><span class="ni">dfn_label</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> dfn </span><span class="p">=</span><span class="ni"> </span><span class="k">null</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">    dfn </span><span class="p">=</span><span class="ni"> </span><span class="k">dfn.create</span><span class="p">(</span><span class="ni">dfn_label</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> fnew </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.create</span><span class="p">(</span><span class="ni">dfn</span><span class="p">,</span><span class="ni">arg</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">fracture.prop</span><span class="p">(</span><span class="ni">fnew</span><span class="p">,</span><span class="s">'failure_strength'</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> strength</span>
+<span class="ni">  </span><span class="k">fracture.prop</span><span class="p">(</span><span class="ni">fnew</span><span class="p">,</span><span class="s">'age'</span><span class="p">)</span><span class="ni">  </span><span class="p">=</span><span class="ni"> </span><span class="k">mech.time.total</span>
+<span class="ni">  crack_added </span><span class="p">=</span><span class="ni"> </span><span class="sx">true</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> track_fname</span>
+<span class="ni">  track_fcount </span><span class="o">+=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">  track_fname </span><span class="p">=</span><span class="ni"> </span><span class="k">string.build</span><span class="p">(</span><span class="s">'frag%1.p3result'</span><span class="p">,</span><span class="ni">track_fcount</span><span class="p">)</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> track_init</span>
+<span class="k">  command</span>
+<span class="nb">    fracture delete</span>
+<span class="n">    model result clear</span><span class="o">-</span><span class="n">map</span>
+<span class="nb">    fragment clear</span>
+<span class="nb">    fragment register</span><span class="n"> ball</span><span class="o">-</span><span class="n">ball</span>
+<span class="n">    ball result add</span><span class="o">-</span><span class="n">attribute fragment</span>
+<span class="n">    wall result add</span><span class="o">-</span><span class="n">attribute velocity</span>
+<span class="k">  endcommand</span>
+<span class="ni">  </span><span class="c">; 激活 fishcalls</span>
+<span class="k">  command</span>
+<span class="nb">    fish callback</span><span class="n"> remove add_crack event bond_break</span>
+<span class="nb">    fish callback</span><span class="n"> add add_crack event bond_break</span>
+<span class="nb">    fish callback</span><span class="n"> remove monitor </span><span class="m m-Double">100.0</span>
+<span class="nb">    fish callback</span><span class="n"> add monitor </span><span class="m m-Double">100.0</span>
+<span class="k">  endcommand</span>
+<span class="ni">  </span><span class="c">; 重置全局变量</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> crack_added </span><span class="p">=</span><span class="ni"> </span><span class="sx">false</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> track_fcount </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="k">  command</span>
+<span class="nb">    fragment compute</span>
+<span class="n">    model result export </span><span class="ni">[track_fname]</span>
+<span class="k">  endcommand</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> track_map </span><span class="p">=</span><span class="ni"> map</span><span class="p">(</span><span class="k">mech.time.total</span><span class="p">,</span><span class="k">fragment.num</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">))</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> monitor</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> crack_added </span><span class="p">=</span><span class="ni"> </span><span class="sx">true</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> numfrag </span><span class="p">=</span><span class="ni"> </span><span class="k">fragment.num</span><span class="p">()</span>
+<span class="k">    command</span><span class="n"> </span>
+<span class="nb">      fragment compute</span>
+<span class="k">    endcommand</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> </span><span class="k">fragment.num</span><span class="p">()</span><span class="ni"> # numfrag </span><span class="k">then</span>
+<span class="k">      command</span>
+<span class="n">        model result export </span><span class="ni">[track_fname]</span>
+<span class="k">      endcommand</span>
+<span class="ni">      </span><span class="k">map.add</span><span class="p">(</span><span class="ni">track_map</span><span class="p">,</span><span class="k">mech.time.total</span><span class="p">,</span><span class="ni">numfrag</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  crack_added </span><span class="p">=</span><span class="ni"> </span><span class="sx">false</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> make_table</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> frag1 </span><span class="p">=</span><span class="ni"> </span><span class="k">fragment.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> tab </span><span class="p">=</span><span class="ni"> </span><span class="k">table.create</span><span class="p">(</span><span class="s">'volfrag1'</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> value </span><span class="k">map.keys</span><span class="p">(</span><span class="ni">track_map</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">table</span><span class="p">(</span><span class="ni">tab</span><span class="p">,</span><span class="ni">value</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">       </span><span class="k">fragment.vol</span><span class="p">(</span><span class="ni">frag1</span><span class="p">,</span><span class="k">fragment.catalog.num</span><span class="p">(</span><span class="ni">value</span><span class="p">))</span><span class="ni"> </span><span class="o">/</span><span class="ni"> </span><span class="k">fragment.vol</span><span class="p">(</span><span class="ni">frag1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">endloop</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> track_end</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> numfrag </span><span class="p">=</span><span class="ni"> </span><span class="k">fragment.num</span><span class="p">()</span>
+<span class="k">  command</span><span class="n"> </span>
+<span class="nb">    fragment compute</span>
+<span class="k">  endcommand</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> </span><span class="k">fragment.num</span><span class="p">()</span><span class="ni"> # numfrag </span><span class="k">then</span>
+<span class="k">    command</span>
+<span class="n">      model result export </span><span class="ni">[track_fname]</span>
+<span class="k">    endcommand</span>
+<span class="ni">    </span><span class="k">map.add</span><span class="p">(</span><span class="ni">track_map</span><span class="p">,</span><span class="k">mech.time.total</span><span class="p">,</span><span class="ni">numfrag</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  make_table</span>
+<span class="nb">end</span>
+
+
+<span class="c">;=============================================================================</span>
+<span class="c">; 文件结束：fracture.p3fis</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="exap-fragment-post-treat-datafile3d">post_treat.fis</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish define</span><span class="ni"> make_movie_case1</span>
+<span class="k">  command</span>
+<span class="n">    set echo </span><span class="sx">off</span>
+<span class="n">    ball result map </span><span class="ni">[track_map]</span>
+<span class="k">  endcommand</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> count </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> value track_map</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> fname </span><span class="p">=</span><span class="ni"> </span><span class="k">string.build</span><span class="p">(</span><span class="s">'fragments_case1_%1.png'</span><span class="p">,</span><span class="ni">count</span><span class="p">)</span>
+<span class="k">    command</span>
+<span class="nb">      domain extent</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="n">      ball result load </span><span class="ni">[count]</span><span class="n"> nothrow </span><span class="sx">on</span>
+<span class="n">      wall result load </span><span class="ni">[count]</span><span class="n"> nothrow </span><span class="sx">on</span>
+<span class="nb">      plot current</span><span class="n"> view </span><span class="s">'the system'</span>
+<span class="n">      plot bitmap filename </span><span class="ni">[fname]</span><span class="n"> </span>
+<span class="k">    endcommand</span>
+<span class="ni">    count </span><span class="o">+=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">  </span><span class="k">endloop</span>
+<span class="k">  command</span>
+<span class="n">    set echo </span><span class="sx">on</span>
+<span class="k">  endcommand</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> make_movie_case2</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> keys </span><span class="p">=</span><span class="ni"> </span><span class="k">map.keys</span><span class="p">(</span><span class="ni">track_map</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> count </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="k">  command</span>
+<span class="n">    set echo </span><span class="sx">off</span>
+<span class="k">  endcommand</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> value keys</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> fname </span><span class="p">=</span><span class="ni"> </span><span class="k">string.build</span><span class="p">(</span><span class="s">'fragments_case2_%1.png'</span><span class="p">,</span><span class="ni">count</span><span class="p">)</span>
+<span class="k">    command</span>
+<span class="nb">      domain extent</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="n">      ball result load </span><span class="ni">[count]</span><span class="n"> nothrow </span><span class="sx">on</span>
+<span class="n">      wall result load </span><span class="ni">[count]</span><span class="n"> nothrow </span><span class="sx">on</span>
+<span class="nb">      plot current</span><span class="n"> view </span><span class="s">'Fragments and Cracks'</span>
+<span class="n">      plot mod </span><span class="m m-Double">4</span><span class="n"> dfn colorby numericproperty </span><span class="s">"age"</span><span class="n"> coloropt scaled </span><span class="sx">...</span>
+<span class="n">           ramp max </span><span class="ni">[value]</span><span class="n"> above none map translate </span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span>
+<span class="n">      plot mod </span><span class="m m-Double">5</span><span class="n"> table xaxis max </span><span class="ni">[value]</span>
+<span class="n">      plot bitmap filename </span><span class="ni">[fname]</span><span class="n"> </span>
+<span class="k">    endcommand</span>
+<span class="ni">    count </span><span class="o">+=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">  </span><span class="k">endloop</span>
+<span class="k">  command</span>
+<span class="n">    set echo </span><span class="sx">on</span>
+<span class="k">  endcommand</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+<p class="endnotesection rubric">尾注</p>
+<table class="docutils footnote" frame="void" id="id2" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><p class="first">要在 <span class="codename">PFC</span> 中查看本项目，请使用程序菜单。</p>
+<p><span class="menuselection">帮助 ▼ 算例…</span></p>
+<p class="last"> ⮡ PFC <br/>
+  ⮡ 算例 <br/>
+    ⮡ Fragmentation <br/>
+      ⮡ Fragment.prj</p>
+</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../../../../../common/docproject/source/manual/program_guide/program_guide.html">程序指南</a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../../../../../common/docproject/source/manual/program_guide/general_components.html">Common Model Objects</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../../../general_components/fragment/fragment.html">Fragment</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../../../../../../../common/contact/doc/fragment_manual/fragment_fish/fragment_intrinsics/fish_fragment.vol.html" title="previous chapter"> <code class="docutils literal"><span class="pre">fragment.vol</span></code></a> |    
+       <a href="../../../../../../../common/geometry/doc/manual/geometry.html" title="next chapter">Geometry</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Fragmentation Analysis during a Uniaxial Compression with Crack Tracking Using Fractures" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

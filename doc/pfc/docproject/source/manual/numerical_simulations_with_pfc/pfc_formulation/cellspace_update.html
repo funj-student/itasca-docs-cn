@@ -1,0 +1,275 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>30.0 - 更新空间搜索数据结构 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="update_contacts.html" rel="next" title="35.0 - Create/delete Contacts"/>
+<link href="advance_time.html" rel="prev" title="20.0 - Advance Time"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="update-spatial-searching-data-structures">
+<span id="cellspace-update"></span><h1>30.0 - 更新空间搜索数据结构</h1>
+<p>引入模型 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/domain_manual/domain.html#domain">域（<span class="std std-ref">domain</span>）</a> 是为了简化空间搜索，并简化
+一些常用的模拟任务。域是一个与全局坐标系对齐的长方体，
+所有 <span class="codename">PFC</span> 模型组成部分都位于其中。为进行邻近检测，域被分解为尺寸相同的长方体，
+即<em>单元</em>，每个单元保存与其在某种意义上重叠的部件（piece）列表。
+所得的数据结构称为 <a class="reference internal" href="#cellspace"><span class="std std-ref">单元空间</span>（cell space）</a>。此类数据结构
+可以显著降低圈定空间中某一区域对象的计算开销，因为
+只需查询感兴趣区域内的单元。使用单元空间时，可以在与对象数量成正比的时间内
+确定所有对象的空间邻近性。相比之下，
+两两测试各对象之间的邻近性所需时间与对象数量的平方成正比，
+这在计算上是非常繁重的负担。由于
+在循环计算过程中根据部件的邻近性创建/删除接触，接触检测这一操作
+在很大程度上依赖于高效的单元空间实现。</p>
+<p>在此循环点中，所有保存部件的单元空间数据结构都会被验证，以便
+在下一个循环点中完成 <a class="reference internal" href="update_contacts.html#update-contacts"><span class="std std-ref">接触检测</span>（contact detection）</a>。
+为进行空间搜索，每个部件都通过一组称为<em>范围</em>的轴对齐包围盒来抽象表示。
+范围用于加速确定部件可能与哪些单元重叠的过程。
+在详细介绍单元空间实现之前，下面先对部件范围这一概念做进一步
+说明。</p>
+<p class="h2 rubric" id="piece-extents">部件范围</p>
+<p>部件的<em>最小范围</em>是完全包围该部件的最小轴对齐包围盒，
+如下所示。</p>
+<div class="figure align-center" id="id5">
+<span id="update-spatial-fig1"></span><a class="reference internal image-reference" href="../../../../../../_images/update_spatial_fig1.png"><img alt="../../../../../../_images/update_spatial_fig1.png" src="../../../../../../_images/update_spatial_fig1.png" style="width: 450pt;"/></a>
+<p class="caption"><span class="caption-text">图 1：球颗粒（左）、刚性团簇中的子颗粒（中）以及墙的面片（右）的最小范围。</span></p>
+</div>
+<p>如果仅根据最小范围就将部件映射到单元中，则无法保证在部件之间可能产生力的循环之前
+创建接触。这会带来问题，因为单个循环内可能存在很大的力，从而导致模型不稳定。在 <span class="codename">PFC</span> 中，
+通过使用放大的范围将部件映射到单元空间，并限制循环过程中部件的平移，
+可以保证在力产生的循环之前创建接触。只要自动或缩放时步确定模式处于激活状态，
+这一保证就成立。有关这些模式的更多信息，请参阅“<a class="reference internal" href="timestep_constraints.html#timestep-constraints"><span class="std std-ref">时步确定</span>（Timestep Determination）</a>”一节；
+有关部件运动学约束的详细描述，请参阅<a class="reference internal" href="timestep_constraints.html#timestep-kinematic"><span class="std std-ref">此</span>（this）</a>小节。此保证在“<a class="reference internal" href="update_contacts.html#update-contacts"><span class="std std-ref">接触更新</span>（Contact Update）</a>”一节中进一步阐述。</p>
+<p>最小范围在每个方向上都会按可由用户指定的接触检测容差系数
+<span class="math">\(\varepsilon\)</span> 放大（参见 <a class="reference internal" href="../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.tolerance.html#command:ball.tolerance" title="Set contact detection tolerances. The size of the extent with which a ball is
+inserted into..."><code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">tolerance</span></code></a>、
+<a class="reference internal" href="../../../../../pfcmodule/doc/manual/clump_manual/clump_commands/cmd_clump_tolerance.html#command:clump.tolerance" title="Set contact detection tolerances. The size of the extent with which a clump
+pebble is inserted into the..."><code class="xref fish fish-cmd docutils literal"><span class="pre">clump</span> <span class="pre">tolerance</span></code></a>、<a class="reference internal" href="../../../../../rblock/doc/manual/commands/cmd_rblock_tolerance.html#command:rblock.tolerance" title="Set contact detection tolerances. The size of the extent with which a rigid
+block is inserted into the..."><code class="xref fish fish-cmd docutils literal"><span class="pre">rblock</span> <span class="pre">tolerance</span></code></a> 和 <a class="reference internal" href="../../../../../pfcmodule/doc/manual/wall_manual/wall_commands/cmd_wall_tolerance.html#command:wall.tolerance" title="Set contact detection tolerances. The size of the extent with which a facet
+is inserted into the cell..."><code class="xref fish fish-cmd docutils literal"><span class="pre">wall</span> <span class="pre">tolerance</span></code></a> 命令）。此容差在将部件
+映射到单元空间时计算，其表达式为：</p>
+<div class="math" id="equation-update_spatial_eq1">
+<span class="eqno">(1)</span>\[\varepsilon = \varepsilon_v \left | \mathbf{v} \right | \Delta t + \varepsilon_e E_p + \varepsilon_c\]</div>
+<p>式中，<span class="math">\(\left | \mathbf{v} \right |\)</span> 为部件平动速度的大小，
+<span class="math">\(\Delta t\)</span> 为当前时步，<span class="math">\(E_p\)</span> 为部件尺寸的一种度量。<span class="math">\(E_p\)</span> 是
+球颗粒或子颗粒的直径；对于面片，<span class="math">\(E_p\)</span> 是最小范围各边的平均长度。
+<span class="math">\(\varepsilon_v\)</span> 由 <span class="cmdkey">velocity</span> 关键字设置，<span class="math">\(\varepsilon_e\)</span> 由
+<span class="cmdkey">extent</span> 关键字设置，<span class="math">\(\varepsilon_c\)</span> 由 <span class="cmdkey">constant</span> 关键字设置。</p>
+<p>部件根据其<em>单元范围</em>映射到单元空间中，如下
+图所示。部件移动时会被重新映射到单元空间（即，从先前映射到的单元中
+移除，并映射到相应的单元中）。每当部件从上次映射到单元空间时的位置
+沿任一方向累计移动超过 <span class="math">\(\varepsilon\)</span> 时，就会触发重新映射。
+对于子颗粒和面片，必须考虑累计运动，包括绕刚性团簇质心或墙转动中心的旋转。
+最大相互作用距离 <span class="math">\(\overline{r}_i\)</span> 由 <span class="cmdkey">proximity</span> 关键字在
+<code class="xref fish fish-cmd docutils literal"><span class="pre">cmat</span> <span class="pre">add</span></code>、<code class="xref fish fish-cmd docutils literal"><span class="pre">cmat</span> <span class="pre">default</span></code> 或 <code class="xref fish fish-cmd docutils literal"><span class="pre">cmat</span> <span class="pre">modify</span></code> 命令中指定。这样便可增大单元范围，
+用 <span class="codename">PFC</span> 模拟一定距离上的相互作用，使相距较远的部件也能被检测为
+彼此邻近。所有部件均采用 <a class="reference internal" href="../../pfc_model_components/contacts/cmat_description.html#cmat"><span class="std std-ref">接触模型分配表（CMAT）</span>（Contact Model Assignment Table (CMAT)）</a> 中指定的
+最大相互作用距离。</p>
+<div class="figure align-center" id="id6">
+<span id="update-spatial-fig2"></span><a class="reference internal image-reference" href="../../../../../../_images/update_spatial_fig2.png"><img alt="../../../../../../_images/update_spatial_fig2.png" src="../../../../../../_images/update_spatial_fig2.png" style="width: 400pt;"/></a>
+<p class="caption"><span class="caption-text">图 2：球颗粒/子颗粒与面片的单元范围。<span class="math">\(\varepsilon\)</span> 为容差，
+<span class="math">\(\overline{r}_i\)</span> 为最大相互作用距离。</span></p>
+</div>
+<p>当部件的范围被放大时，其单元范围可能重叠许多超出高效空间邻近检测所需的单元。
+如“<a class="reference internal" href="update_contacts.html#update-contacts"><span class="std std-ref">接触更新</span>（Contact Update）</a>”一节所述，对于需要更新的部件（dirty piece），
+理想情况下应在其周围 <span class="math">\(2 \varepsilon +
+\frac{\overline{r}_i}{2}\)</span> 的距离范围内搜索可能产生的接触。为避免将部件映射到该距离之外的
+单元中，采用了共形面检查。可以将共形面理解为由距部件表面 <span class="math">\(2 \varepsilon + \frac{\overline{r}_i}{2}\)</span> 处的所有点
+构成的面，如下所示。因此，部件被映射到其共形面所重叠的单元中，
+这些单元是其单元范围所重叠单元的子集。</p>
+<div class="figure align-center" id="id7">
+<span id="update-spatial-fig3"></span><a class="reference internal image-reference" href="../../../../../../_images/update_spatial_fig3.png"><img alt="../../../../../../_images/update_spatial_fig3.png" src="../../../../../../_images/update_spatial_fig3.png" style="width: 400pt;"/></a>
+<p class="caption"><span class="caption-text">图 3：球颗粒/子颗粒与面片的共形面。<span class="math">\(\varepsilon\)</span> 为容差，
+<span class="math">\(\overline{r}_i\)</span> 为最大相互作用距离。</span></p>
+</div>
+<p class="h2 rubric" id="cellspace">单元空间</p>
+<p>在指定模型域尺寸之后，空间会被细分为 <span class="math">\(N\)</span> 个等尺寸的
+父单元，每个父单元的边长为 <span class="math">\(len\)</span>。默认情况下共有 {二维 1,000 个；三维 10,000 个} 个父
+单元。父单元列表保存在一个长度为 <span class="math">\(N\)</span> 的一维数组中。每个父单元
+都保存着一个对象列表，其中的对象被映射到该单元中。当部件最初生成时，会计算它们的
+单元范围，并将它们视为 <em>dirty</em>。<span class="codename">PFC</span> 采用与
+<a class="reference internal" href="#yao2004" id="id1">[Yao2004]</a> 方法类似的做法：部件在创建时即为 dirty，若需要重新映射，则在循环过程中也为 dirty。
+程序会构建一个 dirty 列表，使得在这个循环点上只对需要重新映射的部件
+进行操作。这种局部重新映射方案在黏结颗粒
+模拟中极具优势，因为在这类模拟中任一给定循环内需要重新映射的部件都很少。<a class="reference internal" href="#yao2004" id="id2">[Yao2004]</a> 还证明，
+对于分子动力学模拟而言，局部重新映射可以比全局重新映射
+更加高效。因此，支撑空间搜索的底层数据结构必须
+能够在局部层面上方便地修改，以便利用局部重新映射的优势。</p>
+<p>通过将部件单元范围在各维度上的上界和下界取整，可以确定
+该部件可能被映射到哪些父单元中。</p>
+<div class="math" id="equation-update_spatial_eq2">
+<span class="eqno">(2)</span>\[\begin{split}\mathbf {ind}_{\rm lb} = \max \left(0,\min\left(\mathbf N - 1, \lfloor{(\mathbf {cextent}_{\rm lb} - \mathbf x_0) / len}\rfloor\right)\right) \\
+\mathbf {ind}_{\rm ub} = \max \left(0,\min\left(\mathbf N - 1, \lfloor{(\mathbf {cextent}_{\rm ub} - \mathbf x_0) / len}\rfloor\right)\right)\end{split}\]</div>
+<p>其中，向量 <span class="math">\(\mathbf N\)</span> 包含各维度上的单元数目，向量
+<span class="math">\(\mathbf {cextent}_{\rm lb}\)</span> 包含单元范围的下界，向量 <span class="math">\(\mathbf
+{cextent}_{\rm ub}\)</span> 包含单元范围的上界，向量 <span class="math">\(\mathbf x_0\)</span> 为
+单元空间的原点，而向量 <span class="math">\(\mathbf {ind}_{\rm lb}\)</span> 和 <span class="math">\(\mathbf {ind}_{\rm ub}\)</span> 分别是
+各维度上单元的下标下限和上限。<span class="math">\(\lfloor \rfloor\)</span>
+运算符为向下取整函数。给定向量的整数下标 <span class="math">\(\mathbf {ind}\)</span>，若它在每个维度上介于
+<span class="math">\(\mathbf {ind}_{\rm lb}\)</span> 和 <span class="math">\(\mathbf {ind}_{\rm ub}\)</span> 之间，则
+相应父单元在一维数组中的下标即可计算得到</p>
+<div class="math" id="equation-update_spatial_eq3">
+<span class="eqno">(3)</span>\[ i = \mathbf {ind}_{\rm x} + \mathbf N_{\rm x} * ( \mathbf {ind}_{\rm y} + \mathbf N_{\rm y} * \mathbf {ind}_{\rm z})\]</div>
+<p>其中在二维情况下 <span class="math">\(\mathbf {ind}_{\rm z} = 0\)</span>，下标表示向量的各分量。</p>
+<p>除了每个单元所保存的部件列表之外，每个部件还保存着它被映射到的所有单元的列表。
+当部件被映射到父单元中时，程序会统计范围形心
+落在各单元内的部件数目，同时统计它们的范围尺寸，即范围的
+{二维为面积；三维为体积}。到目前为止所述的方法是一种链接单元算法。为了
+辅助空间搜索，程序实现了迭代器数据结构，使用户可以简单而
+高效地检查搜索窗口邻近区域内的所有部件。</p>
+<p>当映射到单个单元中的部件范围形心数目超过指定数量时，程序会执行
+检查，以确定该单元是否应当细化。单元细化是指
+将一个父单元划分为若干等尺寸的子单元。细化之后，父单元不再
+提供对已映射部件的访问，而是包含一个独立的、内嵌的单元空间。
+经过细化的单元空间具有与父单元范围尺寸相同的空间尺寸，并包含一个
+保存映射到其各单元中的部件列表的一维数组，以及迭代能力。
+细化策略的目标是在局部调整单元尺寸，以自动、动态地适应
+部件范围尺寸的非均匀变化。其目标是无需用户调参即可
+在广泛的问题范围内获得接近最优的搜索性能。若父单元尺寸
+超过范围形心映射到该父单元的部件范围平均尺寸的指定倍数，则
+表明应当进行细化。这一检验可避免对与
+大范围部件重叠的小单元进行细化。父单元会被划分为
+若干等尺寸单元，以匹配每个单元的目标部件范围数目。</p>
+<div class="figure align-center" id="id8">
+<span id="update-spatial-fig4"></span><a class="reference internal image-reference" href="../../../../../../_images/update_spatial_fig4.png"><img alt="../../../../../../_images/update_spatial_fig4.png" src="../../../../../../_images/update_spatial_fig4.png" style="width: 275pt;"/></a>
+<p class="caption"><span class="caption-text">图 4：父单元在局部被细化为子单元，以匹配单元中对象的目标数目。</span></p>
+</div>
+<p>随着循环计算的继续，部件分布可能发生变化，从而使得已细化的单元空间不再
+有效。例如，小部件可能在粗基质中迁移，流体流动可能局部改变部件的
+尺寸分布，或者原先被占据的空间区域中仅剩少量部件。
+程序会检查细化单元，以确保仍有范围形心映射到这些单元中，并且
+所映射范围的平均尺寸与细化准则保持一致。若违反
+其中任一条件，则表明应删除该细化单元空间，并将剩余
+部件放入父单元中。通过这种方式，空间细分可以随着
+模型演化而动态重新生成。</p>
+<p><a class="reference internal" href="#mio2007" id="id3">[Mio2007]</a> 展示了一种替代的链接单元（linked-cell）实现，当每个单元映射的对象数量约为 1 至 5 时性能最优。下图
+给出了上述未经细化的 <span class="codename">PFC</span> 空间搜索实现的相对性能；这些结果用于指导单元细化算法。在
+立方体区域中生成约 11,000 个三维均匀球颗粒，使其互不重叠（通过 100,000 次尝试生成）。随后将这些
+球颗粒放大 1.5 倍。关闭重力，为球颗粒施加初始速度，并对模型计算 250 个循环。各方向上的
+范围按球颗粒半径的 25% 扩大。模型域的设置使约 120,000 个球颗粒范围能够在模型域内
+无重叠地容纳。所报告的相对减速因子基于循环期间累加的重新映射时间与接触检测时间。
+这一性能度量称为检测时间，其中报告值始终取两次运行的平均值。
+最优方案的相对减速因子为 1，而较大的值意味着更长的检测时间。显然，每个单元 5-20 个
+部件范围（piece extent）是最优的，在该范围内性能敏感性很小。</p>
+<div class="figure align-center" id="id9">
+<span id="update-spatial-fig5"></span><a class="reference internal image-reference" href="../../../../../../_images/update_spatial_fig5.png"><img alt="../../../../../../_images/update_spatial_fig5.png" src="../../../../../../_images/update_spatial_fig5.png" style="width: 300pt;"/></a>
+<p class="caption"><span class="caption-text">图 5：结果显示，对于链接单元实现，检测（即重新映射加上接触检测）的相对性能与
+单个单元内可无重叠容纳的部件范围数量之间的关系。</span></p>
+</div>
+<p>根据上述模拟结果，每个单元的目标对象数量固定为 10。一旦检测到某个单元内质心落在其中的部件超过 10 个，便对该单元进行
+细化测试。一旦映射到某个单元中的部件少于 2 个，且该单元为子单元，则该单元被取消细化。
+这一过程通过一种称为惰性列表（lazy list）的无等待（wait-free）列表数据结构在多个线程上实现，该结构类似于 <a class="reference internal" href="#heller2005" id="id4">[Heller2005]</a>。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p>– <a class="reference internal" href="update_contacts.html#update-contacts"><span class="std std-ref">下一循环点：创建/删除接触</span>（Next Cycle Point: Create/delete Contacts）</a> –</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p class="h2 rubric">参考文献</p>
+<table class="docutils citation" frame="void" id="heller2005" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id4">[Heller2005]</a></td><td>Heller, S., M. Herlihy, V. Luchangco, M. Moir, B. Scherer, and N. Shavit, “一种惰性并发基于列表的集合算法”（A lazy concurrent list-based set algorithm），
+载于第 9 届分布式系统原理国际会议（OPODIS），2005 年 12 月（2005）。</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="mio2007" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[Mio2007]</a></td><td>Mio, H., A. Shimosaka, Y. Shirakawa and J. Hidaka, “离散元算法中用于快速接触检测的单元优化”（Cell optimization for fast contact detection in the discrete element algorithm），
+Advanced Powder Technology, 18 (4), 441-453 (2007).</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="yao2004" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Yao2004]</td><td><em>(<a class="fn-backref" href="#id1">1</a>, <a class="fn-backref" href="#id2">2</a>)</em> Yao, Z., J. Wang, G. Liu and M. Cheng, “利用单元分解与数据排序方法改进分子模拟中的邻接表算法”（Improved neighbor list algorithm in molecular simulations using cell decomposition and data sorting method），
+Computer Physics Communications, 161, 27-35 (2004).</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../numerical_simulations_with_pfc.html">Numerical Simulations with <span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-3"><a href="pfc_model_formulation.html"><span class="codename">PFC</span> Model Formulation</a> »</li>
+<li class="nav-item nav-item-4"><a accesskey="U" href="cycling.html">Cycling</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="advance_time.html" title="previous chapter"> 20.0 - Advance Time</a> |    
+       <a href="update_contacts.html" title="next chapter">35.0 - Create/delete Contacts</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?30.0 - Update Spatial Searching Data Structures" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

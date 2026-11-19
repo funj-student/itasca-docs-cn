@@ -1,0 +1,353 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>复现颗粒粒径分布 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../../search.html" rel="search" title="Search"/>
+<link href="../inclusions/inclusions.html" rel="next" title="Inclusions in a Matrix"/>
+<link href="../generating_a_bonded_assembly/generating_a_bonded_assembly.html" rel="prev" title="Generating a Bonded Assembly"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="replicating-a-particle-size-distribution">
+<span id="tut-gran"></span><span id="granulo"></span><span id="index-0"></span><h1>复现颗粒粒径分布</h1>
+<p class="h2 rubric">引言</p>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">本算例的项目文件可在 <span class="codename">PFC</span> 中查看或运行。<a class="footnote-reference" href="#id2" id="id1">[1]</a>所用的<a class="reference internal" href="#tut-gran-datafiles"><span class="std std-ref">数据文件</span>（data files）</a>列于本算例末尾。</p>
+</div>
+<p>本算例从颗粒粒径分布（PSD）曲线出发创建颗粒集合体。文中给出了从筛分分析数据到球颗粒集合体的完整流程。</p>
+<p class="h2 rubric">数值模型</p>
+<p>筛分分析是一种常用技术，用于测量颗粒材料的粒径级配。该试验通常是将集料放入孔径逐级减小的套筛中振筛。下表给出对石灰岩破碎试样进行筛分分析的结果，其中显示了各粒级范围内材料的质量百分比。</p>
+<table border="1" class="icg1 col1center col2decimal docutils" id="tut-gran-limestone">
+<caption><span class="caption-text">表 1：石灰岩筛分分析结果。</span></caption>
+<colgroup>
+<col width="50%"/>
+<col width="50%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">粒级 [mm]</th>
+<th class="head">质量百分比 [-]</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>0 - 30</td>
+<td>8.3</td>
+</tr>
+<tr class="row-odd"><td>30 - 40</td>
+<td>8.3</td>
+</tr>
+<tr class="row-even"><td>40 - 50</td>
+<td>9.4</td>
+</tr>
+<tr class="row-odd"><td>50 - 60</td>
+<td>8.5</td>
+</tr>
+<tr class="row-even"><td>60 - 75</td>
+<td>14.8</td>
+</tr>
+<tr class="row-odd"><td>75 - 100</td>
+<td>20.0</td>
+</tr>
+<tr class="row-even"><td>100 - 120</td>
+<td>19.5</td>
+</tr>
+<tr class="row-odd"><td>120 - 150</td>
+<td>8.8</td>
+</tr>
+<tr class="row-even"><td>150 - 180</td>
+<td>2.1</td>
+</tr>
+<tr class="row-odd"><td>180 - 250</td>
+<td>0.3</td>
+</tr>
+</tbody>
+</table>
+<p>可使用 Rosin-Rammler 曲线（见式 <a class="reference internal" href="#equation-rosin">(1)</a>）描述与 <a href="#tut-gran-limestone">表 1（Table  1）</a> 数据相对应的累积 PSD 曲线：</p>
+<div class="math" id="equation-rosin">
+<span class="eqno">(1)</span>\[F(D_p) = 1-e^{-(D_p/D_{pRR})^{n_{RR}}}\]</div>
+<p>其中 <span class="math">\(D_{pRR}\)</span> 和 <span class="math">\(n_{RR}\)</span> 是决定曲线位置与形状的两个参数。本算例取 <span class="math">\(D_{pRR}\)</span>=0.0876、<span class="math">\(n_{RR}\)</span>=2.25。</p>
+<div class="figure" id="id3">
+<a class="reference internal image-reference" href="../../../../../../../_images/Limestone.png"><img alt="../../../../../../../_images/Limestone.png" src="../../../../../../../_images/Limestone.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 1：滞留颗粒的质量百分比（蓝色柱）以及累积质量百分比（Rosin-Rammler 曲线；红色虚线）。</span></p>
+</div>
+<p>文件 <a class="reference internal" href="#tut-gran-granulometry3d"><span class="std std-ref">granulometry.dat (3D)</span></a> 中包含的代码行如下所示。已设置随机种子，因此结果完全可复现。包含筛分分析数据的表格（即 <a href="#tut-gran-limestone">表 1（Table  1）</a> 中的数据）是通过 <span class="codename">FISH</span> 创建的。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish def</span><span class="ni"> granulometry</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> exptab </span><span class="p">=</span><span class="ni"> </span><span class="k">table.create</span><span class="p">(</span><span class="s">'experimental'</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">table</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">0.03</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.083</span>
+<span class="ni">  </span><span class="k">table</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">0.04</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.166</span>
+<span class="ni">  </span><span class="k">table</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">0.05</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.26</span>
+<span class="ni">  </span><span class="k">table</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">0.06</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.345</span>
+<span class="ni">  </span><span class="k">table</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">0.075</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.493</span>
+<span class="ni">  </span><span class="k">table</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">0.1</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.693</span>
+<span class="ni">  </span><span class="k">table</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">0.12</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.888</span>
+<span class="ni">  </span><span class="k">table</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">0.15</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.976</span>
+<span class="ni">  </span><span class="k">table</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">0.18</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.997</span>
+<span class="ni">  </span><span class="k">table</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">0.25</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span>
+<span class="nb">end</span>
+<span class="ni">[granulometry]</span>
+</pre></div>
+</div>
+<p>此外还创建了第二个表格，其中包含用于绘制 Rosin-Rammler 曲线以便与 <span class="codename">PFC</span> 模型进行比较的数值。此步骤仅用于对比，并非必需。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish def</span><span class="ni"> RosinRammler</span><span class="p">(</span><span class="ni">Dp_rr</span><span class="p">,</span><span class="ni">n_rr</span><span class="p">,</span><span class="ni">dmin</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> t </span><span class="p">=</span><span class="ni"> </span><span class="s">"RosinRammler"</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">local</span><span class="ni"> i </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1000</span><span class="p">)</span>
+<span class="ni">    freq </span><span class="p">=</span><span class="ni"> </span><span class="k">math.random.uniform</span>
+<span class="ni">    temp </span><span class="p">=</span><span class="ni"> Dp_rr</span><span class="o">*</span><span class="p">((</span><span class="o">-</span><span class="k">math.ln</span><span class="p">(</span><span class="m m-Double">1</span><span class="o">-</span><span class="ni">freq</span><span class="p">))</span><span class="o">^</span><span class="p">(</span><span class="m m-Double">1</span><span class="o">/</span><span class="ni">n_rr</span><span class="p">))</span>
+<span class="ni">    </span><span class="k">table</span><span class="p">(</span><span class="ni">t</span><span class="p">,</span><span class="ni">temp</span><span class="p">)=</span><span class="ni">freq</span>
+<span class="ni">  </span><span class="k">endloop</span>
+<span class="nb">end</span>
+<span class="ni">[RosinRammler</span><span class="p">(</span><span class="m m-Double">0.0876</span><span class="p">,</span><span class="m m-Double">2.25</span><span class="p">,</span><span class="m m-Double">0.002</span><span class="p">)</span><span class="ni">]</span>
+</pre></div>
+</div>
+<p>在生成球颗粒之前必须先创建 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/domain_manual/domain.html#domain">域（<span class="std std-ref">domain</span>）</a>。使用 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.distribute.html#command:ball.distribute" title="Distribute balls with overlaps..."><code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">distribute</span></code></a> 命令并结合 <a href="#tut-gran-limestone">表 1（Table  1）</a> 中的数据来创建试样。球颗粒被放置在盒子内，以满足目标孔隙率和粒径分布，而不考虑颗粒之间的重叠。基于半径范围和体积分数定义了 10 个分箱。请注意使用 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.random.html#command:model.random" title="Set the seed for the random-number generator. By default  i  =  10,000 .
+The...">设置随机数种子命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">random</span></code>）</a> 命令设置伪随机数发生器的种子，从而确保模型的可复现性。也可以省略此命令，或将种子改为另一个整数，从而生成不同的构型。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="ni">[</span><span class="k">global</span><span class="ni"> domain_extent </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="ni">[</span><span class="o">-</span><span class="ni">domain_extent]</span><span class="n"> </span><span class="ni">[domain_extent]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> dmin </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.001</span><span class="ni">]</span>
+
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+<span class="nb">ball distribute</span><span class="n"> box </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">domain_extent</span><span class="o">*</span><span class="m m-Double">0.7</span><span class="ni">]</span><span class="p">,</span><span class="ni">[domain_extent</span><span class="o">*</span><span class="m m-Double">0.7</span><span class="ni">]</span><span class="p">)</span><span class="n">        </span><span class="sx">...</span>
+<span class="n">        porosity </span><span class="m m-Double">0.36</span><span class="n">                                                 </span><span class="sx">...</span>
+<span class="n">        number</span><span class="o">-</span><span class="n">bins </span><span class="m m-Double">10</span><span class="n">                                                </span><span class="sx">...</span><span class="n"> </span>
+<span class="n">        bin </span><span class="m m-Double">1</span><span class="n">                                                         </span><span class="sx">...</span>
+<span class="n">            radius </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">dmin]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="n">                 </span><span class="sx">...</span>
+<span class="n">            volume</span><span class="o">-</span><span class="n">fraction </span><span class="ni">[</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="n">                       </span><span class="sx">...</span>
+<span class="n">        bin </span><span class="m m-Double">2</span><span class="n">                                                         </span><span class="sx">...</span>
+<span class="n">            radius </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni">]</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">            volume</span><span class="o">-</span><span class="n">fraction </span><span class="ni">[</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="o">-</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="n">     </span><span class="sx">...</span>
+<span class="n">        bin </span><span class="m m-Double">3</span><span class="n">                                                         </span><span class="sx">...</span>
+<span class="n">            radius </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">3</span><span class="p">)</span><span class="ni">]</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">            volume</span><span class="o">-</span><span class="n">fraction </span><span class="ni">[</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">3</span><span class="p">)</span><span class="o">-</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni">]</span><span class="n">     </span><span class="sx">...</span>
+<span class="n">        bin </span><span class="m m-Double">4</span><span class="n">                                                         </span><span class="sx">...</span>
+<span class="n">            radius </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">3</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">4</span><span class="p">)</span><span class="ni">]</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">            volume</span><span class="o">-</span><span class="n">fraction </span><span class="ni">[</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">4</span><span class="p">)</span><span class="o">-</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">3</span><span class="p">)</span><span class="ni">]</span><span class="n">     </span><span class="sx">...</span>
+<span class="n">        bin </span><span class="m m-Double">5</span><span class="n">                                                         </span><span class="sx">...</span>
+<span class="n">            radius </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">4</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span><span class="ni">]</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">            volume</span><span class="o">-</span><span class="n">fraction </span><span class="ni">[</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span><span class="o">-</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">4</span><span class="p">)</span><span class="ni">]</span><span class="n">     </span><span class="sx">...</span>
+<span class="n">        bin </span><span class="m m-Double">6</span><span class="n">                                                         </span><span class="sx">...</span>
+<span class="n">            radius </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">6</span><span class="p">)</span><span class="ni">]</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">            volume</span><span class="o">-</span><span class="n">fraction </span><span class="ni">[</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">6</span><span class="p">)</span><span class="o">-</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span><span class="ni">]</span><span class="n">     </span><span class="sx">...</span>
+<span class="n">        bin </span><span class="m m-Double">7</span><span class="n">                                                         </span><span class="sx">...</span>
+<span class="n">            radius </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">6</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">7</span><span class="p">)</span><span class="ni">]</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">            volume</span><span class="o">-</span><span class="n">fraction </span><span class="ni">[</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">7</span><span class="p">)</span><span class="o">-</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">6</span><span class="p">)</span><span class="ni">]</span><span class="n">     </span><span class="sx">...</span>
+<span class="n">        bin </span><span class="m m-Double">8</span><span class="n">                                                         </span><span class="sx">...</span>
+<span class="n">            radius </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">7</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">8</span><span class="p">)</span><span class="ni">]</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">            volume</span><span class="o">-</span><span class="n">fraction </span><span class="ni">[</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">8</span><span class="p">)</span><span class="o">-</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">7</span><span class="p">)</span><span class="ni">]</span><span class="n">     </span><span class="sx">...</span>
+<span class="n">        bin </span><span class="m m-Double">9</span><span class="n">                                                         </span><span class="sx">...</span>
+<span class="n">            radius </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">8</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">9</span><span class="p">)</span><span class="ni">]</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">            volume</span><span class="o">-</span><span class="n">fraction </span><span class="ni">[</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">9</span><span class="p">)</span><span class="o">-</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">8</span><span class="p">)</span><span class="ni">]</span><span class="n">     </span><span class="sx">...</span>
+<span class="n">        bin </span><span class="m m-Double">10</span><span class="n">                                                        </span><span class="sx">...</span>
+<span class="n">            radius </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">9</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">10</span><span class="p">)</span><span class="ni">]</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">            volume</span><span class="o">-</span><span class="n">fraction </span><span class="ni">[</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">10</span><span class="p">)</span><span class="o">-</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">9</span><span class="p">)</span><span class="ni">]</span>
+</pre></div>
+</div>
+<p>为验证结果的准确性，可使用 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/measure_manual/command_reference/cmd_measure/cmd_measure.create.html#command:measure.create" title='Create a measurement region. Measurement regions are {disks in 2D; spheres in
+3D}. The measurement calculation is triggered whenever a clean command is invoked,
+or whenever a |FISH| intrinsic that queries a measured value is invoked (see
+" Measure Intrinsics &lt;fish_measure_intrinsics&gt; ")...'>创建测量区域（<code class="xref fish fish-cmd docutils literal"><span class="pre">measure</span> <span class="pre">create</span></code>）</a> 命令创建测量球，并通过 <span class="cmdkey">bin</span> 关键字指定粒径分布计算的分箱数。落在测量区域内的所有球颗粒都按其直径进行分箱。计算球颗粒的累积体积百分比（介于 0 和 1 之间）随分箱尺寸的变化关系，并通过 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/measure_manual/command_reference/cmd_measure/cmd_measure.dump.html#command:measure.dump" title="Dump the cumulative size distribution data...">输出累积粒径分布数据（<code class="xref fish fish-cmd docutils literal"><span class="pre">measure</span> <span class="pre">dump</span></code>）</a> 命令导出到表格中。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">measure create</span><span class="n"> id </span><span class="m m-Double">1</span><span class="n"> radius </span><span class="ni">[domain_extent</span><span class="o">*</span><span class="m m-Double">0.6</span><span class="ni">]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                    bins </span><span class="m m-Double">100</span><span class="n"> </span><span class="ni">[dmin]</span><span class="n"> </span><span class="ni">[</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">10</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span>
+<span class="nb">measure dump</span><span class="n"> id </span><span class="m m-Double">1</span><span class="n"> table </span><span class="s">'numerical'</span>
+</pre></div>
+</div>
+<p>名为 <em>numerical</em> 的表格被用作绘制已生成试样粒径分布的基础。可以与 Rosin-Rammler 曲线进行直接比较（<a href=".html#tut-gran-comparison">图 （Figure）</a><code class="xref fnum docutils literal"><span class="pre">Figure</span> <span class="pre">#tut-gran-comparison</span></code>）。该对比表明，<a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.distribute.html#command:ball.distribute" title="Distribute balls with overlaps..."><code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">distribute</span></code></a> 命令能够复现筛分分析的结果。请注意，Rosin-Rammler 曲线是<em>人为</em>地基于筛分分析的原始数据构建的。如果在 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.distribute.html#command:ball.distribute" title="Distribute balls with overlaps..."><code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">distribute</span></code></a> 命令中采用更多的分箱数，数值结果将更接近该曲线。</p>
+<div class="figure" id="tut-gran-comparison-granulometry">
+<a class="reference internal image-reference" href="../../../../../../../_images/PSDComparison.png"><img alt="../../../../../../../_images/PSDComparison.png" src="../../../../../../../_images/PSDComparison.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：输入的 PSD 曲线（Rosin-Rammler，绿色）、由 <a href="#tut-gran-limestone">表 1（Table  1）</a> 得到的试验曲线（蓝色）以及由 <span class="codename">PFC</span> 中的测量逻辑得到的 PSD 曲线（红色）之间的对比。</span></p>
+</div>
+<p class="h2 rubric">讨论</p>
+<p>本教程给出了生成由相互重叠的球颗粒组成的模型所需的步骤，其中球颗粒遵循由筛分分析得到的真实粒径分布。球颗粒在盒子中生成，使球颗粒体积的累积总和为盒子体积的指定比例。使用 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/clump_manual/clump_commands/cmd_clump_distribute.html#command:clump.distribute" title="Distribute clumps with overlaps. This process ceases when a target porosity
+is achieved. By default, the clump positions and sizes are drawn from uniform
+distributions throughout the model domain. As a result, the set of clumps generated
+is affected by the state of the random-number generator (see  model.random ).
+The clump sizes can also be drawn from a Gaussian distribution via the  gauss 
+keyword. A number of clump distributions, with size ranges and volume fractions
+each..."><code class="xref fish fish-cmd docutils literal"><span class="pre">clump</span> <span class="pre">distribute</span></code></a> 命令时，对刚性团簇也可遵循完全相同的步骤。但应当注意，平衡后试样的最终孔隙率不会与指定的孔隙率完全相同。这是因为在平衡后的系统中球颗粒会发生重叠。如果球颗粒的重叠量很小，则该差异可以忽略。</p>
+<p class="h2 rubric" id="tut-gran-datafiles">数据文件</p>
+<p class="h3 rubric" id="tut-gran-granulometry3d">granulometry.dat (3D)</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：Granulometry.dat (3D)</span>
+<span class="c">;</span>
+<span class="c">;  根据石灰岩试样的粒径分布创建 </span>
+<span class="c">;  球体集合</span>
+<span class="c">;=========================================================================</span>
+<span class="nb">model new</span>
+
+<span class="c">;输入石灰岩粒径级配的原始数据</span>
+<span class="c">; excerpt-avkm-start</span>
+<span class="nb">fish def</span><span class="ni"> granulometry</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> exptab </span><span class="p">=</span><span class="ni"> </span><span class="k">table.create</span><span class="p">(</span><span class="s">'experimental'</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">table</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">0.03</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.083</span>
+<span class="ni">  </span><span class="k">table</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">0.04</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.166</span>
+<span class="ni">  </span><span class="k">table</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">0.05</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.26</span>
+<span class="ni">  </span><span class="k">table</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">0.06</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.345</span>
+<span class="ni">  </span><span class="k">table</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">0.075</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.493</span>
+<span class="ni">  </span><span class="k">table</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">0.1</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.693</span>
+<span class="ni">  </span><span class="k">table</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">0.12</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.888</span>
+<span class="ni">  </span><span class="k">table</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">0.15</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.976</span>
+<span class="ni">  </span><span class="k">table</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">0.18</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.997</span>
+<span class="ni">  </span><span class="k">table</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">0.25</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span>
+<span class="nb">end</span>
+<span class="ni">[granulometry]</span>
+<span class="c">; excerpt-avkm-end</span>
+
+<span class="c">; excerpt-qgct-start</span>
+<span class="nb">fish def</span><span class="ni"> RosinRammler</span><span class="p">(</span><span class="ni">Dp_rr</span><span class="p">,</span><span class="ni">n_rr</span><span class="p">,</span><span class="ni">dmin</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> t </span><span class="p">=</span><span class="ni"> </span><span class="s">"RosinRammler"</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">local</span><span class="ni"> i </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1000</span><span class="p">)</span>
+<span class="ni">    freq </span><span class="p">=</span><span class="ni"> </span><span class="k">math.random.uniform</span>
+<span class="ni">    temp </span><span class="p">=</span><span class="ni"> Dp_rr</span><span class="o">*</span><span class="p">((</span><span class="o">-</span><span class="k">math.ln</span><span class="p">(</span><span class="m m-Double">1</span><span class="o">-</span><span class="ni">freq</span><span class="p">))</span><span class="o">^</span><span class="p">(</span><span class="m m-Double">1</span><span class="o">/</span><span class="ni">n_rr</span><span class="p">))</span>
+<span class="ni">    </span><span class="k">table</span><span class="p">(</span><span class="ni">t</span><span class="p">,</span><span class="ni">temp</span><span class="p">)=</span><span class="ni">freq</span>
+<span class="ni">  </span><span class="k">endloop</span>
+<span class="nb">end</span>
+<span class="ni">[RosinRammler</span><span class="p">(</span><span class="m m-Double">0.0876</span><span class="p">,</span><span class="m m-Double">2.25</span><span class="p">,</span><span class="m m-Double">0.002</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">; excerpt-qgct-end</span>
+
+<span class="c">; 生成试样</span>
+<span class="c">; excerpt-qydp-start</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> domain_extent </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="ni">[</span><span class="o">-</span><span class="ni">domain_extent]</span><span class="n"> </span><span class="ni">[domain_extent]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> dmin </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.001</span><span class="ni">]</span>
+
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+<span class="nb">ball distribute</span><span class="n"> box </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">domain_extent</span><span class="o">*</span><span class="m m-Double">0.7</span><span class="ni">]</span><span class="p">,</span><span class="ni">[domain_extent</span><span class="o">*</span><span class="m m-Double">0.7</span><span class="ni">]</span><span class="p">)</span><span class="n">        </span><span class="sx">...</span>
+<span class="n">        porosity </span><span class="m m-Double">0.36</span><span class="n">                                                 </span><span class="sx">...</span>
+<span class="n">        number</span><span class="o">-</span><span class="n">bins </span><span class="m m-Double">10</span><span class="n">                                                </span><span class="sx">...</span><span class="n"> </span>
+<span class="n">        bin </span><span class="m m-Double">1</span><span class="n">                                                         </span><span class="sx">...</span>
+<span class="n">            radius </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">dmin]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="n">                 </span><span class="sx">...</span>
+<span class="n">            volume</span><span class="o">-</span><span class="n">fraction </span><span class="ni">[</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="n">                       </span><span class="sx">...</span>
+<span class="n">        bin </span><span class="m m-Double">2</span><span class="n">                                                         </span><span class="sx">...</span>
+<span class="n">            radius </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni">]</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">            volume</span><span class="o">-</span><span class="n">fraction </span><span class="ni">[</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="o">-</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="n">     </span><span class="sx">...</span>
+<span class="n">        bin </span><span class="m m-Double">3</span><span class="n">                                                         </span><span class="sx">...</span>
+<span class="n">            radius </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">3</span><span class="p">)</span><span class="ni">]</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">            volume</span><span class="o">-</span><span class="n">fraction </span><span class="ni">[</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">3</span><span class="p">)</span><span class="o">-</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni">]</span><span class="n">     </span><span class="sx">...</span>
+<span class="n">        bin </span><span class="m m-Double">4</span><span class="n">                                                         </span><span class="sx">...</span>
+<span class="n">            radius </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">3</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">4</span><span class="p">)</span><span class="ni">]</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">            volume</span><span class="o">-</span><span class="n">fraction </span><span class="ni">[</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">4</span><span class="p">)</span><span class="o">-</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">3</span><span class="p">)</span><span class="ni">]</span><span class="n">     </span><span class="sx">...</span>
+<span class="n">        bin </span><span class="m m-Double">5</span><span class="n">                                                         </span><span class="sx">...</span>
+<span class="n">            radius </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">4</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span><span class="ni">]</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">            volume</span><span class="o">-</span><span class="n">fraction </span><span class="ni">[</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span><span class="o">-</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">4</span><span class="p">)</span><span class="ni">]</span><span class="n">     </span><span class="sx">...</span>
+<span class="n">        bin </span><span class="m m-Double">6</span><span class="n">                                                         </span><span class="sx">...</span>
+<span class="n">            radius </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">6</span><span class="p">)</span><span class="ni">]</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">            volume</span><span class="o">-</span><span class="n">fraction </span><span class="ni">[</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">6</span><span class="p">)</span><span class="o">-</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span><span class="ni">]</span><span class="n">     </span><span class="sx">...</span>
+<span class="n">        bin </span><span class="m m-Double">7</span><span class="n">                                                         </span><span class="sx">...</span>
+<span class="n">            radius </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">6</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">7</span><span class="p">)</span><span class="ni">]</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">            volume</span><span class="o">-</span><span class="n">fraction </span><span class="ni">[</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">7</span><span class="p">)</span><span class="o">-</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">6</span><span class="p">)</span><span class="ni">]</span><span class="n">     </span><span class="sx">...</span>
+<span class="n">        bin </span><span class="m m-Double">8</span><span class="n">                                                         </span><span class="sx">...</span>
+<span class="n">            radius </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">7</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">8</span><span class="p">)</span><span class="ni">]</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">            volume</span><span class="o">-</span><span class="n">fraction </span><span class="ni">[</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">8</span><span class="p">)</span><span class="o">-</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">7</span><span class="p">)</span><span class="ni">]</span><span class="n">     </span><span class="sx">...</span>
+<span class="n">        bin </span><span class="m m-Double">9</span><span class="n">                                                         </span><span class="sx">...</span>
+<span class="n">            radius </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">8</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">9</span><span class="p">)</span><span class="ni">]</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">            volume</span><span class="o">-</span><span class="n">fraction </span><span class="ni">[</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">9</span><span class="p">)</span><span class="o">-</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">8</span><span class="p">)</span><span class="ni">]</span><span class="n">     </span><span class="sx">...</span>
+<span class="n">        bin </span><span class="m m-Double">10</span><span class="n">                                                        </span><span class="sx">...</span>
+<span class="n">            radius </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">9</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">10</span><span class="p">)</span><span class="ni">]</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">            volume</span><span class="o">-</span><span class="n">fraction </span><span class="ni">[</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">10</span><span class="p">)</span><span class="o">-</span><span class="k">table.y</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">9</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">; excerpt-qydp-end</span>
+
+<span class="c">; excerpt-lrre-start</span>
+<span class="nb">measure create</span><span class="n"> id </span><span class="m m-Double">1</span><span class="n"> radius </span><span class="ni">[domain_extent</span><span class="o">*</span><span class="m m-Double">0.6</span><span class="ni">]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                    bins </span><span class="m m-Double">100</span><span class="n"> </span><span class="ni">[dmin]</span><span class="n"> </span><span class="ni">[</span><span class="k">table.x</span><span class="p">(</span><span class="ni">exptab</span><span class="p">,</span><span class="m m-Double">10</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span>
+<span class="nb">measure dump</span><span class="n"> id </span><span class="m m-Double">1</span><span class="n"> table </span><span class="s">'numerical'</span>
+<span class="c">; excerpt-lrre-end</span>
+
+<span class="nb">program </span><span class="se">return</span><span class="n">    </span>
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：Granulometry.dat (3D)</span>
+</pre></div>
+</div>
+<p class="endnotesection rubric">尾注</p>
+<table class="docutils footnote" frame="void" id="id2" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><p class="first">要在 <span class="codename">PFC</span> 中查看本项目，请使用程序菜单。</p>
+<p><span class="menuselection">帮助 ▼ 算例…</span></p>
+<p class="last">  ⮡    PFC <br/>
+    ⮡    教程 <br/>
+      ⮡    SizeDistribution <br/>
+        ⮡    Granulometry.prj</p>
+</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../pfc_model_components/pfc_examples.html">Examples</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../tutorials.html">Tutorials</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../generating_a_bonded_assembly/generating_a_bonded_assembly.html" title="previous chapter"> Generating a Bonded Assembly</a> |    
+       <a href="../inclusions/inclusions.html" title="next chapter">Inclusions in a Matrix</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Replicating a Particle Size Distribution" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

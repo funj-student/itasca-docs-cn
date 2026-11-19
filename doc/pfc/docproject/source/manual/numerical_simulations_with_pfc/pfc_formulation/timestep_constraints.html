@@ -1,0 +1,584 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>0.0 - 时步确定 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="law_of_motion.html" rel="next" title="10.0 - Law of Motion"/>
+<link href="datastructure_validation.html" rel="prev" title="-10.0 - Validate Data Structures"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="timestep-determination">
+<span id="timestep-constraints"></span><h1>0.0 - 时步确定</h1>
+<p class="h2 rubric">概述</p>
+<p>为了可靠地更新模型状态，必须为牛顿定律的数值积分确定合适的时步。
+所选时步过大会导致失稳，表现为物体飞向无穷远。另一方面，所选时步过小
+则会导致模拟时间过长。在 <span class="codename">PFC</span> 中，时步根据
+如下所述的部件位移运动学约束和刚度约束来计算；
+最终时步取这些约束中的最小值。时步计算可能相对
+昂贵，用户可在<strong>极为谨慎</strong>的前提下完全禁用时步计算算法
+以提高效率。这是一种危险的做法，只应由
+高级用户使用。</p>
+<p class="h2 rubric">详细说明</p>
+<p><a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.mechanical.html#kwd:model.mechanical.timestep" title=".. kwd:: Automatic...">模型力学时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">mechanical</span> <span class="pre">timestep</span></code>）</a> 命令可用于指定时步是固定、时步缩放是否生效，
+还是时步自动确定。以下将详细讨论上述各种情形。
+在讨论这些主题之前，先介绍运动学时步
+约束。此类约束与部件位移约束相对应，用于
+确保接触在力/力矩产生之前就已创建。</p>
+<p>请注意，如 <a class="reference internal" href="law_of_motion.html#law-of-motion"><span class="std std-ref">本节</span>（this）</a> 所述，采用 Velocity Verlet 算法
+对牛顿定律进行积分。就更新时刻而言，速度与物体位置相比在相位上相差 1/2 个时步。在此循环点
+开始时，球颗粒和刚性团簇的速度按该节所述进行更新。</p>
+<p class="h2 rubric" id="timestep-kinematic">运动学时步约束</p>
+<p>无论采用时步缩放模式还是时步自动确定模式，<span class="codename">PFC</span> 都会对
+时步施加运动学约束，以保证接触在力/力矩产生的循环之前
+就在各部件之间创建。该约束在 <a class="reference internal" href="update_contacts.html#update-contacts"><span class="std std-ref">此处</span>（here）</a> 中有详细说明。
+由该讨论可知，为保证正确创建接触，施加了部件在任一循环中
+只能平移 <span class="math">\(\varepsilon\)</span> 的运动学约束。为
+施加此位移约束，时步按如下方式加以限制。</p>
+<p>利用牛顿第二定律，可按下式计算平动加速度的一个分量：</p>
+<div class="math" id="equation-timestep_kinematic_eq1">
+<span class="eqno">(1)</span>\[a_i = \frac{(F_i + g_i * m_g + Fa_i)}{m_i}\]</div>
+<p>其中，<span class="math">\(F_i\)</span> 为接触力，<span class="math">\(g_i\)</span> 为重力，<span class="math">\(m_g\)</span> 为重力质量，
+<span class="math">\(Fa_i\)</span> 为施加的力，<span class="math">\(m_i\)</span> 为惯性质量。下标 <span class="math">\(i\)</span> 指代这些向量的第 i
+个分量。取 <span class="math">\(a_{\rm max}\)</span> 为所有分量中平动加速度绝对值的最大值。</p>
+<p>刚体在恒定加速度作用下、持续时间为
+<span class="math">\(t\)</span> 时的位移表达式为：</p>
+<div class="math" id="equation-timestep_kinematic_eq2a">
+<span class="eqno">(2)</span>\[x = v_0 * t + 1/2 * a * t^2\]</div>
+<p>其中，<span class="math">\(x\)</span> 为位移，<span class="math">\(v_0\)</span> 为初速度，<span class="math">\(a\)</span> 为在时间 <span class="math">\(t\)</span> 内作用的恒定加速度。
+该表达式可重新整理，以计算刚体在恒定加速度作用下平移给定量值
+所需的时间：</p>
+<div class="math" id="equation-timestep_kinematic_eq2">
+<span class="eqno">(3)</span>\[t = \frac{(- v_0 + \sqrt{{v_0}^2 + 2 * a * x})}{a}\]</div>
+<p>假设部件平动速度的最大绝对值分量由 <span class="math">\(v_{\rm max}\)</span> 给出。对于球颗粒，这是其质心处的平动速度。对于子颗粒（面片），
+这对应于刚性团簇（墙）的平动速度加上由刚性团簇（墙）旋转在子颗粒质心（面片周边）处
+引起的平动速度。运动学时步
+约束就是部件平移 <span class="math">\(\varepsilon\)</span> 所需的时间，即</p>
+<div class="math" id="equation-timestep_kinematic_eq3">
+<span class="eqno">(4)</span>\[t_{\rm kin} = \frac{(- v_{\rm max} + \sqrt{{v_{\rm max}}^2 + 2 * a_{\rm max} * \varepsilon})}
+{a_{\rm max}}\]</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p class="h2 rubric" id="timestep-fixed">固定时步</p>
+<p>当时步被固定为用户指定的值时，将跳过在此循环点发生的所有操作。
+若自动时步确定模式处于激活状态，则会发生大量计算，
+而通过固定时步可以获得相当程度的性能提升。另一方面，
+也可能导致模型失稳。例如，颗粒可能在一个循环中彼此穿透飞过，
+而不产生任何力。此外，一个循环中可能出现较大的重叠，从而产生
+较大的力。这可能使接近静止的集合体以非物理的方式崩解。
+启用此模式时，确保稳定性是用户的责任。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p class="h2 rubric" id="timestep-scaling">时步缩放</p>
+<p><span class="codename">PFC</span> 的默认行为是采用下一节所述的过程自动确定临界时步。
+这提供了真实的动力学求解结果，对稳态和非稳态条件均有效。
+若只关心获得稳态解（此时所有颗粒加速度均为零，对应于静态平衡或稳定流动），
+则可以使用时步缩放，以尽可能少的计算循环数达到稳态构型。
+达到该最终构型的路径是非物理的，因为质量与速度已被缩放以实现快速收敛。
+体力（例如重力）在时步缩放启用时不受影响。
+下文所述的缩放操作
+发生在此循环点。</p>
+<p>由于稳定时步与物体质量除以作用于该物体的刚度之和的平方根成正比，
+（参见式 <a class="reference internal" href="#equation-formulation_mechanical_timestep_eq3">(11)</a>）少量小颗粒（或刚度较高的颗粒）可能使时步变得非常小。
+启用时步缩放时，会为每个物体计算一个虚拟惯性质量，使其稳定时步
+默认等于 1。用户如有需要，可指定不同于 1 的值。
+此外，物体的速度也必须按比例缩放，以确保稳定性。</p>
+<p>假设时步设为 <span class="math">\(\Delta t\)</span>。物体的新惯性质量按下式计算：</p>
+<div class="math" id="equation-timestep_scaling_eq1">
+<span class="eqno">(5)</span>\[m_{\rm new} = k^{\rm tran} * {\Delta t}^2\]</div>
+<p>式中，<span class="math">\(m_i\)</span> 为物体的惯性质量，<span class="math">\(k^{\rm tran}\)</span> 为作用于该物体的总平动刚度的
+最大分量。物体的速度向量也同样进行缩放：</p>
+<div class="math" id="equation-timestep_scaling_eq2">
+<span class="eqno">(6)</span>\[{\mathbf v}_{\rm new} = {\mathbf v} * m_i / m_{\rm new}\]</div>
+<p>同样，缩放后的转动惯量按下式计算：</p>
+<div class="math" id="equation-timestep_scaling_eq3">
+<span class="eqno">(7)</span>\[{\mathbf{I}}_{\rm new} =  k^{\rm rot} * {\Delta t}^2\]</div>
+<p>式中，<span class="math">\({\mathbf{I}}_i\)</span> 为物体未缩放的转动惯量，<span class="math">\(k^{\rm rot}\)</span> 为作用于该物体的总
+转动刚度的最大分量。物体的角速度向量按比例缩放：</p>
+<div class="math" id="equation-timestep_scaling_eq4">
+<span class="eqno">(8)</span>\[\pmb{\omega}_{\rm new} = \pmb{\omega} * {\mathbf{I}}_i / {\mathbf{I}}_{new}\]</div>
+<p>这些缩放操作使系统中的所有自由度具有相同的时间响应，
+这意味着集合体能够更快地收敛到静态。因此，时间尺度
+没有意义。仅当颗粒尺寸存在较大差异和/或存在较大的刚度差异，
+并且需要快速收敛到静态平衡时，才应使用时步缩放。
+若解是路径相关的，则不应使用缩放，因为所遵循的路径
+虽然有效，但却是非物理的。必须记住，对于非线性、非弹性问题，
+可能存在无穷多个解，具体取决于路径。
+时步缩放模式对应于 <em>差分密度缩放模式</em>，后者出现在 <span class="codename">PFC</span> 的以前版本中。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p class="h2 rubric" id="timestep-auto">自动时步确定</p>
+<p>为使牛顿定律的显式求解保持稳定，时步不得超过一个
+临界值，该值与整个系统的最小特征周期有关。然而，对于
+<span class="codename">PFC</span> 模拟中通常遇到的、不断变化的大型系统，进行全局
+特征值分析并不现实。因此，采用一种简化的过程来估计
+临界时步。任何循环中实际使用的时步都取为该估计
+临界值的某一分数（参见 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.mechanical.html#kwd:model.mechanical.timestep.safety-factor" title="Set the timestep safety factor, or the factor that is multiplied by the stable
+timestep calculated when  auto  mode. By default,  f  =  1.0 
+in |flac3d|. If the |pfc| module is loaded, the default value is  f  =
+ 0.8 . This value is not used for static mechanical |flac3d| analysis...">模型力学时步安全系数命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">mechanical</span> <span class="pre">timestep</span> <span class="pre">safety-factor</span></code>）</a> 命令）。</p>
+<p class="h3 rubric">解稳定性的估计过程</p>
+<p>首先，考虑由质点 <span class="math">\(m\)</span> 与刚度为 <span class="math">\(k\)</span> 的弹簧
+描述的一维质量-弹簧系统，其坐标系如 <a href="#fig-timestep-1">图  1（Figure  1）</a> 所示。
+质点的运动由微分方程 <span class="math">\(-kx = m \ddot x\)</span> 控制。
+该方程在二阶有限差分格式下对应的临界时步
+由 Bathe 和 Wilson (<a class="reference internal" href="#bathe1976" id="id1">[Bathe1976]</a>) 给出：</p>
+<div class="math" id="equation-formulation_mechanical_timestep_eq1">
+<span class="eqno">(9)</span>\[t_{\rm{crit}} = {T \over \pi};  \qquad T = 2 \pi \sqrt{m/k}\]</div>
+<p>式中，<span class="math">\(T\)</span> 为系统的周期。</p>
+<p>接下来，考虑 <a href="#fig-timestep-2">图  2（Figure  2）</a> 中无限系列的质量与弹簧。
+当各质量以同步反向的方式运动、使每个弹簧中心处
+没有运动时，该系统将出现最小的周期。单个质点的运动
+可由该图所示的两个等效系统来描述。利用式 <a class="reference internal" href="#equation-formulation_mechanical_timestep_eq1">(9)</a>，可求得该系统的临界时步为：</p>
+<div class="math" id="equation-formulation_mechanical_timestep_eq2">
+<span class="eqno">(10)</span>\[t_{\rm crit} = 2\sqrt{m/(4k)} = \sqrt{m/k}\]</div>
+<p>式中，<span class="math">\(k\)</span> 为 <a href="#fig-timestep-2">图  2（Figure  2）</a> 中每个弹簧的刚度。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id3">
+<span id="fig-timestep-1"></span><a class="reference internal image-reference" href="../../../../../../_images/timestep_fig1.png"><img alt="../../../../../../_images/timestep_fig1.png" src="../../../../../../_images/timestep_fig1.png" style="width: 350pt;"/></a>
+<p class="caption"><span class="caption-text">图 1：单个质量-弹簧系统。</span></p>
+</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id4">
+<span id="fig-timestep-2"></span><a class="reference internal image-reference" href="../../../../../../_images/timestep_fig2.png"><img alt="../../../../../../_images/timestep_fig2.png" src="../../../../../../_images/timestep_fig2.png" style="width: 370pt;"/></a>
+<p class="caption"><span class="caption-text">图 2：多个质量-弹簧系统。</span></p>
+</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p>这两个系统用于描述平动运动。转动运动也可以用同样的两个
+系统来描述，只需将质量 <span class="math">\(m\)</span> 替换为有限尺寸颗粒的转动惯量 <span class="math">\(I\)</span>，
+并将刚度替换为转动刚度。因此，广义多重质量-弹簧系统的临界
+时步可以表示为：</p>
+<div class="math" id="equation-formulation_mechanical_timestep_eq3">
+<span id="formulation-mechanical-timestep-eq3"></span><span class="eqno">(11)</span>\[\begin{split}t_{\rm crit} = \begin{cases}
+                 \sqrt{m/k^{\rm tran}}, &amp;\mbox{(translational motion)}
+               \\
+                 \sqrt{I/k^{\rm rot}},  &amp;\mbox{(rotational motion)}
+               \end{cases}\\\end{split}\]</div>
+<p>式中，<span class="math">\(k^{\rm tran}\)</span> 和 <span class="math">\(k^{\rm rot}\)</span> 分别为平动刚度和转动刚度，
+<span class="math">\(I\)</span> 为颗粒的转动惯量。</p>
+<p><span class="codename">PFC</span> 中的模型组分被概念化为由
+{二维中的圆盘形球颗粒／子颗粒；三维中的球形球颗粒／子颗粒}和弹簧组成的离散体集合。每个体可以具有
+不同的质量，每个弹簧也可以具有不同的刚度。通过对每个自由度分别
+应用式 <a class="reference internal" href="#equation-formulation_mechanical_timestep_eq3">(11)</a>（假定各自由度之间互不耦合），可为每个体求得一个临界时步。刚度的估计方法是，
+仅利用接触刚度矩阵的对角项对所有接触的贡献求和。最终的临界时步取为
+对所有体的所有自由度所计算出的全部临界时步中的最小值。</p>
+<p class="h3 rubric" id="formulation-mechanical-timestep-csmatrix">接触刚度矩阵</p>
+<p>此处给出两个子颗粒之间接触的刚度矩阵（完整推导请参阅 <a class="reference internal" href="#potyondy2009" id="id2">[Potyondy2009]</a>）。首先描述三维关系式，
+随后也给出简化的二维关系式。</p>
+<p>每个接触存在于两个离散片体之间，每个片体在三维中均于其体的质心处具有六个自由度。若将质心称为节点，则可以说
+每个接触都有一个刚度矩阵，它将该接触所连接的两个节点处的广义力与广义位移联系起来。节点的自由度包含三个平动
+分量和三个转动分量。节点 <span class="math">\(i\)</span> 处的广义位移和广义力记作</p>
+<div class="math" id="equation-formulation_mechanical_timestep_eq4">
+<span class="eqno">(12)</span>\[\begin{split}\{{\bf d_i}\} &amp;= \lfloor u_i \ v_i \ w_i \ \theta_{xi} \ \theta_{yi} \ \theta_{zi} \rfloor^T \\
+\{{\bf r_i}\} &amp;= \lfloor F_{xi} \ F_{yi} \ F_{zi} \ M_{xi} \ M_{yi} \ M_{zi} \rfloor^T\end{split}\]</div>
+<p>并如下图所示：</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id5">
+<span id="fig-timestep-3"></span><a class="reference internal image-reference" href="../../../../../../_images/timestep_fig3.png"><img alt="../../../../../../_images/timestep_fig3.png" src="../../../../../../_images/timestep_fig3.png" style="width: 200pt;"/></a>
+<p class="caption"><span class="caption-text">图 3：节点 <span class="math">\(i\)</span> 处的广义位移和广义力。</span></p>
+</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p>连接节点 <span class="math">\(a\)</span> 和 <span class="math">\(b\)</span> 的接触，其三维刚度矩阵通过下式将广义力与广义位移
+联系起来</p>
+<div class="math" id="equation-formulation_mechanical_timestep_eq5">
+<span class="eqno">(13)</span>\[\begin{split}\left\{\begin{matrix}
+        {\bf r_a} \\
+        {\bf r_b}
+       \end{matrix}\right\}
+         = {\bf [k]}
+\left\{\begin{matrix}
+        {\bf d_a} \\
+        {\bf d_b}
+       \end{matrix}\right\}
+\Longleftrightarrow
+\left\{\begin{matrix}
+        F_{xa} \\
+        F_{ya} \\
+        F_{za} \\
+        M_{xa} \\
+        M_{ya} \\
+        M_{za} \\
+        F_{xb} \\
+        F_{yb} \\
+        F_{zb} \\
+        M_{xb} \\
+        M_{yb} \\
+        M_{zb}
+       \end{matrix}\right\}
+         = {\bf [k]}
+\left\{\begin{matrix}
+        u_a \\
+        v_a \\
+        w_a \\
+        \theta_{xa} \\
+        \theta_{ya} \\
+        \theta_{za} \\
+        u_b \\
+        v_b \\
+        w_b \\
+        \theta_{xb} \\
+        \theta_{yb} \\
+        \theta_{zb}
+       \end{matrix}\right\}\end{split}\]</div>
+<p><a href="#fig-timestep-4">图 4（Figure  4）</a> 给出了连接分属不同刚性团簇的两个子颗粒的典型接触。
+该系统由刚性团簇 <span class="math">\(a\)</span> 和 <span class="math">\(b\)</span> 的质心（分别为 <span class="math">\(\bf x_a\)</span> 和 <span class="math">\(\bf x_b\)</span>）、接触位置（<span class="math">\(\bf x_c\)</span>）、单位向量三元组（<span class="math">\(\bf n1\)</span>、<span class="math">\(\bf n2\)</span> 和
+<span class="math">\(\bf n3\)</span>，其中 <span class="math">\(\bf n_3\)</span> 与接触法向对齐），以及接触的
+平动刚度（<span class="math">\(k_n\)</span> 和 <span class="math">\(k_s\)</span>）和转动刚度（<span class="math">\(k_{n \theta}\)</span> 和 <span class="math">\(k_{s \theta}\)</span>）确定。我们还
+定义 <span class="math">\(\bf R_a = x_c - x_a\)</span> 和 <span class="math">\(\bf R_b = x_c - x_b\)</span>。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id6">
+<span id="fig-timestep-4"></span><a class="reference internal image-reference" href="../../../../../../_images/timestep_fig4.png"><img alt="../../../../../../_images/timestep_fig4.png" src="../../../../../../_images/timestep_fig4.png" style="width: 410pt;"/></a>
+<p class="caption"><span class="caption-text">图 4：两个子颗粒之间的典型 DEM 接触。</span></p>
+</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p>三维刚度矩阵是对称的。因此，它可以表示为</p>
+<div class="math" id="equation-formulation_mechanical_timestep_eq8">
+<span class="eqno">(14)</span>\[\begin{split}   {\bf [k]} =  \left[\begin{matrix}
+                         k_{1,1}  &amp; {}      &amp; {}    &amp; {} &amp; {} &amp; {}              &amp; {} &amp; {}     &amp; {}        &amp; {} \\
+                         k_{2,1}  &amp; k_{2,2} &amp; {}    &amp; {} &amp; {} &amp; {}              &amp; {} &amp; {}     &amp; {}        &amp; {} \\
+                         \vdots   &amp; {}      &amp;\ddots &amp; {} &amp; {} &amp; {}              &amp; {} &amp; {}     &amp; {}        &amp; {} \\
+                         {}       &amp; {}      &amp; {}    &amp; {} &amp; {} &amp; {\rm symmetric} &amp; {} &amp; {}     &amp; {}        &amp; {} \\
+                         {}       &amp; {}      &amp; {}    &amp; {} &amp; {} &amp; {}              &amp; {} &amp; {}     &amp; {}        &amp; {} \\
+                         {}       &amp; {}      &amp; {}    &amp; {} &amp; {} &amp; {}              &amp; {} &amp; {}     &amp; {}        &amp; {} \\
+                         {}       &amp; {}      &amp; {}    &amp; {} &amp; {} &amp; {}              &amp; {} &amp; {}     &amp; {}        &amp; {} \\
+                         {}       &amp; {}      &amp; {}    &amp; {} &amp; {} &amp; {}              &amp; {} &amp; {}     &amp; {}        &amp; {} \\
+                         {}       &amp; {}      &amp; {}    &amp; {} &amp; {} &amp; {}              &amp; {} &amp; {}     &amp; {}        &amp; {} \\
+                         {}       &amp; {}      &amp; {}    &amp; {} &amp; {} &amp; {}              &amp; {} &amp; \ddots &amp; {}        &amp; {} \\
+                         \vdots   &amp; {}      &amp; {}    &amp; {} &amp; {} &amp; {}              &amp; {} &amp; {}     &amp; k_{11,11} &amp; {} \\
+                         k_{12,1} &amp; \cdots  &amp; {}    &amp; {} &amp; {} &amp; {}              &amp; {} &amp; \cdots &amp; k_{12,11} &amp; k_{12,12}
+                \end{matrix}\right]\end{split}\]</div>
+<p>各项均以三维 DEM 接触量表示在全局坐标系中，并列于下，其中每一组给出一组列的下三角部分。
+对于第 1 至第 3 列：</p>
+<div class="math" id="equation-formulation_mechanical_timestep_eq9">
+<span class="eqno">(15)</span>\[\begin{split}k_{1,1} &amp;= k_s (n_{x1} n_{x1} + n_{x2} n_{x2}) + k_n n_{x3} n_{x3}  \qquad k_{7,1} = - k_{1,1} \\
+k_{2,1} &amp;= k_s (n_{y1} n_{x1} + n_{y2} n_{x2}) + k_n n_{y3} n_{x3}  \qquad k_{8,1} = - k_{2,1} \\
+k_{3,1} &amp;= k_s (n_{z1} n_{x1} + n_{z2} n_{x2}) + k_n n_{z3} n_{x3}  \qquad k_{9,1} = - k_{3,1} \\
+k_{4,1} &amp;= R_{ya} k_{3,1} - R_{za} k_{2,1} \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \qquad k_{10,1} = -R_{yb} k_{3,1} + R_{zb} k_{2,1} \\
+k_{5,1} &amp;= R_{za} k_{1,1} - R_{xa} k_{3,1} \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \qquad k_{11,1} = -R_{zb} k_{1,1} + R_{xb} k_{3,1} \\
+k_{6,1} &amp;= R_{xa} k_{2,1} - R_{ya} k_{1,1} \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \qquad k_{12,1} = -R_{xb} k_{2,1} + R_{yb} k_{1,1}\end{split}\]</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="math" id="equation-formulation_mechanical_timestep_eq10">
+<span class="eqno">(16)</span>\[\begin{split}{}                                                                      k_{7,2} &amp;= - k_{1,2} \\
+k_{2,2} = k_s (n_{y1} n_{y1} + n_{y2} n_{y2}) + k_n n_{y3} n_{y3} \ \ \ k_{8,2} &amp;= - k_{2,2} \\
+k_{3,2} = k_s (n_{z1} n_{y1} + n_{z2} n_{y2}) + k_n n_{z3} n_{y3} \ \ \ k_{9,2} &amp;= - k_{3,2} \\
+k_{4,2} = R_{ya} k_{3,2} - R_{za} k_{2,2}       \ \ \ \ \ \ \ \ \ \ \ \ k_{10,2} &amp;= -R_{yb} k_{3,2} + R_{zb} k_{2,2} \\
+k_{5,2} = R_{za} k_{1,2} - R_{xa} k_{3,2} \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ k_{11,2} &amp;= -R_{zb} k_{1,2} + R_{xb} k_{3,2} \\
+k_{6,2} = R_{xa} k_{2,2} - R_{ya} k_{1,2} \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ k_{12,2} &amp;= -R_{xb} k_{2,2} + R_{yb} k_{1,2}\end{split}\]</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="math" id="equation-formulation_mechanical_timestep_eq11">
+<span class="eqno">(17)</span>\[\begin{split}{}  \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ k_{7,3} &amp;= - k_{1,3} \\
+{}  \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ k_{8,3} &amp;= - k_{2,3} \\
+k_{3,3} = k_s (n_{z1} n_{z1} + n_{z2} n_{z2}) + k_n n_{z3} n_{z3} \ \ \ \ k_{9,3} &amp;= - k_{3,3} \\
+k_{4,3} = R_{ya} k_{3,3} - R_{za} k_{2,3} \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ k_{10,3} &amp;= -R_{yb} k_{3,3} + R_{zb} k_{2,3} \\
+k_{5,3} = R_{za} k_{1,3} - R_{xa} k_{3,3} \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ k_{11,3} &amp;= -R_{zb} k_{1,3} + R_{xb} k_{3,3} \\
+k_{6,3} = R_{xa} k_{2,3} - R_{ya} k_{1,3} \ \ \ \ \   \ \ \ \ \ \ \ \ \ \ k_{12,3} &amp;= -R_{xb} k_{2,3} + R_{yb} k_{1,3}\end{split}\]</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p>对于第 4 至第 6 列：</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="math" id="equation-formulation_mechanical_timestep_eq12">
+<span class="eqno">(18)</span>\[\begin{split}k_{4,4} &amp;= k_{s \theta} (n_{x1} n_{x1} + n_{x2} n_{x2}) + k_{n \theta} n_{x3} n_{x3} + (R_{ya} k_{3,4} - R_{za} k_{2,4}) \\
+k_{5,4} &amp;= k_{s \theta} (n_{y1} n_{x1} + n_{y2} n_{x2}) + k_{n \theta} n_{y3} n_{x3} + (R_{za} k_{1,4} - R_{xa} k_{3,4}) \\
+k_{6,4} &amp;= k_{s \theta} (n_{z1} n_{x1} + n_{z2} n_{x2}) + k_{n \theta} n_{z3} n_{x3} + (R_{xa} k_{2,4} - R_{ya} k_{1,4}) \\
+k_{7,4} &amp;= -k_{1,4} \\
+k_{8,4} &amp;= -k_{2,4} \\
+k_{9,4} &amp;= -k_{3,4} \\
+k_{10,4} &amp;= -k_{s \theta} (n_{x1} n_{x1} + n_{x2} n_{x2}) - k_{n \theta} n_{x3} n_{x3} + (-R_{yb} k_{3,4} + R_{zb} k_{2,4}) \\
+k_{11,4} &amp;= -k_{s \theta} (n_{y1} n_{x1} + n_{y2} n_{x2}) - k_{n \theta} n_{y3} n_{x3} + (-R_{zb} k_{1,4} + R_{xb} k_{3,4}) \\
+k_{12,4} &amp;= -k_{s \theta} (n_{z1} n_{x1} + n_{z2} n_{x2}) - k_{n \theta} n_{z3} n_{x3} + (-R_{xb} k_{2,4} + R_{yb} k_{1,4})\end{split}\]</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="math" id="equation-formulation_mechanical_timestep_eq13">
+<span class="eqno">(19)</span>\[\begin{split}k_{5,5} &amp;= k_{s \theta} (n_{y1} n_{y1} + n_{y2} n_{y2}) + k_{n \theta} n_{y3} n_{y3} + (R_{za} k_{1,5} - R_{xa} k_{3,5}) \\
+k_{6,5} &amp;= k_{s \theta} (n_{z1} n_{y1} + n_{z2} n_{y2}) + k_{n \theta} n_{z3} n_{y3} + (R_{xa} k_{2,5} - R_{ya} k_{1,5}) \\
+k_{7,5} &amp;= -k_{1,5} \\
+k_{8,5} &amp;= -k_{2,5} \\
+k_{9,5} &amp;= -k_{3,5} \\
+k_{10,5} &amp;= -k_{s \theta} (n_{x1} n_{y1} + n_{x2} n_{y2}) - k_{n \theta} n_{x3} n_{y3} + (-R_{yb} k_{3,5} + R_{zb} k_{2,5}) \\
+k_{11,5} &amp;= -k_{s \theta} (n_{y1} n_{y1} + n_{y2} n_{y2}) - k_{n \theta} n_{y3} n_{y3} + (-R_{zb} k_{1,5} + R_{xb} k_{3,5}) \\
+k_{12,5} &amp;= -k_{s \theta} (n_{z1} n_{y1} + n_{z2} n_{y2}) - k_{n \theta} n_{z3} n_{y3} + (-R_{xb} k_{2,5} + R_{yb} k_{1,5})\end{split}\]</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="math" id="equation-formulation_mechanical_timestep_eq14">
+<span class="eqno">(20)</span>\[\begin{split}k_{6,6} &amp;= k_{s \theta} (n_{z1} n_{z1} + n_{z2} n_{z2}) + k_{n \theta} n_{z3} n_{z3} + (R_{xa} k_{2,6} - R_{ya} k_{1,6}) \\
+k_{7,6} &amp;= -k_{1,6} \\
+k_{8,6} &amp;= -k_{2,6} \\
+k_{9,6} &amp;= -k_{3,6} \\
+k_{10,6} &amp;= -k_{s \theta} (n_{x1} n_{z1} + n_{x2} n_{z2}) - k_{n \theta} n_{x3} n_{z3} + (-R_{yb} k_{3,6} + R_{zb} k_{2,6}) \\
+k_{11,6} &amp;= -k_{s \theta} (n_{y1} n_{z1} + n_{y2} n_{z2}) - k_{n \theta} n_{y3} n_{z3} + (-R_{zb} k_{1,6} + R_{xb} k_{3,6}) \\
+k_{12,6} &amp;= -k_{s \theta} (n_{z1} n_{z1} + n_{z2} n_{z2}) - k_{n \theta} n_{z3} n_{z3} + (-R_{xb} k_{2,6} + R_{yb} k_{1,6})\end{split}\]</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p>对于第 7 至第 9 列：</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="math" id="equation-formulation_mechanical_timestep_eq15">
+<span class="eqno">(21)</span>\[\begin{split}k_{7,7} &amp;= k_{1,1} \\
+k_{8,7} &amp;= k_{2,1} \\
+k_{9,7} &amp;= k_{3,1} \\
+k_{10,7} &amp;= -R_{yb} k_{3,7} + R_{zb} k_{2,7} \\
+k_{11,7} &amp;= -R_{zb} k_{1,7} + R_{xb} k_{3,7} \\
+k_{12,7} &amp;= -R_{xb} k_{2,7} + R_{yb} k_{1,7} \\
+k_{8,8} &amp;= k_{2,2} \\
+k_{9,8} &amp;= k_{3,2} \\
+k_{10,8} &amp;= -R_{yb} k_{3,8} + R_{zb} k_{2,8} \\
+k_{11,8} &amp;= -R_{zb} k_{1,8} + R_{xb} k_{3,8} \\
+k_{12,8} &amp;= -R_{xb} k_{2,8} + R_{yb} k_{1,8} \\
+k_{9,9} &amp;= k_{3,3} \\
+k_{10,9} &amp;= -R_{yb} k_{3,9} + R_{zb} k_{2,9} \\
+k_{11,9} &amp;= -R_{zb} k_{1,9} + R_{xb} k_{3,9} \\
+k_{12,9} &amp;= -R_{xb} k_{2,9} + R_{yb} k_{1,9}\end{split}\]</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p>对于第 10 至第 12 列：</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="math" id="equation-formulation_mechanical_timestep_eq16">
+<span class="eqno">(22)</span>\[\begin{split}k_{10,10} &amp;= k_{s \theta} (n_{x1} n_{x1} + n_{x2} n_{x2}) + k_{n \theta} n_{x3} n_{x3} + (-R_{yb} k_{3,10} + R_{zb} k_{2,10}) \\
+k_{11,10} &amp;= k_{s \theta} (n_{y1} n_{x1} + n_{y2} n_{x2}) + k_{n \theta} n_{y3} n_{x3} + (-R_{zb} k_{1,10} + R_{xb} k_{3,10}) \\
+k_{12,10} &amp;= k_{s \theta} (n_{z1} n_{x1} + n_{z2} n_{x2}) + k_{n \theta} n_{z3} n_{x3} + (-R_{xb} k_{2,10} + R_{yb} k_{1,10}) \\
+k_{11,11} &amp;= k_{s \theta} (n_{y1} n_{y1} + n_{y2} n_{y2}) + k_{n \theta} n_{y3} n_{y3} + (-R_{zb} k_{1,11} + R_{xb} k_{3,11}) \\
+k_{12,11} &amp;= k_{s \theta} (n_{z1} n_{y1} + n_{z2} n_{y2}) + k_{n \theta} n_{z3} n_{y3} + (-R_{xb} k_{2,11} + R_{yb} k_{1,11}) \\
+k_{12,12} &amp;= k_{s \theta} (n_{z1} n_{z1} + n_{z2} n_{z2}) + k_{n \theta} n_{z3} n_{z3} + (-R_{xb} k_{2,12} + R_{yb} k_{1,12})\end{split}\]</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p>在二维中，刚度矩阵由相应的三维形式得到。二维模型每个节点具有 3 个自由度，因此 <span class="math">\(\omega= \theta_x = \theta_y \equiv 0\)</span>，二维刚度矩阵
+简化为</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="math" id="equation-formulation_mechanical_timestep_eq17">
+<span class="eqno">(23)</span>\[\begin{split}\left\{\begin{matrix}
+        {\bf r_a} \\
+        {\bf r_b}
+       \end{matrix}\right\}
+         = {\bf [k]}
+\left\{\begin{matrix}
+        {\bf d_a} \\
+        {\bf d_b}
+       \end{matrix}\right\}
+\Longleftrightarrow
+\left\{\begin{matrix}
+        F_{xa} \\
+        F_{ya} \\
+        M_{za} \\
+        F_{xb} \\
+        F_{yb} \\
+        M_{zb}
+       \end{matrix}\right\}
+         = {\bf [k]}
+\left\{\begin{matrix}
+        u_a \\
+        v_a \\
+        \theta_{za} \\
+        u_b \\
+        v_b \\
+        \theta_{zb}
+       \end{matrix}\right\}\end{split}\]</div>
+<p>我们调整单位向量三元组的朝向，使 <span class="math">\(\bf{n_1}\)</span> 和 <span class="math">\(\bf{n_3}\)</span> 位于全局 <em>xy</em> 平面内，并
+选择 <span class="math">\(\bf{n_1}\)</span> 使得 <span class="math">\(\bf{n_3} \times  \bf{n_1} = + \bf{\hat{j}} = \bf{n_2}\)</span>。该系统如下图
+所示，其形式为</p>
+<div class="math" id="equation-formulation_mechanical_timestep_eq18">
+<span class="eqno">(24)</span>\[\begin{split}\bf{n_3} = \left\{\begin{matrix}
+        {n_{x3}} \\
+        {n_{y3}} \\
+        {0}
+       \end{matrix}\right\} ,
+\bf{n_1} = \left\{\begin{matrix}
+        {n_{x1}} \\
+        {n_{y1}} \\
+        {0}
+       \end{matrix}\right\}  =
+       \left\{\begin{matrix}
+        {-n_{y3}} \\
+        {n_{x3}} \\
+        {0}
+       \end{matrix}\right\} ,
+\bf{n_2} = \left\{\begin{matrix}
+        {0} \\
+        {0} \\
+        {1}
+       \end{matrix}\right\}\end{split}\]</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id7">
+<span id="fig-timestep-5"></span><a class="reference internal image-reference" href="../../../../../../_images/timestep_fig5.png"><img alt="../../../../../../_images/timestep_fig5.png" src="../../../../../../_images/timestep_fig5.png" style="width: 180pt;"/></a>
+<p class="caption"><span class="caption-text">图 5：二维模型中单位向量三元组的朝向。</span></p>
+</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p>由此得到的二维刚度矩阵与式
+<a class="reference internal" href="#equation-formulation_mechanical_timestep_eq17">(23)</a> 中的自由度相关，可表示为</p>
+<div class="math" id="equation-formulation_mechanical_timestep_eq19">
+<span class="eqno">(25)</span>\[\begin{split}   {\bf [k]} =  \left[\begin{matrix}
+                         k_{1,1}  &amp; {}      &amp; {}    &amp; {} &amp; {} &amp; {} \\
+                         k_{2,1}  &amp; k_{2,2} &amp; {}    &amp; sym. &amp; {} &amp; {} \\
+                         \vdots   &amp; {}      &amp;\ddots &amp; {} &amp; {} &amp; {} \\
+                         {}       &amp; {}      &amp; {}    &amp;\ddots &amp; {} &amp; {} \\
+                         \vdots   &amp; {}      &amp; {}    &amp; {} &amp; k_{5,5} &amp; {} \\
+                         k_{6,1} &amp; \cdots  &amp; {}    &amp; \cdots &amp; k_{6,5} &amp; k_{6,6}
+                \end{matrix}\right]\end{split}\]</div>
+<p>各项均以 DEM 接触量表示在全局坐标系中，并列于下，其中每一组给出一组列的下三角部分。
+对于前两列：</p>
+<div class="math" id="equation-formulation_mechanical_timestep_eq20">
+<span class="eqno">(26)</span>\[\begin{split}k_{1,1} &amp;= k_s (n_{x1} n_{x1} + k_n n_{x3} n_{x3} = k_s {n_{y3}}^2 + k_n {n_{x3}}^2 \\
+k_{2,1} &amp;= k_s (n_{y1} n_{x1} + k_n n_{y3} n_{x3}  \\
+k_{3,1} &amp;= R_{xa} k_{2,1} - R_{ya} k_{1,1} \\
+k_{4,1} &amp;= - k_{1,1} \\
+k_{5,1} &amp;= - k_{2,1} \\
+k_{6,1} &amp;= R_{xb} k_{2,1} + R_{yb} k_{1,1} \\
+k_{2,2} &amp;= k_s (n_{y1} n_{y1} + k_n n_{y3} n_{y3} = k_s {n_{x3}}^2 + k_n {n_{y3}}^2 \\
+k_{3,2} &amp;= R_{xa} k_{2,2} - R_{ya} k_{1,2} \\
+k_{4,2} &amp;= - k_{1,2} \\
+k_{5,2} &amp;= - k_{2,2} \\
+k_{6,2} &amp;= -R_{xb} k_{2,2} + R_{yb} k_{1,2}\end{split}\]</div>
+<p>对于最后四列：</p>
+<div class="math" id="equation-formulation_mechanical_timestep_eq21">
+<span class="eqno">(27)</span>\[\begin{split}k_{3,3} &amp;= k_{s\theta} + (R_{xa} k_{2,3} - R_{ya} k_{1,3}) \\
+k_{4,3} &amp;= - k_{1,3} \\
+k_{5,3} &amp;= - k_{2,3} \\
+k_{6,3} &amp;= -k_{s\theta} + (-R_{xb} k_{2,3} + R_{yb} k_{1,3}) \\
+k_{4,4} &amp;= k_{1,1} \\
+k_{5,4} &amp;= k_{2,1} \\
+k_{6,4} &amp;= -R_{xb} k_{2,4} + R_{yb} k_{1,4} \\
+k_{5,5} &amp;= k_{2,2} \\
+k_{6,5} &amp;= -R_{xb} k_{2,5} + R_{yb} k_{1,5} \\
+k_{6,6} &amp;= k_{s\theta} + (-R_{xb} k_{2,6} + R_{yb} k_{1,6})\end{split}\]</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p>– <a class="reference internal" href="law_of_motion.html#law-of-motion"><span class="std std-ref">下一循环点：运动定律</span>（Next Cycle Point: Law of Motion）</a> –</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p class="h2 rubric">参考文献</p>
+<table class="docutils citation" frame="void" id="bathe1976" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[Bathe1976]</a></td><td>Bathe, K. J. 和 Wilson, E. L.，<span class="bi">Numerical Methods in Finite Element Analysis</span>。
+Englewood Cliffs：Prentice-Hall，1976 年。</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="potyondy2009" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[Potyondy2009]</a></td><td>Potyondy, D.，《Stiffness Matrix at a Contact Between Two Clumps》，Itasca Consulting Group, Inc.，明尼苏达州明尼阿波利斯，技术备忘录 ICG6863-L，2009 年 12 月 7 日。</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../numerical_simulations_with_pfc.html">Numerical Simulations with <span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-3"><a href="pfc_model_formulation.html"><span class="codename">PFC</span> Model Formulation</a> »</li>
+<li class="nav-item nav-item-4"><a accesskey="U" href="cycling.html">Cycling</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="datastructure_validation.html" title="previous chapter"> -10.0 - Validate Data Structures</a> |    
+       <a href="law_of_motion.html" title="next chapter">10.0 - Law of Motion</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?0.0 - Timestep Determination" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

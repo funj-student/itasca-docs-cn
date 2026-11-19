@@ -1,0 +1,321 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>滑动楔体 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../../../search.html" rel="search" title="Search"/>
+<link href="../../../examples/examples.html" rel="next" title="Example Applications"/>
+<link href="../../burger_contact_model/stress_relaxation/cmburger_stressrelaxation.html" rel="prev" title="Burger’s Contact Model: Stress Relaxation"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="sliding-wedge">
+<span id="ver-rblo"></span><h1>滑动楔体</h1>
+<p>/common/docproject/source/manual/examples.rst</p>
+<p class="h2 rubric">引言</p>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">本算例的项目文件可在 <span class="codename">PFC</span> 中查看或运行。<a class="footnote-reference" href="#id3" id="id1">[1]</a>所用的<a class="reference internal" href="#ver-rblo"><span class="std std-ref">数据文件</span>（data files）</a>列于本算例末尾。</p>
+</div>
+<p>本算例中进行了一个简单的楔体稳定性分析。临界摩擦角采用以 Python 编写的二分法计算。计算结果与解析解进行了比较。</p>
+<p class="h2 rubric"><span class="codename">PFC3D</span> 模型</p>
+<p>楔体由平面与立方体相交形成。楔体的滑动面由以下方式定义：</p>
+<ul class="simple">
+<li>F1：倾角 = 40°，倾向 = 130°，原点 = (0,0,1)</li>
+<li>F2：倾角 = 60°，倾向 = 220°，原点 = (0,-0.25,1)</li>
+</ul>
+<p>首先创建一个定义模型“盒子”的刚性块体。随后使用 <a class="reference internal" href="../../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_create.html#command:fracture.create" title="Create a deterministic fracture...">创建裂隙命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fracture</span> <span class="pre">create</span></code>）</a> 命令引入裂隙。裂隙是有限尺寸的，呈圆盘形状。为保证其在模型盒子内的贯通性，采用较大的尺寸，例如 5m。然后使用 <a class="reference internal" href="../../../../../../../rblock/doc/manual/commands/cmd_rblock_cut.html#command:rblock.cut" title="Cut the rigid blocks in range. This is accomplished by cutting the core shape
+with planar slices..."><code class="xref fish fish-cmd docutils literal"><span class="pre">rblock</span> <span class="pre">cut</span></code></a> 命令用这些裂隙切割已有的立方块体。</p>
+<p>用于创建模型几何的命令为：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">2.</span><span class="n"> </span><span class="m m-Double">2.</span><span class="n"> condition destroy</span>
+<span class="nb">rblock create</span><span class="n"> box </span><span class="o">-</span><span class="m m-Double">1.</span><span class="n"> </span><span class="m m-Double">1.</span>
+<span class="nb">fracture create</span><span class="n"> dip </span><span class="m m-Double">40.</span><span class="n"> dip</span><span class="o">-</span><span class="n">dir </span><span class="m m-Double">130.</span><span class="n"> position </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">1</span><span class="n"> size </span><span class="m m-Double">5</span>
+<span class="nb">fracture create</span><span class="n"> dip </span><span class="m m-Double">60.</span><span class="n"> dip</span><span class="o">-</span><span class="n">dir </span><span class="m m-Double">220.</span><span class="n"> position </span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">0.25</span><span class="p">,</span><span class="m m-Double">1</span><span class="n"> size </span><span class="m m-Double">5</span>
+<span class="nb">rblock cut</span><span class="n"> fractures</span>
+</pre></div>
+</div>
+<div class="figure" id="ver-rblo-sliding-wedge-ini">
+<a class="reference internal image-reference" href="../../../../../../../../_images/p3d-rblocks-sliding-wedge-ini.png"><img alt="../../../../../../../../_images/p3d-rblocks-sliding-wedge-ini.png" src="../../../../../../../../_images/p3d-rblocks-sliding-wedge-ini.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 1：初始系统。</span></p>
+</div>
+<p>边界条件为固定除楔体（ID=2 的块体）以外的所有块体。相应的命令为：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 边界条件</span>
+<span class="nb">rblock fix</span><span class="n"> velocity spin range id </span><span class="m m-Double">6</span><span class="n"> not</span>
+</pre></div>
+</div>
+<p>对所有接触施加同一组力学属性：黏聚力为零，法向与剪切刚度 = 1e7Pa/m，摩擦系数初始取值很大。块体的密度为 2000kg/m3，阻尼为 0.7，并受重力作用。相应的命令为：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 模型参数</span>
+<span class="nb">rblock attribute</span><span class="n"> density </span><span class="m m-Double">2000.0</span><span class="n"> damp </span><span class="m m-Double">0.7</span>
+<span class="nb">contact cmat</span><span class="n"> default model linear </span><span class="sx">...</span>
+<span class="n">                     property kn </span><span class="m m-Double">1.e7</span><span class="n"> ks </span><span class="m m-Double">1.e7</span><span class="n"> fric </span><span class="m m-Double">1.e20</span>
+<span class="c">; 重力加速度</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">10.</span>
+</pre></div>
+</div>
+<p>分析过程中将修改摩擦角，以计算使楔体处于极限平衡状态的临界摩擦角。首先，模型在摩擦很大的条件下运行至初始平衡。</p>
+<p class="h2 rubric">解析解</p>
+<p>解析解由 <a class="reference internal" href="#goodmanshi1985" id="id2">[GoodmanShi1985]</a> 导出。</p>
+<p>对于块体沿两个面滑动的情况，定义 <span class="math">\(N_1\)</span> 与 <span class="math">\(N_2\)</span> 为作用在两个滑动面上的法向力大小。</p>
+<div class="math" id="equation-normal_forces">
+<span class="eqno">(1)</span>\[\begin{split}N_1 &amp;=  \frac{- (\mathbf{A} \times \mathbf{n_2}) \times (\mathbf{n_1} \times \mathbf{n_2})} {\|\mathbf{n_1} \times \mathbf{n_2}\|^2}  \\
+       N_2 &amp;=  \frac{- (\mathbf{A} \times \mathbf{n_1}) \times (\mathbf{n_1} \times \mathbf{n_2})} {\|\mathbf{n_1} \times \mathbf{n_2}\|^2}\end{split}\]</div>
+<p>其中 <span class="math">\(n_i\)</span> 是块体表面的法向，指向块体内部；<span class="math">\(\mathbf{A}\)</span> 是作用于块体的总外施力（本算例中为块体自重）。</p>
+<p>沿滑动方向的总剪力由下式给出：</p>
+<div class="math" id="equation-shear_force">
+<span class="eqno">(2)</span>\[T_{12} =  \mathbf{A} \times \mathbf{s_{12}}\]</div>
+<p>其中 <span class="math">\(s_{12}\)</span> 是由两个滑动面相交计算得到的滑动方向：</p>
+<div class="math" id="equation-sliding_direction">
+<span class="eqno">(3)</span>\[s_{12} =  \frac{(\mathbf{n_1} \times \mathbf{n_2})} { \|\mathbf{n_1} \times \mathbf{n_2}\|^2} \text{sgn}((\mathbf{n_1} \times \mathbf{n_2}) \cdot \mathbf{A})\]</div>
+<p>在节理中无黏聚力、并假定两个滑动面摩擦角相同的条件下，安全系数可计算为：</p>
+<div class="math" id="equation-safety_factor">
+<span class="eqno">(4)</span>\[F_s =  \frac{(N_1+N_2) \tan{\phi}} {T_{12}}\]</div>
+<p>由此可推得保持稳定（最小安全系数为 1）的临界摩擦角。 本算例中临界摩擦角为 33.36°。该值由文件 <a class="reference internal" href="#ver-rblo-analytical-fric"><span class="std std-ref">analytical_fric.py</span></a> 中的 Python 脚本计算得到。</p>
+<p class="h2 rubric">数值分析</p>
+<p>从在极大摩擦下受重力加载而处于平衡状态的系统出发，修改两个滑动面的摩擦角，以便借助用 Python 编写的二分法算法，寻找使块体保持稳定的最小临界角。每次改变摩擦角后，都将模型运行至平衡，并以最大步数为限（最大为 10000）。</p>
+<p>对于给定的摩擦角，如果能在少于最大循环数的循环次数内达到平衡（不平衡力的平均比值为 1e-6），则认为块体是稳定的；否则认为块体不稳定。二分法算法中的一次 Python 循环包括：恢复初始状态；针对给定的摩擦角（即当前取值区间的中点）测试稳定性；并根据稳定性结果将该区间除以 2。当计算区间小于某一最小值（此处设为 0.001）时，即得到临界摩擦角的解。</p>
+<p>运行该算法，得到临界摩擦角为 33.398°，与解析解相比误差为 0.128%。</p>
+<p class="h2 rubric">参考文献</p>
+<table class="docutils citation" frame="void" id="goodmanshi1985" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[GoodmanShi1985]</a></td><td>Goodman, R. E. 和 Shi, G.，《Block Theory and its Application to Rock Engineering》，Prentice-Hall，伦敦（1979）。</td></tr>
+</tbody>
+</table>
+<p class="h2 rubric" id="ver-rblo-datafiles">数据文件</p>
+<p class="h3 rubric" id="ver-rblo-make-system">make_system.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; excerpt-sraw-start</span>
+<span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">2.</span><span class="n"> </span><span class="m m-Double">2.</span><span class="n"> condition destroy</span>
+<span class="nb">rblock create</span><span class="n"> box </span><span class="o">-</span><span class="m m-Double">1.</span><span class="n"> </span><span class="m m-Double">1.</span>
+<span class="nb">fracture create</span><span class="n"> dip </span><span class="m m-Double">40.</span><span class="n"> dip</span><span class="o">-</span><span class="n">dir </span><span class="m m-Double">130.</span><span class="n"> position </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">1</span><span class="n"> size </span><span class="m m-Double">5</span>
+<span class="nb">fracture create</span><span class="n"> dip </span><span class="m m-Double">60.</span><span class="n"> dip</span><span class="o">-</span><span class="n">dir </span><span class="m m-Double">220.</span><span class="n"> position </span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">0.25</span><span class="p">,</span><span class="m m-Double">1</span><span class="n"> size </span><span class="m m-Double">5</span>
+<span class="nb">rblock cut</span><span class="n"> fractures</span>
+<span class="c">; excerpt-sraw-end</span>
+
+<span class="c">; excerpt-aslr-start</span>
+<span class="c">; 边界条件</span>
+<span class="nb">rblock fix</span><span class="n"> velocity spin range id </span><span class="m m-Double">6</span><span class="n"> not</span>
+<span class="c">; excerpt-aslr-end</span>
+
+<span class="c">; excerpt-mhuu-start</span>
+<span class="c">; 模型参数</span>
+<span class="nb">rblock attribute</span><span class="n"> density </span><span class="m m-Double">2000.0</span><span class="n"> damp </span><span class="m m-Double">0.7</span>
+<span class="nb">contact cmat</span><span class="n"> default model linear </span><span class="sx">...</span>
+<span class="n">                     property kn </span><span class="m m-Double">1.e7</span><span class="n"> ks </span><span class="m m-Double">1.e7</span><span class="n"> fric </span><span class="m m-Double">1.e20</span>
+<span class="c">; 重力加速度</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">10.</span>
+<span class="c">; excerpt-mhuu-end</span>
+
+<span class="c">; 监测</span>
+<span class="nb">model history</span><span class="n"> name </span><span class="s">'aratio'</span><span class="n"> mechanical ratio</span><span class="o">-</span><span class="n">average</span>
+
+<span class="c">; 在重力作用下达到平衡状态</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'ini.sav'</span>
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="ver-rblo-analytical-fric">analytical_fric.py</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">itasca</span> <span class="kn">as</span> <span class="nn">it</span> 
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">vec</span> <span class="kn">import</span> <span class="n">vec3</span> 
+
+<span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">    python-reset-state off</span>
+<span class="s2">    model new</span>
+<span class="s2">    model restore </span><span class="se">\'</span><span class="s2">ini.sav</span><span class="se">\'</span><span class="s2"></span>
+<span class="s2">      """</span><span class="p">)</span>
+
+<span class="n">f1</span><span class="o">=</span><span class="n">it</span><span class="o">.</span><span class="n">dfn</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">f2</span><span class="o">=</span><span class="n">it</span><span class="o">.</span><span class="n">dfn</span><span class="o">.</span><span class="n">fracture</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+
+<span class="c1"># 求各裂隙的法向量 </span>
+<span class="n">n1</span><span class="o">=</span><span class="n">f1</span><span class="o">.</span><span class="n">normal</span><span class="p">()</span>
+<span class="n">n2</span><span class="o">=</span><span class="n">f2</span><span class="o">.</span><span class="n">normal</span><span class="p">()</span>
+
+<span class="c1">#法向量指向块体内部</span>
+<span class="k">if</span> <span class="n">f1</span><span class="o">.</span><span class="n">normal_z</span><span class="p">()</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">:</span>
+    <span class="n">n1</span><span class="o">=-</span><span class="n">n1</span>
+<span class="k">if</span> <span class="n">f2</span><span class="o">.</span><span class="n">normal_z</span><span class="p">()</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">:</span>
+    <span class="n">n2</span><span class="o">=-</span><span class="n">n2</span>
+
+<span class="c1">#应用 Goodman 与 Shi 理论</span>
+
+<span class="c1">#主动力矢量</span>
+<span class="n">WW</span><span class="o">=</span><span class="mf">348.074</span>          <span class="c1">#从刚体块 Python 对象中获取惯性质量 ???</span>
+<span class="n">A</span><span class="o">=</span><span class="n">vec3</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="o">-</span><span class="n">WW</span><span class="p">))</span>
+
+<span class="c1">#计算滑动方向</span>
+<span class="n">n12</span><span class="o">=</span><span class="n">n1</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">n2</span><span class="p">)</span>
+<span class="n">s12</span><span class="o">=</span><span class="n">n12</span><span class="o">/</span><span class="n">n12</span><span class="o">.</span><span class="n">mag</span><span class="p">()</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">n12</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">A</span><span class="p">))</span>
+
+<span class="c1">#法向力 </span>
+<span class="n">N1</span><span class="o">=-</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">n2</span><span class="p">))</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">n12</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">n12</span><span class="o">.</span><span class="n">mag</span><span class="p">())</span><span class="o">**</span><span class="mi">2</span>
+<span class="n">N2</span><span class="o">=-</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">cross</span><span class="p">(</span><span class="n">n1</span><span class="p">))</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="o">-</span><span class="n">n12</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">n12</span><span class="o">.</span><span class="n">mag</span><span class="p">())</span><span class="o">**</span><span class="mi">2</span>
+<span class="c1">#剪力</span>
+<span class="n">T12</span><span class="o">=</span><span class="n">A</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">s12</span><span class="p">)</span>
+
+<span class="c1"># 临界摩擦角（黏聚力为零时）</span>
+<span class="n">fric_theory</span><span class="o">=</span><span class="n">math</span><span class="o">.</span><span class="n">atan</span><span class="p">(</span><span class="n">T12</span><span class="o">/</span><span class="p">(</span><span class="n">N1</span><span class="o">+</span><span class="n">N2</span><span class="p">))</span><span class="o">*</span><span class="mf">180.</span><span class="o">/</span><span class="n">math</span><span class="o">.</span><span class="n">pi</span>
+<span class="k">print</span><span class="p">(</span><span class="s2">"Analytical critical friction angle is "</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">fric_theory</span><span class="p">)</span><span class="o">+</span><span class="s2">" degrees"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="ver-rblo-pfc-fric">pfc_fric.py</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">itasca</span> <span class="kn">as</span> <span class="nn">it</span> 
+<span class="kn">import</span> <span class="nn">math</span>
+
+<span class="n">fric_limit1</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="n">fric_limit2</span> <span class="o">=</span> <span class="mf">90.</span>
+
+<span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+
+    <span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">    model new</span>
+<span class="s2">    model restore </span><span class="se">\'</span><span class="s2">ini.sav</span><span class="se">\'</span><span class="s2"></span>
+<span class="s2">    rblock attribute displacement 0</span>
+<span class="s2">    rblock attribute velocity 0.</span>
+<span class="s2">    rblock history name </span><span class="se">\'</span><span class="s2">zdisp</span><span class="se">\'</span><span class="s2"> displacement-z id 6</span>
+<span class="s2">    """</span><span class="p">)</span>
+
+    <span class="n">cycle_max</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">cycle</span><span class="p">()</span> <span class="o">+</span> <span class="mi">10000</span>
+  
+    <span class="n">fric_angle</span> <span class="o">=</span> <span class="p">(</span><span class="n">fric_limit1</span> <span class="o">+</span> <span class="n">fric_limit2</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span>
+    <span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">                  [fric_angle = {}]</span>
+<span class="s2">                  contact property fric [math.tan(fric_angle*math.pi/180.)])</span>
+<span class="s2">                  model solve ratio-average 1e-6 cycles-total 10000</span>
+<span class="s2">                  fish define isStable</span>
+<span class="s2">                    isStable = false</span>
+<span class="s2">                    if rblock.num == 4</span>
+<span class="s2">                        if mech.cycle &lt; 10000</span>
+<span class="s2">                            isStable = true</span>
+<span class="s2">                        endif</span>
+<span class="s2">                    endif   </span>
+<span class="s2">                  end</span>
+<span class="s2">               """</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">fric_angle</span><span class="p">))</span>
+    
+    <span class="k">if</span> <span class="n">it</span><span class="o">.</span><span class="n">fish</span><span class="o">.</span><span class="n">call_function</span><span class="p">(</span><span class="s2">"isStable"</span><span class="p">)</span> <span class="ow">is</span> <span class="bp">True</span><span class="p">:</span> <span class="c1">#稳定</span>
+        <span class="n">fric_limit2</span> <span class="o">=</span> <span class="n">fric_angle</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">"Stable for "</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">fric_angle</span><span class="p">)</span> <span class="o">+</span><span class="s2">" degrees"</span><span class="p">)</span>
+        <span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"model save </span><span class="se">\'</span><span class="s2">last_stable.sav</span><span class="se">\'</span><span class="s2">"</span><span class="p">)</span>
+    
+    <span class="k">else</span> <span class="p">:</span> <span class="c1">#不稳定</span>
+        <span class="n">fric_limit1</span> <span class="o">=</span> <span class="n">fric_angle</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">"Unstable for "</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">fric_angle</span><span class="p">)</span> <span class="o">+</span><span class="s2">" degrees"</span><span class="p">)</span>
+        <span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"model save </span><span class="se">\'</span><span class="s2">last_unstable.sav</span><span class="se">\'</span><span class="s2">"</span><span class="p">)</span>
+        
+    <span class="c1">#计算区间大小</span>
+    <span class="n">min_interval</span> <span class="o">=</span> <span class="p">(</span><span class="n">fric_limit2</span> <span class="o">-</span> <span class="n">fric_limit1</span><span class="p">)</span><span class="o">/</span><span class="mf">2.</span>
+    <span class="k">if</span> <span class="n">min_interval</span><span class="o">&lt;</span><span class="mf">0.001</span><span class="p">:</span>
+        <span class="k">break</span>    
+    
+<span class="k">print</span><span class="p">(</span><span class="s2">"Last stable friction angle interval is ["</span>
+      <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="s2">"</span><span class="si">%.3f</span><span class="s2">"</span> <span class="o">%</span> <span class="n">fric_limit1</span><span class="p">)</span> <span class="o">+</span><span class="s2">";"</span>
+      <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="s2">"</span><span class="si">%.3f</span><span class="s2">"</span> <span class="o">%</span> <span class="n">fric_limit2</span><span class="p">)</span><span class="o">+</span><span class="s2">"] (degrees)"</span><span class="p">)</span>
+<span class="n">_error</span><span class="o">=</span><span class="nb">abs</span><span class="p">(</span><span class="n">fric_limit2</span><span class="o">-</span><span class="n">fric_theory</span><span class="p">)</span><span class="o">/</span><span class="n">fric_theory</span><span class="o">*</span><span class="mf">100.0</span>
+<span class="k">print</span><span class="p">(</span><span class="s2">"The error relative to the theoretical solution ("</span> 
+      <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="s2">"</span><span class="si">%.3f</span><span class="s2">"</span> <span class="o">%</span> <span class="n">fric_theory</span><span class="p">)</span>
+      <span class="o">+</span> <span class="s2">") is "</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="s2">"</span><span class="si">%.3f</span><span class="s2">"</span> <span class="o">%</span> <span class="n">_error</span><span class="p">)</span><span class="o">+</span><span class="s2">"%"</span><span class="p">)</span>
+    
+</pre></div>
+</div>
+<p class="endnotesection rubric">尾注</p>
+<table class="docutils footnote" frame="void" id="id3" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><p class="first">要在 <span class="codename">PFC</span> 中查看本项目，请使用程序菜单。</p>
+<p><span class="menuselection">帮助 ▼ 算例…</span></p>
+<p class="last">  ⮡    PFC <br/>
+    ⮡    验证 <br/>
+      ⮡     <br/>
+        ⮡    SlidingWedge.prj</p>
+</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../../pfc_model_components/pfc_examples.html">Examples</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../../verification.html">Verification Problems</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../../burger_contact_model/stress_relaxation/cmburger_stressrelaxation.html" title="previous chapter"> Burger’s Contact Model: Stress Relaxation</a> |    
+       <a href="../../../examples/examples.html" title="next chapter">Example Applications</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Sliding Wedge" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

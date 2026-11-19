@@ -1,0 +1,105 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>35.0 - 创建／删除接触 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="force_displacement.html" rel="next" title="40.0 - Force-displacement Law"/>
+<link href="cellspace_update.html" rel="prev" title="30.0 - Update Spatial Searching Data Structures"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="create-delete-contacts">
+<span id="update-contacts"></span><h1>35.0 - 创建／删除接触</h1>
+<p>接触可以形成于分属不同体的两个片体之间，参与某个接触的片体称为接触端。在一系列循环的首次循环之前，（在数据结构初始化期间，如 <a class="reference internal" href="cycling.html#series-of-cycles"><span class="std std-ref">此处</span>（here）</a> 所示）已在片体之间创建了所有接触。这是必要的，因为若没有接触，就无法计算系统的有效刚度，这意味着无法计算稳定的时步。</p>
+<p>对累积运动超过其容差范围判据而被判定为脏（dirty）的片体，触发接触更新。这类片体已在循环点 30.0 期间于单元空间中重新映射（详情请参阅 <a class="reference internal" href="cellspace_update.html#cellspace-update"><span class="std std-ref">此处</span>（here）</a>）。当片体的 <a class="reference internal" href="cellspace_update.html#piece-extents"><span class="std std-ref">共形表面</span>（conformal surfaces）</a> 重叠时创建接触，当共形表面不再重叠时删除接触。接触更新仅对脏片体发生。请注意，使用 <a class="reference internal" href="../../../../../../common/contact/doc/contact_manual/contact_fish/contact_intrinsics/fish_contact.activate.html#function:contact.activate" title="Get/set the contact always active flag..."><code class="xref fish fish-func docutils literal"><span class="pre">contact.activate</span></code></a> <span class="codename">FISH</span> 函数将接触的状态设置为始终活动，即可确保接触永不被删除。</p>
+<p>当把时步确定模式设置为自动或缩放时（参见 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.mechanical.html#kwd:model.mechanical.timestep" title=".. kwd:: Automatic...">模型力学时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">mechanical</span> <span class="pre">timestep</span></code>）</a> 命令），时步受到限制，使任一片体相对于其上一位置的平移量最多为 <span class="math">\(\varepsilon\)</span>。在该约束得到强制执行的前提下，可以保证接触在出现力/力矩的循环之前即已创建。下图以图形方式说明了这一点。假设两个相同的球颗粒（几何形状和 <span class="math">\(\varepsilon\)</span> 值均相同）处于这样一种构型：在循环 <span class="math">\(N\)</span> 结束时，它们的范围无限接近（相距 <span class="math">\(\vartheta\)</span>）。此外，假设两个球颗粒的速度 <span class="math">\(\left | \mathbf{v} \right | = (\varepsilon-\vartheta) / \Delta t\)</span> 相向指向，其中 <span class="math">\(\Delta t\)</span> 为循环 <span class="math">\(N+1\)</span> 和 <span class="math">\(N+2\)</span> 期间的时步。在循环 <span class="math">\(N+1\)</span> 结束时，范围保持不变，因为两个球颗粒的平移量均未达到 <span class="math">\(\varepsilon\)</span>（相对于循环 <span class="math">\(N\)</span> 时的位置）。在循环 <span class="math">\(N+2\)</span> 期间更新球颗粒的位置，使两个球颗粒彼此相距 <span class="math">\(\overline{r}_i + \vartheta\)</span>。随后更新片体范围，接触便会在可能产生力/力矩的循环<strong>之前</strong>创建。</p>
+<div class="figure align-center" id="id1">
+<span id="update-contacts-fig1"></span><a class="reference internal image-reference" href="../../../../../../_images/update_contacts_fig1.png"><img alt="../../../../../../_images/update_contacts_fig1.png" src="../../../../../../_images/update_contacts_fig1.png" style="width: 450pt;"/></a>
+<p class="caption"><span class="caption-text">图 1：相同片体以固定速度相向运动的平移限制逻辑演示。当片体位移超过 <span class="math">\(\varepsilon\)</span>（细虚线）时，单元范围（虚线）随之更新。</span></p>
+</div>
+<p>创建时，一个 <a class="reference internal" href="../../pfc_model_components/contacts/contact_models.html#contact-models"><span class="std std-ref">接触模型</span>（contact model）</a> 会依据 <a class="reference internal" href="../../pfc_model_components/contacts/cmat_description.html#cmat"><span class="std std-ref">接触模型分配表（CMAT）</span>（Contact Model Assignment Table (CMAT)）</a> 的当前配置分配给每个接触。如“<a class="reference internal" href="model_components.html#model-components"><span class="std std-ref">模型组件</span>（Model Components）</a>”一节所述，接触几何在创建时即被确定。</p>
+<p>– <a class="reference internal" href="force_displacement.html#force-displacement"><span class="std std-ref">下一循环点：力-位移定律</span>（Next Cycle Point: Force-displacement Law）</a> –</p>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../numerical_simulations_with_pfc.html">Numerical Simulations with <span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-3"><a href="pfc_model_formulation.html"><span class="codename">PFC</span> Model Formulation</a> »</li>
+<li class="nav-item nav-item-4"><a accesskey="U" href="cycling.html">Cycling</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="cellspace_update.html" title="previous chapter"> 30.0 - Update Spatial Searching Data Structures</a> |    
+       <a href="force_displacement.html" title="next chapter">40.0 - Force-displacement Law</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?35.0 - Create/delete Contacts" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

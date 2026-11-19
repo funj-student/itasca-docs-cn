@@ -1,0 +1,800 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>Measure 逻辑 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../../search.html" rel="search" title="Search"/>
+<link href="../ArrayStrength/ArrayStrength.html" rel="next" title="Strength of a Face-Centered Cubic Array of Spheres"/>
+<link href="../verification.html" rel="prev" title="Verification Problems"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="measure-logic">
+<span id="ver-meas"></span><span id="porositymeasurement"></span><h1>Measure 逻辑</h1>
+<p class="h2 rubric">问题描述</p>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">本算例的项目文件可在 <span class="codename">PFC</span> 中查看或运行。<a class="footnote-reference" href="#id3" id="id1">[1]</a>所用的<a class="reference internal" href="#ver-meas-datafiles"><span class="std std-ref">数据文件</span>（data files）</a>列于本算例末尾。</p>
+</div>
+<p>测量逻辑（参见 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/measure_manual/command_reference/cmd_measure/cmd_measure.create.html#command:measure.create" title='Create a measurement region. Measurement regions are {disks in 2D; spheres in
+3D}. The measurement calculation is triggered whenever a clean command is invoked,
+or whenever a |FISH| intrinsic that queries a measured value is invoked (see
+" Measure Intrinsics &lt;fish_measure_intrinsics&gt; ")...'>创建测量区域（<code class="xref fish fish-cmd docutils literal"><span class="pre">measure</span> <span class="pre">create</span></code>）</a> 命令）借助 <span class="codename">PFC</span> 加以运行，以计算孔隙率。生成了两个由按类晶体模式排列的单一粒径球颗粒构成的规则堆积，以及一个多分散堆积。孔隙率采用半径不同的测量圆（在 3D 中为测量球）计算。数值结果的精度通过与解析值进行比较来评估。</p>
+<p class="h3 rubric">闭式解</p>
+<p>考虑两种类晶体堆积。这两种堆积均由相互接触且无重叠的等半径球颗粒组成。第一种堆积为简单立方排列（2D 视图见 <a href="#ver-meas-cubicpacking">图 1（Fig.  1）</a>），其中每个球颗粒在 2D 中与四个相邻球颗粒接触（在 3D 中为六个）。第二种堆积为六边形排列（见 <a href="#ver-meas-hexapacking">图 2（Fig.  2）</a>），其中每个球颗粒在 2D 中与六个相邻球颗粒接触（在 3D 中为十二个）。在所有可能的规则二维或三维堆积中，六边形排列是最密实的一种。对于这两种堆积，只要堆积延伸到足够大的区域以致边界的影响可以忽略，孔隙率就与球颗粒的尺寸无关（二维和三维堆积的详尽讨论请参阅 <a class="reference internal" href="#deresiewicz1958a" id="id2">[Deresiewicz1958a]</a>）。</p>
+<p>堆积的密度 <span class="math">\(D\)</span> 定义为固体物质所占面积 <span class="math">\(A_s\)</span> 与总面积 <span class="math">\(A\)</span> 之比。若假定总面积由固体面积与孔隙面积两部分组成，且不存在重叠，则密度与孔隙率 <span class="math">\(n\)</span> 之间存在以下关系：</p>
+<div class="math">
+\[n = 1 - D = 1 - \frac{A_s}{A}\]</div>
+<p>对于简单立方堆积，在二维情况下有：</p>
+<div class="math" id="equation-ver-meas-porosity-cubic-2D">
+<span class="eqno">(1)</span>\[n = 1 - \frac{\pi R^2}{(2R)^2}=1-\frac{\pi}{4} \approx 0.2146\]</div>
+<p>在三维情况下则为：</p>
+<div class="math" id="equation-ver-meas-porosity-cubic-3D">
+<span class="eqno">(2)</span>\[n = 1 - \frac{4/3 \pi R^3}{(2R)^3}=1-\frac{\pi}{6} \approx 0.4764\]</div>
+<p>对于六边形堆积，在二维情况下有：</p>
+<div class="math" id="equation-ver-meas-porosity-hexa-2D">
+<span class="eqno">(3)</span>\[n = 1 - \frac{\pi R^2}{(\sqrt{3}R)(2R)}=1-\frac{\pi}{2 \sqrt{3}} \approx 0.0931\]</div>
+<p>在三维情况下则为：</p>
+<div class="math" id="equation-ver-meas-porosity-hexa-3D">
+<span class="eqno">(4)</span>\[n = 1 - \frac{8 \pi R^3}{(6\sqrt{3}R^2)(4R\sqrt{2/3})}=1-\frac{\pi}{3 \sqrt{2}} \approx 0.2595\]</div>
+<p>对于多分散集合体，采用专门的流程计算孔隙率（参见 <strong>get_poros</strong> 函数，其定义见 “<a class="reference internal" href="#ver-meas-polydisperseassembly-datafile2d">PolydisperseAssembly.dat（二维）（<span class="std std-ref">PolydisperseAssembly.dat (2D)</span>）</a>” 与 “<a class="reference internal" href="#ver-meas-polydisperseassembly-datafile3d">PolydisperseAssembly.dat（三维）（<span class="std std-ref">PolydisperseAssembly.dat (3D)</span>）</a>”），该流程利用模型中各球颗粒表面积（在 3D 中为体积）之和与试样总表面积（在 3D 中为体积）之比进行计算。</p>
+<div class="math" id="equation-ver-meas-porosity-poly">
+<span class="eqno">(5)</span>\[n = 1-\frac{S_{balls}}{S} \quad (2D) \quad \quad n = 1-\frac{V_{balls}}{V} \quad (3D)\]</div>
+<p class="h2 rubric">数值模型</p>
+<p>使用若干参数化的 <span class="codename">FISH</span> 函数生成用于计算各堆积孔隙率的测量圆（在 3D 中为测量球）。</p>
+<p>这些函数定义在 {2D 为 “<a class="reference internal" href="#ver-meas-measurelogic-datafile2d">MeasureLogic.dat（二维）（<span class="std std-ref">MeasureLogic.dat (2D)</span>）</a>”；3D 为 “<a class="reference internal" href="#ver-meas-measurelogic-datafile3d">MeasureLogic.dat（三维）（<span class="std std-ref">MeasureLogic.dat (3D)</span>）</a>”} 中。</p>
+<p><strong>define_meas_parameters</strong> 函数接受两个参数：<a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)...">测量数量（<span class="varint"><span class="null">nmeas</span></span>）</a>，用户可通过它定义在堆积内创建的测量区域数目；以及 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)...">接触点数量（<span class="varfloat"><span class="null">pcntg</span></span>）</a>，通过它可定义 <span class="cmdkey">tolerance</span> 值（该值在 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/measure_manual/command_reference/cmd_measure/cmd_measure.create.html#command:measure.create" title='Create a measurement region. Measurement regions are {disks in 2D; spheres in
+3D}. The measurement calculation is triggered whenever a clean command is invoked,
+or whenever a |FISH| intrinsic that queries a measured value is invoked (see
+" Measure Intrinsics &lt;fish_measure_intrinsics&gt; ")...'>创建测量区域（<code class="xref fish fish-cmd docutils literal"><span class="pre">measure</span> <span class="pre">create</span></code>）</a> 命令中指定）。最后一个参数决定了在测量区域内计算孔隙率时所允许的误差容差（&lt; <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)...">接触点数量（<span class="varfloat"><span class="null">pcntg</span></span>）</a>）。详情请参阅参考页。</p>
+<p>各测量区域在模型中的尺寸和位置均为随机。这一点在 <strong>create_meas_regions</strong> 函数中定义。</p>
+<p>为验证孔隙率计算的准确性，定义了一个带三个参数的 <strong>check_error</strong> 函数：<a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)...">属性值（<span class="varfloat"><span class="null">val</span></span>）</a> 为孔隙率的参考值，在规则集合体的情况下由式 <a class="reference internal" href="#equation-ver-meas-porosity-cubic-2D">(1)</a>、<a class="reference internal" href="#equation-ver-meas-porosity-cubic-3D">(2)</a>、<a class="reference internal" href="#equation-ver-meas-porosity-hexa-2D">(3)</a>、<a class="reference internal" href="#equation-ver-meas-porosity-hexa-3D">(4)</a> 计算得到，在多分散集合体的情况下则直接使用式 <a class="reference internal" href="#equation-ver-meas-porosity-poly">(5)</a> 计算，该值用于与数值结果进行比较；<a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">t</span></span></a> 为一个字符串变量，用于定义表格的名称，该表格将保存孔隙率测量中所产生误差的数值；<a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)...">平均半径（<span class="varfloat"><span class="null">average_radius</span></span>）</a> 为组成集合体的球颗粒的平均半径，在对模拟结果进行后处理时用于对测量区域的直径进行归一化。</p>
+<p>在规则集合体的情况下，使用一个参数化的 <span class="codename">FISH</span> 函数，通过 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.generate.html#command:ball.generate" title="Generate non-overlapping balls. The process ceases when the target number of
+balls are    created or when the number of attempts to place balls without overlap
+is achieved. By    default, the ball positions and radii are drawn from uniform
+distributions throughout the    model domain. As a result, the set of balls
+generated is affected by the state of the    random-number generator (see  model.random ).
+The..."><code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">generate</span></code></a> 命令构建每一种排列（2D 见“<a class="reference internal" href="#ver-meas-regularassembly-datafile2d">RegularAssembly.dat（二维）（<span class="std std-ref">RegularAssembly.dat (2D)</span>）</a>”，3D 见“<a class="reference internal" href="#ver-meas-regularassembly-datafile3d">RegularAssembly.dat（三维）（<span class="std std-ref">RegularAssembly.dat (3D)</span>）</a>”）。该函数有三个参数：尺寸、分辨率和排列类型，分别对应 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">size</span></span></a>、<a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)...">结果数量（<span class="varfloat"><span class="null">nres</span></span>）</a> 和 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)...">接触类型ID（<span class="varint"><span class="null">itype</span></span>）</a>。每种排列构建两个模型。这两个模型分别包含 9 行 9 列球颗粒（3D 中为 9x9x9）和 30 行 30 列球颗粒（3D 中为 30x30x30）。</p>
+<p>立方排列与六方排列的截图（9x9 排列、低分辨率、2D 视图）如 <a href="#ver-meas-cubicpacking">图 1（Fig.  1）</a> 和 <a href="#ver-meas-hexapacking">图 2（Fig.  2）</a> 所示。</p>
+<div class="figure" id="ver-meas-cubicpacking">
+<a class="reference internal image-reference" href="../../../../../../../_images/Regular_cubic.png"><img alt="../../../../../../../_images/Regular_cubic.png" src="../../../../../../../_images/Regular_cubic.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 1：立方规则排列，低分辨率。</span></p>
+</div>
+<div class="figure" id="ver-meas-hexapacking">
+<a class="reference internal image-reference" href="../../../../../../../_images/Regular_hexa.png"><img alt="../../../../../../../_images/Regular_hexa.png" src="../../../../../../../_images/Regular_hexa.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：六方规则排列，低分辨率。</span></p>
+</div>
+<p>为构建多分散集合体，在一个 <span class="codename">FISH</span> 函数中实现了一个过程，该函数唯一的参数是排列的尺寸。使用了 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.generate.html#kwd:ball.generate.gauss" title="Specify that the ball radii are chosen from a Gaussian distribution with mean
+value...">球体高斯分布生成命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">generate</span> <span class="pre">gauss</span></code>）</a> 选项，从而保证颗粒尺寸分布服从高斯分布。生成了由互不重叠的球颗粒构成的颗粒云。所有函数均定义在 2D 的“<a class="reference internal" href="#ver-meas-polydisperseassembly-datafile2d">PolydisperseAssembly.dat（二维）（<span class="std std-ref">PolydisperseAssembly.dat (2D)</span>）</a>”和 3D 的“<a class="reference internal" href="#ver-meas-polydisperseassembly-datafile3d">PolydisperseAssembly.dat（三维）（<span class="std std-ref">PolydisperseAssembly.dat (3D)</span>）</a>”中。</p>
+<div class="figure" id="ver-meas-polypacking">
+<a class="reference internal image-reference" href="../../../../../../../_images/PolydisPacking.png"><img alt="../../../../../../../_images/PolydisPacking.png" src="../../../../../../../_images/PolydisPacking.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 3：多分散排列，低分辨率。</span></p>
+</div>
+<p>通过 <code class="docutils literal"><span class="pre">define_meas_parameters</span></code> 函数（位于“<a class="reference internal" href="#ver-meas-measurelogic-datafile2d">MeasureLogic.dat（二维）（<span class="std std-ref">MeasureLogic.dat (2D)</span>）</a>”中）定义了测量参数。<a href="#ver-meas-cubicmeas">图 4（Fig.  4）</a> 和 <a href="#ver-meas-polymeas">图 5（Fig.  5）</a> 展示了测量区域的截图（<a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)...">测量数量（<span class="varint"><span class="null">nmeas</span></span>）</a> = 5000），这些测量区域已布置用于测量立方规则排列和多分散排列的孔隙率。</p>
+<div class="figure" id="ver-meas-cubicmeas">
+<a class="reference internal image-reference" href="../../../../../../../_images/Cubic_porosity.png"><img alt="../../../../../../../_images/Cubic_porosity.png" src="../../../../../../../_images/Cubic_porosity.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 4：立方排列与测量区域。</span></p>
+</div>
+<div class="figure" id="ver-meas-polymeas">
+<a class="reference internal image-reference" href="../../../../../../../_images/Poly_porosity.png"><img alt="../../../../../../../_images/Poly_porosity.png" src="../../../../../../../_images/Poly_porosity.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 5：多分散排列与测量区域。</span></p>
+</div>
+<p class="h2 rubric">结果与讨论</p>
+<p>将数值结果与参考值进行比较。使用 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)...">测量数量（<span class="varint"><span class="null">nmeas</span></span>）</a> = 5000 个测量圆和 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)...">接触点数量（<span class="varfloat"><span class="null">pcntg</span></span>）</a> = 0.0 时产生的平均误差报告于 <a href="#ver-meas-porostabletwo">表 1（Table  1）</a> 和 <a href="#ver-meas-porostablethree">表 2（Table  2）</a> 中。</p>
+<p>在规则集合体的情况下，对于 2D 模型，有：</p>
+<table border="1" class="col2center col3center col4center col5center docutils" id="ver-meas-porostabletwo">
+<caption><span class="caption-text">表 1：规则集合体的孔隙率对比 - 2D 模型</span></caption>
+<colgroup>
+<col width="20%"/>
+<col width="21%"/>
+<col width="21%"/>
+<col width="17%"/>
+<col width="21%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head"> </th>
+<th class="head" colspan="2">立方排列</th>
+<th class="head" colspan="2">六方排列</th>
+</tr>
+<tr class="row-even"><th class="head"> </th>
+<th class="head">低分辨率</th>
+<th class="head">高分辨率</th>
+<th class="head">低分辨率</th>
+<th class="head">高分辨率</th>
+</tr>
+<tr class="row-odd"><th class="head"> </th>
+<th class="head">9x9</th>
+<th class="head">30x30</th>
+<th class="head">9x9</th>
+<th class="head">30x30</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>精确孔隙率</td>
+<td>0.2146</td>
+<td>0.2146</td>
+<td>0.0931</td>
+<td>0.0931</td>
+</tr>
+<tr class="row-odd"><td>平均误差 [%]</td>
+<td>3.87%</td>
+<td>0.88%</td>
+<td>3.64%</td>
+<td>0.74%</td>
+</tr>
+</tbody>
+</table>
+<p>在 3D 模型中得到了类似的结果：</p>
+<table border="1" class="col2center col3center col4center col5center docutils" id="ver-meas-porostablethree">
+<caption><span class="caption-text">表 2：规则集合体的孔隙率对比 - 3D 模型</span></caption>
+<colgroup>
+<col width="20%"/>
+<col width="21%"/>
+<col width="21%"/>
+<col width="17%"/>
+<col width="21%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head"> </th>
+<th class="head" colspan="2">立方排列</th>
+<th class="head" colspan="2">六方排列</th>
+</tr>
+<tr class="row-even"><th class="head"> </th>
+<th class="head">低分辨率</th>
+<th class="head">高分辨率</th>
+<th class="head">低分辨率</th>
+<th class="head">高分辨率</th>
+</tr>
+<tr class="row-odd"><th class="head"> </th>
+<th class="head">9x9</th>
+<th class="head">30x30</th>
+<th class="head">9x9</th>
+<th class="head">30x30</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>精确孔隙率</td>
+<td>0.4764</td>
+<td>0.4764</td>
+<td>0.2595</td>
+<td>0.2595</td>
+</tr>
+<tr class="row-odd"><td>平均误差 [%]</td>
+<td>2.24%</td>
+<td>0.26%</td>
+<td>1.71%</td>
+<td>0.20%</td>
+</tr>
+</tbody>
+</table>
+<p>分辨率越高，孔隙率测量中所产生的平均误差越低。原始数据存储在四个表格中（参见 <a class="reference internal" href="../../../../../../../flac3d/zone/doc/manual/zone_manual/zone_commands/zoneface/cmd_zone.face.apply.html#kwd:table" title="Specify a multiplier that is a table named  s .  By default the x-axis
+value is the current step number.  The optional  time  keyword may be
+used to specify which processes accumulated  time-total  should be used
+to provide the x-axis value.  The available keywords are:...">表格插值取值（<code class="xref fish fish-cmd docutils literal"><span class="pre">table</span></code>）</a> 命令参考页），每种被考察的排列对应一个表格。</p>
+<p><a href="#ver-meas-regularerrortwo">图 6（Fig.  6）</a> 给出了平均误差，该误差以对数坐标绘制为用于测量孔隙率的圆直径的函数，圆直径由球颗粒的平均半径归一化。同样可以看出，最低的误差（&lt; 1%，即对数轴上的负值）对应于最高的分辨率和最大的测量区域。</p>
+<p>我们可以得出以下观察结果：</p>
+<ul class="simple">
+<li>孔隙率的测量在<em>局部</em>上始终是正确的，考虑到所采用的 <span class="cmdkey">tolerance</span> 等于 0，这一点就更为明显；</li>
+<li><em>局部</em>测量相对于由解析计算得到的<em>整体</em>孔隙率的准确性，取决于测量区域所截取的面积相对于整体面积在孔隙/固体比例方面的代表性；</li>
+<li>因此，测量区域越大，提供准确测量的可能性就越大；并且</li>
+<li>更明显的是，分辨率越高，测量区域就越能代表整体结构。</li>
+</ul>
+<div class="figure" id="ver-meas-regularerrortwo">
+<a class="reference internal image-reference" href="../../../../../../../_images/Regular_Error.png"><img alt="../../../../../../../_images/Regular_Error.png" src="../../../../../../../_images/Regular_Error.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 6：孔隙率测量，规则集合体 - 平均误差 [% - 对数] 与圆直径的关系。</span></p>
+</div>
+<p>对多分散集合体进行同样的比较。误差绘于 <a href="#ver-meas-polyerrortwo">图 7（Fig.  7）</a> 中。</p>
+<div class="figure" id="ver-meas-polyerrortwo">
+<a class="reference internal image-reference" href="../../../../../../../_images/Polydisperse2D.png"><img alt="../../../../../../../_images/Polydisperse2D.png" src="../../../../../../../_images/Polydisperse2D.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 7：孔隙率测量，多分散集合体 - 平均误差 [% - 对数] 与圆直径的关系。</span></p>
+</div>
+<p>相对于规则试样，误差相对较高，这是由于整个试样内的孔隙率值不均匀。因此，在这种情况下，采用更大的测量区域可使测量结果更为集中，尽管似乎更难消除一个较小的误差（<span class="math">\(\simeq 2\)</span> %）。</p>
+<p class="h2 rubric">参考文献</p>
+<table class="docutils citation" frame="void" id="deresiewicz1958a" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[Deresiewicz1958a]</a></td><td>Deresiewicz, H.，“Mechanics of Granular Matter”（颗粒物质的力学），载于《Advances in Applied Mechanics》第 5 卷，第 233-306 页。H. L. Dryden 与 Th. Von Karman 编。纽约：Academic Press，1958 年。</td></tr>
+</tbody>
+</table>
+<p class="h2 rubric" id="ver-meas-datafiles">数据文件</p>
+<p class="h3 rubric" id="ver-meas-measurelogic-datafile3d">MeasureLogic.dat（三维）</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：MeasureLogic.dat（3D）</span>
+<span class="c">;</span>
+<span class="c">; 测试 PFC 中力学球体计算与测量逻辑的集成。 </span>
+<span class="c">; 采用随机半径的测量球计算孔隙率。 </span>
+<span class="c">; 将不同模型分辨率下的孔隙率结果与 </span>
+<span class="c">; 解析解进行对比。</span>
+<span class="c">;</span>
+<span class="c">; Itasca Consulting Group, Inc.</span>
+<span class="c">;</span>
+<span class="c">; ========================================================================</span>
+
+<span class="nb">fish def</span><span class="ni"> define_meas_parameters</span><span class="p">(</span><span class="ni">nmeas</span><span class="p">,</span><span class="ni"> pcntg</span><span class="p">)</span>
+<span class="c">; 参数： </span>
+<span class="c">;   - nmeas：整数值，表示将要创建的随机布置的</span>
+<span class="c">;             探测测量圆的个数</span>
+<span class="c">;             改变该参数可观察其对最终结果的影响</span>
+<span class="c">;   - pcntg：MEASURE 函数的 'percentage' 参数</span>
+<span class="c">; </span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> p </span><span class="p">=</span><span class="ni"> pcntg</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> n </span><span class="p">=</span><span class="ni"> nmeas</span>
+<span class="nb">end</span>
+
+
+<span class="nb">fish def</span><span class="ni"> compute_meas_center</span><span class="p">(</span><span class="ni">r</span><span class="p">)</span>
+<span class="c">;随机计算测量球球心的坐标</span>
+<span class="c">;参数：</span>
+<span class="c">;	- r：测量球半径</span>
+<span class="c">;</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> xmin</span><span class="p">,</span><span class="ni"> xmax</span><span class="p">,</span><span class="ni"> ymin</span><span class="p">,</span><span class="ni"> ymax</span><span class="p">,</span><span class="ni"> zmin</span><span class="p">,</span><span class="ni"> zmax</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> xcmin </span><span class="p">=</span><span class="ni"> xmin</span><span class="o">+</span><span class="ni">r</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> xcmax </span><span class="p">=</span><span class="ni"> xmax</span><span class="o">-</span><span class="ni">r</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> ycmin </span><span class="p">=</span><span class="ni"> ymin</span><span class="o">+</span><span class="ni">r</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> ycmax </span><span class="p">=</span><span class="ni"> ymax</span><span class="o">-</span><span class="ni">r</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> zcmin </span><span class="p">=</span><span class="ni"> zmin</span><span class="o">+</span><span class="ni">r</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> zcmax </span><span class="p">=</span><span class="ni"> zmax</span><span class="o">-</span><span class="ni">r</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> xc </span><span class="p">=</span><span class="ni"> xcmin </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="ni">xcmax </span><span class="o">-</span><span class="ni"> xcmin</span><span class="p">)</span><span class="o">*</span><span class="k">math.random.uniform</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> yc </span><span class="p">=</span><span class="ni"> ycmin </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="ni">ycmax </span><span class="o">-</span><span class="ni"> ycmin</span><span class="p">)</span><span class="o">*</span><span class="k">math.random.uniform</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> zc </span><span class="p">=</span><span class="ni"> zcmin </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="ni">zcmax </span><span class="o">-</span><span class="ni"> zcmin</span><span class="p">)</span><span class="o">*</span><span class="k">math.random.uniform</span>
+<span class="nb">end</span>
+
+
+<span class="nb">fish define</span><span class="ni"> create_meas_regions</span>
+<span class="ni">  measradius </span><span class="p">=</span><span class="ni"> </span><span class="k">array.create</span><span class="p">(</span><span class="ni">n</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> maxmeasradius </span><span class="p">=</span><span class="ni"> </span><span class="k">math.min</span><span class="p">((</span><span class="m m-Double">0.99</span><span class="o">*</span><span class="p">(</span><span class="ni">zmax</span><span class="o">-</span><span class="ni">zmin</span><span class="p">)),</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">                        </span><span class="k">math.min</span><span class="p">((</span><span class="m m-Double">0.99</span><span class="o">*</span><span class="p">(</span><span class="ni">xmax</span><span class="o">-</span><span class="ni">xmin</span><span class="p">)),</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">                        </span><span class="p">(</span><span class="m m-Double">0.99</span><span class="o">*</span><span class="p">(</span><span class="ni">ymax</span><span class="o">-</span><span class="ni">ymin</span><span class="p">))))</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> ii</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="ni">n</span><span class="p">)</span>
+<span class="ni">    measradius</span><span class="p">(</span><span class="ni">ii</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="k">math.max</span><span class="p">(</span><span class="ni">maxmeasradius</span><span class="o">/</span><span class="m m-Double">15</span><span class="p">,</span><span class="sx">...</span>
+<span class="ni">                              </span><span class="k">math.random.uniform</span><span class="o">*</span><span class="p">(</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="p">(</span><span class="ni">maxmeasradius</span><span class="p">)))</span>
+<span class="ni">  </span><span class="k">end_loop</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> ii</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="ni">n</span><span class="p">)</span>
+<span class="k">    command</span>
+<span class="n">      </span><span class="ni">[compute_meas_center</span><span class="p">(</span><span class="ni">measradius</span><span class="p">(</span><span class="ni">ii</span><span class="p">))</span><span class="ni">]</span>
+<span class="nb">      measure create</span><span class="n"> pos</span><span class="o">-</span><span class="n">x </span><span class="ni">[xc]</span><span class="n"> pos</span><span class="o">-</span><span class="n">y </span><span class="ni">[yc]</span><span class="n"> pos</span><span class="o">-</span><span class="n">z </span><span class="ni">[zc]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                     radius </span><span class="ni">[measradius</span><span class="p">(</span><span class="ni">ii</span><span class="p">)</span><span class="ni">]</span><span class="n"> tolerance </span><span class="ni">[p]</span>
+<span class="k">    end_command</span>
+<span class="ni">  </span><span class="k">end_loop</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> check_error</span><span class="p">(</span><span class="ni">val</span><span class="p">,</span><span class="ni">t</span><span class="p">,</span><span class="ni">averageradius</span><span class="p">)</span>
+<span class="c">; 将测量圆内计算得到的孔隙率</span>
+<span class="c">; 与解析值进行比较</span>
+<span class="c">; 参数： </span>
+<span class="c">;   - val：孔隙率的精确值</span>
+<span class="c">;   - t：存放最终数值结果的表名</span>
+<span class="c">;</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> result </span><span class="p">=</span><span class="ni"> </span><span class="k">table.create</span><span class="p">(</span><span class="ni">t</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> it </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> averageerror </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> mp </span><span class="k">measure.list</span>
+<span class="ni">    it </span><span class="p">=</span><span class="ni"> it </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> res </span><span class="p">=</span><span class="ni"> </span><span class="k">measure.porosity</span><span class="p">(</span><span class="ni">mp</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> diff </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">100.0</span><span class="ni"> </span><span class="o">*</span><span class="ni"> </span><span class="p">(</span><span class="ni">res </span><span class="o">-</span><span class="ni"> val</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> val</span>
+<span class="ni">    averageerror </span><span class="p">=</span><span class="ni"> averageerror </span><span class="o">+</span><span class="ni"> </span><span class="k">math.abs</span><span class="p">(</span><span class="ni">diff</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">table</span><span class="p">(</span><span class="ni">t</span><span class="p">,</span><span class="k">math.abs</span><span class="p">(</span><span class="ni">diff</span><span class="p">))=</span><span class="ni">measradius</span><span class="p">(</span><span class="ni">it</span><span class="p">)</span><span class="o">/</span><span class="ni">averageradius</span>
+<span class="ni">  </span><span class="k">endloop</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> check_error </span><span class="p">=</span><span class="ni"> averageerror</span><span class="o">/</span><span class="ni">it</span>
+<span class="nb">end</span>
+
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：MeasureLogic.dat（3D）</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="ver-meas-polydisperseassembly-datafile3d">PolydisperseAssembly.dat（三维）</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：PolydisperseAssembly.dat（3D）</span>
+<span class="c">; 构建多分散颗粒集合体，并用 PFC 中的 </span>
+<span class="c">; 测量逻辑计算孔隙率</span>
+<span class="c">; ========================================================================</span>
+<span class="c">;</span>
+
+<span class="nb">model new</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'MeasureLogic'</span>
+
+<span class="nb">fish def</span><span class="ni"> poly_assembly</span><span class="p">(</span><span class="ni">size</span><span class="p">)</span>
+<span class="c">; 在正方形区域中创建多分散堆积</span>
+<span class="c">; 参数：</span>
+<span class="c">;	- size：计算域尺寸</span>
+<span class="c">;</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> xmin       </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> ymin       </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> xmax       </span><span class="p">=</span><span class="ni"> size</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> ymax       </span><span class="p">=</span><span class="ni"> size</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> zmin       </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> zmax       </span><span class="p">=</span><span class="ni"> size</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> width      </span><span class="p">=</span><span class="ni"> xmax</span><span class="o">-</span><span class="ni">xmin  </span><span class="c">; 箱体宽度</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> height     </span><span class="p">=</span><span class="ni"> ymax</span><span class="o">-</span><span class="ni">ymin  </span><span class="c">; 箱体高度</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> depth      </span><span class="p">=</span><span class="ni"> zmax</span><span class="o">-</span><span class="ni">zmin  </span><span class="c">; 箱体厚度</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> tot_vol    </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">width</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="ni">height</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="ni">depth</span><span class="p">)</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> num         </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">10000</span><span class="ni">   </span><span class="c">; 颗粒数量</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> rlo         </span><span class="p">=</span><span class="ni"> size</span><span class="o">/</span><span class="m m-Double">100</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> rhi         </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.25</span><span class="o">*</span><span class="ni">rlo</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> oversize    </span><span class="p">=</span><span class="ni"> rhi</span>
+<span class="ni">  </span>
+<span class="k">  command</span>
+<span class="nb">    model domain</span><span class="n"> extent </span><span class="p">(</span><span class="ni">[</span><span class="m m-Double">0.0</span><span class="o">-</span><span class="ni">oversize]</span><span class="p">,</span><span class="ni">[width</span><span class="o">+</span><span class="ni">oversize]</span><span class="p">)</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">                        </span><span class="p">(</span><span class="ni">[</span><span class="m m-Double">0.0</span><span class="o">-</span><span class="ni">oversize]</span><span class="p">,</span><span class="ni">[height</span><span class="o">+</span><span class="ni">oversize]</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                        </span><span class="p">(</span><span class="ni">[</span><span class="m m-Double">0.0</span><span class="o">-</span><span class="ni">oversize]</span><span class="p">,</span><span class="ni">[depth</span><span class="o">+</span><span class="ni">oversize]</span><span class="p">)</span>
+<span class="nb">    wall generate</span><span class="n"> box </span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="n"> </span><span class="ni">[width]</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="n"> </span><span class="ni">[height]</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="n"> </span><span class="ni">[depth]</span><span class="p">)</span><span class="n"> </span>
+<span class="k">  end_command</span>
+<span class="ni"> </span>
+<span class="ni">  </span><span class="c">;--- 生成球体并指定其参数</span>
+<span class="k">  command</span>
+<span class="nb">    ball generate</span><span class="n"> radius </span><span class="ni">[rlo]</span><span class="n"> </span><span class="ni">[rhi]</span><span class="n"> gauss </span><span class="sx">...</span>
+<span class="n">                  box </span><span class="p">(</span><span class="ni">[width</span><span class="o">*</span><span class="m m-Double">0.02</span><span class="ni">]</span><span class="p">,</span><span class="n"> </span><span class="ni">[width</span><span class="o">*</span><span class="m m-Double">0.98</span><span class="ni">]</span><span class="p">)</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">                      </span><span class="p">(</span><span class="ni">[height</span><span class="o">*</span><span class="m m-Double">0.02</span><span class="ni">]</span><span class="p">,</span><span class="n"> </span><span class="ni">[height</span><span class="o">*</span><span class="m m-Double">0.98</span><span class="ni">]</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                      </span><span class="p">(</span><span class="ni">[depth</span><span class="o">*</span><span class="m m-Double">0.02</span><span class="ni">]</span><span class="p">,</span><span class="n"> </span><span class="ni">[depth</span><span class="o">*</span><span class="m m-Double">0.98</span><span class="ni">]</span><span class="p">)</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">                      id</span><span class="p">=</span><span class="m m-Double">1</span><span class="p">,</span><span class="ni">[num]</span>
+<span class="k">  end_command</span>
+<span class="nb">end</span>
+
+<span class="nb">fish def</span><span class="ni"> averageradius</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> rad </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> bp </span><span class="k">ball.list</span>
+<span class="ni">    rad </span><span class="p">=</span><span class="ni"> rad </span><span class="o">+</span><span class="ni"> </span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">bp</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">endloop</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> averageradius </span><span class="p">=</span><span class="ni"> rad</span><span class="o">/</span><span class="k">ball.num</span>
+<span class="nb">end</span>
+
+<span class="nb">fish def</span><span class="ni"> get_poros </span><span class="c">;计算孔隙率的精确值</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> sum </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> bp </span><span class="k">ball.list</span>
+<span class="ni">    sum </span><span class="p">=</span><span class="ni"> sum </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">1.33333</span><span class="o">*</span><span class="ni"> </span><span class="k">math.pi</span><span class="ni"> </span><span class="o">*</span><span class="ni"> </span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">bp</span><span class="p">)</span><span class="o">^</span><span class="m m-Double">3</span>
+<span class="ni">  </span><span class="k">end_loop</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> get_poros </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni"> </span><span class="o">-</span><span class="ni"> sum </span><span class="o">/</span><span class="ni"> tot_vol</span>
+<span class="nb">end</span>
+
+<span class="ni">[poly_assembly</span><span class="p">(</span><span class="m m-Double">5.0</span><span class="p">)</span><span class="ni">]</span>
+
+<span class="ni">[get_poros]</span>
+<span class="ni">[define_meas_parameters</span><span class="p">(</span><span class="m m-Double">5000</span><span class="p">,</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[create_meas_regions]</span>
+
+<span class="nb">fish def</span><span class="ni"> display_error</span><span class="p">(</span><span class="ni">porosity</span><span class="p">,</span><span class="ni"> s</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> error </span><span class="p">=</span><span class="ni"> check_error</span><span class="p">(</span><span class="ni">porosity</span><span class="p">,</span><span class="ni">s</span><span class="p">,</span><span class="ni">averageradius</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> oo </span><span class="p">=</span><span class="ni"> </span><span class="k">io.out</span><span class="p">(</span><span class="k">string.build</span><span class="p">(</span><span class="s">"Average Error = %1%)"</span><span class="p">,</span><span class="ni">error</span><span class="p">))</span>
+<span class="nb">end</span>
+<span class="ni">[display_error</span><span class="p">(</span><span class="ni">get_poros</span><span class="p">,</span><span class="s">'Polydisperse'</span><span class="p">)</span><span class="ni">]</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'PolydisperseAssembly'</span>
+
+<span class="c">; ========================================================================</span>
+<span class="c">; 文件结束：PolydisperseAssembly.dat（3D）</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="ver-meas-regularassembly-datafile3d">RegularAssembly.dat（三维）</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：RegularAssembly.dat（3D）</span>
+<span class="c">; 构建规则颗粒集合体，并用 PFC 中的</span>
+<span class="c">; 测量逻辑计算孔隙率</span>
+<span class="c">; ========================================================================</span>
+<span class="c">;</span>
+
+<span class="nb">model new</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'MeasureLogic'</span>
+
+<span class="nb">fish define</span><span class="ni"> regular_assembly</span><span class="p">(</span><span class="ni">size</span><span class="p">,</span><span class="ni"> nres</span><span class="p">,</span><span class="ni">itype</span><span class="p">)</span>
+<span class="c">; 在立方体区域中创建单一粒径球的规则堆积</span>
+<span class="c">; 参数：</span>
+<span class="c">;   - size：计算域尺寸</span>
+<span class="c">;   - nres：堆积的分辨率</span>
+<span class="c">;   - itype：堆积类型（0：简单立方；#0：六方）</span>
+<span class="c">;</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni">    xmin       </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni">    ymin       </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni">    xmax       </span><span class="p">=</span><span class="ni"> size</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni">    ymax       </span><span class="p">=</span><span class="ni"> size</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni">    zmin       </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni">    zmax       </span><span class="p">=</span><span class="ni"> size</span>
+
+<span class="ni">  </span><span class="k">global</span><span class="ni">    radius      </span><span class="p">=</span><span class="ni"> size </span><span class="o">/</span><span class="ni"> </span><span class="p">(</span><span class="m m-Double">2.0</span><span class="o">*</span><span class="ni">nres</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni">     numballs    </span><span class="p">=</span><span class="ni"> nres</span><span class="o">^</span><span class="m m-Double">2</span>
+
+<span class="k">  command</span>
+<span class="nb">    model domain</span><span class="n"> extent </span><span class="ni">[xmin]</span><span class="n"> </span><span class="ni">[xmax]</span><span class="n"> </span><span class="ni">[ymin]</span><span class="n"> </span><span class="ni">[ymax]</span><span class="n"> </span><span class="ni">[zmin]</span><span class="n"> </span><span class="ni">[zmax]</span>
+<span class="k">  end_command</span>
+
+<span class="ni">  </span><span class="k">if</span><span class="ni"> itype </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span><span class="ni"> </span><span class="k">then</span>
+<span class="k">    command</span>
+<span class="nb">      ball generate</span><span class="n"> rad </span><span class="ni">[radius]</span><span class="n"> number </span><span class="ni">[numballs]</span><span class="n"> cubic</span>
+<span class="k">    end_command</span>
+<span class="ni">  </span><span class="k">else</span>
+<span class="k">    command</span>
+<span class="nb">      ball generate</span><span class="n"> rad </span><span class="ni">[radius]</span><span class="n"> number </span><span class="ni">[numballs]</span><span class="n"> hexagonal</span>
+<span class="k">    end_command</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="nb">end</span>
+
+<span class="nb">fish def</span><span class="ni"> display_error</span><span class="p">(</span><span class="ni">porosity</span><span class="p">,</span><span class="ni"> s</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> error </span><span class="p">=</span><span class="ni"> check_error</span><span class="p">(</span><span class="ni">porosity</span><span class="p">,</span><span class="ni">s</span><span class="p">,</span><span class="ni">radius</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> oo </span><span class="p">=</span><span class="ni"> </span><span class="k">io.out</span><span class="p">(</span><span class="k">string.build</span><span class="p">(</span><span class="s">"Average Error = %1%)"</span><span class="p">,</span><span class="ni">error</span><span class="p">))</span>
+<span class="nb">end</span>
+
+<span class="ni">[define_meas_parameters</span><span class="p">(</span><span class="m m-Double">5000</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="c">;定义测量参数</span>
+
+<span class="c">; 简单立方堆积 - 低分辨率</span>
+<span class="ni">[regular_assembly</span><span class="p">(</span><span class="m m-Double">18.0</span><span class="p">,</span><span class="ni"> </span><span class="m m-Double">9</span><span class="p">,</span><span class="ni"> </span><span class="m m-Double">0</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[create_meas_regions]</span>
+<span class="ni">[display_error</span><span class="p">(</span><span class="m m-Double">0.4764</span><span class="p">,</span><span class="s">'cubic_lores'</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'cubic_lores'</span>
+<span class="c">;</span>
+<span class="c">; 简单立方堆积 - 高分辨率</span>
+<span class="nb">ball delete</span>
+<span class="ni">[regular_assembly</span><span class="p">(</span><span class="m m-Double">18.0</span><span class="p">,</span><span class="ni"> </span><span class="m m-Double">30</span><span class="p">,</span><span class="ni"> </span><span class="m m-Double">0</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[display_error</span><span class="p">(</span><span class="m m-Double">0.4764</span><span class="p">,</span><span class="s">'cubic_hires'</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'cubic_hires'</span>
+<span class="c">;</span>
+<span class="c">; 六方堆积 - 低分辨率</span>
+<span class="nb">ball delete</span>
+<span class="ni">[regular_assembly</span><span class="p">(</span><span class="m m-Double">18.0</span><span class="p">,</span><span class="ni"> </span><span class="m m-Double">9</span><span class="p">,</span><span class="ni"> </span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[display_error</span><span class="p">(</span><span class="m m-Double">0.2595</span><span class="p">,</span><span class="s">'hexa_lores'</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'hexa_lores'</span>
+<span class="c">;</span>
+<span class="c">; 六方堆积 - 高分辨率</span>
+<span class="nb">ball delete</span>
+<span class="ni">[regular_assembly</span><span class="p">(</span><span class="m m-Double">18.0</span><span class="p">,</span><span class="ni"> </span><span class="m m-Double">30</span><span class="p">,</span><span class="ni"> </span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[display_error</span><span class="p">(</span><span class="m m-Double">0.2595</span><span class="p">,</span><span class="s">'hexa_hires'</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'hexa_hires'</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'RegularAssembly'</span>
+
+<span class="c">; ========================================================================</span>
+<span class="c">; 文件结束：RegularAssembly.dat（3D）</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="ver-meas-measurelogic-datafile2d">MeasureLogic.dat（二维）</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：MeasureLogic.dat（2D）</span>
+<span class="c">;</span>
+<span class="c">; 测试 PFC 中力学球体计算与测量逻辑的集成。 </span>
+<span class="c">; 采用随机半径的测量圆计算孔隙率。 </span>
+<span class="c">; 将不同模型分辨率下的孔隙率结果与 </span>
+<span class="c">; 解析解进行对比。</span>
+<span class="c">;</span>
+<span class="c">; Itasca Consulting Group, Inc.</span>
+<span class="c">;</span>
+<span class="c">; ========================================================================</span>
+
+<span class="nb">fish def</span><span class="ni"> define_meas_parameters</span><span class="p">(</span><span class="ni">nmeas</span><span class="p">,</span><span class="ni"> pcntg</span><span class="p">)</span>
+<span class="c">; 参数： </span>
+<span class="c">;   - nmeas：整数值，表示将要创建的随机布置的</span>
+<span class="c">;             探测测量圆的个数</span>
+<span class="c">;             改变该参数可观察其对最终结果的影响</span>
+<span class="c">;   - pcntg：MEASURE 函数的 'percentage' 参数</span>
+<span class="c">; </span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> p </span><span class="p">=</span><span class="ni"> pcntg</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> n </span><span class="p">=</span><span class="ni"> nmeas</span>
+<span class="nb">end</span>
+
+
+<span class="nb">fish def</span><span class="ni"> compute_meas_center</span><span class="p">(</span><span class="ni">r</span><span class="p">)</span>
+<span class="c">;随机计算测量圆圆心坐标</span>
+<span class="c">;参数：</span>
+<span class="c">;   - r：测量球半径</span>
+<span class="c">;</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> xmin</span><span class="p">,</span><span class="ni"> xmax</span><span class="p">,</span><span class="ni"> ymin</span><span class="p">,</span><span class="ni"> ymax</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> xcmin </span><span class="p">=</span><span class="ni"> xmin</span><span class="o">+</span><span class="ni">r</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> xcmax </span><span class="p">=</span><span class="ni"> xmax</span><span class="o">-</span><span class="ni">r</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> ycmin </span><span class="p">=</span><span class="ni"> ymin</span><span class="o">+</span><span class="ni">r</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> ycmax </span><span class="p">=</span><span class="ni"> ymax</span><span class="o">-</span><span class="ni">r</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> xc </span><span class="p">=</span><span class="ni"> xcmin </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="ni">xcmax </span><span class="o">-</span><span class="ni"> xcmin</span><span class="p">)</span><span class="o">*</span><span class="k">math.random.uniform</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> yc </span><span class="p">=</span><span class="ni"> ycmin </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="ni">ycmax </span><span class="o">-</span><span class="ni"> ycmin</span><span class="p">)</span><span class="o">*</span><span class="k">math.random.uniform</span>
+<span class="nb">end</span>
+
+
+<span class="nb">fish define</span><span class="ni"> create_meas_regions</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> measradius </span><span class="p">=</span><span class="ni"> </span><span class="k">array.create</span><span class="p">(</span><span class="ni">n</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> maxmeasradius </span><span class="p">=</span><span class="ni"> </span><span class="k">math.min</span><span class="p">(</span><span class="m m-Double">0.99</span><span class="o">*</span><span class="p">(</span><span class="ni">xmax</span><span class="o">-</span><span class="ni">xmin</span><span class="p">),</span><span class="m m-Double">0.99</span><span class="o">*</span><span class="p">(</span><span class="ni">ymax</span><span class="o">-</span><span class="ni">ymin</span><span class="p">))</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> ii</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="ni">n</span><span class="p">)</span>
+<span class="ni">        measradius</span><span class="p">(</span><span class="ni">ii</span><span class="p">)=</span><span class="ni"> </span><span class="k">math.max</span><span class="p">(</span><span class="ni">maxmeasradius</span><span class="o">/</span><span class="m m-Double">15</span><span class="p">,</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">                                 </span><span class="k">math.random.uniform</span><span class="o">*</span><span class="p">(</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="p">(</span><span class="ni">maxmeasradius</span><span class="p">)))</span>
+<span class="ni">    </span><span class="k">end_loop</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> ii</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="ni">n</span><span class="p">)</span>
+<span class="k">        command</span>
+<span class="n">            </span><span class="ni">[compute_meas_center</span><span class="p">(</span><span class="ni">measradius</span><span class="p">(</span><span class="ni">ii</span><span class="p">))</span><span class="ni">]</span>
+<span class="nb">            measure create</span><span class="n"> id</span><span class="p">=</span><span class="ni">[ii]</span><span class="n"> position</span><span class="o">-</span><span class="n">x </span><span class="ni">[xc]</span><span class="n"> position</span><span class="o">-</span><span class="n">y </span><span class="ni">[yc]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                           radius </span><span class="ni">[measradius</span><span class="p">(</span><span class="ni">ii</span><span class="p">)</span><span class="ni">]</span><span class="n"> tolerance </span><span class="ni">[p]</span>
+<span class="k">        end_command</span>
+<span class="ni">    </span><span class="k">end_loop</span><span class="ni">  </span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> check_error</span><span class="p">(</span><span class="ni">val</span><span class="p">,</span><span class="ni">t</span><span class="p">,</span><span class="ni">average_radius</span><span class="p">)</span>
+<span class="c">; 将测量圆内计算得到的孔隙率 </span>
+<span class="c">; 与解析值进行比较</span>
+<span class="c">; 参数： </span>
+<span class="c">;   - val：孔隙率的精确值</span>
+<span class="c">;   - t：存放最终数值结果的表名</span>
+<span class="c">;</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> result </span><span class="p">=</span><span class="ni"> </span><span class="k">table.create</span><span class="p">(</span><span class="ni">t</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> it </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> averageerror </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> mp </span><span class="k">measure.list</span>
+<span class="ni">        it </span><span class="p">=</span><span class="ni"> it </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">        </span><span class="k">local</span><span class="ni"> res </span><span class="p">=</span><span class="ni"> </span><span class="k">measure.porosity</span><span class="p">(</span><span class="ni">mp</span><span class="p">)</span>
+<span class="ni">        </span><span class="k">local</span><span class="ni"> diff </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">100.0</span><span class="ni"> </span><span class="o">*</span><span class="ni"> </span><span class="p">(</span><span class="ni">res </span><span class="o">-</span><span class="ni"> val</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> val</span>
+<span class="ni">        averageerror </span><span class="p">=</span><span class="ni"> averageerror </span><span class="o">+</span><span class="ni"> </span><span class="k">math.abs</span><span class="p">(</span><span class="ni">diff</span><span class="p">)</span>
+<span class="ni">        </span><span class="k">table</span><span class="p">(</span><span class="ni">t</span><span class="p">,</span><span class="k">math.abs</span><span class="p">(</span><span class="ni">diff</span><span class="p">))=</span><span class="ni">measradius</span><span class="p">(</span><span class="ni">it</span><span class="p">)</span><span class="o">/</span><span class="ni">average_radius</span>
+<span class="ni">    </span><span class="k">endloop</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> check_error </span><span class="p">=</span><span class="ni"> averageerror</span><span class="o">/</span><span class="ni">it</span>
+<span class="nb">end</span>
+
+<span class="c">; ========================================================================</span>
+<span class="c">; 文件结束：MeasureLogic.dat（2D）</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="ver-meas-polydisperseassembly-datafile2d">PolydisperseAssembly.dat（二维）</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：PolydisperseAssembly.dat（2D）</span>
+<span class="c">; 构建多分散颗粒集合体并计算孔隙率 </span>
+<span class="c">; 测量逻辑计算孔隙率</span>
+<span class="c">; ========================================================================</span>
+<span class="c">;</span>
+
+<span class="nb">model new</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'MeasureLogic'</span>
+
+<span class="nb">fish def</span><span class="ni"> poly_assembly</span><span class="p">(</span><span class="ni">size</span><span class="p">)</span>
+<span class="c">; 在正方形区域中创建多分散堆积</span>
+<span class="c">; 参数：</span>
+<span class="c">;	- size：计算域尺寸</span>
+<span class="c">;</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> xmin       </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> ymin       </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> xmax       </span><span class="p">=</span><span class="ni"> size</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> ymax       </span><span class="p">=</span><span class="ni"> size</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> width      </span><span class="p">=</span><span class="ni"> xmax</span><span class="o">-</span><span class="ni">xmin  </span><span class="c">; 箱体宽度</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> height     </span><span class="p">=</span><span class="ni"> ymax</span><span class="o">-</span><span class="ni">ymin  </span><span class="c">; 箱体高度</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> tot_surface    </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">width</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="ni">height</span><span class="p">)</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> num        </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">3500</span><span class="ni">   </span><span class="c">; 颗粒数量</span>
+<span class="ni">    </span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> rlo        </span><span class="p">=</span><span class="ni"> size</span><span class="o">/</span><span class="m m-Double">200</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> rhi        </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.25</span><span class="o">*</span><span class="ni">rlo</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> oversize   </span><span class="p">=</span><span class="ni"> rhi</span>
+
+<span class="k">  command</span>
+<span class="nb">    model domain</span><span class="n"> extent </span><span class="p">(</span><span class="ni">[</span><span class="m m-Double">0.0</span><span class="o">-</span><span class="ni">oversize]</span><span class="p">,</span><span class="ni">[width</span><span class="o">+</span><span class="ni">oversize]</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                        </span><span class="p">(</span><span class="ni">[</span><span class="m m-Double">0.0</span><span class="o">-</span><span class="ni">oversize]</span><span class="p">,</span><span class="ni">[height</span><span class="o">+</span><span class="ni">oversize]</span><span class="p">)</span>
+<span class="nb">    wall generate</span><span class="n"> box </span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="n"> </span><span class="ni">[width]</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="n"> </span><span class="ni">[height]</span><span class="p">)</span>
+<span class="k">  end_command</span>
+<span class="ni"> </span>
+<span class="ni">  </span><span class="c">;--- 生成球体并指定其参数</span>
+<span class="k">  command</span>
+<span class="nb">    ball generate</span><span class="n"> radius </span><span class="ni">[rlo]</span><span class="n"> </span><span class="ni">[rhi]</span><span class="n"> gauss </span><span class="sx">...</span>
+<span class="n">                  box </span><span class="p">(</span><span class="ni">[width</span><span class="o">*</span><span class="m m-Double">0.01</span><span class="ni">]</span><span class="p">,</span><span class="n"> </span><span class="ni">[width</span><span class="o">*</span><span class="m m-Double">0.99</span><span class="ni">]</span><span class="p">)</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">                      </span><span class="p">(</span><span class="ni">[height</span><span class="o">*</span><span class="m m-Double">0.01</span><span class="ni">]</span><span class="p">,</span><span class="n"> </span><span class="ni">[height</span><span class="o">*</span><span class="m m-Double">0.99</span><span class="ni">]</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                      id</span><span class="p">=</span><span class="m m-Double">1</span><span class="p">,</span><span class="ni">[num]</span>
+<span class="k">  end_command</span>
+<span class="nb">end</span>
+
+<span class="nb">fish def</span><span class="ni"> averageradius</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> rad </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> bp </span><span class="k">ball.list</span>
+<span class="ni">    rad </span><span class="p">=</span><span class="ni"> rad </span><span class="o">+</span><span class="ni"> </span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">bp</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">endloop</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> averageradius </span><span class="p">=</span><span class="ni"> rad</span><span class="o">/</span><span class="k">ball.num</span>
+<span class="nb">end</span>
+
+<span class="nb">fish def</span><span class="ni"> get_poros </span><span class="c">;计算孔隙率的精确值</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> sum </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> bp </span><span class="k">ball.list</span>
+<span class="ni">    sum </span><span class="p">=</span><span class="ni"> sum </span><span class="o">+</span><span class="ni"> </span><span class="k">math.pi</span><span class="ni"> </span><span class="o">*</span><span class="ni"> </span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">bp</span><span class="p">)</span><span class="o">^</span><span class="m m-Double">2</span>
+<span class="ni">  </span><span class="k">end_loop</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> get_poros </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni"> </span><span class="o">-</span><span class="ni"> sum </span><span class="o">/</span><span class="ni"> tot_surface</span>
+<span class="nb">end</span>
+
+<span class="ni">[poly_assembly</span><span class="p">(</span><span class="m m-Double">20.0</span><span class="p">)</span><span class="ni">]</span>
+
+<span class="ni">[get_poros]</span>
+<span class="ni">[define_meas_parameters</span><span class="p">(</span><span class="m m-Double">5000</span><span class="p">,</span><span class="ni"> </span><span class="m m-Double">0.00</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[create_meas_regions]</span>
+
+<span class="nb">fish def</span><span class="ni"> display_error</span><span class="p">(</span><span class="ni">porosity</span><span class="p">,</span><span class="ni"> s</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> error </span><span class="p">=</span><span class="ni"> check_error</span><span class="p">(</span><span class="ni">porosity</span><span class="p">,</span><span class="ni">s</span><span class="p">,</span><span class="ni">averageradius</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> oo </span><span class="p">=</span><span class="ni"> </span><span class="k">io.out</span><span class="p">(</span><span class="k">string.build</span><span class="p">(</span><span class="s">"Average Error = %1%)"</span><span class="p">,</span><span class="ni">error</span><span class="p">))</span>
+<span class="nb">end</span>
+<span class="ni">[display_error</span><span class="p">(</span><span class="ni">get_poros</span><span class="p">,</span><span class="s">'Polydisperse'</span><span class="p">)</span><span class="ni">]</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'PolydisperseAssembly'</span>
+
+<span class="c">; ========================================================================</span>
+<span class="c">; 文件结束：PolydisperseAssembly.dat（2D）</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="ver-meas-regularassembly-datafile2d">RegularAssembly.dat（二维）</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：RegularAssembly.dat（2D）</span>
+<span class="c">; 构建规则颗粒集合体，并用 PFC 中的 </span>
+<span class="c">; 测量逻辑计算孔隙率</span>
+<span class="c">; ========================================================================</span>
+<span class="c">;</span>
+
+<span class="nb">model new</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'MeasureLogic'</span>
+
+<span class="nb">fish define</span><span class="ni"> regular_assembly</span><span class="p">(</span><span class="ni">size</span><span class="p">,</span><span class="ni"> nres</span><span class="p">,</span><span class="ni">itype</span><span class="p">)</span>
+<span class="c">; 在正方形区域中创建单一粒径球的规则堆积</span>
+<span class="c">; 参数：</span>
+<span class="c">;	- size：计算域尺寸</span>
+<span class="c">;   - nres：堆积的分辨率</span>
+<span class="c">;   - itype：堆积类型（0：简单立方；#0：六方）</span>
+<span class="c">; </span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> xmin       </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> ymin       </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> xmax       </span><span class="p">=</span><span class="ni"> size</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> ymax       </span><span class="p">=</span><span class="ni"> size</span>
+
+<span class="ni">  </span><span class="k">global</span><span class="ni"> radius     </span><span class="p">=</span><span class="ni"> size </span><span class="o">/</span><span class="ni"> </span><span class="p">(</span><span class="m m-Double">2.0</span><span class="o">*</span><span class="ni">nres</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> numballs    </span><span class="p">=</span><span class="ni"> nres</span><span class="o">^</span><span class="m m-Double">2</span>
+
+<span class="k">  command</span>
+<span class="nb">    model domain</span><span class="n"> extent </span><span class="ni">[xmin]</span><span class="n"> </span><span class="ni">[xmax]</span><span class="n"> </span><span class="ni">[ymin]</span><span class="n"> </span><span class="ni">[ymax]</span>
+<span class="k">  end_command</span>
+
+<span class="ni">  </span><span class="k">if</span><span class="ni"> itype </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span><span class="ni"> </span><span class="k">then</span>
+<span class="k">    command</span>
+<span class="nb">      ball generate</span><span class="n"> rad </span><span class="ni">[radius]</span><span class="n"> number </span><span class="ni">[numballs]</span><span class="n"> cubic</span>
+<span class="k">    end_command</span>
+<span class="ni">  </span><span class="k">else</span>
+<span class="k">    command</span>
+<span class="nb">      ball generate</span><span class="n"> rad </span><span class="ni">[radius]</span><span class="n"> number </span><span class="ni">[numballs]</span><span class="n"> hexagonal</span>
+<span class="k">    end_command</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="nb">end</span>
+
+<span class="nb">fish def</span><span class="ni"> display_error</span><span class="p">(</span><span class="ni">porosity</span><span class="p">,</span><span class="ni"> tablename</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> error </span><span class="p">=</span><span class="ni"> check_error</span><span class="p">(</span><span class="ni">porosity</span><span class="p">,</span><span class="ni">tablename</span><span class="p">,</span><span class="ni">radius</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> oo </span><span class="p">=</span><span class="ni"> </span><span class="k">io.out</span><span class="p">(</span><span class="k">string.build</span><span class="p">(</span><span class="s">"Average Error = %1%)"</span><span class="p">,</span><span class="ni">error</span><span class="p">))</span>
+<span class="nb">end</span>
+
+<span class="ni">[define_meas_parameters</span><span class="p">(</span><span class="m m-Double">5000</span><span class="p">,</span><span class="ni"> </span><span class="m m-Double">0.00</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="c">;定义测量参数</span>
+
+<span class="c">; 简单立方堆积 - 低分辨率</span>
+<span class="ni">[regular_assembly</span><span class="p">(</span><span class="m m-Double">18.0</span><span class="p">,</span><span class="ni"> </span><span class="m m-Double">9</span><span class="p">,</span><span class="ni"> </span><span class="m m-Double">0</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[create_meas_regions]</span>
+<span class="ni">[display_error</span><span class="p">(</span><span class="m m-Double">0.2146</span><span class="p">,</span><span class="s">'cubic_lores'</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'cubic_lores'</span>
+<span class="c">;</span>
+<span class="c">; 简单立方堆积 - 高分辨率</span>
+<span class="nb">ball delete</span>
+<span class="ni">[regular_assembly</span><span class="p">(</span><span class="m m-Double">18.0</span><span class="p">,</span><span class="ni"> </span><span class="m m-Double">30</span><span class="p">,</span><span class="ni"> </span><span class="m m-Double">0</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[display_error</span><span class="p">(</span><span class="m m-Double">0.2146</span><span class="p">,</span><span class="s">'cubic_hires'</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'cubic_hires'</span>
+<span class="c">;</span>
+<span class="c">; 六方堆积 - 低分辨率</span>
+<span class="nb">ball delete</span>
+<span class="ni">[regular_assembly</span><span class="p">(</span><span class="m m-Double">18.0</span><span class="p">,</span><span class="ni"> </span><span class="m m-Double">9</span><span class="p">,</span><span class="ni"> </span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[display_error</span><span class="p">(</span><span class="m m-Double">0.0931</span><span class="p">,</span><span class="s">'hexa_lores'</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'hexa_lores'</span>
+<span class="c">;</span>
+<span class="c">; 六方堆积 - 高分辨率</span>
+<span class="nb">ball delete</span>
+<span class="ni">[regular_assembly</span><span class="p">(</span><span class="m m-Double">18.0</span><span class="p">,</span><span class="ni"> </span><span class="m m-Double">30</span><span class="p">,</span><span class="ni"> </span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[display_error</span><span class="p">(</span><span class="m m-Double">0.0931</span><span class="p">,</span><span class="s">'hexa_hires'</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'hexa_hires'</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'RegularAssembly'</span>
+
+<span class="c">; ========================================================================</span>
+<span class="c">; 文件结束：RegularAssembly.dat（2D）</span>
+</pre></div>
+</div>
+<p class="endnotesection rubric">尾注</p>
+<table class="docutils footnote" frame="void" id="id3" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><p class="first">要在 <span class="codename">PFC</span> 中查看本项目，请使用程序菜单。</p>
+<p><span class="menuselection">帮助 ▼ 算例…</span></p>
+<p class="last">  ⮡   PFC <br/>
+    ⮡   验证 <br/>
+      ⮡   MeasureLogic <br/>
+        ⮡   MeasurePorosity.prj</p>
+</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../pfc_model_components/pfc_examples.html">Examples</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../verification.html">Verification Problems</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../verification.html" title="previous chapter"> Verification Problems</a> |    
+       <a href="../ArrayStrength/ArrayStrength.html" title="next chapter">Strength of a Face-Centered Cubic Array of Spheres</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Measure Logic" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

@@ -1,0 +1,395 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>采用达西定律模拟多孔介质中的流动 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="cfd_third_party.html" rel="next" title="Coupling PFC3D with 3rd Party Fluid Flow Software"/>
+<link href="one_way_cfd.html" rel="prev" title="One-way Fluid Coupling"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="modeling-flow-in-porous-media-with-darcy-s-law">
+<span id="cfd-darcy"></span><h1>采用达西定律模拟多孔介质中的流动</h1>
+<p>本算例演示如何利用 Python 脚本功能与
+<span class="codename">PFC</span> CFD 模块，对
+颗粒材料中的低雷诺数多孔流动进行建模。</p>
+<div class="section" id="problem-description">
+<h2>问题描述</h2>
+<div class="figure align-center" id="id2">
+<a class="reference internal image-reference" href="../../../../../../_images/darcy.png"><img alt="../../../../../../_images/darcy.png" src="../../../../../../_images/darcy.png" style="width: 300pt;"/></a>
+<p class="caption"><span class="caption-text">图 1：问题几何示意图。</span></p>
+</div>
+<p>颗粒材料装在一个长方体盒子中，盒子尺寸为
+10 cm × 20 cm × 10 cm。水在 y=0 处垂直于 x-z
+平面流入盒子，流量为 1e-5 m<sup>3</sup>/s。除入口以及盒子 y =
+0.2 平面上的一个 2 cm × 2 cm 出口（该处压力保持恒定）之外，
+盒子各壁面均不透水。组成颗粒材料的颗粒
+平均半径为 2.5e-3 m，密度为
+2600 kg/m<sup>3</sup>。不施加任何重力。流动
+在向出口表面汇聚时加速。颗粒被推移
+穿过出口表面。</p>
+</div>
+<div class="section" id="theory">
+<h2>理论</h2>
+<p>多孔介质中的低雷诺数流体流动由达西定律描述：</p>
+<div class="math" id="equation-ic0">
+<span class="eqno">(1)</span>\[\vec{v} = -\frac{K}{\mu \epsilon} \vec{\nabla} p\]</div>
+<p>式中，<span class="math">\(\vec{v}\)</span> 为流体速度，<span class="math">\(K\)</span> 为基质
+渗透率，<span class="math">\(\mu\)</span> 为流体黏度，<span class="math">\(\epsilon\)</span> 为
+基质孔隙率，<span class="math">\(p\)</span> 为流体压力。通常
+假定流体的压缩性足够小，可以忽略，
+由此得到不可压缩条件，</p>
+<div class="math" id="equation-ic1">
+<span class="eqno">(2)</span>\[\vec{\nabla} \cdot v = 0\]</div>
+<p>通常在以下情况下采用该假定：
+(i) 流体速度与流体声速相比很小；
+或 (ii) 系统中从最高压力到最低压力的预期体积变化很小。
+稳态不可压缩多孔流动方程由 <a class="reference internal" href="#equation-ic0">(1)</a> 出发、
+对等式两边取散度，
+即可推导得到，</p>
+<div class="math" id="equation-ic2">
+<span class="eqno">(3)</span>\[\vec{\nabla} \cdot v = \vec \nabla \cdot \left (\frac{K}{\mu \epsilon} \vec{\nabla} p\right)\]</div>
+<p>代入 <a class="reference internal" href="#equation-ic1">(2)</a> 可得，</p>
+<div class="math" id="equation-ic3">
+<span class="eqno">(4)</span>\[\vec \nabla \cdot \left (\frac{K}{\mu \epsilon} \vec{\nabla}
+p\right) =0\]</div>
+<p>该泊松方程需满足以下边界
+条件：在入流面上 <span class="math">\(\vec{\nabla} p= -\vec{v}_{in}\frac{\mu\epsilon}{K}\)</span>，其中
+<span class="math">\(\vec{u}_{in}\)</span> 为指定的入口速度；
+在出流面上 <span class="math">\(p=0\)</span>；
+在边界的其余部分 <span class="math">\(\vec{v}\cdot\vec{n}=0\)</span>（其中
+<span class="math">\(\vec{n}\)</span> 为边界的法向方向）。该
+方程可用隐式方法快速求解，以得到
+流体压力场。只需一次矩阵求逆。该
+解为稳态解，入流量等于出流量。
+一旦压力已知，流体速度即可由
+<a class="reference internal" href="#equation-ic0">(1)</a> 导出。</p>
+<p>流体流动方程（<a class="reference internal" href="#equation-ic0">(1)</a> 和 <a class="reference internal" href="#equation-ic1">(2)</a>）在一套
+粗网格单元上求解。流体速度在单元上
+呈分段线性。这套单元（流体网格）用于通过计算
+PFC3D 颗粒与流体单元之间的重叠来确定孔隙率。
+为计入颗粒对流体流动的影响，需根据
+PFC3D 模型的孔隙率计算渗透率。
+采用 Kozeny-Carman 关系式估算
+渗透率。</p>
+<div class="math">
+\[\begin{split}K(\epsilon) = \left\{ \begin{array}{cl}
+\frac{1}{180}\frac{\epsilon^3}{(1-\epsilon)^2}(2r_e)^2 &amp; \epsilon
+\leq 0.7 \\ K(0.7) &amp; \epsilon &gt; 0.7 \end{array} \right.\end{split}\]</div>
+<p>式中，<span class="math">\(r_e\)</span> 为 <span class="codename">PFC</span> 颗粒的半径，
+<span class="math">\(\epsilon_{min}\)</span> 为系统中的最小孔隙率
+（取为 30%）。为计算渗透率，
+孔隙率上限取为 70%。当孔隙率超过 70% 时，
+渗透率取为固定值。</p>
+<p>CFD 模块自动将流体-颗粒相互作用力
+施加到 <span class="codename">PFC</span> 颗粒上。双向耦合通过
+更新流体流动模型中的孔隙率和渗透率信息，
+并通过更新 <span class="codename">PFC</span> CFD 模块中的流体速度场来实现。
+在 <span class="codename">PFC</span> 中采用 100 个力学循环的短求解区间，
+其间通过新的孔隙率和渗透率信息，重新计算
+新的稳态流体流动场。
+在 <span class="codename">PFC</span> 中的求解区间期间，速度场被视为常数。</p>
+</div>
+<div class="section" id="implementation">
+<h2>实现</h2>
+<p>Python 文件程序 <code class="docutils literal"><span class="pre">darcy.py</span></code> 实现了该耦合问题。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pylab</span> <span class="kn">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">fipy</span> <span class="kn">as</span> <span class="nn">fp</span>
+<span class="kn">import</span> <span class="nn">itasca</span> <span class="kn">as</span> <span class="nn">it</span>
+<span class="kn">from</span> <span class="nn">itasca</span> <span class="kn">import</span> <span class="n">ballarray</span> <span class="k">as</span> <span class="n">ba</span>
+<span class="kn">from</span> <span class="nn">itasca</span> <span class="kn">import</span> <span class="n">cfdarray</span> <span class="k">as</span> <span class="n">ca</span>
+<span class="kn">from</span> <span class="nn">itasca</span> <span class="kn">import</span> <span class="n">element</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="nb">reduce</span>
+
+<span class="k">class</span> <span class="nc">DarcyFlowSolution</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">Grid3D</span><span class="p">(</span><span class="n">nx</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">ny</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">nz</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+                              <span class="n">dx</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">dy</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">dz</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pressure</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">CellVariable</span><span class="p">(</span><span class="n">mesh</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span> \
+                                        <span class="n">name</span><span class="o">=</span><span class="s1">'pressure'</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mobility</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">CellVariable</span><span class="p">(</span><span class="n">mesh</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="p">,</span> \
+                                        <span class="n">name</span><span class="o">=</span><span class="s1">'mobility'</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pressure</span><span class="o">.</span><span class="n">equation</span> <span class="o">=</span> <span class="p">(</span><span class="n">fp</span><span class="o">.</span><span class="n">DiffusionTerm</span><span class="p">(</span><span class="n">coeff</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mobility</span><span class="p">)</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mu</span> <span class="o">=</span> <span class="mf">1e-3</span>  <span class="c1"># 动力黏度</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inlet_mask</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outlet_mask</span> <span class="o">=</span> <span class="bp">None</span>
+        <span class="c1"># 在 PFC CFD 模块中创建 FiPy 网格</span>
+        <span class="n">ca</span><span class="o">.</span><span class="n">create_mesh</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">vertexCoords</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> 
+           <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">_cellVertexIDs</span><span class="o">.</span><span class="n">T</span><span class="p">[:,(</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">6</span><span class="p">,</span><span class="mi">7</span><span class="p">,</span><span class="mi">5</span><span class="p">)]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">it</span><span class="o">.</span><span class="n">ball</span><span class="o">.</span><span class="n">count</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">grain_size</span> <span class="o">=</span> <span class="mf">5e-4</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">grain_size</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">ba</span><span class="o">.</span><span class="n">radius</span><span class="p">()</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+
+        <span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">        model configure cfd</span>
+<span class="s2">        element cfd attribute density 1e3</span>
+<span class="s2">        element cfd attribute viscosity {}</span>
+<span class="s2">        cfd porosity polyhedron</span>
+<span class="s2">        cfd interval 20</span>
+<span class="s2">        """</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mu</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">set_pressure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">where</span><span class="p">):</span>
+        <span class="sd">"""Dirichlet boundary condition. value is a pressure in Pa and where</span>
+<span class="sd">        is a mask on the element faces."""</span>
+        <span class="k">print</span> <span class="p">(</span><span class="s2">"setting pressure to {} on {} faces"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">where</span><span class="o">.</span><span class="n">sum</span><span class="p">()))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pressure</span><span class="o">.</span><span class="n">constrain</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">where</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">set_inflow_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">flow_rate</span><span class="p">):</span>
+        <span class="sd">"""</span>
+<span class="sd">        Set inflow rate in m^3/s.  Flow is in the positive y direction</span>
+<span class="sd">        and is specfified on the mesh faces given by the inlet_mask.</span>
+<span class="sd">        """</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">inlet_mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">outlet_mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="k">print</span> <span class="p">(</span><span class="s2">"setting inflow on </span><span class="si">%i</span><span class="s2"> faces"</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inlet_mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()))</span>
+        <span class="k">print</span> <span class="p">(</span><span class="s2">"setting outflow on </span><span class="si">%i</span><span class="s2"> faces"</span> <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outlet_mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">flow_rate</span> <span class="o">=</span> <span class="n">flow_rate</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inlet_area</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">scaledFaceAreas</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">inlet_mask</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outlet_area</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">scaledFaceAreas</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">outlet_mask</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Uin</span> <span class="o">=</span> <span class="n">flow_rate</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">inlet_area</span>
+        <span class="n">inlet_mobility</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mobility</span><span class="o">.</span><span class="n">faceValue</span> <span class="o">*</span> \
+                          <span class="bp">self</span><span class="o">.</span><span class="n">inlet_mask</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">/</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inlet_mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">+</span><span class="mf">0.0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pressure</span><span class="o">.</span><span class="n">faceGrad</span><span class="o">.</span><span class="n">constrain</span><span class="p">(</span>
+            <span class="p">((</span><span class="mi">0</span><span class="p">,),(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">Uin</span><span class="o">/</span><span class="n">inlet_mobility</span><span class="p">,),(</span><span class="mi">0</span><span class="p">,),),</span> <span class="bp">self</span><span class="o">.</span><span class="n">inlet_mask</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">solve</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""Solve the pressure equation and find the velocities."""</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pressure</span><span class="o">.</span><span class="n">equation</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">var</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pressure</span><span class="p">)</span>
+        <span class="c1"># 求解完成后将数值写入 CFD 单元</span>
+        <span class="n">ca</span><span class="o">.</span><span class="n">set_pressure</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pressure</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        <span class="n">ca</span><span class="o">.</span><span class="n">set_pressure_gradient</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pressure</span><span class="o">.</span><span class="n">grad</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">construct_cell_centered_velocity</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">read_porosity</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""Read the porosity from the PFC cfd elements and calculate a</span>
+<span class="sd">        permeability."""</span>
+        <span class="n">porosity_limit</span> <span class="o">=</span> <span class="mf">0.7</span>
+        <span class="n">B</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="mf">180.0</span>
+        <span class="n">phi</span> <span class="o">=</span> <span class="n">ca</span><span class="o">.</span><span class="n">porosity</span><span class="p">()</span>
+        <span class="n">phi</span><span class="p">[</span><span class="n">phi</span><span class="o">&gt;</span><span class="n">porosity_limit</span><span class="p">]</span> <span class="o">=</span> <span class="n">porosity_limit</span>
+        <span class="n">K</span> <span class="o">=</span> <span class="n">B</span><span class="o">*</span><span class="n">phi</span><span class="o">**</span><span class="mi">3</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">grain_size</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">phi</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mobility</span><span class="o">.</span><span class="n">setValue</span><span class="p">(</span><span class="n">K</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">mu</span><span class="p">)</span>
+        <span class="n">ca</span><span class="o">.</span><span class="n">set_extra</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">mobility</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">test_inflow_outflow</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""Test continuity."""</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mobility</span><span class="o">.</span><span class="n">faceValue</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span><span class="p">,</span><span class="n">b</span> <span class="ow">in</span>
+                                      <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">faceNormals</span><span class="o">.</span><span class="n">T</span><span class="p">,</span>
+                                          <span class="bp">self</span><span class="o">.</span><span class="n">pressure</span><span class="o">.</span><span class="n">faceGrad</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">T</span><span class="p">)])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inflow</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inlet_mask</span> <span class="o">*</span> <span class="n">a</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">scaledFaceAreas</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">outflow</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">outlet_mask</span> <span class="o">*</span> <span class="n">a</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">scaledFaceAreas</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+        <span class="k">print</span> <span class="p">(</span><span class="s2">"Inflow: {} outflow: {} tolerance: {}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">inflow</span><span class="p">,</span>  <span class="bp">self</span><span class="o">.</span><span class="n">outflow</span><span class="p">,</span>  <span class="bp">self</span><span class="o">.</span><span class="n">inflow</span> <span class="o">+</span>  <span class="bp">self</span><span class="o">.</span><span class="n">outflow</span><span class="p">))</span>
+        <span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">inflow</span> <span class="o">+</span>  <span class="bp">self</span><span class="o">.</span><span class="n">outflow</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-6</span>
+
+    <span class="k">def</span> <span class="nf">construct_cell_centered_velocity</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">"""The FiPy solver finds the velocity (fluxes) on the element faces,</span>
+<span class="sd">        to calculate a drag force PFC needs an estimate of the</span>
+<span class="sd">        velocity at the element centroids. """</span>
+
+        <span class="k">assert</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">cellFaceIDs</span><span class="o">.</span><span class="n">mask</span>
+        <span class="n">efaces</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">cellFaceIDs</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">T</span>
+        <span class="n">fvel</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">faceNormals</span><span class="o">*</span>\
+                 <span class="bp">self</span><span class="o">.</span><span class="n">mobility</span><span class="o">.</span><span class="n">faceValue</span><span class="o">.</span><span class="n">value</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">)</span> \
+                 <span class="k">for</span> <span class="n">a</span><span class="p">,</span><span class="n">b</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">faceNormals</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> \
+                               <span class="bp">self</span><span class="o">.</span><span class="n">pressure</span><span class="o">.</span><span class="n">faceGrad</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">T</span><span class="p">)]))</span><span class="o">.</span><span class="n">T</span>
+        <span class="k">def</span> <span class="nf">max_mag</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">&gt;</span> <span class="nb">abs</span><span class="p">(</span><span class="n">b</span><span class="p">):</span> <span class="k">return</span> <span class="n">a</span>
+            <span class="k">else</span><span class="p">:</span> <span class="k">return</span> <span class="n">b</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">el</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">element</span><span class="o">.</span><span class="n">cfd</span><span class="o">.</span><span class="n">list</span><span class="p">()):</span>
+            <span class="n">xmax</span><span class="p">,</span> <span class="n">ymax</span><span class="p">,</span> <span class="n">zmax</span> <span class="o">=</span> <span class="n">fvel</span><span class="p">[</span><span class="n">efaces</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]][</span><span class="mi">0</span><span class="p">],</span> <span class="n">fvel</span><span class="p">[</span><span class="n">efaces</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]][</span><span class="mi">1</span><span class="p">],</span>\
+                               <span class="n">fvel</span><span class="p">[</span><span class="n">efaces</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]][</span><span class="mi">2</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">face</span> <span class="ow">in</span> <span class="n">efaces</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
+                <span class="n">xv</span><span class="p">,</span><span class="n">yv</span><span class="p">,</span><span class="n">zv</span> <span class="o">=</span> <span class="n">fvel</span><span class="p">[</span><span class="n">face</span><span class="p">]</span>
+                <span class="n">xmax</span> <span class="o">=</span> <span class="n">max_mag</span><span class="p">(</span><span class="n">xv</span><span class="p">,</span> <span class="n">xmax</span><span class="p">)</span>
+                <span class="n">ymax</span> <span class="o">=</span> <span class="n">max_mag</span><span class="p">(</span><span class="n">yv</span><span class="p">,</span> <span class="n">ymax</span><span class="p">)</span>
+                <span class="n">zmax</span> <span class="o">=</span> <span class="n">max_mag</span><span class="p">(</span><span class="n">zv</span><span class="p">,</span> <span class="n">zmax</span><span class="p">)</span>
+            <span class="n">el</span><span class="o">.</span><span class="n">set_vel</span><span class="p">((</span><span class="n">xmax</span><span class="p">,</span> <span class="n">ymax</span><span class="p">,</span> <span class="n">zmax</span><span class="p">))</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">'__main__'</span><span class="p">:</span>
+    <span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"program call 'particles.dat'"</span><span class="p">)</span>
+    <span class="n">solver</span> <span class="o">=</span> <span class="n">DarcyFlowSolution</span><span class="p">()</span>
+
+    <span class="n">fx</span><span class="p">,</span><span class="n">fy</span><span class="p">,</span><span class="n">fz</span> <span class="o">=</span> <span class="n">solver</span><span class="o">.</span><span class="n">mesh</span><span class="o">.</span><span class="n">faceCenters</span>
+    <span class="c1"># 设置边界条件</span>
+    <span class="n">solver</span><span class="o">.</span><span class="n">inlet_mask</span> <span class="o">=</span> <span class="n">fy</span> <span class="o">==</span> <span class="mi">0</span>
+    <span class="n">solver</span><span class="o">.</span><span class="n">outlet_mask</span> <span class="o">=</span> <span class="nb">reduce</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">,</span>
+                                <span class="p">(</span><span class="n">fy</span><span class="o">==</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">fx</span><span class="o">&lt;</span><span class="mf">0.06</span><span class="p">,</span> <span class="n">fx</span><span class="o">&gt;</span><span class="mf">0.04</span><span class="p">,</span> <span class="n">fz</span><span class="o">&gt;</span><span class="mf">0.04</span><span class="p">,</span> <span class="n">fz</span><span class="o">&lt;</span><span class="mf">0.06</span><span class="p">))</span>
+    <span class="n">solver</span><span class="o">.</span><span class="n">set_inflow_rate</span><span class="p">(</span><span class="mf">1e-5</span><span class="p">)</span>
+    <span class="n">solver</span><span class="o">.</span><span class="n">set_pressure</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">solver</span><span class="o">.</span><span class="n">outlet_mask</span><span class="p">)</span>
+
+    <span class="n">solver</span><span class="o">.</span><span class="n">read_porosity</span><span class="p">()</span>
+    <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
+    <span class="n">solver</span><span class="o">.</span><span class="n">test_inflow_outflow</span><span class="p">()</span>
+    <span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"cfd update"</span><span class="p">)</span>
+
+    <span class="n">flow_solve_interval</span> <span class="o">=</span> <span class="mi">100</span>
+    <span class="k">def</span> <span class="nf">update_flow</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">it</span><span class="o">.</span><span class="n">cycle</span><span class="p">()</span> <span class="o">%</span> <span class="n">flow_solve_interval</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">solver</span><span class="o">.</span><span class="n">read_porosity</span><span class="p">()</span>
+            <span class="n">solver</span><span class="o">.</span><span class="n">solve</span><span class="p">()</span>
+            <span class="n">solver</span><span class="o">.</span><span class="n">test_inflow_outflow</span><span class="p">()</span>
+
+    <span class="n">it</span><span class="o">.</span><span class="n">set_callback</span><span class="p">(</span><span class="s2">"update_flow"</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">    model large-strain on</span>
+<span class="s2">    model cycle 20000</span>
+<span class="s2">    model save 'end'</span>
+<span class="s2">    """</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>类 <code class="docutils literal"><span class="pre">DarcyFlowSolution</span></code> 使用有限体积 Python（FiPy）
+程序包来求解流体流动方程 <a class="reference internal" href="#guyer2009" id="id1">[Guyer2009]</a>。FiPy 是内嵌在 <span class="codename">PFC</span> 中的
+Python 环境的一部分。</p>
+<p>文件 <code class="docutils literal"><span class="pre">particles.p3dat</span></code> 创建 <span class="codename">PFC</span> 颗粒和墙。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="n">python</span><span class="o">-</span><span class="n">reset</span><span class="o">-</span><span class="n">state </span><span class="sx">false</span>
+<span class="nb">model new</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">0.01</span><span class="n"> </span><span class="m m-Double">0.11</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.01</span><span class="n"> </span><span class="m m-Double">0.21</span><span class="n">  </span><span class="o">-</span><span class="m m-Double">0.01</span><span class="n"> </span><span class="m m-Double">0.11</span><span class="n"> condition destroy</span>
+<span class="nb">contact cmat</span><span class="n"> default model linear property kn </span><span class="m m-Double">1e4</span><span class="n"> dp_nratio </span><span class="m m-Double">0.2</span>
+
+<span class="nb">fish define</span><span class="ni"> inline</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> dim </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1e-1</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> radius </span><span class="p">=</span><span class="ni"> dim </span><span class="o">/</span><span class="ni"> </span><span class="m m-Double">10</span><span class="ni"> </span><span class="o">/</span><span class="ni"> </span><span class="m m-Double">4</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> xdim </span><span class="p">=</span><span class="ni"> dim </span><span class="o">-</span><span class="ni"> radius</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> ydim </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2</span><span class="ni"> </span><span class="o">*</span><span class="ni"> dim </span><span class="o">-</span><span class="ni"> radius</span>
+<span class="nb">end</span>
+<span class="ni">[inline]</span>
+
+<span class="nb">ball generate</span><span class="n"> cubic box </span><span class="ni">[radius]</span><span class="n"> </span><span class="ni">[xdim]</span><span class="n"> </span><span class="ni">[radius]</span><span class="n"> </span><span class="ni">[ydim]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                        </span><span class="ni">[radius]</span><span class="n"> </span><span class="ni">[xdim]</span><span class="n"> rad </span><span class="ni">[radius]</span>
+<span class="nb">wall generate</span><span class="n"> box </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[dim]</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">2</span><span class="o">*</span><span class="ni">dim]</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[dim]</span>
+<span class="nb">wall delete</span><span class="n"> wall range id </span><span class="m m-Double">6</span>
+<span class="nb">wall generate</span><span class="n"> polygon </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0.2</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                      </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0.2</span><span class="n"> </span><span class="m m-Double">0.1</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                      </span><span class="m m-Double">0.04</span><span class="n"> </span><span class="m m-Double">0.2</span><span class="n"> </span><span class="m m-Double">0.1</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                      </span><span class="m m-Double">0.04</span><span class="n"> </span><span class="m m-Double">0.2</span><span class="n"> </span><span class="m m-Double">0.0</span>
+
+<span class="nb">wall generate</span><span class="n"> polygon </span><span class="m m-Double">0.06</span><span class="n"> </span><span class="m m-Double">0.2</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                      </span><span class="m m-Double">0.06</span><span class="n"> </span><span class="m m-Double">0.2</span><span class="n"> </span><span class="m m-Double">0.1</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                      </span><span class="m m-Double">0.1</span><span class="n"> </span><span class="m m-Double">0.2</span><span class="n"> </span><span class="m m-Double">0.1</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                      </span><span class="m m-Double">0.1</span><span class="n"> </span><span class="m m-Double">0.2</span><span class="n"> </span><span class="m m-Double">0.0</span>
+
+<span class="nb">wall generate</span><span class="n"> polygon </span><span class="m m-Double">0.04</span><span class="n"> </span><span class="m m-Double">0.2</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                      </span><span class="m m-Double">0.04</span><span class="n"> </span><span class="m m-Double">0.2</span><span class="n"> </span><span class="m m-Double">0.04</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                      </span><span class="m m-Double">0.06</span><span class="n"> </span><span class="m m-Double">0.2</span><span class="n"> </span><span class="m m-Double">0.04</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                      </span><span class="m m-Double">0.06</span><span class="n"> </span><span class="m m-Double">0.2</span><span class="n"> </span><span class="m m-Double">0.0</span>
+
+<span class="nb">wall generate</span><span class="n"> polygon </span><span class="m m-Double">0.04</span><span class="n"> </span><span class="m m-Double">0.2</span><span class="n"> </span><span class="m m-Double">0.06</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                      </span><span class="m m-Double">0.04</span><span class="n"> </span><span class="m m-Double">0.2</span><span class="n"> </span><span class="m m-Double">0.1</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                      </span><span class="m m-Double">0.06</span><span class="n"> </span><span class="m m-Double">0.2</span><span class="n"> </span><span class="m m-Double">0.1</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                      </span><span class="m m-Double">0.06</span><span class="n"> </span><span class="m m-Double">0.2</span><span class="n"> </span><span class="m m-Double">0.06</span>
+
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="m m-Double">2600.0</span>
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="results">
+<h2>结果</h2>
+<div class="figure align-center" id="id3">
+<a class="reference internal image-reference" href="../../../../../../_images/darcy_res0.png"><img alt="../../../../../../_images/darcy_res0.png" src="../../../../../../_images/darcy_res0.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：显示位移量值的颗粒彩色等值线。</span></p>
+</div>
+<div class="figure align-center" id="id4">
+<a class="reference internal image-reference" href="../../../../../../_images/darcy_res1.png"><img alt="../../../../../../_images/darcy_res1.png" src="../../../../../../_images/darcy_res1.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 3：流体速度向量。</span></p>
+</div>
+<div class="figure align-center" id="id5">
+<a class="reference internal image-reference" href="../../../../../../_images/darcy_res2.png"><img alt="../../../../../../_images/darcy_res2.png" src="../../../../../../_images/darcy_res2.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 4：流体压力场。</span></p>
+</div>
+<table class="docutils citation" frame="void" id="guyer2009" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[Guyer2009]</a></td><td>J.E. Guyer、D. Wheeler 和 J. A. Warren，“FiPy：用 Python 求解偏微分方程”（FiPy: Partial Differential Equations with Python），载于 Computing in Science &amp; Engineering，11(3)，第 6-15 页（2009），doi:10.1109/MCSE.2009.52，http://www.ctcms.nist.gov/fipy</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../options.html">Additional Features</a> »</li>
+<li class="nav-item nav-item-3"><a href="cfd_option.html">CFD module for <span class="codename">PFC3D</span><span class="codename">6.0</span></a> »</li>
+<li class="nav-item nav-item-4"><a accesskey="U" href="cfd_coupling.html">Examples</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="one_way_cfd.html" title="previous chapter"> One-way Fluid Coupling</a> |    
+       <a href="cfd_third_party.html" title="next chapter">Coupling <span class="codename">PFC3D</span> with 3rd Party Fluid Flow Software</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Modeling Flow in Porous Media with Darcy’s Law" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

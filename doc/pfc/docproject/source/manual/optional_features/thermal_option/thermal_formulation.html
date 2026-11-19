@@ -1,0 +1,652 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>PFC 热学公式 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="verifications/verifications.html" rel="next" title="Verification Problems"/>
+<link href="thermal_option.html" rel="prev" title="Thermal Calculation"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="pfc-thermal-formulation">
+<span id="id1"></span><h1><span class="codename">PFC</span> 热学公式</h1>
+<div class="section" id="mathematical-model-description">
+<h2>数学模型说明</h2>
+<p>连续体中热传导所涉及的变量为温度和热流向量。我们希望计算这两个场在整个材料中
+随时间的演化。这些变量之间通过连续性方程以及由傅里叶热传导定律导出的
+输运定律相联系。将傅里叶定律代入连续性方程，
+即可得到热传导微分方程；在给定
+特定的边界条件和初始条件时，可针对特定的几何形状和性质求解该方程。</p>
+<p class="h3 rubric" id="systemsofunits">约定与单位制</p>
+<p>向量与张量采用指标记法表示，所参照的是固定的右手直角笛卡尔
+坐标系。三维情形下指标取集合 {1, 2, 3} 中的值，二维情形下取
+集合 {1, 2} 中的值。这里采用爱因斯坦求和约定；因此，某项中某个指标重复出现，即表示
+对该指标在其取值范围内求和。竖线表示向量的大小或标量的绝对值。
+变量上的点表示对时间的导数
+（例如，<span class="math">\(\dot x_i = \partial x_i/\partial t\)</span>）。
+SI 单位用于说明参数和变量的量纲。所有热学量都必须以一致
+的单位制给出。程序不进行任何单位换算。以下两个表给出了热学量的
+一致单位制示例。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<table border="1" class="colwidths-given icg1 docutils" id="siunitsthermal">
+<caption><span class="caption-text">表 1：热学问题的 SI 单位制</span></caption>
+<colgroup>
+<col width="25%"/>
+<col width="19%"/>
+<col width="19%"/>
+<col width="19%"/>
+<col width="19%"/>
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>长度</td>
+<td>m</td>
+<td>m</td>
+<td>m</td>
+<td>厘米</td>
+</tr>
+<tr class="row-even"><td>密度</td>
+<td>kg/m<sup>3</sup></td>
+<td>10<sup>3</sup>kg/m<sup>3</sup></td>
+<td>10<sup>6</sup>kg/m<sup>3</sup></td>
+<td>10<sup>6</sup>g/cm<sup>3</sup></td>
+</tr>
+<tr class="row-odd"><td>温度</td>
+<td>K</td>
+<td>K</td>
+<td>K</td>
+<td>K</td>
+</tr>
+<tr class="row-even"><td>时间</td>
+<td>s</td>
+<td>s</td>
+<td>s</td>
+<td>s</td>
+</tr>
+<tr class="row-odd"><td>比热</td>
+<td>J/(kg k)</td>
+<td>10<sup>-3</sup>J/(kg K)</td>
+<td>10<sup>-6</sup>J/(kg K)</td>
+<td>10<sup>-6</sup>cal/(g K)</td>
+</tr>
+<tr class="row-even"><td>热导率</td>
+<td>W/(mk)</td>
+<td>W/(mk)</td>
+<td>W/(mk)</td>
+<td>(cal/s)/cm<sup>2</sup>K<sup>4</sup></td>
+</tr>
+<tr class="row-odd"><td>对流换热系数</td>
+<td>W/(m<sup>2</sup>K)</td>
+<td>W/(m<sup>2</sup>K)</td>
+<td>W/(m<sup>2</sup>K)</td>
+<td>(cal/s)/cm<sup>2</sup>K</td>
+</tr>
+<tr class="row-even"><td>辐射换热系数</td>
+<td>W/(m<sup>2</sup>K<sup>4</sup>)</td>
+<td>W/(m<sup>2</sup>K<sup>4</sup>)</td>
+<td>W/(m<sup>2</sup>K<sup>4</sup>)</td>
+<td>(cal/s)/cm<sup>2</sup>K<sup>4</sup></td>
+</tr>
+<tr class="row-odd"><td>通量强度</td>
+<td>W/m<sup>2</sup></td>
+<td>W/m<sup>2</sup></td>
+<td>W/m<sup>2</sup></td>
+<td>(cal/s)/cm<sup>2</sup></td>
+</tr>
+<tr class="row-even"><td>源强度</td>
+<td>W/m<sup>3</sup></td>
+<td>W/m<sup>3</sup></td>
+<td>W/m<sup>3</sup></td>
+<td>(cal/s)/cm<sup>3</sup></td>
+</tr>
+<tr class="row-odd"><td>衰减常数</td>
+<td>s<sup>-1</sup></td>
+<td>s<sup>-1</sup></td>
+<td>s<sup>-1</sup></td>
+<td>s<sup>-1</sup></td>
+</tr>
+</tbody>
+</table>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<table border="1" class="colwidths-given icg1 docutils" id="imperialunits">
+<caption><span class="caption-text">表 2：热学问题的英制单位制</span></caption>
+<colgroup>
+<col width="40%"/>
+<col width="30%"/>
+<col width="30%"/>
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>长度</td>
+<td>英尺</td>
+<td>in</td>
+</tr>
+<tr class="row-even"><td>密度</td>
+<td>slugs/ft<sup>3</sup></td>
+<td>snails/in<sup>3</sup></td>
+</tr>
+<tr class="row-odd"><td>温度</td>
+<td>R</td>
+<td>R</td>
+</tr>
+<tr class="row-even"><td>时间</td>
+<td>hr</td>
+<td>hr</td>
+</tr>
+<tr class="row-odd"><td>比热</td>
+<td>(32.17)<sup>-1</sup> Btu/(1b R)</td>
+<td>(32.17)<sup>-1</sup> Btu/(1b R)</td>
+</tr>
+<tr class="row-even"><td>热导率</td>
+<td>(Btu/hr)/(ft R)</td>
+<td>(Btu/hr)/(in R)</td>
+</tr>
+<tr class="row-odd"><td>对流换热系数</td>
+<td>(Btu/hr)/(ft<sup>2</sup> R)</td>
+<td>(Btu/hr)/(in<sup>2</sup> R)</td>
+</tr>
+<tr class="row-even"><td>辐射换热系数</td>
+<td>(Btu/hr)/(ft<sup>2</sup> R<sup>4</sup>)</td>
+<td>(Btu/hr)/(in<sup>2</sup> R<sup>4</sup>)</td>
+</tr>
+<tr class="row-odd"><td>通量强度</td>
+<td>(Btu/hr)/ft<sup>2</sup></td>
+<td>(Btu/hr)/in<sup>2</sup></td>
+</tr>
+<tr class="row-even"><td>源强度</td>
+<td>(Btu/hr)/ft<sup>3</sup></td>
+<td>(Btu/hr)/in<sup>3</sup></td>
+</tr>
+<tr class="row-odd"><td>衰减常数</td>
+<td>hr<sup>-1</sup></td>
+<td>hr<sup>-1</sup></td>
+</tr>
+</tbody>
+</table>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="math">
+\[\begin{split}\mbox{~where~~}   \begin{array}{lcl}  1\mbox{K} &amp; =  &amp; 1.8 \mbox{R}; \\
+                    1\mbox{J}  &amp; =  &amp; 0.239 \mbox{ cal} = 9.48 \times 10^{-4} \mbox{ Btu}; \\
+                    1\mbox{J/kg K} &amp; = &amp; 2.39 \times 10^{-4} \mbox{ btu/1b R};  \\
+                    1\mbox{W} &amp; = &amp; 1 \mbox{ J/s} = 0.239 \mbox{ cal/s} = 3.412 \mbox{ Btu/hr}; \\
+                    1\mbox{W/m K} &amp; = &amp; 0.578 \mbox{  Btu/(ft/hr R); and} \\
+                    \mbox{W/m}^2\mbox{K} &amp; = &amp; 0.176 \mbox{ Btu/ft}^2\mbox{hr R.}
+\end{array}\end{split}\]</div>
+<p>温度可以用开尔文、兰金、摄氏和华氏温标表示。开尔文温标使用单位
+“开尔文”（符号 K），兰金温标使用单位“兰金”（符号 R），摄氏温标使用单位
+“摄氏度”（符号 °C），华氏温标使用单位
+“华氏度”（符号 °F）。
+各温标之间的关系为：</p>
+<div class="math">
+\[\begin{split}\begin{array}{lcl}   \mbox{Temp(}^\circ \mbox{C)} &amp; = &amp; \frac{5}{9} \ast \mbox{[Temp(}^\circ \mbox{F) - 32]}; \\
+                     \mbox{Temp(}^\circ \mbox{F)} &amp; = &amp; \mbox{[1.8} \ast \mbox{Temp(}^\circ \mbox{C)] + 32}; \\
+                     \mbox{Temp(}^\circ \mbox{C)} &amp; = &amp; \mbox{Temp(K) - 273.15; and} \\
+                     \mbox{Temp(}^\circ \mbox{F)} &amp; = &amp; \mbox{Temp(R) - 459.67.}
+\end{array}\end{split}\]</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p class="h3 rubric" id="governingequations">控制方程</p>
+<p>假设应变变化对温度的影响可忽略不计——对于涉及固体和液体的准静态
+力学问题而言，这是一个有效的假设——则连续体的热传导方程由下式给出</p>
+<div class="math" id="equation-eq_f1">
+<span class="eqno">(1)</span>\[- \frac{\partial q_i}{\partial x_i} + q_v = \rho C_v \frac{\partial T}{\partial t}\]</div>
+<p>式中，<span class="math">\(q_i\)</span> 为热流向量 [W/m<sup>2</sup>]，<span class="math">\(q_v\)</span> 为体积热源强度或功率
+密度 [W/m<sup>3</sup>]，<span class="math">\(\rho\)</span> 为质量密度 [kg/m<sup>3</sup>]，<span class="math">\(C_v\)</span> 为定容比热
+[J/kg°C]，<span class="math">\(T\)</span> 为温度 [°C]。请注意，对于几乎所有固体和液体，定压比热
+与定容比热基本相同。因此，<span class="math">\(C_p\)</span> 与 <span class="math">\(C_v\)</span> 可以互换
+使用。</p>
+<p>连续体的傅里叶定律将热流向量与温度梯度之间的关系定义为</p>
+<div class="math" id="equation-eq_f2">
+<span class="eqno">(2)</span>\[q_i = -k_{ij} \frac{\partial T}{\partial x_j}\]</div>
+<p>式中，<span class="math">\(k_{ij}\)</span> 为导热系数张量 [W/m°C]。</p>
+<p class="h3 rubric" id="mechcouplingthermalstrains"><span id="pfc-thermal-formulation-mechcoupling"></span>力学耦合：热应变</p>
+<p>在 <span class="codename">PFC</span> 材料中，通过考虑颗粒的热膨胀来产生热应变。
+<a class="reference internal" href="../../../../../../common/contactmodel/linearpbond/doc/manual/cmlinearpbond.html#cmlinearpbond"><span class="std std-ref">线性平行黏结</span>（linear parallel bond）</a>接触模型还考虑了连接颗粒的黏结
+材料的热膨胀（但请注意，在内置接触模型中，只有线性平行黏结模型包含
+热膨胀）。
+热膨胀的施加方式如下。</p>
+<p>给定温度变化量 <span class="math">\(\Delta T\)</span>，我们改变每个颗粒的半径 <span class="math">\(R\)</span>，使得</p>
+<div class="math" id="equation-eq_f3">
+<span class="eqno">(3)</span>\[\Delta R = \alpha R \Delta T\]</div>
+<p>式中，<span class="math">\(\alpha\)</span> 为与颗粒相关的线性热膨胀系数。</p>
+<p>如果与热学接触相关联的力学接触处存在黏结的 <a class="reference internal" href="../../../../../../common/contactmodel/linearpbond/doc/manual/cmlinearpbond.html#cmlinearpbond"><span class="std std-ref">线性平行黏结</span>（linear parallel bond）</a>，
+则我们通过假设黏结所承受的力向量中只有法向分量 <span class="math">\(\Delta \overline{F}_{ n}\)</span>
+会受到温度变化的影响，来考虑黏结材料的膨胀。我们设想黏结材料发生各向同性膨胀，这实际上改变了
+黏结
+长度 <span class="math">\(\bar L\)</span>。其建模方式为改变黏结力向量的法向分量，如下式</p>
+<div class="math" id="equation-eq_f4">
+<span class="eqno">(4)</span>\[\Delta \overline{F}_{ n} = - \bar{k}_n A \Delta U_n = - \bar{k}_n A (\bar \alpha \bar{L} \Delta T)\]</div>
+<p>式中，<span class="math">\(\bar k_n\)</span> 为黏结法向刚度，<span class="math">\(A\)</span> 为黏结横截面面积，<span class="math">\(\bar \alpha\)</span> 为
+黏结材料的膨胀系数（取为与该黏结相关联的管道两端
+颗粒膨胀系数的平均值），<span class="math">\(\bar L\)</span> 为黏结长度（取为与该黏结相关联的管道两端
+两个颗粒形心之间的距离），以及 <span class="math">\(\Delta T\)</span>
+为温度增量（取为与该黏结相关联的管道两端两个颗粒的
+平均温度变化）。</p>
+<p>方程 <a class="reference internal" href="#equation-eq_f3">(3)</a> 中 <span class="math">\(\alpha\)</span> 的值是一个微观属性（见<a class="reference internal" href="#thermalmicroprops"><span class="std std-ref">下文</span>（below）</a>小节），可以
+设为三维连续体的
+线性热膨胀系数，记为 <span class="math">\(\alpha_t\)</span>：</p>
+<div class="math" id="equation-eq_f5">
+<span class="eqno">(5)</span>\[\alpha = \alpha_t\]</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p class="h3 rubric" id="thermalmicroprops">热学微观属性</p>
+<p>以下四个微观属性为 <span class="codename">PFC</span> 热学逻辑所使用。所赋的值会有所不同，具体取决于
+<span class="codename">PFC</span> 模型是用于表示颗粒材料（作为无黏结的颗粒集合体）还是固体
+连续体（作为黏结的颗粒集合体）。</p>
+<blockquote>
+<div><ul>
+<li><p class="first"><em>密度</em>，<span class="math">\(\rho\)</span> [kg/m<sup>3</sup>]（每个球颗粒）：
+当表示颗粒材料时，<span class="math">\(\rho\)</span> 的值应设为每个颗粒的密度。
+当表示固体连续体时，<span class="math">\(\rho\)</span> 的取值应使 <span class="codename">PFC</span> 材料在固定体积材料内具有与实际材料相同的总热质量。
+该条件可通过设置下式得到满足</p>
+<div class="math" id="equation-eq_f6">
+<span class="eqno">(6)</span>\[\rho = \rho_t/(1-n)\]</div>
+<p>式中，<span class="math">\(\rho_t\)</span> 为固体连续体的密度，<span class="math">\(n\)</span> 为 <span class="codename">PFC</span> 材料的平均孔隙率。
+对于密实堆积且黏结的 <span class="codename">PFC</span> 集合体，<span class="math">\(n\)</span> 的值由初始微观结构确定，约为 0.16/0.40。<span class="math">\(\rho\)</span> 的值通过 <a class="reference internal" href="../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.attribute.html#kwd:ball.attribute.density" title="Ball density, where  f  &gt; 0. By default, ball density is set to zero upon
+creation of a ball;...">球体属性密度（<code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">attribute</span> <span class="pre">density</span></code>）</a> 命令设置。</p>
+</li>
+<li><p class="first"><em>定容比热</em>，<span class="math">\(C_v\)</span> [J/kg°C]（每个球颗粒）：
+该微观属性可设为固体连续体的对应值。
+<span class="math">\(C_v\)</span> 的值通过 <code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">thermal</span> <span class="pre">attribute</span> <span class="pre">sheat</span></code> 命令设置。</p>
+</li>
+<li><p class="first"><em>线性热膨胀系数</em>，<span class="math">\(\alpha\)</span> [1/°C]（每个球颗粒）：
+当表示颗粒材料时，<span class="math">\(\alpha\)</span> 的值应与每个颗粒的相应值一致。
+在 <span class="codename">PFC</span> 的情况下，该微观属性可设为固体连续体的值 <span class="math">\(\alpha_t\)</span>。
+<span class="math">\(\alpha\)</span> 的值通过 <code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">thermal</span> <span class="pre">attribute</span> <span class="pre">thexp</span></code> 命令设置。</p>
+</li>
+<li><p class="first"><em>单位长度热阻</em>，<span class="math">\(\eta\)</span> [°C/W m]（每个热学接触）：
+通过扫描给定 <span class="codename">PFC</span> 热学材料的管道网络，可以计算 <span class="math">\(\eta\)</span> 的值；若将该值赋予所有管道，将得到具有平均宏观导热系数 k [W/m°C] 的热学各向同性材料（见<a class="reference internal" href="#rescond"><span class="std std-ref">下文</span>（below）</a>）。
+或者，<span class="math">\(\eta\)</span> 的值可以直接通过 <span class="fishcmd">contact.thermal.property.thres</span> 命令设置。</p>
+</li>
+</ul>
+</div></blockquote>
+<p class="h3 rubric" id="boundaryandinitconditions">边界条件和初始条件</p>
+<p>初始条件对应于给定的温度场。温度分别通过
+<a class="reference internal" href="../../../../../pfcthermalmodule/doc/ball_thermal_manual/ball_thermal_commands/cmd_ball.thermal.attribute.html#kwd:ball.thermal.attribute.temperature" title="temperature...">球体热属性温度（<code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">thermal</span> <span class="pre">attribute</span> <span class="pre">temperature</span></code>）</a>、
+<a class="reference internal" href="../../../../../pfcthermalmodule/doc/clump_thermal_manual/clump_thermal_commands/cmd_clump.thermal.attribute.html#kwd:clump.thermal.attribute.temperature" title="temperature...">刚性团簇热属性温度（<code class="xref fish fish-cmd docutils literal"><span class="pre">clump</span> <span class="pre">thermal</span> <span class="pre">attribute</span> <span class="pre">temperature</span></code>）</a> 或 <a class="reference internal" href="../../../../../pfcthermalmodule/doc/wall_thermal_manual/wall_thermal_commands/cmd_wall.thermal.attribute.html#kwd:wall.thermal.attribute.temperature" title="temperature...">墙体热属性温度（<code class="xref fish fish-cmd docutils literal"><span class="pre">wall</span> <span class="pre">thermal</span> <span class="pre">attribute</span> <span class="pre">temperature</span></code>）</a> 命令赋予球颗粒、刚性团簇和墙。
+若通过 <code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">thermal</span> <span class="pre">attribute</span> <span class="pre">appliedpower</span></code> 或 <code class="xref fish fish-cmd docutils literal"><span class="pre">clump</span> <span class="pre">thermal</span> <span class="pre">attribute</span> <span class="pre">appliedpower</span></code> 命令分别指定球颗粒或刚性团簇所施加的热功率，则球颗粒或刚性团簇可作为生热源。
+请注意，墙只起固定温度边界条件的作用。</p>
+<p>一般而言，边界条件需要用以向外指向的单位法向量
+来描述局部边界。然而，在 <span class="codename">PFC</span> 材料中，边界没有显式表示（这一点与连续体程序不同，
+在连续体程序中单元面构成边界）。通过指定输入到边界表面的功率而非热流密度，即可克服这一问题。
+（若要将输入功率转换为热流密度（单位横截面积上的功率），则将总功率除以垂直于热流方向的面积。）</p>
+<p>请注意，颗粒集合体的实际物理边界默认是绝热的（即不会有热量从
+管道网络的
+边界流出）。目前不支持对流边界条件，但可采用与
+<em>FLAC3D</em>（<a class="reference internal" href="#itasca2013" id="id2">[Itasca2013]</a>）中相同的方式加入，即指定周围流体的温度和对流传热系数。</p>
+</div>
+<div class="section" id="numerical-formulation">
+<h2>数值公式</h2>
+<p><span class="codename">PFC</span> 热学材料表示为由储热体（与每个颗粒相关联）和热学接触（与力学接触相关联）组成的
+网络。热流通过连接各储热体的活动热学接触以传导方式发生。每个球颗粒
+和刚性团簇均表示一个储热体。与每个储热体相关联的是温度、质量、体积、比热
+<span class="math">\(C_v\)</span>，以及线性热膨胀系数 <span class="math">\(\alpha\)</span>。温度在热学
+模拟过程中计算，质量和体积则由球颗粒或刚性团簇的密度、尺寸和假定形状确定。每个接触都
+关联一个热学接触，但其中只有部分热学接触是活动的。默认情况下，若宿主力学接触
+处于活动状态，则该热学接触是活动的（热学接触处于活动状态的判据可通过 <span class="fishcmd">contact.thermal.activate</span> 和
+<span class="fishcmd">contact.thermal.inhibit</span> 命令修改）。
+热学接触连接两个储热体，热流仅通过热学接触发生。与每个热学
+接触相关联的是一个功率 <span class="math">\(Q\)</span>，
+以及一个热学接触模型，该模型负责根据接触颗粒的温度增量更新功率 <span class="math">\(Q\)</span>。目前
+只有两个内置热学接触模型：<em>thermal null</em> 接触模型（不更新热学接触功率）
+和 <em>thermal pipe</em> 接触模型。
+热学管道接触模型定义三个可修改的性质：热阻 <span class="math">\(\eta\)</span>、线性热膨胀系数
+<span class="math">\(\bar \alpha\)</span>，以及
+温度 <span class="math">\(T\)</span>。每个热学接触具有有限长度，其值等于
+两个相连颗粒形心之间的距离。
+在 <span class="codename">PFC</span> 材料中，通过修改颗粒尺寸及线性平行黏结模型
+中各黏结所承受的力来产生热致应变，
+以计入颗粒与黏结材料两者的受热效应。</p>
+<p class="h3 rubric" id="numericaldiscretization">数值离散</p>
+<p>热学材料被离散为由储热体和热学管道组成的网络。热流通过连接各储热体的活动热学接触以传导方式
+发生。辐射传热与对流传热未包含在本
+公式表述中。</p>
+<p>我们首先建立单个储热体的热传导方程。为储热体关联一个控制体积 <span class="math">\(V\)</span>。（通常，所有储热体控制体积之和等于材料总体积。）单位体积的热流出量由 <span class="math">\(q_i\)</span> 的散度给出。储热体内 <span class="math">\(q_i\)</span> 散度的
+平均值定义为</p>
+<div class="math" id="equation-eq_f7">
+<span class="eqno">(7)</span>\[\left&lt; {\partial q_i \over \partial x_i}
+\right&gt; =
+{1 \over V} \int_V{\partial q_i \over \partial x_i}\,dV\]</div>
+<p>对储热体应用 Gauss 散度定理，即可将体积分替换为曲面积分：</p>
+<div class="math" id="equation-eq_f8">
+<span class="eqno">(8)</span>\[\int_V{\partial q_i \over \partial x_i}\,dV = \int_S{q_i n_i}\,dS\]</div>
+<p>其中 <span class="math">\(n_i\)</span> 为控制体积表面 <span class="math">\(S\)</span> 的向外单位法向量。若限定热量仅在与该储热体关联的 <span class="math">\(N\)</span> 个热学管道中
+流动，则曲面积分可替换为
+求和</p>
+<div class="math" id="equation-eq_f9">
+<span class="eqno">(9)</span>\[\int_S{q_i n_i}\,dS =
+\sum_{p=1}^N{q_i^{(p)}
+             n_i^{(p)}
+             \Delta S^{(p)}
+            } =
+\sum_{p=1}^N{Q^{(p)}
+            }\]</div>
+<p>其中上标（<span class="math">\(p\)</span>）表示相关变量在管道 <span class="math">\(p\)</span> 中的取值，<span class="math">\(Q^{(p)}\)</span>
+为管道 <span class="math">\(p\)</span> 中流出储热体的功率。（请注意
+<span class="math">\(q_i^{(p)} \Delta S^{(p)} = Q^{(p)} n_i^{(p)}\)</span>。）</p>
+<p>将方程 <a class="reference internal" href="#equation-eq_f8">(8)</a> 和 <a class="reference internal" href="#equation-eq_f9">(9)</a> 代入方程 <a class="reference internal" href="#equation-eq_f7">(7)</a>，可得</p>
+<div class="math" id="equation-eq_f10">
+<span class="eqno">(10)</span>\[\left&lt; {\partial q_i \over \partial x_i}
+\right&gt; =
+{1 \over V} \sum_{p=1}^N{Q^{(p)}}\]</div>
+<p>将方程 <a class="reference internal" href="#equation-eq_f10">(10)</a> 代入方程 <a class="reference internal" href="#equation-eq_f1">(1)</a>，即可
+得到单个储热体的热传导方程</p>
+<div class="math" id="equation-eq_f11">
+<span class="eqno">(11)</span>\[-\sum_{p=1}^N{Q^{(p)}} + Q_v = m C_v {\partial T \over \partial t}\]</div>
+<p>其中 <span class="math">\(Q_v\)</span> 为热源强度，<span class="math">\(m\)</span> 为热质量，
+<span class="math">\(C_v\)</span> 为定容比热。</p>
+<p>若将每个管道视为一维对象，且其单位长度热阻为 <span class="math">\(\eta\)</span>，则
+管道中的功率由下式给出</p>
+<div class="math" id="equation-eq_f12thermal">
+<span class="eqno">(12)</span>\[Q = -{\Delta T \over \eta L}\]</div>
+<p>其中 <span class="math">\(\Delta T\)</span> 为管道两端两个储热体之间的温差，<span class="math">\(L\)</span>
+为管道长度。</p>
+<p>采用前向有限差分表示时间导数，从而完成方程 <a class="reference internal" href="#equation-eq_f11">(11)</a> 的离散。
+首先，将方程改写为</p>
+<div class="math" id="equation-eq_f13">
+<span class="eqno">(13)</span>\[{\partial T \over \partial t}
+= {1 \over m C_v}\left[ -\sum_{p=1}^N{Q^{(p)}} + Q_v
+                 \right]
+= {1 \over m C_v} \tilde Q\]</div>
+<p>其中 <span class="math">\(\tilde Q\)</span> 称为不平衡功率。从初始温度场出发，各管道中的功率
+通过方程 <a class="reference internal" href="../../../../../../common/contactmodel/thermalpipe/doc/manual/cmthermalpipe.html#equation-eq_f12">(1)</a> 更新。随后，使用前向有限差分表达式更新储热体温度（前提是温度未
+固定）</p>
+<div class="math" id="equation-eq_f14">
+<span class="eqno">(14)</span>\[\begin{split}\begin{array}{lcl}
+T_{&lt; t + \Delta t &gt;} &amp;=&amp;  T_{&lt; t &gt;} + \Delta T \\
+                     &amp;= &amp; T_{&lt; t &gt;} + \Delta t \left[\frac{1}{m C_v} \tilde Q \right]_{&lt; t &gt;}
+\end{array}\end{split}\]</div>
+<p>其中 <span class="math">\(\Delta t\)</span> 为热学时步。</p>
+<p>只有当时间步长保持在某一限值以下时，这种显式格式才具有数值稳定性。为推导
+稳定性准则，我们考虑这样一种情形：对单个储库施加一个温度扰动
+<span class="math">\(T_0\)</span>，其初始状态为零。经过一个热学时步后，新的储库温度为</p>
+<div class="math" id="equation-eq_f15">
+<span class="eqno">(15)</span>\[T_{&lt; t + \Delta t &gt;}
+= T_0 \left[ 1 - {\Delta t \over m C_v}
+             \sum_{p=1}^N{1 \over \eta^{(p)} L^{(p)}}
+      \right]\]</div>
+<p>为防止在针对相继的 <span class="math">\(\Delta t\)</span> 反复进行计算时温度符号交替变化（这意味着
+温度围绕初始状态振荡），上述关系式中 <span class="math">\(T_0\)</span> 的系数必须
+为正。若满足下式，该要求即可得到满足。</p>
+<div class="math" id="equation-eq_f16">
+<span class="eqno">(16)</span>\[\Delta t &lt; {m C_v \over \sum{1 \over \eta L}}\]</div>
+<p>在实际应用中，可以发现：若将热学时步设为方程 <a class="reference internal" href="#equation-eq_f16">(16)</a>
+在所有储库上的最小值，则热学计算是稳定的。</p>
+<p class="h3 rubric" id="relationbetween"><span id="rescond"></span>热阻与导热系数之间的关系</p>
+<p>我们介绍一种估算 <span class="codename">PFC</span> 热学材料导热系数张量 <span class="math">\(k_{ij}\)</span> 的方法。然后，利用
+该方法，我们计算 <span class="math">\(\eta\)</span> 的取值：若将该值赋予所有管道，将得到平均宏观导热系数为 <span class="math">\(k\)</span> 的热学各向同性
+材料。</p>
+<p>材料中体积为 <span class="math">\(V\)</span> 的区域内的平均热流定义为</p>
+<div class="math" id="equation-eq_f17">
+<span class="eqno">(17)</span>\[\left&lt; q_i \right&gt; = {1 \over V} \int_V{q_i\,dV}\]</div>
+<p>式中，<span class="math">\(q_i\)</span> 为作用于整个体积内的热流向量。若将热流限制为仅在热学
+管道中流动，则该积分可替换为对 <span class="math">\(M\)</span> 条管道的求和，这些管道均位于 <span class="math">\(V\)</span> 内：</p>
+<div class="math" id="equation-eq_f18">
+<span class="eqno">(18)</span>\[\left&lt; q_i \right&gt;
+= {1 \over V}
+  \sum_{p=1}^M{q_i^{(p)} V^{(p)}}
+= {1 \over V}
+  \sum_{p=1}^M{q_i^{(p)} A^{(p)} l^{(p)}}\]</div>
+<p>式中，<span class="math">\(A^{(p)}\)</span> 为管道 <span class="math">\(p\)</span> 的横截面面积，<span class="math">\(l^{(p)}\)</span> 为管道 <span class="math">\(p\)</span>
+位于 <span class="math">\(V\)</span> 内的长度。管道中的热流由下式给出</p>
+<div class="math" id="equation-eq_f19">
+<span class="eqno">(19)</span>\[q_i = {Q n_i \over A}\]</div>
+<p>式中，<span class="math">\(Q\)</span> 为管道中的功率，<span class="math">\(n_i\)</span> 为沿管道方向的单位向量。代入
+方程 <a class="reference internal" href="../../../../../../common/contactmodel/thermalpipe/doc/manual/cmthermalpipe.html#equation-eq_f12">(1)</a> 后，热流变为</p>
+<div class="math" id="equation-eq_f20">
+<span class="eqno">(20)</span>\[q_i = -{\Delta T n_i \over \eta L A}\]</div>
+<p>式中，<span class="math">\(\Delta T\)</span> 为管道两端的温差。若假定材料中的平均温度梯度
+<span class="math">\({\partial T \over \partial x_j}\)</span> 在微观层面上适用于每根管道内部，则</p>
+<div class="math" id="equation-eq_f21">
+<span class="eqno">(21)</span>\[\Delta T  = L n_j {\partial T \over \partial x_j}\]</div>
+<p>将方程 <a class="reference internal" href="#equation-eq_f20">(20)</a> 和 <a class="reference internal" href="#equation-eq_f21">(21)</a> 代入方程 <a class="reference internal" href="#equation-eq_f18">(18)</a>，可得</p>
+<div class="math" id="equation-eq_f22">
+<span class="eqno">(22)</span>\[\left&lt; q_i \right&gt; = - \left[ {1 \over V}
+           \sum_{p=1}^M{l^{(p)} n_i^{(p)} n_j^{(p)} \over \eta^{(p)}}
+    \right] {\partial T \over \partial x_j}\]</div>
+<p>将该表达式与方程 <a class="reference internal" href="#equation-eq_f2">(2)</a> 中的傅里叶定律进行比较，可以发现
+<span class="codename">PFC</span> 热学材料的导热系数张量由下式给出</p>
+<div class="math" id="equation-eq_f23">
+<span class="eqno">(23)</span>\[k_{ij}  =  {1 \over V}
+           \sum_{p=1}^M{l^{(p)} n_i^{(p)} n_j^{(p)} \over \eta^{(p)}}\]</div>
+<p>给定 <span class="codename">PFC</span> 热学材料，可利用方程 <a class="reference internal" href="#equation-eq_f23">(23)</a> 计算导热系数张量的各值。
+然而，由于存在与测量区域相交的颗粒，该表达式中体积的定义存在问题。
+因此，采用以下步骤在由测量球定义的区域内计算 <span class="math">\(k_{ij}\)</span>。我们将每个储库与一个 <span class="codename">PFC</span> 颗粒相关联，并注意到在统计均匀的集合体中，
+与每个颗粒相关联的体积为 <span class="math">\({V^{(b)}/(1-n)}\)</span>，其中 <span class="math">\(n\)</span> 为孔隙率、<span class="math">\(V^{(b)}\)</span> 为
+颗粒体积。代入方程 <a class="reference internal" href="#equation-eq_f23">(23)</a> 可得</p>
+<div class="math" id="equation-eq_f24">
+<span class="eqno">(24)</span>\[k_{ij} = \left( { 1-n \over \sum\limits_{N_b} V^{(b)} }
+  \right)
+  { \sum\limits_{N_p}{ l^{(p)} n_i^{(p)} n_j^{(p)} \over \eta^{(p)}} }\]</div>
+<p>式中，求和分别针对质心位于测量球内的 <span class="math">\(N_b\)</span> 个球颗粒，
+以及这些球颗粒的 <span class="math">\(N_p\)</span> 条活动热学管道；并且：</p>
+<blockquote>
+<div><dl class="docutils">
+<dt><span class="math">\(n\)</span></dt>
+<dd>为测量球内的孔隙率；</dd>
+<dt><span class="math">\(V^{(b)}\)</span></dt>
+<dd>为球颗粒 <span class="math">\((b)\)</span> 的体积；</dd>
+<dt><span class="math">\(l^{(p)}\)</span></dt>
+<dd>为与测量球内球颗粒相关联的热学管道 <span class="math">\((p)\)</span> 的长度。（若球颗粒的质心位于测量球内，则认为该球颗粒在球内。若管道所用的两个球颗粒均在球内，则 <span class="math">\(l = L\)</span>（即管道长度）。若只有一个球颗粒在球内，则 <span class="math">\(l = LV_1/(V_1+V_2)\)</span>，其中 <span class="math">\(V_1\)</span> 和 <span class="math">\(V_2\)</span> 分别为球内和球外球颗粒的体积。）；</dd>
+<dt><span class="math">\(n_i^{(p)}\)</span></dt>
+<dd>为沿管道 <span class="math">\((p)\)</span> 方向的单位法向量；以及</dd>
+<dt><span class="math">\(\eta^{(p)}\)</span></dt>
+<dd>为管道 <span class="math">\((p)\)</span> 的热阻。</dd>
+</dl>
+</div></blockquote>
+<p>在热学各向同性材料中，导热系数张量可用单一参数
+<span class="math">\(k\)</span> 表示，使得 <span class="math">\(k_{ij} = k\delta_{ij}\)</span>。对于这类材料，假定所有管道的 <span class="math">\(\eta\)</span> 均匀：</p>
+<div class="math" id="equation-eq_f25">
+<span class="eqno">(25)</span>\[\begin{split}k = \begin{cases}
+       {1\over 3}\left( k_{11} + k_{22} + k_{33} \right)
+      = {1 \over 3 V \eta}
+        \sum_{p=1}^M{l^{(p)} \left( n_1^2 + n_2^2 + n_3^2 \right)}
+      = {1 \over 3 V \eta}
+        \sum_{p=1}^M{l^{(p)}}  \qquad {\rm (3D)} \\
+       {1\over 2}\left( k_{11} + k_{22} \right)
+      = {1 \over 2 V \eta}
+        \sum_{p=1}^M{l^{(p)} \left( n_1^2 + n_2^2\right)}
+      = {1 \over 2 V \eta}
+        \sum_{p=1}^M{l^{(p)}}  \qquad {\rm (2D)}
+    \end{cases}\end{split}\]</div>
+<p>可将其改写为下式，其中 <span class="math">\(\eta\)</span> 用 <span class="math">\(k\)</span> 表示：</p>
+<div class="math" id="equation-eq_f26">
+<span class="eqno">(26)</span>\[\begin{split}   \eta &amp;= {1 \over 3 V k} \sum_{p=1}^M{l^{(p)}} {\rm (3D)} \\
+   \eta &amp;= {1 \over 2 V k} \sum_{p=1}^M{l^{(p)}} {\rm (2D)}\end{split}\]</div>
+<p>方程 <a class="reference internal" href="#equation-eq_f26">(26)</a> 给出了 <span class="math">\(\eta\)</span> 的取值：若将该值赋予所有管道，将产生平均宏观导热系数为 <span class="math">\(k\)</span> 的热学各向同性
+材料。方程 <a class="reference internal" href="#equation-eq_f26">(26)</a> 中的求和可通过一次扫描
+颗粒集合体来计算。检验颗粒集合体是否适合表示热学各向同性
+材料，可确认以下比值</p>
+<div class="math" id="equation-eq_f27">
+<span class="eqno">(27)</span>\[\begin{split}{|k_{12}| \over k} &amp;=  {2 \sum{l |n_1 n_2|} \over \sum{l}}                             \\
+{\left| k_{11} - k_{22} \right| \over k} &amp;=  {2 \sum{l|n_1^2-n_2^2|} \over \sum{l}}    \\
+{|k_{13}| \over k} &amp;=  {2 \sum{l |n_1 n_3|} \over \sum{l}}                             \\
+{|k_{23}| \over k} &amp;=  {2 \sum{l |n_2 n_3|} \over \sum{l}}                             \\
+{\left| k_{11} - k_{33} \right| \over k} &amp;=  {2 \sum{l|n_1^2-n_3^2|} \over \sum{l}}    \\
+{\left| k_{22} - k_{33} \right| \over k} &amp;=  {2 \sum{l|n_2^2-n_3^2|} \over \sum{l}}\end{split}\]</div>
+<p>都很小（上述最后四个比值仅适用于三维情形）。
+将方程 <a class="reference internal" href="#equation-eq_f26">(26)</a> 应用于由测量球定义的区域时，我们使用以下表达式</p>
+<div class="math" id="equation-eq_f28">
+<span id="thermal-formulation-eqf28"></span><span class="eqno">(28)</span>\[\begin{split}\begin{cases}
+   \eta = { 1 \over 3k } \left( { 1-n \over \sum\limits_{N_b} V^{(b)} } \right) { \sum\limits_{N_p} l^{(p)} } {\rm (3D)} \\
+   \eta = { 1 \over 2k } \left( { 1-n \over \sum\limits_{N_b} V^{(b)} } \right) { \sum\limits_{N_p} l^{(p)} } {\rm (2D)}
+ \end{cases}\end{split}\]</div>
+<p>式中各项的定义见方程 <a class="reference internal" href="#equation-eq_f24">(24)</a>。</p>
+</div>
+<div class="section" id="solving-thermal-problems">
+<h2>求解热学问题</h2>
+<p><span class="codename">PFC</span> 既支持纯热学分析，也支持热-力耦合分析。热学计算模式通过
+发出 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.thermal" title="Thermal analysis...">配置热力计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">thermal</span></code>）</a> 命令来启用。该命令会分配实现热学逻辑所需的内存。发出
+该命令后，热学计算模式处于开启状态，力学计算模式也处于开启状态。在 <span class="codename">PFC</span> 分析过程中，可随时通过发出
+<a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.thermal.html#command:model.thermal" title="This command sets parameters for a thermal material analysis (only available
+if  model.configure.thermal  has been specified). The activity can be directly
+specified by providing  b .   [cs: Common trouble] See the topic
+ref-thermalanalysis-...">设置热力分析参数命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">thermal</span></code>）</a> 和 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.mechanical.html#command:model.mechanical" title="Set parameters for a mechanical analysis. The activity can be directly specified
+by providing  b ...">设置力学分析参数命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">mechanical</span></code>）</a> 命令并配合 <span class="cmdkey">on/off</span> 关键字来修改计算模式。热学计算模式开启时，热学时步将自动计算，
+但也可使用 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.mechanical.html#kwd:model.mechanical.timestep" title=".. kwd:: Automatic...">模型力学时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">mechanical</span> <span class="pre">timestep</span></code>）</a> <span class="cmdkey">thermal.fix</span> 选定用户自定义的时步，或通过
+<a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.mechanical.html#kwd:model.mechanical.timestep" title=".. kwd:: Automatic...">模型力学时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">mechanical</span> <span class="pre">timestep</span></code>）</a> <span class="cmdkey">thermal.max</span> 命令
+设置最大时步限值。必须为所有颗粒指定热学微观属性，
+并且必须指定初始条件和边界条件。</p>
+<p class="h3 rubric" id="thermalonly">纯热学分析</p>
+<p>命令 <span class="fishcmd">set thermal on mechanical off</span> 用于请求仅进行热学计算。随后可给出 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.cycle.html#command:model.cycle" title="Execute timesteps. The synonym  model.step  may also be used.  This is
+the equivalent of calling  model.solve  with the  cycles  keyword
+set to  i ...">执行计算时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">cycle</span></code>）</a> 命令，
+以执行指定数量的热学步。或者，可给出 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令以继续
+循环计算，直至达到特定热学时间（使用 <span class="cmdkey">solve.thermal.time</span> 关键字），或获得稳态
+热学解
+（使用 <span class="cmdkey">solve.thermal.ratio-average</span> 关键字）。当给出 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.cycle.html#command:model.cycle" title="Execute timesteps. The synonym  model.step  may also be used.  This is
+the equivalent of calling  model.solve  with the  cycles  keyword
+set to  i ...">执行计算时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">cycle</span></code>）</a>
+或 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 时，热学时步与总热学时间将输出到屏幕。</p>
+<p class="h3 rubric" id="thermalmech">热-力学分析</p>
+<p>进行热-力学分析时，必须注意热学
+过程与力学过程所涉及的不同时间尺度。由于每个过程的临界时步对应于信息从
+一个颗粒传播到下一个颗粒所需的时间，因此可用这些值来比较时间尺度。</p>
+<p>在密实体系中，与力学过程关联的时步（即 <span class="math">\(p\)</span> 波在介质中
+传播距离 <span class="math">\(L_c\)</span> 所需的时间）可估算为</p>
+<div class="math" id="equation-eq_f29">
+<span class="eqno">(29)</span>\[\Delta t_{mech} = L_c \sqrt{{\rho}\over{K + (4/3) G}}\]</div>
+<p>其中 <span class="math">\(\rho\)</span> 为质量密度，<span class="math">\(K\)</span> 为体积模量，<span class="math">\(G\)</span> 为剪切模量，<span class="math">\(L_c\)</span> 为
+特征长度。与热学过程关联的时步（即扩散
+前沿在介质中传播距离 <span class="math">\(L_c\)</span> 所需的时间）可估算为
+（<a class="reference internal" href="#itasca2013" id="id3">[Itasca2013]</a>）</p>
+<div class="math" id="equation-eq_f30">
+<span class="eqno">(30)</span>\[\Delta t_{ther} = { L_c^2 / \kappa }\]</div>
+<p>其中 <span class="math">\(\kappa\)</span> 为热扩散系数（<span class="math">\(k / \rho C_v\)</span>），<span class="math">\(L_c\)</span> 为特征长度
+（固体体积除以交换热量表面积）。若令两个特征长度彼此相等，则
+热学时间尺度与力学时间尺度之比可表示为</p>
+<div class="math" id="equation-eq_f31">
+<span class="eqno">(31)</span>\[{{\Delta t_{ther}}\over{\Delta t_{mech}}} = {{L_c}\over {\kappa}} \sqrt{{K + (4/3)G}\over{\rho}}\]</div>
+<p>对于岩石和土体，<span class="math">\(\kappa\)</span> 的量级为 10<sup>-6</sup> m<sup>2</sup>/s，<span class="math">\(\rho\)</span> 的量级为
+10<sup>3</sup> kg/m<sup>3</sup>，<span class="math">\(K + (4/3) G\)</span> 的量级为 10<sup>10</sup> N/m<sup>2</sup>。将这些量
+级代入方程 <a class="reference internal" href="#equation-eq_f31">(31)</a>，可看出热学与力学时间尺度之比约为 10<sup>9</sup>
+<span class="math">\(L_c\)</span>。即使 <span class="math">\(L_c\)</span> 为 1 mm，该比值也非常大。实际上，与扩散效应相比，
+力学效应可假定为瞬时发生。这一假设在 <span class="codename">PFC</span> 中被采用，即每个热学步之后可执行一个或多个力学
+子步，且在力学子步期间热学时间不累加。</p>
+<p>在大多数建模情形中，初始力学条件对应于一种平衡状态，必须在开始耦合分析之前
+首先达到该平衡状态。若介质为弹性，且要研究热-力学响应（例如在某一热学时间处），
+则可执行仅热学计算（<span class="fishcmd">set thermal on mechanical off</span>）
+直至达到所需时间。随后可关闭热学计算（<span class="fishcmd">set thermal off</span>），
+开启力学计算（<span class="fishcmd">set mechanical on</span>），并在分析响应之前将系统循环至力学
+平衡。</p>
+<p>对于非线性力学模型（即发生黏结断裂，或接触组构在荷载下发生变化时），
+必须在更密的时间间隔上把热学变化传递给力学模块，以遵循
+系统的路径相关性。通常，在无量纲热学时间较小时，对每个热学步
+都必须执行一定数量的力学步，以使系统按所涉及的不同时间尺度进行调整。在无量纲热学
+时间较大时，若系统趋于热学平衡，则可执行若干热学时步而不会显著扰动
+介质的力学状态。相应的数值模拟可通过在
+仅热学模式与仅力学模式之间交替来手动控制。</p>
+<p>通过结合适当的设置使用 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令，可避免这种繁琐的工作。
+可以指定将据此假定达到力学平衡与热学平衡的停止条件。命令
+<a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.mechanical.html#kwd:model.mechanical.substep" title="Specifies the maximum number of steps the mechanical process will take when
+solving with  slave   on ...">模型力学子步命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">mechanical</span> <span class="pre">substep</span></code>）</a> 指定每个热学步所执行的最大力学子步数。
+若给出 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令，则在每个热学步之后，将执行足够的力学子步（最多
+为 <span class="math">\(m\)</span>），直至达到力学平衡。（若给出 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.cycle.html#command:model.cycle" title="Execute timesteps. The synonym  model.step  may also be used.  This is
+the equivalent of calling  model.solve  with the  cycles  keyword
+set to  i ...">执行计算时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">cycle</span></code>）</a> <span class="math">\(n\)</span> 命令，
+则将执行 <span class="math">\(n\)</span> 个热学步，并在每个热学步之后执行 <span class="math">\(m\)</span> 个力学子步。）</p>
+<p class="h3 rubric" id="references-thermal">参考文献</p>
+<table class="docutils citation" frame="void" id="itasca2013" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Itasca2013]</td><td><em>(<a class="fn-backref" href="#id2">1</a>, <a class="fn-backref" href="#id3">2</a>)</em> Itasca Consulting Group Inc. <span class="bi">FLAC3D（三维快速拉格朗日连续体分析）</span>，版本 5.01。Minneapolis, Minnesota：ICG，2013 年。</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../options.html">Additional Features</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="thermal_option.html">Thermal Calculation</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="thermal_option.html" title="previous chapter"> Thermal Calculation</a> |    
+       <a href="verifications/verifications.html" title="next chapter">Verification Problems</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?PFC Thermal Formulation" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

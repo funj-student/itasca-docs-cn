@@ -1,0 +1,220 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>单向流体耦合 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="cfd_darcy.html" rel="next" title="Modeling Flow in Porous Media with Darcy’s Law"/>
+<link href="cfd_coupling.html" rel="prev" title="Examples"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="one-way-fluid-coupling">
+<span id="one-way-cfd"></span><h1>单向流体耦合</h1>
+<p>对于某些问题，采用某种形式的单向
+耦合是可取的。在单向耦合中，颗粒受
+流体影响，但流体不受颗粒影响。CFD
+模块支持此类建模。基本过程
+如下。</p>
+<ul class="simple">
+<li>读取流体网格。</li>
+<li>设置流体密度和黏度。</li>
+<li>设置流体速度。</li>
+<li>求解或循环计算。</li>
+</ul>
+<div class="section" id="problem-description">
+<h2>问题描述</h2>
+<p>三个半径分别为 1、1.5 和 2 mm、密度为 2000 kg/m<sup>3</sup> 的颗粒在密度为 1000 kg/m<sup>3</sup>、黏度为 1.5 Pa s 的静止流体中于重力作用下沉降。</p>
+</div>
+<div class="section" id="analytical-solution">
+<h2>解析解</h2>
+<p>球形颗粒在黏性流体中于重力作用下沉降时的
+运动方程为</p>
+<div class="math" id="equation-m1">
+<span class="eqno">(1)</span>\[{4 \over 3}\pi r^3 \rho_p {du_z \over {dt}} = {4 \over 3}\pi r^3\left(\rho_p-\rho_f\right)g - {1 \over 2}\pi r^2\rho_f C_d u_z^2\]</div>
+<p>其中 <span class="math">\(g\)</span> 为重力加速度，<span class="math">\(\rho_p\)</span> 和
+<span class="math">\(f\)</span> 分别为颗粒密度与流体密度，<span class="math">\(u_z\)</span> 为
+沉降颗粒的竖直速度，<span class="math">\(C_d\)</span> 为曳力
+系数。曳力系数 <span class="math">\(C_d\)</span> 是
+颗粒雷诺数的函数。</p>
+<p>当下落球颗粒达到稳定速度时，<span class="math">\(du_z \over dt\)</span>
+变为零。由此可以写出</p>
+<div class="math" id="equation-m2">
+<span class="eqno">(2)</span>\[{1 \over 2}\pi r^2\rho_f C_d u_z^2 = {4 \over 3}\pi r^3 \left(\rho_p - \rho_f\right) g\]</div>
+<p>已有研究表明，对于较小的雷诺数，曳力
+系数简单地取为（<a class="reference internal" href="#batchelor1967" id="id1">[Batchelor1967]</a>）</p>
+<div class="math" id="equation-m3">
+<span class="eqno">(3)</span>\[C_d = {24 \over Re_p}\]</div>
+<p>其中 <span class="math">\(Re_p\)</span> 为颗粒雷诺数，其定义为</p>
+<div class="math" id="equation-m4">
+<span class="eqno">(4)</span>\[Re_p = {{2r \rho_f u_z} \over {\mu_f}}\]</div>
+<p>采用 <span class="math">\(C_d\)</span> 的这一定义，方程 <a class="reference internal" href="#equation-m1">(1)</a> 可精确
+求解，从而得到 Stokes 定律：</p>
+<div class="math" id="equation-m5">
+<span class="eqno">(5)</span>\[u_z = {2 \over 9} {{r^2(\rho_p-\rho_f)g} \over {\mu_f}} \ \ \ \ \ {\rm for} \ Re_p \ll 1\]</div>
+</div>
+<div class="section" id="implementation">
+<h2>实现</h2>
+<p>下方列出的文件 <code class="docutils literal"><span class="pre">one_way_cfd.p3dat</span></code> 驱动此算例。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'One-way CFD coupling example'</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">2</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">2</span><span class="n"> condition periodic</span>
+<span class="nb">contact cmat</span><span class="n"> default model linear</span>
+<span class="nb">model mechanical</span><span class="n"> timestep max </span><span class="m m-Double">1e-5</span>
+
+<span class="nb">wall generate</span><span class="n"> name </span><span class="s">'cell1'</span><span class="n"> box </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">wall delete</span><span class="n"> walls range set name </span><span class="s">'cell1Bottom'</span>
+<span class="nb">wall delete</span><span class="n"> walls range set name </span><span class="s">'cell1Top'</span>
+<span class="nb">wall generate</span><span class="n"> name </span><span class="s">'cell2'</span><span class="n"> box </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">2</span>
+<span class="nb">wall delete</span><span class="n"> walls range set name </span><span class="s">'cell2Bottom'</span>
+<span class="nb">wall delete</span><span class="n"> walls range set name </span><span class="s">'cell2Top'</span>
+<span class="nb">wall property</span><span class="n"> </span><span class="s">'kn'</span><span class="n"> </span><span class="m m-Double">1e2</span><span class="n"> </span><span class="s">'ks'</span><span class="n"> </span><span class="m m-Double">1e2</span><span class="n"> </span><span class="s">'fric'</span><span class="n"> </span><span class="m m-Double">0.25</span>
+
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">9.81</span>
+
+<span class="nb">ball create</span><span class="n"> radius </span><span class="m m-Double">0.001</span><span class="n">  position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0.5</span><span class="n"> position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0.3</span><span class="n">  position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">1.5</span>
+<span class="nb">ball create</span><span class="n"> radius </span><span class="m m-Double">0.0015</span><span class="n"> position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0.5</span><span class="n"> position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0.5</span><span class="n">  position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">1.5</span>
+<span class="nb">ball create</span><span class="n"> radius </span><span class="m m-Double">0.002</span><span class="n">  position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0.5</span><span class="n"> position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0.7</span><span class="n">  position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">1.5</span>
+
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="m m-Double">2000.0</span>
+<span class="nb">ball property</span><span class="n"> </span><span class="s">'kn'</span><span class="n"> </span><span class="m m-Double">1e2</span><span class="n"> </span><span class="s">'ks'</span><span class="n"> </span><span class="m m-Double">1e2</span><span class="n"> </span><span class="s">'fric'</span><span class="n"> </span><span class="m m-Double">0.25</span>
+
+<span class="nb">model configure</span><span class="n"> cfd</span>
+
+<span class="n">cfd read nodes </span><span class="s">'Node.dat'</span>
+<span class="n">cfd read elements </span><span class="s">'Elem.dat'</span>
+<span class="n">cfd buoyancy </span><span class="sx">on</span>
+<span class="n">element cfd attribute density </span><span class="m m-Double">1000.0</span>
+<span class="n">element cfd attribute viscosity </span><span class="m m-Double">1.5</span>
+
+<span class="n">element cfd attribute velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0.0</span>
+<span class="n">element cfd attribute velocity</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0.0</span>
+<span class="n">element cfd attribute velocity</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.0</span>
+
+<span class="nb">fish define</span><span class="ni"> set_fluid_velocity</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> ele element</span><span class="p">.</span><span class="ni">cfd</span><span class="p">.</span><span class="ni">list</span>
+<span class="ni">    element</span><span class="p">.</span><span class="ni">cfd</span><span class="p">.</span><span class="ni">vel</span><span class="p">.</span><span class="ni">x</span><span class="p">(</span><span class="ni">ele</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">    element</span><span class="p">.</span><span class="ni">cfd</span><span class="p">.</span><span class="ni">vel</span><span class="p">.</span><span class="ni">y</span><span class="p">(</span><span class="ni">ele</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">    element</span><span class="p">.</span><span class="ni">cfd</span><span class="p">.</span><span class="ni">vel</span><span class="p">.</span><span class="ni">z</span><span class="p">(</span><span class="ni">ele</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">end_loop</span>
+<span class="nb">end</span>
+<span class="ni">[set_fluid_velocity]</span>
+
+<span class="nb">ball history</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z id </span><span class="m m-Double">1</span>
+<span class="nb">ball history</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z id </span><span class="m m-Double">2</span>
+<span class="nb">ball history</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z id </span><span class="m m-Double">3</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">2500</span>
+<span class="nb">ball list</span><span class="n"> attribute velocity</span>
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+<p>使用 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.cfd" title="|pfc| CFD analysis...">配置 CFD 模型命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">cfd</span></code>）</a> 命令加载 CFD 模块后，
+将计算流体-颗粒相互作用力并将其施加
+到颗粒上。</p>
+</div>
+<div class="section" id="results">
+<h2>结果</h2>
+<p>这三个不同的颗粒达到三个不同的终端
+速度。这是意料之中的，因为终端速度由
+与颗粒半径的平方成正比的曳力同与颗粒
+半径的立方成正比的重力之间的平衡所控制。</p>
+<p><span class="codename">PFC</span> 颗粒的终端速度分别为 -1.50、-3.33 和 -5.86
+mm/s。Stokes 定律 <a class="reference internal" href="#equation-m5">(5)</a> 预测的终端速度为 -1.45、
+-3.27 和 -5.81 mm/s。<span class="codename">PFC</span> 预测的终端
+速度略高于 Stokes 定律，这是因为 <span class="codename">PFC</span>
+中采用的曳力系数公式计入了动量效应。</p>
+<div class="figure align-center" id="id2">
+<a class="reference internal image-reference" href="../../../../../../_images/one-way-cfd.png"><img alt="../../../../../../_images/one-way-cfd.png" src="../../../../../../_images/one-way-cfd.png" style="width: 600pt;"/></a>
+<p class="caption"><span class="caption-text">图 1：球颗粒速度的历程（<em>z</em> 分量）</span></p>
+</div>
+<table class="docutils citation" frame="void" id="batchelor1967" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[Batchelor1967]</a></td><td>G.K. Batchelor，<span class="bi">《流体动力学导论》（An Introduction to Fluid Dynamics）</span>，Cambridge University Press，Cambridge，1967 年。</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../options.html">Additional Features</a> »</li>
+<li class="nav-item nav-item-3"><a href="cfd_option.html">CFD module for <span class="codename">PFC3D</span><span class="codename">6.0</span></a> »</li>
+<li class="nav-item nav-item-4"><a accesskey="U" href="cfd_coupling.html">Examples</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="cfd_coupling.html" title="previous chapter"> Examples</a> |    
+       <a href="cfd_darcy.html" title="next chapter">Modeling Flow in Porous Media with Darcy’s Law</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?One-way Fluid Coupling" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

@@ -1,0 +1,869 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>使用 FISH 回调 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../../search.html" rel="search" title="Search"/>
+<link href="../pingpong/PingPong.html" rel="next" title="Table Tennis"/>
+<link href="../hopper/hopper.html" rel="prev" title="Hopper Discharge"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="using-fish-callbacks">
+<span id="tut-cb"></span><span id="tuto-callbacks"></span><span id="index-0"></span><h1>使用 <span class="codename">FISH</span> 回调</h1>
+<p class="h2 rubric">引言</p>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">本算例的项目文件可在 <span class="codename">PFC</span> 中查看或运行。<a class="footnote-reference" href="#id2" id="id1">[1]</a>所用的<a class="reference internal" href="#tut-cb-datafiles"><span class="std std-ref">数据文件</span>（data files）</a>列于本算例末尾。</p>
+</div>
+<p>可使用 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/fish/commands/cmd_fish.callback.html#command:fish.callback" title="Add/remove functions to be executed in response to callback events...">设置FISH回调命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fish</span> <span class="pre">callback</span></code>）</a> 命令注册用户定义的 <span class="codename">FISH</span> 函数，使其在仿真过程中响应特定的回调事件而执行。回调可发生于以下时机：</p>
+<ul class="simple">
+<li>在循环序列中选定的位置；或</li>
+<li>响应特定事件时。</li>
+</ul>
+<p>本教程说明了若干可使用回调来执行 <span class="codename">FISH</span> 函数的情形。</p>
+<p class="h2 rubric">数值模型</p>
+<p>要重现下文讨论的模型，请打开 <span class="menuselection">Help —&gt; Examples…</span> 菜单（位于 <span class="codename">PFC3D</span> 中）下提供的名为“Callbacks.prj”的项目文件。</p>
+<p class="h3 rubric">在计算循环中的位置</p>
+<p>计算循环由一系列按特定顺序执行的操作组成。每个操作都与一个浮点数里程碑相关联，该里程碑也称为循环点（见下文）。</p>
+<span id="callbacks-cyclepoints"></span><table border="1" class="icgcyclepoints docutils" id="id3">
+<caption><span class="caption-text">表 1：循环操作及关联循环点</span></caption>
+<colgroup>
+<col width="14%"/>
+<col width="86%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">循环点</th>
+<th class="head">循环操作</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>-10.0</td>
+<td><a class="reference internal" href="../../../numerical_simulations_with_pfc/pfc_formulation/datastructure_validation.html#datastructure-validation"><span class="std std-ref">校验数据结构</span>（Validate data structures）</a></td>
+</tr>
+<tr class="row-odd"><td>0.0</td>
+<td><a class="reference internal" href="../../../numerical_simulations_with_pfc/pfc_formulation/timestep_constraints.html#timestep-constraints"><span class="std std-ref">确定时间步</span>（Timestep determination）</a></td>
+</tr>
+<tr class="row-even"><td>10.0</td>
+<td><a class="reference internal" href="../../../numerical_simulations_with_pfc/pfc_formulation/law_of_motion.html#law-of-motion"><span class="std std-ref">运动定律（或更新热体）</span>（Law of motion (or update thermal bodies)）</a></td>
+</tr>
+<tr class="row-odd"><td>15.0</td>
+<td><a class="reference internal" href="../../../numerical_simulations_with_pfc/pfc_formulation/body_coupling.html#body-coupling"><span class="std std-ref">各过程之间的体耦合</span>（Body coupling between processes）</a></td>
+</tr>
+<tr class="row-even"><td>20.0</td>
+<td><a class="reference internal" href="../../../numerical_simulations_with_pfc/pfc_formulation/advance_time.html#advance-time"><span class="std std-ref">推进时间</span>（Advance time）</a></td>
+</tr>
+<tr class="row-odd"><td>30.0</td>
+<td><a class="reference internal" href="../../../numerical_simulations_with_pfc/pfc_formulation/cellspace_update.html#cellspace-update"><span class="std std-ref">更新空间搜索数据结构</span>（Update spatial searching data structures）</a></td>
+</tr>
+<tr class="row-even"><td>35.0</td>
+<td><a class="reference internal" href="../../../numerical_simulations_with_pfc/pfc_formulation/update_contacts.html#update-contacts"><span class="std std-ref">创建/删除接触</span>（Create/delete contacts）</a></td>
+</tr>
+<tr class="row-odd"><td>40.0</td>
+<td><a class="reference internal" href="../../../numerical_simulations_with_pfc/pfc_formulation/force_displacement.html#force-displacement"><span class="std std-ref">力-位移定律（或热接触更新）</span>（Force-displacement law (or thermal contact update)）</a></td>
+</tr>
+<tr class="row-even"><td>42.0</td>
+<td><a class="reference internal" href="../../../numerical_simulations_with_pfc/pfc_formulation/deterministic_accumulation.html#deterministic-accumulation"><span class="std std-ref">累积确定性量</span>（Accumulate deterministic quantities）</a></td>
+</tr>
+<tr class="row-odd"><td>45.0</td>
+<td><a class="reference internal" href="../../../numerical_simulations_with_pfc/pfc_formulation/contact_coupling.html#contact-coupling"><span class="std std-ref">各过程之间的接触耦合</span>（Contact coupling between processes）</a></td>
+</tr>
+<tr class="row-even"><td>60.0</td>
+<td>运动方程的第二遍计算（<span class="codename">PFC</span> 中不使用）</td>
+</tr>
+<tr class="row-odd"><td>70.0</td>
+<td>热计算（<span class="codename">PFC</span> 中不使用）</td>
+</tr>
+<tr class="row-even"><td>80.0</td>
+<td>流体计算（<span class="codename">PFC</span> 中不使用）</td>
+</tr>
+</tbody>
+</table>
+<style>
+
+/* start: table style icgcyclepoints */
+
+table.icgcyclepoints {
+    border-color: black;
+    border-left: 0;
+    border-right: 0;
+    border-collapse:collapse;
+    margin-left: auto;
+    margin-right: auto;
+    width: 80%
+}
+
+table.icgcyclepoints th,td {
+    border-color: black;
+}
+
+table.icgcyclepoints caption {
+    margin-bottom: .8em;
+    font-weight: bold;
+}
+
+table.icgcyclepoints th.head{
+    border-color: black;
+    background-color: #E5F3FF;
+    color: #004d8c;
+    text-align: center;
+}
+
+table.icgcyclepoints td:first-child {
+    text-align: right;
+}
+
+table.icgcyclepoints tr:first-child+td {
+    border-bottom:thick dotted #ff0000;
+}
+table.icgcyclepoints tr:nth-child(2) {
+    border-bottom:thick dotted #ff0000;
+}
+
+table.icgcyclepoints tr:first-child+tr+tr+tr+tr+tr+tr+tr {
+    background-color: #FF0000;
+}
+table.icgcyclepoints tr:nth-child(8) {
+    background-color: #FF0000;
+}
+
+table.icgcyclepoints tr:first-child+tr+tr+tr+tr+tr+tr+tr+tr {
+    background-color: #FF0000;
+}
+table.icgcyclepoints tr:nth-child(9) {
+    background-color: #FF0000;
+}
+
+
+table.icgcyclepoints tr:first-child+tr+tr+tr+tr+tr+tr+tr+tr+tr+tr {
+    color: #a8a8a8;
+    font-style: italic;
+}
+table.icgcyclepoints tr:nth-child(11) {
+    color: #a8a8a8;
+    font-style: italic;
+}
+table.icgcyclepoints tr:first-child+tr+tr+tr+tr+tr+tr+tr+tr+tr+tr+tr {
+    color: #a8a8a8;
+    font-style: italic;
+}
+table.icgcyclepoints tr:nth-child(12) {
+    color: #a8a8a8;
+    font-style: italic;
+}
+table.icgcyclepoints tr:first-child+tr+tr+tr+tr+tr+tr+tr+tr+tr+tr+tr+tr {
+    color: #a8a8a8;
+    font-style: italic;
+}
+table.icgcyclepoints tr:nth-child(13) {
+    color: #a8a8a8;
+    font-style: italic;
+}
+
+
+/* end: table style icgcyclepoints */
+
+</style><div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p>在计算执行过程中进行干扰可能是危险的，因而不被允许。例如，若能在某球颗粒上计算时步的过程中删除该球颗粒，程序将会崩溃。因此，这些循环点是 <em>保留的</em>，即用户不得将 <span class="codename">FISH</span> 函数附加到这些循环点上的回调事件。出于类似原因，用户不得在循环点 40.0（力-位移计算）与 42.0（确定性量的累加）之间进行干扰，且模型组成部分（球颗粒、刚性团簇或子颗粒以及墙或面片）的创建与删除仅允许在循环点 0.0（时步评估）之前进行。</p>
+<p>除上述限制之外，用户可以将 <span class="codename">FISH</span> 函数注册到循环序列中执行，从而对模型进行操作，方法是在用户自定义的循环点（例如循环点 10.1、10.15、10.3 等）上注册这些函数。</p>
+<p><em>创建球颗粒</em></p>
+<p>第一个示例演示了按周期向模型中插入球颗粒。此示例的完整数据文件为“<a class="reference internal" href="#tut-cb-callbacks1-datafile3d">callbacks1.dat（三维）（<span class="std std-ref">callbacks1.dat (3D)</span>）</a>”。下文讨论其中选定的代码行。</p>
+<p>本示例模拟一个简单系统，其中球颗粒在箱体内相互作用。使用 <span class="codename">FISH</span> 函数 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">添加球体（<span class="varfishsym"><span class="null">add_ball</span></span>）</a> 按给定频率创建球颗粒。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish define</span><span class="ni"> add_ball</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> tnext</span><span class="p">,</span><span class="ni">freq</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> tcurrent </span><span class="p">=</span><span class="ni"> </span><span class="k">mech.time.total</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> tcurrent </span><span class="o">&lt;</span><span class="ni"> tnext </span><span class="k">then</span>
+<span class="ni">        </span><span class="k">exit</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="ni">    tnext </span><span class="p">=</span><span class="ni"> tcurrent </span><span class="o">+</span><span class="ni"> freq</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> xvel </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="k">math.random.uniform</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">0.5</span><span class="p">)</span><span class="ni"> </span><span class="o">*</span><span class="ni"> </span><span class="m m-Double">2.0</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> yvel </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="k">math.random.uniform</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">0.5</span><span class="p">)</span><span class="ni"> </span><span class="o">*</span><span class="ni"> </span><span class="m m-Double">2.0</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> bp </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.create</span><span class="p">(</span><span class="m m-Double">0.3</span><span class="p">,</span><span class="ni">vector</span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">1.75</span><span class="p">))</span>
+<span class="ni">    </span><span class="k">ball.vel</span><span class="p">(</span><span class="ni">bp</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="ni">xvel</span><span class="p">,</span><span class="ni">yvel</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">2.0</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">ball.density</span><span class="p">(</span><span class="ni">bp</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.1e3</span>
+<span class="ni">    </span><span class="k">ball.damp</span><span class="p">(</span><span class="ni">bp</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.1</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+<p>此函数在数据结构被验证之前注册于循环点 -11.0（请参阅 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/fish/commands/cmd_fish.callback.html#command:fish.callback" title="Add/remove functions to be executed in response to callback events...">设置FISH回调命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fish</span> <span class="pre">callback</span></code>）</a> 命令）。由于 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">添加球体（<span class="varfishsym"><span class="null">add_ball</span></span>）</a> 在每个循环中执行，因此会将当前力学时间与下一次插入时间进行比较，以决定是否创建球颗粒。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="ni">[freq </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.25</span><span class="ni">]</span>
+<span class="ni">[time_start </span><span class="p">=</span><span class="ni"> </span><span class="k">mech.time.total</span><span class="ni">]</span>
+<span class="ni">[tnext  </span><span class="p">=</span><span class="ni"> time_start ]</span>
+<span class="nb">fish callback</span><span class="n"> add add_ball </span><span class="o">-</span><span class="m m-Double">11.0</span>
+</pre></div>
+</div>
+<p>使用下面的命令将模型循环至给定的目标时间。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model </span><span class="ss">solve</span><span class="n"> time </span><span class="m m-Double">10.0</span>
+</pre></div>
+</div>
+<p>在执行循环的过程中，球颗粒被插入模型中（<a href="#tut-cb-p3d-tutocallbacks-insertballs-inter">图 1（Figure  1）</a>）。请注意，由于 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">添加球体（<span class="varfishsym"><span class="null">add_ball</span></span>）</a> 函数仍注册在循环点 -11.0 上，继续循环时球颗粒会持续插入模型中。</p>
+<div class="figure align-center" id="tut-cb-p3d-tutocallbacks-insertballs-inter">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d-tutocallbacks-insertballs-inter.png"><img alt="../../../../../../../_images/p3d-tutocallbacks-insertballs-inter.png" src="../../../../../../../_images/p3d-tutocallbacks-insertballs-inter.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 1：循环过程中系统的状态，此时 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">添加球体（<span class="varfishsym"><span class="null">add_ball</span></span>）</a> <span class="codename">FISH</span> 函数已注册
+为回调。</span></p>
+</div>
+<p>在此示例中，从回调列表中移除 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">添加球体（<span class="varfishsym"><span class="null">add_ball</span></span>）</a> 函数，并将模型求解至平衡。因此不会插入新的球颗粒，模型达到平衡状态（如 <a href="#tut-cb-p3d-tutocallbacks-insertballs-settled">图 2（Figure  2）</a> 所示）。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish callback</span><span class="n"> remove add_ball </span><span class="o">-</span><span class="m m-Double">11.0</span>
+<span class="nb">model </span><span class="ss">solve</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="tut-cb-p3d-tutocallbacks-insertballs-settled">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d-tutocallbacks-insertballs-settled.png"><img alt="../../../../../../../_images/p3d-tutocallbacks-insertballs-settled.png" src="../../../../../../../_images/p3d-tutocallbacks-insertballs-settled.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：系统的最终状态。</span></p>
+</div>
+<p><em>引入新的物理过程</em></p>
+<p>第二个示例（“<a class="reference internal" href="#tut-cb-callbacks2-datafile3d">callbacks2.dat（三维）（<span class="std std-ref">callbacks2.dat (3D)</span>）</a>”）以上述示例为基础。其中引入了两个附加的 <span class="codename">FISH</span> 函数，它们注册在循环序列中的不同位置。这些函数对球颗粒施加附加力，以模拟箱体内流体的作用。</p>
+<p>首先，定义一个名为 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">添加流体力（<span class="varfishsym"><span class="null">add_fluidforces</span></span>）</a> 的函数：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish define</span><span class="ni"> add_fluidforces</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> vf </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> zf_</span><span class="p">,</span><span class="ni"> etaf_</span><span class="p">,</span><span class="ni"> rhof_</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> ball </span><span class="k">ball.list</span>
+<span class="ni">        </span><span class="k">local</span><span class="ni"> vi </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">        </span><span class="k">local</span><span class="ni"> d1 </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.z</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span>
+<span class="ni">        </span><span class="k">if</span><span class="ni"> </span><span class="k">ball.pos.z</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="ni"> </span><span class="o">&gt;</span><span class="p">=</span><span class="ni"> zf_ </span>
+<span class="ni">            </span><span class="c">; 高于水位</span>
+<span class="ni">            </span><span class="k">ball.force.app</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span>
+<span class="ni">        </span><span class="k">else</span><span class="ni"> </span>
+<span class="ni">            </span><span class="k">local</span><span class="ni"> fdrag </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">6.0</span><span class="o">*</span><span class="k">math.pi</span><span class="o">*</span><span class="ni">etaf_</span><span class="o">*</span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="o">*</span><span class="k">ball.vel</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span>
+<span class="ni">            </span><span class="k">local</span><span class="ni"> vbal </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">4.0</span><span class="o">*</span><span class="k">math.pi</span><span class="o">*</span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="o">^</span><span class="m m-Double">3</span><span class="ni"> </span><span class="o">/</span><span class="ni"> </span><span class="m m-Double">3.0</span>
+<span class="ni">            </span><span class="k">if</span><span class="ni"> </span><span class="k">ball.pos.z</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="ni"> </span><span class="o">+</span><span class="ni"> </span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="ni"> </span><span class="o">&lt;</span><span class="p">=</span><span class="ni"> zf_ </span><span class="k">then</span>
+<span class="ni">                </span><span class="c">; 完全浸没</span>
+<span class="ni">                vi </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">4.0</span><span class="o">*</span><span class="k">math.pi</span><span class="o">*</span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="o">^</span><span class="m m-Double">3</span><span class="ni"> </span><span class="o">/</span><span class="ni"> </span><span class="m m-Double">3.0</span>
+<span class="ni">            </span><span class="k">else</span>
+<span class="ni">                </span><span class="c">; 部分浸没</span>
+<span class="ni">                </span><span class="k">if</span><span class="ni"> </span><span class="k">ball.pos.z</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="ni"> </span><span class="o">&gt;</span><span class="p">=</span><span class="ni"> zf_ </span><span class="k">then</span>
+<span class="ni">                    </span><span class="k">global</span><span class="ni"> h </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="p">(</span><span class="k">ball.pos.z</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="o">-</span><span class="ni">zf_</span><span class="p">)</span>
+<span class="ni">                    </span><span class="k">global</span><span class="ni"> vcap </span><span class="p">=</span><span class="ni"> </span><span class="k">math.pi</span><span class="o">*</span><span class="ni">h</span><span class="o">^</span><span class="m m-Double">2</span><span class="o">*</span><span class="p">(</span><span class="m m-Double">3</span><span class="o">*</span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> h</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="m m-Double">3.0</span>
+<span class="ni">                    vi </span><span class="p">=</span><span class="ni"> vcap</span>
+<span class="ni">                </span><span class="k">else</span>
+<span class="ni">                    h </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="p">(</span><span class="ni">zf_ </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos.z</span><span class="p">(</span><span class="ni">ball</span><span class="p">))</span>
+<span class="ni">                    vcap </span><span class="p">=</span><span class="ni"> </span><span class="k">math.pi</span><span class="o">*</span><span class="ni">h</span><span class="o">^</span><span class="m m-Double">2</span><span class="o">*</span><span class="p">(</span><span class="m m-Double">3</span><span class="o">*</span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> h</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="m m-Double">3.0</span>
+<span class="ni">                    vi </span><span class="p">=</span><span class="ni"> vbal </span><span class="o">-</span><span class="ni"> vcap</span>
+<span class="ni">                </span><span class="k">endif</span>
+<span class="ni">            </span><span class="k">endif</span>
+<span class="ni">            </span><span class="k">global</span><span class="ni"> fb </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">rhof_</span><span class="o">*</span><span class="ni">vi</span><span class="o">*</span><span class="k">global.gravity</span>
+<span class="ni">            </span><span class="k">ball.force.app</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> fb </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="ni">vi</span><span class="o">/</span><span class="ni">vbal</span><span class="p">)</span><span class="ni"> </span><span class="o">*</span><span class="ni">fdrag</span>
+<span class="ni">        </span><span class="k">endif</span>
+<span class="ni">        vf </span><span class="p">=</span><span class="ni"> vf </span><span class="o">+</span><span class="ni"> vi</span>
+<span class="ni">    </span><span class="k">endloop</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+<p>此函数使用 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_fish/ball_intrinsics/fish_ball.force.app.html#function:ball.force.app" title="Get/set the ball applied force...">球体施加力（<code class="xref fish fish-func docutils literal"><span class="pre">ball.force.app</span></code>）</a> <span class="codename">FISH</span> 内置函数遍历系统中的所有球颗粒，以施加附加力。所施加的力是浮力项 <span class="math">\(\mathbf{F_b}\)</span> 与曳力项 <span class="math">\(\mathbf{F_d}\)</span> 的组合，按下式计算</p>
+<div class="math">
+\[\begin{split}\mathbf{F_b} &amp;= - \rho_f V_i \mathbf{g} \\
+\mathbf{F_d} &amp;= - 6 \pi \eta_f R \alpha \mathbf{v}\end{split}\]</div>
+<p>其中 <span class="math">\(\rho_f\)</span> 为流体密度，<span class="math">\(V_i\)</span> 为浸没的球颗粒体积，<span class="math">\(\mathbf{g}\)</span> 为重力向量，<span class="math">\(\eta_f\)</span> 为流体动力黏度，<span class="math">\(R\)</span> 为球颗粒半径，<span class="math">\(\alpha\)</span> 为未浸没球颗粒体积与球颗粒总体积之比，<span class="math">\(\mathbf{v}\)</span> 为球颗粒速度向量。<span class="math">\(\mathbf{F_d}\)</span> 所采用的表达式是单个球体在层流状态下完全浸没于流体中的典型形式（例如流体黏度较大时）。引入因子 <span class="math">\(\alpha\)</span> 是为了在球颗粒仅部分浸没时减小曳力。</p>
+<p>此外还实现了第二个函数，名为 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">移动表面（<span class="varfishsym"><span class="null">move_surface</span></span>）</a>：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish define</span><span class="ni"> move_surface</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> zf0_</span><span class="p">,</span><span class="ni"> gset_</span>
+<span class="ni">    zf_ </span><span class="p">=</span><span class="ni"> zf0_ </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="ni">vf</span><span class="o">/</span><span class="m m-Double">16.0</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> node </span><span class="k">geom.node.list</span><span class="p">(</span><span class="ni">gset_</span><span class="p">)</span>
+<span class="ni">        </span><span class="k">geom.node.pos.z</span><span class="p">(</span><span class="ni">node</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> zf_</span>
+<span class="ni">    </span><span class="k">endloop</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+<p>此函数的目的是调整流体表面高度 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">z 向力（<span class="varfishsym"><span class="null">zf_</span></span>）</a>，调整依据是 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">添加流体力（<span class="varfishsym"><span class="null">add_fluidforces</span></span>）</a> 累计的球颗粒浸没体积之和。反过来，修改后的 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">z 向力（<span class="varfishsym"><span class="null">zf_</span></span>）</a> 值又会在 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">添加流体力（<span class="varfishsym"><span class="null">add_fluidforces</span></span>）</a> 中用于调整下一循环中的浮力。函数 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">移动表面（<span class="varfishsym"><span class="null">move_surface</span></span>）</a> 还会修改添加到模型中的几何对象的节点高度，以可视化流体表面：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="ni">[rhof_ </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.26e3</span><span class="ni">]</span>
+<span class="ni">[zf0_ </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="ni">[zf_ </span><span class="p">=</span><span class="ni"> zf0_]</span>
+<span class="ni">[etaf_ </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.49</span><span class="ni">]</span>
+<span class="nb">geometry set</span><span class="n"> </span><span class="s">'surface'</span><span class="n"> polygon create by</span><span class="o">-</span><span class="n">position </span><span class="o">-</span><span class="m m-Double">2.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2.0</span><span class="n"> </span><span class="ni">[zf0_]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                       </span><span class="m m-Double">2.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2.0</span><span class="n"> </span><span class="ni">[zf0_]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                       </span><span class="m m-Double">2.0</span><span class="n">  </span><span class="m m-Double">2.0</span><span class="n"> </span><span class="ni">[zf0_]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                      </span><span class="o">-</span><span class="m m-Double">2.0</span><span class="n">  </span><span class="m m-Double">2.0</span><span class="n"> </span><span class="ni">[zf0_]</span><span class="n"> </span>
+<span class="ni">[gset_ </span><span class="p">=</span><span class="ni"> </span><span class="k">geom.set.find</span><span class="p">(</span><span class="s">'surface'</span><span class="p">)</span><span class="ni">]</span>
+</pre></div>
+</div>
+<p>所选取的参数用于模拟黏度大于球颗粒密度的流体。</p>
+<p>在执行循环之前，上述两个函数作为回调注册到循环序列中，其循环点值分别为 50.0 和 50.1：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish callback</span><span class="n"> add add_fluidforces </span><span class="m m-Double">50.0</span>
+<span class="nb">fish callback</span><span class="n"> add move_surface </span><span class="m m-Double">50.1</span>
+</pre></div>
+</div>
+<p>这确保两个函数都在 <span class="codename">PFC</span> 循环序列中的所有内置操作之后执行，并且 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">移动表面（<span class="varfishsym"><span class="null">move_surface</span></span>）</a> 在总非浸没体积更新之后执行。若需要在两个函数之间进行额外计算，可以再注册一个 <span class="codename">FISH</span> 函数（例如使用值为 50.05 的循环点）。</p>
+<div class="figure align-center" id="tut-cb-p3d-tutocallbacks-fluid-inter">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d-tutocallbacks-fluid-inter.png"><img alt="../../../../../../../_images/p3d-tutocallbacks-fluid-inter.png" src="../../../../../../../_images/p3d-tutocallbacks-fluid-inter.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 3：流体作用力开启时系统的中间状态。</span></p>
+</div>
+<div class="figure align-center" id="tut-cb-p3d-tutocallbacks-fluid-final">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d-tutocallbacks-fluid-final.png"><img alt="../../../../../../../_images/p3d-tutocallbacks-fluid-final.png" src="../../../../../../../_images/p3d-tutocallbacks-fluid-final.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 4：流体作用力开启时系统的最终状态。</span></p>
+</div>
+<p><a href="#tut-cb-p3d-tutocallbacks-fluid-inter">图 3（Figures  3）</a> 和 <a href="#tut-cb-p3d-tutocallbacks-fluid-final">4</a> 分别显示了循环过程中以及最终稳定构型下系统的状态。球颗粒被周期性地加入，由于浮力的作用，球颗粒被推向流体表面，其运动受到流体曳力的阻尼。</p>
+<p>这里描述的模型可能显得过于简化。值得注意的是，曳力的表达式并未考虑流体速度。然而，这个简单的示例表明，只需几个步骤即可向 <span class="codename">PFC</span> 中加入新的物理机制。如果需要包含流体-力学耦合的更精细模型，可以设计更复杂的算法，或者设想与第三方 CFD 求解器进行耦合（参见“<a class="reference internal" href="../../../optional_features/cfd_option/cfd_option.html#pfc-cfd-addon"><span class="std std-ref">PFC3D6.0 的 CFD 模块</span>（CFD module for PFC3D6.0）</a>”一节）。</p>
+<p class="h3 rubric">命名回调事件</p>
+<p>为提供更大的灵活性，还可以注册 <span class="codename">FISH</span> 函数，使其在循环序列中可能发生的命名事件触发时执行。事件列表如下所示。该列表可能并不详尽，因为用户定义的接触模型可以添加新的事件。</p>
+<span id="list-callbackevents"></span><table border="1" class="docutils" id="id4">
+<caption><span class="caption-text">表 2：命名回调事件</span></caption>
+<colgroup>
+<col width="23%"/>
+<col width="38%"/>
+<col width="39%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">事件类型</th>
+<th class="head">事件名称</th>
+<th class="head">参数</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>接触模型</td>
+<td>contact_activated</td>
+<td><span class="codename">FISH</span> 数组，特定于接触模型</td>
+</tr>
+<tr class="row-odd"><td>接触模型</td>
+<td>slip_change</td>
+<td><span class="codename">FISH</span> 数组，特定于接触模型</td>
+</tr>
+<tr class="row-even"><td>接触模型</td>
+<td>bond_break</td>
+<td><span class="codename">FISH</span> 数组，特定于接触模型</td>
+</tr>
+<tr class="row-odd"><td>创建/删除</td>
+<td>contact_create</td>
+<td>接触指针</td>
+</tr>
+<tr class="row-even"><td>创建/删除</td>
+<td>contact_delete</td>
+<td>接触指针</td>
+</tr>
+<tr class="row-odd"><td>创建/删除</td>
+<td>ball_create</td>
+<td>球颗粒指针</td>
+</tr>
+<tr class="row-even"><td>创建/删除</td>
+<td>ball_delete</td>
+<td>球颗粒指针</td>
+</tr>
+<tr class="row-odd"><td>创建/删除</td>
+<td>clump_create</td>
+<td>刚性团簇指针</td>
+</tr>
+<tr class="row-even"><td>创建/删除</td>
+<td>clump_delete</td>
+<td>刚性团簇指针</td>
+</tr>
+<tr class="row-odd"><td>创建/删除</td>
+<td>rblock_create</td>
+<td>刚性块体指针</td>
+</tr>
+<tr class="row-even"><td>创建/删除</td>
+<td>rblock_delete</td>
+<td>刚性块体指针</td>
+</tr>
+<tr class="row-odd"><td>创建/删除</td>
+<td>facet_create</td>
+<td>墙面片指针</td>
+</tr>
+<tr class="row-even"><td>创建/删除</td>
+<td>facet_delete</td>
+<td>墙面片指针</td>
+</tr>
+<tr class="row-odd"><td>创建/删除</td>
+<td>wall_create</td>
+<td>墙指针</td>
+</tr>
+<tr class="row-even"><td>创建/删除</td>
+<td>wall_delete</td>
+<td>墙指针</td>
+</tr>
+<tr class="row-odd"><td>创建/删除</td>
+<td>ballthermal_create</td>
+<td>热学球颗粒指针</td>
+</tr>
+<tr class="row-even"><td>创建/删除</td>
+<td>ballthermal_delete</td>
+<td>热学球颗粒指针</td>
+</tr>
+<tr class="row-odd"><td>创建/删除</td>
+<td>clumpthermal_create</td>
+<td>热学团块指针</td>
+</tr>
+<tr class="row-even"><td>创建/删除</td>
+<td>clumpthermal_delete</td>
+<td>热学团块指针</td>
+</tr>
+<tr class="row-odd"><td>创建/删除</td>
+<td>wallthermal_create</td>
+<td>热学墙指针</td>
+</tr>
+<tr class="row-even"><td>创建/删除</td>
+<td>wallthermal_delete</td>
+<td>热学墙指针</td>
+</tr>
+<tr class="row-odd"><td>创建/删除</td>
+<td>ballcfd_create</td>
+<td>CFD 球颗粒指针</td>
+</tr>
+<tr class="row-even"><td>创建/删除</td>
+<td>ballcfd_delete</td>
+<td>CFD 球颗粒指针</td>
+</tr>
+<tr class="row-odd"><td>创建/删除</td>
+<td>clumpcfd_create</td>
+<td>CFD 团块指针</td>
+</tr>
+<tr class="row-even"><td>创建/删除</td>
+<td>clumpcfd_delete</td>
+<td>CFD 团块指针</td>
+</tr>
+<tr class="row-odd"><td>求解</td>
+<td>cfd_before_send（CFD 发送前）</td>
+<td> </td>
+</tr>
+<tr class="row-even"><td>求解</td>
+<td>cfd_after_received（CFD 接收后）</td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td>求解</td>
+<td>cfd_before_update（CFD 更新前）</td>
+<td> </td>
+</tr>
+<tr class="row-even"><td>求解</td>
+<td>cfd_after_update（CFD 更新后）</td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td>求解</td>
+<td>solve_complete</td>
+<td> </td>
+</tr>
+</tbody>
+</table>
+<p>命名回调事件的一个重要特点是，关联的 <span class="codename">FISH</span> 函数在执行时可以向其传递参数。例如，如果触发了 <em>contact_create</em> 事件，则新接触的指针会作为参数传递给已注册的 <span class="codename">FISH</span> 函数（前提是这些函数接受参数）。接触模型事件总是传递 <span class="codename">FISH</span> 数组作为参数，数组的内容取决于接触模型的实现。</p>
+<p>本教程的最后一个示例（参见“<a class="reference internal" href="#tut-cb-callbacks3-datafile3d">callbacks3.dat（三维）（<span class="std std-ref">callbacks3.dat (3D)</span>）</a>”）说明了如何使用 <em>contact_create</em> 和
+<em>contact_activated</em> 事件。模型从使用
+“<a class="reference internal" href="#tut-cb-callbacks1-datafile3d">callbacks1.dat（三维）（<span class="std std-ref">callbacks1.dat (3D)</span>）</a>”得到的最终构型开始（即球颗粒在箱体中在重力作用下沉积后的状态）。在此情形中，重力方向被改为与 <em>x</em> 方向平行，使球颗粒向箱体相应的一侧流动。将一个 <span class="codename">FISH</span> 函数注册到 <em>contact_create</em> 或 <em>contact_activated</em> 事件上，该函数的用途是查询该接触是否发生在球颗粒与箱体顶面之间。在这种情况下，该球颗粒被删除。这样，箱体顶部就起到了颗粒汇的作用。由于这两个事件返回的参数列表并不相同，因此这两个函数必须略有差异（如下文所述）。</p>
+<p class="h3 rubric">接触创建事件</p>
+<p>下面的 <span class="codename">FISH</span> 函数可以注册到 <em>contact_create</em> 事件上：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish define</span><span class="ni"> catch_contacts</span><span class="p">(</span><span class="ni">cp</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> </span><span class="k">type.pointer</span><span class="p">(</span><span class="ni">cp</span><span class="p">)</span><span class="ni"> # </span><span class="s">'ball-facet'</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">    </span><span class="k">exit</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  wfp </span><span class="p">=</span><span class="ni"> </span><span class="k">contact.end2</span><span class="p">(</span><span class="ni">cp</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> </span><span class="k">wall.id</span><span class="p">(</span><span class="k">wall.facet.wall</span><span class="p">(</span><span class="ni">wfp</span><span class="p">))</span><span class="ni"> # </span><span class="m m-Double">2</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">    </span><span class="k">exit</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">map.add</span><span class="p">(</span><span class="ni">todelete</span><span class="p">,</span><span class="k">ball.id</span><span class="p">(</span><span class="k">contact.end1</span><span class="p">(</span><span class="ni">cp</span><span class="p">)),</span><span class="k">contact.end1</span><span class="p">(</span><span class="ni">cp</span><span class="p">))</span>
+<span class="nb">end</span>
+<span class="nb">fish callback</span><span class="n"> add catch_contacts event contact_create</span>
+</pre></div>
+</div>
+<p>在这种情况下，接触指针会作为参数传递给 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">捕获接触（<span class="varfishsym"><span class="null">catch_contacts</span></span>）</a>。请注意，只要系统中创建了任何接触（即包括球颗粒-球颗粒接触），就会触发该事件。因此 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">捕获接触（<span class="varfishsym"><span class="null">catch_contacts</span></span>）</a> 必须先检查接触是否发生在球颗粒与墙面片之间，然后再检查墙的 ID。如果该接触是球颗粒-面片接触，并且是与顶墙（即墙 ID 为 2）的某个面片接触，则将该球颗粒加入待删除的球颗粒列表。该球颗粒无法被自动删除，因为球颗粒的创建/删除仅限于 0 之前的循环点。</p>
+<p>循环结束后系统的最终状态如 <a href="#tut-cb-p3d-tutocallbacks-sink1">图 5（Figure  5）</a> 所示。请注意，<span class="codename">PFC</span> 中的接触由接触检测逻辑自行决定创建，如“<a class="reference internal" href="../../../pfc_model_components/contacts/contacts.html#contact-manual"><span class="std std-ref">接触与接触模型</span>（Contacts and Contact Models）</a>”一节所述。可以保证的是，两个部件之间的接触会在二者实际发生相互作用<em>之前</em>创建，这意味着无法精确控制接触创建时的距离。本示例所给方法的缺点是，未与顶墙重叠的球颗粒也可能被删除。</p>
+<div class="figure align-center" id="tut-cb-p3d-tutocallbacks-sink1">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d-tutocallbacks-sink1.png"><img alt="../../../../../../../_images/p3d-tutocallbacks-sink1.png" src="../../../../../../../_images/p3d-tutocallbacks-sink1.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 5：系统的最终状态。重力平行于 x 轴，当与顶墙的接触被创建时，球颗粒即被删除。</span></p>
+</div>
+<p class="h3 rubric">接触模型事件</p>
+<p>另一种克服球颗粒在与墙面片重叠之前即被删除这一问题的方法，是将一个 <span class="codename">FISH</span> 函数注册到由线性接触模型定义的 <em>contact_activated</em> 事件上：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish define</span><span class="ni"> catch_contacts</span><span class="p">(</span><span class="ni">arr</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> cp </span><span class="p">=</span><span class="ni"> arr</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> </span><span class="k">type.pointer</span><span class="p">(</span><span class="ni">cp</span><span class="p">)</span><span class="ni"> # </span><span class="s">'ball-facet'</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">    </span><span class="k">exit</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> wfp </span><span class="p">=</span><span class="ni"> </span><span class="k">contact.end2</span><span class="p">(</span><span class="ni">cp</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> </span><span class="k">wall.id</span><span class="p">(</span><span class="k">wall.facet.wall</span><span class="p">(</span><span class="ni">wfp</span><span class="p">))</span><span class="ni"> # </span><span class="m m-Double">2</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">    </span><span class="k">exit</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">map.add</span><span class="p">(</span><span class="ni">todelete</span><span class="p">,</span><span class="k">ball.id</span><span class="p">(</span><span class="k">contact.end1</span><span class="p">(</span><span class="ni">cp</span><span class="p">)),</span><span class="k">contact.end1</span><span class="p">(</span><span class="ni">cp</span><span class="p">))</span>
+<span class="nb">end</span>
+<span class="nb">fish callback</span><span class="n"> add catch_contacts event contact_activated</span>
+</pre></div>
+</div>
+<p>此处传递给 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">捕获接触（<span class="varfishsym"><span class="null">catch_contacts</span></span>）</a> 的参数是一个包含接触指针的 <span class="codename">FISH</span> 数组。这与 <a class="reference internal" href="../../../../../../../common/contactmodel/linear/doc/manual/cmlinear.html#cmlinear-cbtable"><span class="std std-ref">线性模型</span>（linear model）</a> 的实现相对应。除此差异之外，此版本的 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">捕获接触（<span class="varfishsym"><span class="null">catch_contacts</span></span>）</a> 的运行方式与上文所述相同。然而，由于 <em>contact_activated</em> 事件（由 <a class="reference internal" href="../../../../../../../common/contactmodel/linear/doc/manual/cmlinear.html#cmlinear"><span class="std std-ref">线性模型</span>（linear model）</a> 定义）在接触变为活动时触发，因此只有在球颗粒与上部墙体的面片实际重叠时，这些球颗粒才会被删除。循环结束后的系统最终状态如 <a href="#tut-cb-p3d-tutocallbacks-sink2">图 6（Figure  6）</a> 所示。</p>
+<div class="figure align-center" id="tut-cb-p3d-tutocallbacks-sink2">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d-tutocallbacks-sink2.png"><img alt="../../../../../../../_images/p3d-tutocallbacks-sink2.png" src="../../../../../../../_images/p3d-tutocallbacks-sink2.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 6：系统的最终状态。重力平行于 x 轴，当球颗粒
+与顶部墙体发生实际重叠时，这些球颗粒即被删除。</span></p>
+</div>
+<p class="h2 rubric">讨论</p>
+<p>本教程演示了在若干情形下使用 <span class="codename">PFC</span> 回调机制执行 <span class="codename">FISH</span> 函数。可以注册 <span class="codename">FISH</span> 函数，使其在循环序列中选定的位置执行，或响应命名事件执行。任何用户自定义的 <span class="codename">FISH</span> 函数都可以通过 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/fish/commands/cmd_fish.callback.html#command:fish.callback" title="Add/remove functions to be executed in response to callback events...">设置FISH回调命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fish</span> <span class="pre">callback</span></code>）</a> 命令注册为回调。函数无需接受参数，不过参数可能有用。可用参数的列表取决于具体事件。</p>
+<p class="h2 rubric" id="tut-cb-datafiles">数据文件</p>
+<p class="h3 rubric" id="tut-cb-callbacks1-datafile3d">callbacks1.dat（三维）</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：callbacks1.dat</span>
+<span class="c">;</span>
+<span class="c">; 演示使用 set fish callback 命令在循环过程中以</span>
+<span class="c">; 给定速率插入球</span>
+<span class="c">;</span>
+<span class="c">;=========================================================================</span>
+<span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'Using FISH Callbacks'</span>
+
+<span class="c">; 定义计算域与默认接触模型 </span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">3</span>
+<span class="nb">contact cmat</span><span class="n"> default model linear property kn </span><span class="m m-Double">1.0e6</span><span class="n"> dp_nratio </span><span class="m m-Double">0.5</span>
+
+<span class="c">; 生成箱体并设置重力</span>
+<span class="nb">wall generate</span><span class="n"> box </span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">2</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">10.0</span>
+
+<span class="c">; 定义 add_ball 函数，该函数将注册为 fish 回调</span>
+<span class="c">; 并按给定频率向模型中插入球</span>
+<span class="c">; excerpt-jrow-start</span>
+<span class="nb">fish define</span><span class="ni"> add_ball</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> tnext</span><span class="p">,</span><span class="ni">freq</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> tcurrent </span><span class="p">=</span><span class="ni"> </span><span class="k">mech.time.total</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> tcurrent </span><span class="o">&lt;</span><span class="ni"> tnext </span><span class="k">then</span>
+<span class="ni">        </span><span class="k">exit</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="ni">    tnext </span><span class="p">=</span><span class="ni"> tcurrent </span><span class="o">+</span><span class="ni"> freq</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> xvel </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="k">math.random.uniform</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">0.5</span><span class="p">)</span><span class="ni"> </span><span class="o">*</span><span class="ni"> </span><span class="m m-Double">2.0</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> yvel </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="k">math.random.uniform</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">0.5</span><span class="p">)</span><span class="ni"> </span><span class="o">*</span><span class="ni"> </span><span class="m m-Double">2.0</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> bp </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.create</span><span class="p">(</span><span class="m m-Double">0.3</span><span class="p">,</span><span class="ni">vector</span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">1.75</span><span class="p">))</span>
+<span class="ni">    </span><span class="k">ball.vel</span><span class="p">(</span><span class="ni">bp</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="ni">xvel</span><span class="p">,</span><span class="ni">yvel</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">2.0</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">ball.density</span><span class="p">(</span><span class="ni">bp</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.1e3</span>
+<span class="ni">    </span><span class="k">ball.damp</span><span class="p">(</span><span class="ni">bp</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.1</span>
+<span class="nb">end</span>
+<span class="c">; excerpt-jrow-end</span>
+
+<span class="c">; 设置参数并将 add_ball 函数注册为 fish 回调，位于 </span>
+<span class="c">; 循环序列中的位置 -11.0。在时间步计算完成之后 </span>
+<span class="c">; 不能向模型中插入模型组件，该时刻对应 </span>
+<span class="c">; 循环序列中的位置 0.0</span>
+<span class="c">; excerpt-emax-start</span>
+<span class="ni">[freq </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.25</span><span class="ni">]</span>
+<span class="ni">[time_start </span><span class="p">=</span><span class="ni"> </span><span class="k">mech.time.total</span><span class="ni">]</span>
+<span class="ni">[tnext  </span><span class="p">=</span><span class="ni"> time_start ]</span>
+<span class="nb">fish callback</span><span class="n"> add add_ball </span><span class="o">-</span><span class="m m-Double">11.0</span>
+<span class="c">; excerpt-emax-end</span>
+
+<span class="c">; 求解至 10.0 个时间单位的目标时间</span>
+<span class="c">; excerpt-omra-start</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time </span><span class="m m-Double">10.0</span>
+<span class="c">; excerpt-omra-end</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'intermediate'</span>
+
+<span class="c">; 继续循环至额外 15.0 个时间单位的目标时间</span>
+<span class="c">; 注意 fish 回调仍处于激活状态</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time </span><span class="m m-Double">15.0</span>
+
+<span class="c">; 停用 fish 回调并求解至平衡（默认限值 </span>
+<span class="c">; 对应平均比率 1e-5） </span>
+<span class="c">; excerpt-orms-start</span>
+<span class="nb">fish callback</span><span class="n"> remove add_ball </span><span class="o">-</span><span class="m m-Double">11.0</span>
+<span class="nb">model </span><span class="ss">solve</span>
+<span class="c">; excerpt-orms-end</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'settled'</span>
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：callbacks1.dat</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="tut-cb-callbacks2-datafile3d">callbacks2.dat（三维）</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：callbacks2.dat</span>
+<span class="c">;</span>
+<span class="c">; 演示使用 set fish callback 命令在循环过程中以 </span>
+<span class="c">; 给定速率插入球，并为球施加外力</span>
+<span class="c">;=========================================================================</span>
+<span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'Using FISH Callbacks'</span>
+
+<span class="c">; 定义计算域与默认接触模型 </span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">3</span>
+<span class="nb">contact cmat</span><span class="n"> default model linear property kn </span><span class="m m-Double">1.0e6</span><span class="n"> dp_nratio </span><span class="m m-Double">0.5</span>
+
+<span class="c">; 生成箱体并设置重力</span>
+<span class="nb">wall generate</span><span class="n"> box </span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">2</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">10.0</span>
+
+<span class="c">; 定义 add_ball 函数，该函数将注册为 fish 回调</span>
+<span class="c">; 并按给定频率向模型中插入球</span>
+<span class="nb">fish define</span><span class="ni"> add_ball</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> tnext</span><span class="p">,</span><span class="ni"> freq</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> tcurrent </span><span class="p">=</span><span class="ni"> </span><span class="k">mech.time.total</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> tcurrent </span><span class="o">&lt;</span><span class="ni"> tnext </span><span class="k">then</span>
+<span class="ni">        </span><span class="k">exit</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="ni">    tnext </span><span class="p">=</span><span class="ni"> tcurrent </span><span class="o">+</span><span class="ni"> freq</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> xvel </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="k">math.random.uniform</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">0.5</span><span class="p">)</span><span class="ni"> </span><span class="o">*</span><span class="ni"> </span><span class="m m-Double">2.0</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> yvel </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="k">math.random.uniform</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">0.5</span><span class="p">)</span><span class="ni"> </span><span class="o">*</span><span class="ni"> </span><span class="m m-Double">2.0</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> bp </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.create</span><span class="p">(</span><span class="m m-Double">0.3</span><span class="p">,</span><span class="ni">vector</span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">1.75</span><span class="p">))</span>
+<span class="ni">    </span><span class="k">ball.vel</span><span class="p">(</span><span class="ni">bp</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="ni">xvel</span><span class="p">,</span><span class="ni">yvel</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">2.0</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">ball.density</span><span class="p">(</span><span class="ni">bp</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.1e3</span>
+<span class="ni">    </span><span class="k">ball.damp</span><span class="p">(</span><span class="ni">bp</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.1</span>
+<span class="nb">end</span>
+<span class="c">; 设置参数并将 add_ball 函数注册为 fish 回调，位于 </span>
+<span class="c">; 循环序列中的位置 -11.0。在时间步计算完成之后 </span>
+<span class="c">; 不能向模型中插入模型组件，该时刻对应 </span>
+<span class="c">; 循环序列中的位置 0.0</span>
+<span class="ni">[freq </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.25</span><span class="ni">]</span>
+<span class="ni">[time_start </span><span class="p">=</span><span class="ni"> </span><span class="k">mech.time.total</span><span class="ni">]</span>
+<span class="ni">[tnext  </span><span class="p">=</span><span class="ni"> time_start ]</span>
+<span class="nb">fish callback</span><span class="n"> add add_ball </span><span class="o">-</span><span class="m m-Double">11.0</span>
+
+
+<span class="c">; 定义 add_fluidforces 函数，该函数将注册为 fish </span>
+<span class="c">; 回调，并向球施加流体力（浮力与拖曳力）</span>
+<span class="c">; excerpt-hgha-start</span>
+<span class="nb">fish define</span><span class="ni"> add_fluidforces</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> vf </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> zf_</span><span class="p">,</span><span class="ni"> etaf_</span><span class="p">,</span><span class="ni"> rhof_</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> ball </span><span class="k">ball.list</span>
+<span class="ni">        </span><span class="k">local</span><span class="ni"> vi </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">        </span><span class="k">local</span><span class="ni"> d1 </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.z</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span>
+<span class="ni">        </span><span class="k">if</span><span class="ni"> </span><span class="k">ball.pos.z</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="ni"> </span><span class="o">&gt;</span><span class="p">=</span><span class="ni"> zf_ </span>
+<span class="ni">            </span><span class="c">; 高于水位</span>
+<span class="ni">            </span><span class="k">ball.force.app</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span>
+<span class="ni">        </span><span class="k">else</span><span class="ni"> </span>
+<span class="ni">            </span><span class="k">local</span><span class="ni"> fdrag </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">6.0</span><span class="o">*</span><span class="k">math.pi</span><span class="o">*</span><span class="ni">etaf_</span><span class="o">*</span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="o">*</span><span class="k">ball.vel</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span>
+<span class="ni">            </span><span class="k">local</span><span class="ni"> vbal </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">4.0</span><span class="o">*</span><span class="k">math.pi</span><span class="o">*</span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="o">^</span><span class="m m-Double">3</span><span class="ni"> </span><span class="o">/</span><span class="ni"> </span><span class="m m-Double">3.0</span>
+<span class="ni">            </span><span class="k">if</span><span class="ni"> </span><span class="k">ball.pos.z</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="ni"> </span><span class="o">+</span><span class="ni"> </span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="ni"> </span><span class="o">&lt;</span><span class="p">=</span><span class="ni"> zf_ </span><span class="k">then</span>
+<span class="ni">                </span><span class="c">; 完全浸没</span>
+<span class="ni">                vi </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">4.0</span><span class="o">*</span><span class="k">math.pi</span><span class="o">*</span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="o">^</span><span class="m m-Double">3</span><span class="ni"> </span><span class="o">/</span><span class="ni"> </span><span class="m m-Double">3.0</span>
+<span class="ni">            </span><span class="k">else</span>
+<span class="ni">                </span><span class="c">; 部分浸没</span>
+<span class="ni">                </span><span class="k">if</span><span class="ni"> </span><span class="k">ball.pos.z</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="ni"> </span><span class="o">&gt;</span><span class="p">=</span><span class="ni"> zf_ </span><span class="k">then</span>
+<span class="ni">                    </span><span class="k">global</span><span class="ni"> h </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="p">(</span><span class="k">ball.pos.z</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="o">-</span><span class="ni">zf_</span><span class="p">)</span>
+<span class="ni">                    </span><span class="k">global</span><span class="ni"> vcap </span><span class="p">=</span><span class="ni"> </span><span class="k">math.pi</span><span class="o">*</span><span class="ni">h</span><span class="o">^</span><span class="m m-Double">2</span><span class="o">*</span><span class="p">(</span><span class="m m-Double">3</span><span class="o">*</span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> h</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="m m-Double">3.0</span>
+<span class="ni">                    vi </span><span class="p">=</span><span class="ni"> vcap</span>
+<span class="ni">                </span><span class="k">else</span>
+<span class="ni">                    h </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="p">(</span><span class="ni">zf_ </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos.z</span><span class="p">(</span><span class="ni">ball</span><span class="p">))</span>
+<span class="ni">                    vcap </span><span class="p">=</span><span class="ni"> </span><span class="k">math.pi</span><span class="o">*</span><span class="ni">h</span><span class="o">^</span><span class="m m-Double">2</span><span class="o">*</span><span class="p">(</span><span class="m m-Double">3</span><span class="o">*</span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> h</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="m m-Double">3.0</span>
+<span class="ni">                    vi </span><span class="p">=</span><span class="ni"> vbal </span><span class="o">-</span><span class="ni"> vcap</span>
+<span class="ni">                </span><span class="k">endif</span>
+<span class="ni">            </span><span class="k">endif</span>
+<span class="ni">            </span><span class="k">global</span><span class="ni"> fb </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">rhof_</span><span class="o">*</span><span class="ni">vi</span><span class="o">*</span><span class="k">global.gravity</span>
+<span class="ni">            </span><span class="k">ball.force.app</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> fb </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="ni">vi</span><span class="o">/</span><span class="ni">vbal</span><span class="p">)</span><span class="ni"> </span><span class="o">*</span><span class="ni">fdrag</span>
+<span class="ni">        </span><span class="k">endif</span>
+<span class="ni">        vf </span><span class="p">=</span><span class="ni"> vf </span><span class="o">+</span><span class="ni"> vi</span>
+<span class="ni">    </span><span class="k">endloop</span>
+<span class="nb">end</span>
+<span class="c">; excerpt-hgha-end</span>
+
+<span class="c">; 定义 move_surface 函数，该函数将注册为 fish </span>
+<span class="c">; 回调，并更新液面位置以计入 </span>
+<span class="c">; 浸没球的体积</span>
+<span class="c">; excerpt-ewza-start</span>
+<span class="nb">fish define</span><span class="ni"> move_surface</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> zf0_</span><span class="p">,</span><span class="ni"> gset_</span>
+<span class="ni">    zf_ </span><span class="p">=</span><span class="ni"> zf0_ </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="ni">vf</span><span class="o">/</span><span class="m m-Double">16.0</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> node </span><span class="k">geom.node.list</span><span class="p">(</span><span class="ni">gset_</span><span class="p">)</span>
+<span class="ni">        </span><span class="k">geom.node.pos.z</span><span class="p">(</span><span class="ni">node</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> zf_</span>
+<span class="ni">    </span><span class="k">endloop</span>
+<span class="nb">end</span>
+<span class="c">; excerpt-ewza-end</span>
+
+
+<span class="c">; 设置参数，并用 geometry 逻辑创建多边形以 </span>
+<span class="c">; 可视化液面。保存指向该几何集的指针，</span>
+<span class="c">; 供 move_surface 函数使用。</span>
+<span class="c">; excerpt-orre-start</span>
+<span class="ni">[rhof_ </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.26e3</span><span class="ni">]</span>
+<span class="ni">[zf0_ </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="ni">[zf_ </span><span class="p">=</span><span class="ni"> zf0_]</span>
+<span class="ni">[etaf_ </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.49</span><span class="ni">]</span>
+<span class="nb">geometry set</span><span class="n"> </span><span class="s">'surface'</span><span class="n"> polygon create by</span><span class="o">-</span><span class="n">position </span><span class="o">-</span><span class="m m-Double">2.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2.0</span><span class="n"> </span><span class="ni">[zf0_]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                       </span><span class="m m-Double">2.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2.0</span><span class="n"> </span><span class="ni">[zf0_]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                       </span><span class="m m-Double">2.0</span><span class="n">  </span><span class="m m-Double">2.0</span><span class="n"> </span><span class="ni">[zf0_]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                      </span><span class="o">-</span><span class="m m-Double">2.0</span><span class="n">  </span><span class="m m-Double">2.0</span><span class="n"> </span><span class="ni">[zf0_]</span><span class="n"> </span>
+<span class="ni">[gset_ </span><span class="p">=</span><span class="ni"> </span><span class="k">geom.set.find</span><span class="p">(</span><span class="s">'surface'</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">; excerpt-orre-end</span>
+
+<span class="c">; 注册 add_fluidforces 与 move_surface 函数</span>
+<span class="c">; 分别位于循环序列中的循环点 50.0 与 50.1。</span>
+<span class="c">; 这些操作将在力-位移计算之后执行， </span>
+<span class="c">; 所施加的力将在下一步影响球。 </span>
+<span class="c">; move_surface 函数将在流体力</span>
+<span class="c">; 施加到所有球（并更新浸没体积）之后调用</span>
+<span class="c">; excerpt-irzs-start</span>
+<span class="nb">fish callback</span><span class="n"> add add_fluidforces </span><span class="m m-Double">50.0</span>
+<span class="nb">fish callback</span><span class="n"> add move_surface </span><span class="m m-Double">50.1</span>
+<span class="c">; excerpt-irzs-end</span>
+
+<span class="c">; 求解至 10.0 个时间单位的目标时间</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time </span><span class="m m-Double">10.0</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'fluid-intermediate'</span>
+
+<span class="c">; 继续循环至额外 15.0 个时间单位的目标时间</span>
+<span class="c">; 注意 fish 回调仍处于激活状态</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time </span><span class="m m-Double">15.0</span>
+
+<span class="c">; 停用 add_ball fish 回调并求解至平衡 </span>
+<span class="c">; （默认限值对应平均比率 1e-5） </span>
+<span class="nb">fish callback</span><span class="n"> remove add_ball </span><span class="o">-</span><span class="m m-Double">11.0</span>
+<span class="nb">model </span><span class="ss">solve</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'fluid-final'</span>
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：callbacks2.dat</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="tut-cb-callbacks3-datafile3d">callbacks3.dat（三维）</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：callbacks3.dat</span>
+<span class="c">;</span>
+<span class="c">; 演示使用 set fish callback 命令在循环过程中以</span>
+<span class="c">; 在循环过程中以给定速率插入球并施加流体力</span>
+<span class="c">;=========================================================================</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'settled'</span>
+
+<span class="ni">[todelete </span><span class="p">=</span><span class="ni"> map</span><span class="p">()</span><span class="ni">]</span>
+<span class="nb">fish define</span><span class="ni"> delete_balls</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> key </span><span class="k">map.keys</span><span class="p">(</span><span class="ni">todelete</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> ball </span><span class="p">=</span><span class="ni"> </span><span class="k">map.remove</span><span class="p">(</span><span class="ni">todelete</span><span class="p">,</span><span class="ni">key</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">ball.delete</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="ni">  </span>
+<span class="ni">  </span><span class="k">endloop</span>
+<span class="nb">end</span>
+
+<span class="nb">fish callback</span><span class="n"> add delete_balls </span><span class="o">-</span><span class="m m-Double">12.0</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">10.0</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="m m-Double">0.0</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'sink-initial'</span>
+
+<span class="c">; 将一个函数注册到 contact_create 事件</span>
+<span class="nb">fish define</span><span class="ni"> catch_contacts</span><span class="p">(</span><span class="ni">cp</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> </span><span class="k">type.pointer</span><span class="p">(</span><span class="ni">cp</span><span class="p">)</span><span class="ni"> # </span><span class="s">'ball-facet'</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">    </span><span class="k">exit</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  wfp </span><span class="p">=</span><span class="ni"> </span><span class="k">contact.end2</span><span class="p">(</span><span class="ni">cp</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> </span><span class="k">wall.id</span><span class="p">(</span><span class="k">wall.facet.wall</span><span class="p">(</span><span class="ni">wfp</span><span class="p">))</span><span class="ni"> # </span><span class="m m-Double">2</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">    </span><span class="k">exit</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">map.add</span><span class="p">(</span><span class="ni">todelete</span><span class="p">,</span><span class="k">ball.id</span><span class="p">(</span><span class="k">contact.end1</span><span class="p">(</span><span class="ni">cp</span><span class="p">)),</span><span class="k">contact.end1</span><span class="p">(</span><span class="ni">cp</span><span class="p">))</span>
+<span class="nb">end</span>
+<span class="nb">fish callback</span><span class="n"> add catch_contacts event contact_create</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time </span><span class="m m-Double">5.0</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'sink-final1'</span>
+
+<span class="c">; 将一个函数注册到 contact_activated 事件</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'sink-initial'</span>
+
+<span class="nb">fish define</span><span class="ni"> catch_contacts</span><span class="p">(</span><span class="ni">arr</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> cp </span><span class="p">=</span><span class="ni"> arr</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> </span><span class="k">type.pointer</span><span class="p">(</span><span class="ni">cp</span><span class="p">)</span><span class="ni"> # </span><span class="s">'ball-facet'</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">    </span><span class="k">exit</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> wfp </span><span class="p">=</span><span class="ni"> </span><span class="k">contact.end2</span><span class="p">(</span><span class="ni">cp</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> </span><span class="k">wall.id</span><span class="p">(</span><span class="k">wall.facet.wall</span><span class="p">(</span><span class="ni">wfp</span><span class="p">))</span><span class="ni"> # </span><span class="m m-Double">2</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">    </span><span class="k">exit</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">map.add</span><span class="p">(</span><span class="ni">todelete</span><span class="p">,</span><span class="k">ball.id</span><span class="p">(</span><span class="k">contact.end1</span><span class="p">(</span><span class="ni">cp</span><span class="p">)),</span><span class="k">contact.end1</span><span class="p">(</span><span class="ni">cp</span><span class="p">))</span>
+<span class="nb">end</span>
+<span class="nb">fish callback</span><span class="n"> add catch_contacts event contact_activated</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time </span><span class="m m-Double">5.0</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'sink-final2'</span>
+
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：callbacks3.dat</span>
+</pre></div>
+</div>
+<p class="endnotesection rubric">尾注</p>
+<table class="docutils footnote" frame="void" id="id2" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><p class="first">要在 <span class="codename">PFC</span> 中查看本项目，请使用程序菜单。</p>
+<p><span class="menuselection">帮助 ▼ 算例…</span></p>
+<p class="last">  ⮡   PFC <br/>
+    ⮡   教程 <br/>
+      ⮡   回调 <br/>
+        ⮡   Callbacks.prj</p>
+</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../pfc_model_components/pfc_examples.html">Examples</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../tutorials.html">Tutorials</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../hopper/hopper.html" title="previous chapter"> Hopper Discharge</a> |    
+       <a href="../pingpong/PingPong.html" title="next chapter">Table Tennis</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Using FISH Callbacks" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

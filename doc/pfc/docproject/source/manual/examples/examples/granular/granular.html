@@ -1,0 +1,1333 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>颗粒试样的力学性质探究 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../../search.html" rel="search" title="Search"/>
+<link href="../ribbon_blender/ribbon_blender.html" rel="next" title="Ribbon Blender"/>
+<link href="../hopper_dynamic/HopperDynamic.html" rel="prev" title="Hopper Flow"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="probing-a-granular-specimen">
+<span id="tut-granular"></span><h1>颗粒试样的力学性质探究</h1>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">本算例的项目文件可在 <span class="codename">PFC</span> 中查看或运行。<a class="footnote-reference" href="#id2" id="id1">[1]</a>所用的<a class="reference internal" href="#tut-granular-datafiles"><span class="std std-ref">数据文件</span>（data files）</a>列于本算例末尾。</p>
+</div>
+<p class="h2 rubric">引言</p>
+<p>本算例展示如何使用 <span class="codename">PFC</span> 研究颗粒试样的力学性质。虽然讨论以 <span class="codename">PFC2D</span> 为主，但同样适用于 <span class="codename">PFC3D</span>。分别生成无黏聚力的松散和密实球颗粒集合体，并施加不同加载条件，包括各向同性压缩、双轴压缩、简单剪切和纯剪切，以突出其力学行为差异。</p>
+<p class="h2 rubric">试样生成</p>
+<p>颗粒试样的组构会显著影响其力学行为，这一点已得到广泛确认。由于试样生成过程决定组构，因此生成符合实际的材料组构十分重要。本算例采用一种简单流程，创建接触连接良好且具有各向同性的试样。用于生成材料的主数据文件为“<a class="reference internal" href="#tut-granular-granular-make-specimen-datafile2d"><span class="std std-ref">MakeSpecimen.dat</span></a>”，下面讨论其中部分代码行。</p>
+<p>该文件的开头几行调用另外两个文件，以载入若干实用函数。这两个文件将在后续各节中介绍。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">program call</span><span class="n"> </span><span class="s">'StrainUtilities.p2fis'</span><span class="n"> suppress  </span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'StressUtilities.p2fis'</span><span class="n"> suppress</span>
+</pre></div>
+</div>
+<p>以下两行用于设置 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.domain.html#kwd:model.domain.extent" title="Specify the locations of the sides of the domain. Each set of values applies
+to the...">模型计算域范围命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">domain</span> <span class="pre">extent</span></code>）</a> 以及 <a class="reference internal" href="../../../pfc_model_components/contacts/cmat_description.html#cmat"><span class="std std-ref">接触模型分配表（CMAT）</span>（Contact Model Assignment Table (CMAT)）</a> 的默认槽位：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">0.1</span><span class="n"> </span><span class="m m-Double">0.1</span><span class="n"> </span>
+<span class="nb">contact cmat</span><span class="n"> default model linear method deformability emod </span><span class="m m-Double">1.0e8</span><span class="n"> kratio </span><span class="m m-Double">2.5</span>
+</pre></div>
+</div>
+<p>在 <span class="codename">PFC</span> 中需要执行这两步：1) 在创建任何模型组件之前必须先定义域；
+2) 必须定义模型对象之间如何相互作用，因为默认情况下 <a class="reference internal" href="../../../../../../../common/contactmodel/mechanicalnull/doc/manual/cmnull.html#cmnull"><span class="std std-ref">空接触模型</span>（null contact model）</a> 会被分配给接触。改变接触分配行为的一种方式是适当地填充 CMAT 的默认槽位。在本例中，空接触模型被替换为 <a class="reference internal" href="../../../../../../../common/contactmodel/linear/doc/manual/cmlinear.html#cmlinear"><span class="std std-ref">线性接触模型</span>（linear contact model）</a>。此外，还指定了 <a class="reference internal" href="../../../../../../../common/contactmodel/linear/doc/manual/cmlinear.html#linear-model-methods"><span class="std std-ref">变形方法参数</span>（deformability method parameters）</a> 以设置接触模型刚度。请注意，在此阶段未指定接触摩擦系数，其默认值为零。</p>
+<p>使用 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/wall_manual/wall_commands/cmd_wall_generate.html#kwd:wall.generate.box" title="Generate a closed box. If the  name  keyword has not been specified, then
+ s  =  boxWall . By default, each side of the box is a separate wall.
+In this case, the wall name is concatenated with the wall side name (e.g., {top,
+bottom, left, or right in 2d; top, bottom, left, right, front, or back in 3D})
+and the wall ID. For instance, if  s  =  fred , the name of the top
+wall is  fredTopXX ,...">墙体生成盒（<code class="xref fish fish-cmd docutils literal"><span class="pre">wall</span> <span class="pre">generate</span> <span class="pre">box</span></code>）</a> 命令生成一个方形盒子，即材料容器。该盒子由四面墙组成，这些墙被扩展以便为后续运动作好准备。为方便起见，创建了四个保存墙指针的全局 <span class="codename">FISH</span> 变量。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">wall generate</span><span class="n"> name </span><span class="s">'vessel'</span><span class="n"> box </span><span class="o">-</span><span class="m m-Double">0.035</span><span class="n"> </span><span class="m m-Double">0.035</span><span class="n"> expand </span><span class="m m-Double">1.5</span>
+<span class="ni">[wp_left  </span><span class="p">=</span><span class="ni"> </span><span class="k">wall.find</span><span class="p">(</span><span class="s">'vesselLeft'</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[wp_right </span><span class="p">=</span><span class="ni"> </span><span class="k">wall.find</span><span class="p">(</span><span class="s">'vesselRight'</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[wp_bot   </span><span class="p">=</span><span class="ni"> </span><span class="k">wall.find</span><span class="p">(</span><span class="s">'vesselBottom'</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[wp_top   </span><span class="p">=</span><span class="ni"> </span><span class="k">wall.find</span><span class="p">(</span><span class="s">'vesselTop'</span><span class="p">)</span><span class="ni">]</span>
+</pre></div>
+</div>
+<p>此外还创建了两个实用 <span class="codename">FISH</span> 函数。这些函数用于计算容器的尺寸。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish define</span><span class="ni"> wlx</span>
+<span class="ni">  wlx  </span><span class="p">=</span><span class="ni"> </span><span class="k">wall.pos.x</span><span class="p">(</span><span class="ni">wp_right</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">wall.pos.x</span><span class="p">(</span><span class="ni">wp_left</span><span class="p">)</span>
+<span class="nb">end</span>
+<span class="nb">fish define</span><span class="ni"> wly</span>
+<span class="ni">  wly  </span><span class="p">=</span><span class="ni"> </span><span class="k">wall.pos.y</span><span class="p">(</span><span class="ni">wp_top</span><span class="p">)</span><span class="ni">   </span><span class="o">-</span><span class="ni"> </span><span class="k">wall.pos.y</span><span class="p">(</span><span class="ni">wp_bot</span><span class="p">)</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+<p>在盒子内分布球颗粒以达到 0.2 的目标孔隙率（见 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.distribute.html#command:ball.distribute" title="Distribute balls with overlaps..."><code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">distribute</span></code></a> 命令）。球颗粒的密度和局部阻尼属性通过 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.attribute.html#command:ball.attribute" title="Set the value of ball attributes. This command is a synonym for the  ball.initialize 
+command. Individual attributes can be listed with the  ball.list  command
+and all attributes can be visualized..."><code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">attribute</span></code></a> 命令设置。</p>
+<p><a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.distribute.html#command:ball.distribute" title="Distribute balls with overlaps..."><code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">distribute</span></code></a> 命令允许在指定体积内以目标孔隙率创建球颗粒，且假定球颗粒之间不发生重叠。系统平衡后将得到不同的孔隙率，其大小取决于球颗粒的重叠量。一般而言，这一差异可能很小。请注意使用 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.random.html#command:model.random" title="Set the seed for the random-number generator. By default  i  =  10,000 .
+The...">设置随机数种子命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">random</span></code>）</a> 命令，以确保模型多次运行时创建出相同的球颗粒分布。只要开启确定性模式（默认设置——更多细节请参阅 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.deterministic.html#command:model.deterministic" title="Set the deterministic mode. Deterministic mode is reset to the default setting
+whenever a  model.new  command is given.  The optional  default 
+keyword is used to set the default setting to  b .  When  default 
+is not used then the current deterministic mode only is set.  On installation
+(that is, prior to any user change) the program's default determinism setting
+is  on .  The default setting can also be changed by using &quot;Determinism
+by...">设置确定性模式命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">deterministic</span></code>）</a> 命令），整个模拟集的最终结果也将完全相同。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+<span class="nb">ball distribute</span><span class="n"> porosity </span><span class="m m-Double">0.2</span><span class="n"> radius </span><span class="m m-Double">0.0006</span><span class="n"> </span><span class="m m-Double">0.0009</span><span class="n"> box </span><span class="o">-</span><span class="m m-Double">0.035</span><span class="n"> </span><span class="m m-Double">0.035</span>
+</pre></div>
+</div>
+<p>我们希望球颗粒-球颗粒接触与球颗粒-面片接触具有不同的摩擦系数。可以使用 CMAT 为球颗粒-球颗粒接触与球颗粒-面片接触指定该属性，也可以使用接触属性的 <a class="reference internal" href="../../../pfc_model_components/contacts/contact_models.html#contact-models">继承（<span class="std std-ref">inheritance</span>）</a> 机制来获得相同的结果。本算例采用后一种方法，直接指定 <em>fric</em> 属性——对球颗粒使用 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.property.html#command:ball.property" title="|..."><code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">property</span></code></a> 命令，对墙面片使用 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/wall_manual/wall_commands/cmd_wall_property.html#command:wall.property" title="Assign facet surface properties. The value  a  is assigned to the surface
+property with name  s ..."><code class="xref fish fish-cmd docutils literal"><span class="pre">wall</span> <span class="pre">property</span></code></a> 命令。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">ball property</span><span class="n"> </span><span class="s">'fric'</span><span class="n"> </span><span class="ni">[ballFriction]</span>
+<span class="nb">wall property</span><span class="n"> </span><span class="s">'fric'</span><span class="n"> </span><span class="ni">[wallFriction]</span>
+</pre></div>
+</div>
+<p>尽管 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.distribute.html#command:ball.distribute" title="Distribute balls with overlaps..."><code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">distribute</span></code></a> 命令可确保球颗粒完全落在指定的生成盒内，但由于球颗粒之间可能存在较大重叠，它们仍有可能逸出；因而可能产生较大的速度。为防止这种情况发生，使用 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.cycle.html#command:model.cycle" title="Execute timesteps. The synonym  model.step  may also be used.  This is
+the equivalent of calling  model.solve  with the  cycles  keyword
+set to  i ...">执行计算时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">cycle</span></code>）</a> 命令执行若干循环。使用 <span class="cmdkey">calm</span> 关键字定期将球颗粒的速度（平动和转动）置零，从而从系统中移除动能。可用类似方式使用 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.calm.html#command:model.calm" title="Calm the model. For mechanical processes, all linear and rotational velocities
+are set to...">清零模型速度命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">calm</span></code>）</a> 命令将球颗粒和刚性团簇的平动与转动速度置零。该命令在集合体用 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令循环至平衡后调用。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span><span class="n"> calm </span><span class="m m-Double">10</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+<span class="nb">model calm</span>
+</pre></div>
+</div>
+<p>最后，调用两个 <span class="codename">FISH</span> 函数。第一个函数在该文件本身中定义；它识别没有活动接触的球颗粒，并将它们归入名为 <em>floaters</em> 的分组。第二个是 <span class="codename">FISH</span> 函数，它定义在“<a class="reference internal" href="#tut-granular-strain-utility-file"><span class="std std-ref">StrainUtilities.p2fis</span></a>”中，用于识别将在后续模拟中测量应变的应变计球。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish define</span><span class="ni"> identify_floaters</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> ball </span><span class="k">ball.list</span>
+<span class="ni">    </span><span class="k">ball.group.remove</span><span class="p">(</span><span class="ni">ball</span><span class="p">,</span><span class="s">'floaters'</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> contactmap </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.contactmap</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> size </span><span class="p">=</span><span class="ni"> </span><span class="k">map.size</span><span class="p">(</span><span class="ni">contactmap</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> size </span><span class="o">&lt;</span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">      </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'floaters'</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">endloop</span>
+<span class="nb">end</span>
+<span class="ni">[identify_floaters]</span>
+<span class="ni">[ini_gstrain</span><span class="p">(</span><span class="ni">wly</span><span class="p">)</span><span class="ni">]</span>
+</pre></div>
+</div>
+<p><a href="#tut-granular-initialsystem">图 1（Figure  1）</a> 显示了识别出应变计球和 floaters 之后的疏松试样。</p>
+<div class="figure align-center" id="tut-granular-initialsystem">
+<a class="reference internal image-reference" href="../../../../../../../_images/SampleBallsFloatersGage.png"><img alt="../../../../../../../_images/SampleBallsFloatersGage.png" src="../../../../../../../_images/SampleBallsFloatersGage.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 1：按分组标识符着色的疏松集合体。</span></p>
+</div>
+<p class="h2 rubric">应力与应变测量工具</p>
+<p class="h3 rubric">测量应力</p>
+<p>下面讨论在颗粒集合体中测量应力的几种不同方法。相应的 <span class="codename">FISH</span> 函数定义在文件“<a class="reference internal" href="#tut-granular-stress-utility-file"><span class="std std-ref">StressUtilities.p2fis</span></a>”中。请注意，在 <span class="codename">PFC2D</span> 中，计算应力时假定球颗粒为具有单位厚度的圆盘。</p>
+<p>第一种方法是利用试样施加在容器壁上的反作用力。下面两个函数对相对两壁上的反作用力求平均，再除以各方向上壁面的代表面积，从而返回水平应力和竖直应力：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish define</span><span class="ni"> wsxx</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> wp_left</span><span class="p">,</span><span class="ni"> wp_right</span><span class="p">,</span><span class="ni"> wly</span>
+<span class="ni">    wsxx </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="p">(</span><span class="k">wall.force.contact.x</span><span class="p">(</span><span class="ni">wp_left</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">           </span><span class="k">wall.force.contact.x</span><span class="p">(</span><span class="ni">wp_right</span><span class="p">))</span><span class="o">/</span><span class="ni"> wly </span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> wsyy</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> wp_bot</span><span class="p">,</span><span class="ni"> wp_top</span><span class="p">,</span><span class="ni"> wlx</span>
+<span class="ni">    wsyy </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="p">(</span><span class="k">wall.force.contact.y</span><span class="p">(</span><span class="ni">wp_bot</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni">  </span><span class="sx">...</span>
+<span class="ni">           </span><span class="k">wall.force.contact.y</span><span class="p">(</span><span class="ni">wp_top</span><span class="p">)</span><span class="ni">  </span><span class="p">)</span><span class="o">/</span><span class="ni"> wlx</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+<p>或者，也可以在模型内创建<a class="reference internal" href="../../../general_components/measure/measure.html#measure-manual"><span class="std std-ref">测量区域</span>（Measurement regions）</a>（使用 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/measure_manual/command_reference/cmd_measure/cmd_measure.create.html#command:measure.create" title='Create a measurement region. Measurement regions are {disks in 2D; spheres in
+3D}. The measurement calculation is triggered whenever a clean command is invoked,
+or whenever a |FISH| intrinsic that queries a measured value is invoked (see
+" Measure Intrinsics &lt;fish_measure_intrinsics&gt; ")...'>创建测量区域（<code class="xref fish fish-cmd docutils literal"><span class="pre">measure</span> <span class="pre">create</span></code>）</a> 命令），并用其计算位于测量区域内或与测量区域相交的接触上的平均应力（详情请参阅<a class="reference internal" href="../../../general_components/measure/measure_quantities.html#measure-stress-eq"><span class="std std-ref">此处</span>（here）</a>）。</p>
+<p>相同的计算定义在“<a class="reference internal" href="#tut-granular-stress-utility-file"><span class="std std-ref">StressUtilities.p2fis</span></a>”文件中（<a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function..."><span class="varfishsym"><span class="null">compute_spherestress</span></span></a> 函数），可对 measure 逻辑计算的结果进行验证。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish define</span><span class="ni"> compute_spherestress</span><span class="p">(</span><span class="ni">rad</span><span class="p">)</span>
+<span class="k">  command</span>
+<span class="nb">    contact group</span><span class="n"> </span><span class="s">'insphere'</span><span class="n"> remove</span>
+<span class="nb">    contact group</span><span class="n"> </span><span class="s">'insphere'</span><span class="n"> range circle radius </span><span class="ni">[rad]</span>
+<span class="k">  endcommand</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> ssxx </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> ssxy </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> ssyx </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> ssyy </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> contact </span><span class="k">contact.groupmap</span><span class="p">(</span><span class="s">"insphere"</span><span class="p">,</span><span class="s">"ball-ball"</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> cf </span><span class="p">=</span><span class="ni"> </span><span class="k">contact.force.global</span><span class="p">(</span><span class="ni">contact</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> cl </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="k">contact.end2</span><span class="p">(</span><span class="ni">contact</span><span class="p">))</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">               </span><span class="k">ball.pos</span><span class="p">(</span><span class="k">contact.end1</span><span class="p">(</span><span class="ni">contact</span><span class="p">))</span>
+<span class="ni">    ssxx </span><span class="p">=</span><span class="ni"> ssxx </span><span class="o">+</span><span class="ni"> </span><span class="k">comp.x</span><span class="p">(</span><span class="ni">cf</span><span class="p">)</span><span class="ni"> </span><span class="o">*</span><span class="k">comp.x</span><span class="p">(</span><span class="ni">cl</span><span class="p">)</span>
+<span class="ni">    ssxy </span><span class="p">=</span><span class="ni"> ssxy </span><span class="o">+</span><span class="ni"> </span><span class="k">comp.x</span><span class="p">(</span><span class="ni">cf</span><span class="p">)</span><span class="ni"> </span><span class="o">*</span><span class="k">comp.y</span><span class="p">(</span><span class="ni">cl</span><span class="p">)</span>
+<span class="ni">    ssyx </span><span class="p">=</span><span class="ni"> ssyx </span><span class="o">+</span><span class="ni"> </span><span class="k">comp.y</span><span class="p">(</span><span class="ni">cf</span><span class="p">)</span><span class="ni"> </span><span class="o">*</span><span class="k">comp.x</span><span class="p">(</span><span class="ni">cl</span><span class="p">)</span>
+<span class="ni">    ssyy </span><span class="p">=</span><span class="ni"> ssyy </span><span class="o">+</span><span class="ni"> </span><span class="k">comp.y</span><span class="p">(</span><span class="ni">cf</span><span class="p">)</span><span class="ni"> </span><span class="o">*</span><span class="k">comp.y</span><span class="p">(</span><span class="ni">cl</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">endloop</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> vol </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="k">math.pi</span><span class="o">*</span><span class="ni">rad</span><span class="o">^</span><span class="m m-Double">2</span><span class="p">)</span>
+<span class="ni">  ssxx </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni"> ssxx </span><span class="o">/</span><span class="ni"> vol</span>
+<span class="ni">  ssxy </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni"> ssxy </span><span class="o">/</span><span class="ni"> vol</span>
+<span class="ni">  ssyx </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni"> ssyx </span><span class="o">/</span><span class="ni"> vol</span>
+<span class="ni">  ssyy </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni"> ssyy </span><span class="o">/</span><span class="ni"> vol</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+<p>该计算可以针对不同的探测体积进行（该体积相对于颗粒尺寸要足够大）。例如，<a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function..."><span class="varfishsym"><span class="null">compute_averagestress</span></span></a> 函数（位于“<a class="reference internal" href="#tut-granular-stress-utility-file"><span class="std std-ref">StressUtilities.p2fis</span></a>”中）计算整个容器体积上的平均应力。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish define</span><span class="ni"> compute_averagestress</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> asxx </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> asxy </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> asyx </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> asyy </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> contact </span><span class="k">contact.list</span><span class="p">(</span><span class="s">"ball-ball"</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> cforce </span><span class="p">=</span><span class="ni">  </span><span class="k">contact.force.global</span><span class="p">(</span><span class="ni">contact</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> cl </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="k">contact.end2</span><span class="p">(</span><span class="ni">contact</span><span class="p">))</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">               </span><span class="k">ball.pos</span><span class="p">(</span><span class="k">contact.end1</span><span class="p">(</span><span class="ni">contact</span><span class="p">))</span>
+<span class="ni">    asxx </span><span class="p">=</span><span class="ni"> asxx </span><span class="o">+</span><span class="ni"> </span><span class="k">comp.x</span><span class="p">(</span><span class="ni">cforce</span><span class="p">)</span><span class="o">*</span><span class="k">comp.x</span><span class="p">(</span><span class="ni">cl</span><span class="p">)</span>
+<span class="ni">    asxy </span><span class="p">=</span><span class="ni"> asxy </span><span class="o">+</span><span class="ni"> </span><span class="k">comp.x</span><span class="p">(</span><span class="ni">cforce</span><span class="p">)</span><span class="o">*</span><span class="k">comp.y</span><span class="p">(</span><span class="ni">cl</span><span class="p">)</span>
+<span class="ni">    asyx </span><span class="p">=</span><span class="ni"> asyx </span><span class="o">+</span><span class="ni"> </span><span class="k">comp.y</span><span class="p">(</span><span class="ni">cforce</span><span class="p">)</span><span class="o">*</span><span class="k">comp.x</span><span class="p">(</span><span class="ni">cl</span><span class="p">)</span>
+<span class="ni">    asyy </span><span class="p">=</span><span class="ni"> asyy </span><span class="o">+</span><span class="ni"> </span><span class="k">comp.y</span><span class="p">(</span><span class="ni">cforce</span><span class="p">)</span><span class="o">*</span><span class="k">comp.y</span><span class="p">(</span><span class="ni">cl</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">endloop</span>
+<span class="ni">  asxx </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni"> asxx </span><span class="o">/</span><span class="ni"> </span><span class="p">(</span><span class="ni">wlx</span><span class="o">*</span><span class="ni">wly</span><span class="p">)</span>
+<span class="ni">  asxy </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni"> asxy </span><span class="o">/</span><span class="ni"> </span><span class="p">(</span><span class="ni">wlx</span><span class="o">*</span><span class="ni">wly</span><span class="p">)</span>
+<span class="ni">  asyx </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni"> asyx </span><span class="o">/</span><span class="ni"> </span><span class="p">(</span><span class="ni">wlx</span><span class="o">*</span><span class="ni">wly</span><span class="p">)</span>
+<span class="ni">  asyy </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni"> asyy </span><span class="o">/</span><span class="ni"> </span><span class="p">(</span><span class="ni">wlx</span><span class="o">*</span><span class="ni">wly</span><span class="p">)</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+<p>在各向同性固结至 500kPa 围压的阶段结束时测量应力所得到的结果列于 <a href="#tut-granular-measurestresstable">表 1（Table  1）</a> 中，以供比较。正如预期，<a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function..."><span class="varfishsym"><span class="null">compute_spherestress</span></span></a> 函数返回的值与使用 <a class="reference internal" href="../../../general_components/measure/measure.html#measure-manual">测量（<span class="std std-ref">Measure</span>）</a> 逻辑得到的值相同，因为两者的运算完全相同，且应力是在同一区域上测量的。<a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function..."><span class="varfishsym"><span class="null">compute_averagestress</span></span></a> 与 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function..."><span class="varfishsym"><span class="null">compute_wallstress</span></span></a> 函数计算出的应力略有差异，这是由于试样尺寸相对较小且所用的测量技术不同，但仍在目标值的 3% 以内。</p>
+<table border="1" class="centered textalign-center docutils" id="tut-granular-measurestresstable">
+<caption><span class="caption-text">表 1：应力测量——2D 模型</span></caption>
+<colgroup>
+<col width="29%"/>
+<col width="17%"/>
+<col width="17%"/>
+<col width="17%"/>
+<col width="19%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head"> </th>
+<th class="head" colspan="2">疏松试样</th>
+<th class="head" colspan="2">密实试样</th>
+</tr>
+<tr class="row-even"><th class="head"> </th>
+<th class="head">XX 向应力 [Pa]</th>
+<th class="head">YY 向应力 [Pa]</th>
+<th class="head">XX 向应力 [Pa]</th>
+<th class="head">YY 向应力 [Pa]</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-odd"><td>Measure 逻辑</td>
+<td>-5.009178e+05</td>
+<td>-4.932599e+05</td>
+<td>-5.185070e+05</td>
+<td>-5.147563e+05</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function..."><span class="varfishsym"><span class="null">compute_spherestress</span></span></a></td>
+<td>-5.009178e+05</td>
+<td>-4.932599e+05</td>
+<td>-5.185070e+05</td>
+<td>-5.147563e+05</td>
+</tr>
+<tr class="row-odd"><td><a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function..."><span class="varfishsym"><span class="null">compute_averagestress</span></span></a></td>
+<td>-4.893537e+05</td>
+<td>-4.890566e+05</td>
+<td>-4.890899e+05</td>
+<td>-4.888240e+05</td>
+</tr>
+<tr class="row-even"><td><a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function..."><span class="varfishsym"><span class="null">compute_wallstress</span></span></a></td>
+<td>-5.000043e+05</td>
+<td>-4.999950e+05</td>
+<td>-5.000057e+05</td>
+<td>-4.999945e+05</td>
+</tr>
+</tbody>
+</table>
+<p class="h3 rubric">测量应变</p>
+<p>与应力类似，应变也可以用多种方法评估。下面讨论几种方法，相应的 <span class="codename">FISH</span>  函数可在“<a class="reference internal" href="#tut-granular-strain-utility-file"><span class="std std-ref">StrainUtilities.p2fis</span></a>”中找到。</p>
+<p>宏观轴向应变和侧向应变也可以由边界墙的相对位移计算得到：</p>
+<div class="math" id="equation-tut-granular-wallstraineq">
+<span class="eqno">(1)</span>\[\epsilon_{ii} = \frac{L_{ii} - L_{ii}^{(0)}}{L_{ii}^{(0)}}\]</div>
+<p>其中 <span class="math">\(L_{ii}^{(0)}\)</span> 和 <span class="math">\(L_{ii}\)</span> 分别为试样在 <span class="math">\(i\)</span> 方向上的初始长度与当前长度。</p>
+<p><a class="reference internal" href="../../../general_components/measure/measure.html#measure-manual">测量（<span class="std std-ref">Measure</span>）</a> 逻辑可用于评估给定步时在某一测量区域上的应变率。因此，可将计算得到的应变率乘以当前时步，从而在每次迭代中累积应变增量。由于需要在每个循环中计算应变率并累积应变增量，这一操作的计算量可能很大。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish define</span><span class="ni"> ini_mstrain</span><span class="p">(</span><span class="ni">sid</span><span class="p">)</span>
+<span class="k">  command</span>
+<span class="nb">    ball attribute</span><span class="n"> displacement multiply </span><span class="m m-Double">0.0</span>
+<span class="k">  endcommand</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> mstrains </span><span class="p">=</span><span class="ni"> matrix</span><span class="p">(</span><span class="m m-Double">2</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> mp </span><span class="p">=</span><span class="ni"> </span><span class="k">measure.find</span><span class="p">(</span><span class="ni">sid</span><span class="p">)</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> accumulate_mstrain</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> msrate </span><span class="p">=</span><span class="ni">  </span><span class="k">measure.strain.rate</span><span class="p">(</span><span class="ni">mp</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> mstrains </span><span class="p">=</span><span class="ni"> mstrains </span><span class="o">+</span><span class="ni"> msrate </span><span class="o">*</span><span class="ni"> </span><span class="k">global.timestep</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> xxmstrain </span><span class="p">=</span><span class="ni"> mstrains</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> xymstrain </span><span class="p">=</span><span class="ni"> mstrains</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> yxmstrain </span><span class="p">=</span><span class="ni"> mstrains</span><span class="p">(</span><span class="m m-Double">2</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> yymstrain </span><span class="p">=</span><span class="ni"> mstrains</span><span class="p">(</span><span class="m m-Double">2</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+<p>评估应变的另一种方法依赖于测量标距颗粒之间的相对位移。该方法的优点是可同时测量轴向应变和切向应变，但缺点在于受系统离散性质的影响。函数 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">初始化总应变（<span class="varfishsym"><span class="null">ini_gstrain</span></span>）</a>（位于“<a class="reference internal" href="#tut-granular-strain-utility-file"><span class="std std-ref">StrainUtilities.p2fis</span></a>”中）可用于为应变测量布置标距颗粒。沿 <em>y</em> 轴使用 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_fish/ball_utilities/fish_ball.near.html#function:ball.near" title="Find the closest ball to a point. If  frad  is specified, then the search
+radius is limited...">最近球体（<code class="xref fish fish-func docutils literal"><span class="pre">ball.near</span></code>）</a> <span class="codename">FISH</span> 工具函数识别出四个等间距的标距颗粒，并赋予分组标识 <em>gauge_balls</em>。记录它们的初始相对位置，即可计算任意时刻的应变，如用于计算切向应变的 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">xy 向总应变（<span class="varfishsym"><span class="null">xygstrain</span></span>）</a> 函数所示。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish define</span><span class="ni"> ini_gstrain</span><span class="p">(</span><span class="ni">ly</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> pos </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">ly</span><span class="p">)</span><span class="o">*</span><span class="m m-Double">0.75</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> gb1 </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="ni">pos</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">gb1</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'gauge_balls'</span>
+<span class="ni">  pos </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">ly</span><span class="p">)</span><span class="o">*</span><span class="m m-Double">0.25</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> gb2 </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="ni">pos</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">gb2</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'gauge_balls'</span>
+<span class="ni">  pos </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="p">,</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">ly</span><span class="p">)</span><span class="o">*</span><span class="m m-Double">0.25</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> gb3 </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="ni">pos</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">gb3</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'gauge_balls'</span>
+<span class="ni">  pos </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">ly</span><span class="p">)</span><span class="o">*</span><span class="m m-Double">0.75</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> gb4 </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="ni">pos</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">gb4</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'gauge_balls'</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> gl1</span><span class="m m-Double">2</span><span class="ni">_0  </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">gb2</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">gb1</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> gl1</span><span class="m m-Double">3</span><span class="ni">_0  </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">gb3</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">gb1</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> gl1</span><span class="m m-Double">4</span><span class="ni">_0  </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">gb4</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">gb1</span><span class="p">)</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> xygstrain</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> gl1</span><span class="m m-Double">2</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">gb2</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">gb1</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> xygstrain1</span><span class="m m-Double">2</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="k">comp.x</span><span class="p">(</span><span class="ni">gl1</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">comp.x</span><span class="p">(</span><span class="ni">gl1</span><span class="m m-Double">2</span><span class="ni">_0</span><span class="p">))</span><span class="o">/</span><span class="ni"> </span><span class="k">comp.y</span><span class="p">(</span><span class="ni">gl1</span><span class="m m-Double">2</span><span class="ni">_0</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> gl1</span><span class="m m-Double">3</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">gb3</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">gb1</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> xygstrain1</span><span class="m m-Double">3</span><span class="ni"> </span><span class="p">=</span><span class="ni">  </span><span class="p">(</span><span class="k">comp.x</span><span class="p">(</span><span class="ni">gl1</span><span class="m m-Double">3</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">comp.x</span><span class="p">(</span><span class="ni">gl1</span><span class="m m-Double">3</span><span class="ni">_0</span><span class="p">))</span><span class="o">/</span><span class="ni"> </span><span class="k">comp.y</span><span class="p">(</span><span class="ni">gl1</span><span class="m m-Double">3</span><span class="ni">_0</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> gl1</span><span class="m m-Double">4</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">gb4</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">gb1</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> xygstrain1</span><span class="m m-Double">4</span><span class="ni"> </span><span class="p">=</span><span class="ni">  </span><span class="p">(</span><span class="k">comp.x</span><span class="p">(</span><span class="ni">gl1</span><span class="m m-Double">4</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">comp.x</span><span class="p">(</span><span class="ni">gl1</span><span class="m m-Double">4</span><span class="ni">_0</span><span class="p">))</span><span class="o">/</span><span class="ni"> </span><span class="k">comp.y</span><span class="p">(</span><span class="ni">gl1</span><span class="m m-Double">4</span><span class="ni">_0</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">  xygstrain </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">xygstrain1</span><span class="m m-Double">2</span><span class="ni"> </span><span class="o">+</span><span class="ni"> xygstrain1</span><span class="m m-Double">3</span><span class="ni"> </span><span class="o">+</span><span class="ni"> xygstrain1</span><span class="m m-Double">4</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="m m-Double">3.0</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+<p class="h2 rubric">双轴试验</p>
+<p>前几节讨论的工具被组合起来以执行一个简单的双轴试验。双轴试验分两个阶段进行：先是一个各向同性固结阶段，在该阶段中试样在指定的围压下达到平衡；随后是在恒定侧向应力下沿竖直方向进行双轴压缩。</p>
+<p>在固结阶段，试样以应变控制的方式加载，但容器边界墙的速度通过伺服控制机制进行调整，从而获得目标围压。</p>
+<p>在双轴压缩阶段，对作为加载压板、以恒定速度运动的顶墙和底墙停用伺服控制，而左墙和右墙的伺服控制保持激活，以维持围压。试样所经受的应力和应变通过计算相对墙上的作用应力与相对位移，以宏观方式确定。<a class="reference internal" href="../../../../../../../common/kernel/doc/manual/history_manual/history.html#history-manual">历程（<span class="std std-ref">History</span>）</a> 逻辑用于监测系统的演化。</p>
+<p class="h3 rubric">伺服控制机制</p>
+<p><a class="reference internal" href="../../../../../../pfcmodule/doc/manual/wall_manual/wall_commands/cmd_wall_servo.html#command:wall.servo" title="The  wall.servo  provides the ability to control the translational velocity
+of select walls using a servo-mechanism in order to..."><code class="xref fish fish-cmd docutils literal"><span class="pre">wall</span> <span class="pre">servo</span></code></a> 命令用于设置每面墙的伺服控制的活动状态和参数。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="ni">[txx </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">5.0e5</span><span class="ni">]</span>
+<span class="ni">[tyy </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">5.0e5</span><span class="ni">]</span>
+<span class="nb">wall servo</span><span class="n"> activate </span><span class="sx">on</span><span class="n"> force</span><span class="o">-</span><span class="n">x </span><span class="ni">[ txx</span><span class="o">*</span><span class="ni">wly]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                       velocity</span><span class="o">-</span><span class="n">max </span><span class="m m-Double">0.1</span><span class="n"> range set name </span><span class="s">'vesselRight'</span>
+<span class="nb">wall servo</span><span class="n"> activate </span><span class="sx">on</span><span class="n"> force</span><span class="o">-</span><span class="n">x </span><span class="ni">[</span><span class="o">-</span><span class="ni">txx</span><span class="o">*</span><span class="ni">wly]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                       velocity</span><span class="o">-</span><span class="n">max </span><span class="m m-Double">0.1</span><span class="n"> range set name </span><span class="s">'vesselLeft'</span>
+<span class="nb">wall servo</span><span class="n"> activate </span><span class="sx">on</span><span class="n"> force</span><span class="o">-</span><span class="n">y </span><span class="ni">[ tyy</span><span class="o">*</span><span class="ni">wlx]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                       velocity</span><span class="o">-</span><span class="n">max </span><span class="m m-Double">0.1</span><span class="n"> range set name </span><span class="s">'vesselTop'</span>
+<span class="nb">wall servo</span><span class="n"> activate </span><span class="sx">on</span><span class="n"> force</span><span class="o">-</span><span class="n">y </span><span class="ni">[</span><span class="o">-</span><span class="ni">tyy</span><span class="o">*</span><span class="ni">wlx]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                       velocity</span><span class="o">-</span><span class="n">max </span><span class="m m-Double">0.1</span><span class="n"> range set name </span><span class="s">'vesselBottom'</span>
+</pre></div>
+</div>
+<p>请注意，该命令确实以力而非应力作为输入参数。原因在于墙的“活动”面积取决于模型，而 <span class="codename">PFC</span> 没有可用于评估该面积的信息。例如，在本模型中，容器墙最初被扩展以容纳试验过程中的运动，墙的“活动”部分对应于容器尺寸 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">局部 x 权重（<span class="varfishsym"><span class="null">wlx</span></span>）</a> 和 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">局部 y 权重（<span class="varfishsym"><span class="null">wly</span></span>）</a>。因此，要施加目标应力，作为 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/wall_manual/wall_commands/cmd_wall_servo.html#command:wall.servo" title="The  wall.servo  provides the ability to control the translational velocity
+of select walls using a servo-mechanism in order to..."><code class="xref fish fish-cmd docutils literal"><span class="pre">wall</span> <span class="pre">servo</span></code></a> 命令输入的力必须随试验过程中 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">局部 x 权重（<span class="varfishsym"><span class="null">wlx</span></span>）</a> 和 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">局部 y 权重（<span class="varfishsym"><span class="null">wly</span></span>）</a> 的变化而调整。这是通过使用 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/fish/commands/cmd_fish.callback.html#command:fish.callback" title="Add/remove functions to be executed in response to callback events...">设置FISH回调命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fish</span> <span class="pre">callback</span></code>）</a> 命令在循环序列中注册函数来实现的（关于回调函数的详细讨论请参阅 <a class="reference internal" href="../../tutorials/callbacks/callbacks.html#tuto-callbacks"><span class="std std-ref">本教程</span>（this tutorial）</a>）。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish define</span><span class="ni"> servo_walls</span>
+<span class="ni">  </span><span class="k">wall.servo.force.x</span><span class="p">(</span><span class="ni">wp_right</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni">   txx</span><span class="o">*</span><span class="ni">wly</span>
+<span class="ni">  </span><span class="k">wall.servo.force.x</span><span class="p">(</span><span class="ni">wp_left</span><span class="p">)</span><span class="ni">  </span><span class="p">=</span><span class="ni">  </span><span class="o">-</span><span class="ni">txx</span><span class="o">*</span><span class="ni">wly</span>
+<span class="ni">  </span><span class="k">wall.servo.force.y</span><span class="p">(</span><span class="ni">wp_top</span><span class="p">)</span><span class="ni">   </span><span class="p">=</span><span class="ni">   tyy</span><span class="o">*</span><span class="ni">wlx</span>
+<span class="ni">  </span><span class="k">wall.servo.force.y</span><span class="p">(</span><span class="ni">wp_bot</span><span class="p">)</span><span class="ni">   </span><span class="p">=</span><span class="ni">  </span><span class="o">-</span><span class="ni">tyy</span><span class="o">*</span><span class="ni">wlx</span>
+<span class="nb">end</span>
+<span class="nb">fish callback</span><span class="n"> add servo_walls  </span><span class="m m-Double">9.0</span><span class="n"> </span>
+</pre></div>
+</div>
+<p class="h3 rubric">各向同性固结阶段</p>
+<p>调用文件“<a class="reference internal" href="#tut-granular-compact-specimen-datafile2d"><span class="std std-ref">CompactSpecimen.dat</span></a>”来执行该阶段。先计算容器的初始尺寸，并定义施加于颗粒试样的各向同性应力。竖直墙和水平墙均发生移动，以逐步施加所需的应力。函数 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">伺服墙体（<span class="varfishsym"><span class="null">servo_walls</span></span>）</a> 被注册为在每个循环中求解运动方程之前执行。模拟过程中使用 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/history_manual/history.html#history-manual">历程（<span class="std std-ref">History</span>）</a> 逻辑记录水平应力和竖直应力。开启方向追踪（见 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.orientation-tracking.html#command:model.orientation-tracking" title="Specify the orientation tracking state. Orientation tracking applies to |pfc|
+entities...">设置方向跟踪（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">orientation-tracking</span></code>）</a> 命令），以便跟踪和可视化球颗粒的方位。</p>
+<p>模型循环计算，直至基于墙测量的水平应力和竖直应力接近指定应力（在用户定义的容差内），且平均不平衡力比 <span class="cmdkey">ratio-average</span> 小于或等于 1e-6（见 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#kwd:model.solve.ratio-average" title="Limit based on the average convergence ratio returned by all active modules...">模型求解比平均（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span> <span class="pre">ratio-average</span></code>）</a> 命令）。这一复杂的停止判据定义在函数 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">停止标志（<span class="varfishsym"><span class="null">stop_me</span></span>）</a> 中，该函数在每个循环结束时执行。它通过 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#kwd:model.solve.fish-halt" title="The |FISH| function  s  is called during every cycle to determine whether
+cycling should continue. If  s  returns  false , cycling continues;
+otherwise, cycling terminates...">模型求解 FISH 停止命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span> <span class="pre">fish-halt</span></code>）</a> 命令注册为求解限制。下面给出了就位阶段各方向的应力状态。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="ni">[tol </span><span class="p">=</span><span class="ni">  </span><span class="m m-Double">5e-3</span><span class="ni">]</span>
+<span class="nb">fish define</span><span class="ni"> stop_me</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> </span><span class="k">math.abs</span><span class="p">((</span><span class="ni">wsyy </span><span class="o">-</span><span class="ni"> tyy</span><span class="p">)</span><span class="o">/</span><span class="ni">tyy</span><span class="p">)</span><span class="ni"> </span><span class="o">&gt;</span><span class="ni"> tol</span>
+<span class="ni">    </span><span class="k">exit</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> </span><span class="k">math.abs</span><span class="p">((</span><span class="ni">wsxx </span><span class="o">-</span><span class="ni"> txx</span><span class="p">)</span><span class="o">/</span><span class="ni">txx</span><span class="p">)</span><span class="ni"> </span><span class="o">&gt;</span><span class="ni"> tol</span>
+<span class="ni">    </span><span class="k">exit</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> </span><span class="k">mech.solve</span><span class="p">(</span><span class="s">"ratio-average"</span><span class="p">)</span><span class="ni"> </span><span class="o">&gt;</span><span class="ni"> </span><span class="m m-Double">1e-6</span>
+<span class="ni">    </span><span class="k">exit</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  stop_me </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id3">
+<a class="reference internal image-reference" href="../../../../../../../_images/02_StressIso.png"><img alt="../../../../../../../_images/02_StressIso.png" src="../../../../../../../_images/02_StressIso.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：各向同性压缩阶段结束时（ <span class="math">\(\sigma_{iso}\)</span> = 1 MPa）的应力状态（由边界墙上的接触力计算）。</span></p>
+</div>
+<p>在该阶段结束时创建一个测量区域来计算试样的孔隙率，同时也调用上文讨论的其他计算应力的函数以作比较。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">measure create</span><span class="n"> id </span><span class="m m-Double">1</span><span class="n"> rad </span><span class="ni">[</span><span class="m m-Double">0.4</span><span class="o">*</span><span class="p">(</span><span class="k">math.min</span><span class="p">(</span><span class="ni">lx0</span><span class="p">,</span><span class="ni">ly0</span><span class="p">))</span><span class="ni">]</span>
+<span class="ni">[porosity </span><span class="p">=</span><span class="ni"> </span><span class="k">measure.porosity</span><span class="p">(</span><span class="k">measure.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">))</span><span class="ni">]</span>
+<span class="ni">[compute_spherestress</span><span class="p">(</span><span class="m m-Double">0.4</span><span class="o">*</span><span class="p">(</span><span class="k">math.min</span><span class="p">(</span><span class="ni">lx0</span><span class="p">,</span><span class="ni">ly0</span><span class="p">)))</span><span class="ni">]</span>
+<span class="ni">[compute_averagestress]</span>
+</pre></div>
+</div>
+<p>列于 <a class="reference internal" href="#tut-granular-measurestresstable"><span class="std std-ref">上方</span>（above）</a> 表格中的结果比较了松散试样和密实试样采用不同方法获得的应力值。</p>
+<p class="h3 rubric">偏应力加载阶段</p>
+<p>调用文件“<a class="reference internal" href="#tut-granular-biaxialfile"><span class="std std-ref">BiaxialTest.dat</span></a>”来执行该阶段。</p>
+<p>修改球-球接触和球-面片接触的摩擦系数，这些摩擦系数是在前几个阶段为获得试样所需孔隙率而设置的。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">ball property</span><span class="n"> </span><span class="s">'fric'</span><span class="n"> </span><span class="ni">[ballFriction]</span>
+<span class="nb">wall property</span><span class="n"> </span><span class="s">'fric'</span><span class="n"> </span><span class="ni">[wallFriction]</span>
+</pre></div>
+</div>
+<p>平衡后的系统即可进行双轴试验。对顶墙和底墙设置大小相等、方向相反的恒定速度，执行应变控制的压缩试验。侧墙的速度通过前文所述的伺服控制机制更新，以维持适当的围压。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="ni">[rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.2</span><span class="ni">]</span>
+<span class="nb">wall servo</span><span class="n"> activate </span><span class="sx">off</span><span class="n"> range set name </span><span class="s">'vesselTop'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                              set name </span><span class="s">'vesselBottom'</span><span class="n"> union </span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="ni">[</span><span class="o">-</span><span class="ni">rate</span><span class="o">*</span><span class="ni">wly]</span><span class="n"> range set name </span><span class="s">'vesselTop'</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="ni">[ rate</span><span class="o">*</span><span class="ni">wly]</span><span class="n"> range set name </span><span class="s">'vesselBottom'</span>
+</pre></div>
+</div>
+<p>计算容器的初始尺寸，并将应变变量（轴向应变、侧向应变和体积应变）设为零。这些值将在模拟过程中根据相应墙之间的相对距离更新，并使用 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/history_manual/history.html#history-manual">历程（<span class="std std-ref">History</span>）</a> 逻辑记录。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="ni">[ly0 </span><span class="p">=</span><span class="ni"> wly]</span>
+<span class="ni">[lx0 </span><span class="p">=</span><span class="ni"> wlx]</span>
+<span class="ni">[wexx </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">]</span>
+<span class="ni">[weyy </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">]</span>
+<span class="ni">[wevol </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">]</span>
+
+<span class="nb">fish define</span><span class="ni"> wexx</span>
+<span class="ni">  wexx  </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">wlx </span><span class="o">-</span><span class="ni"> lx0</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> lx0 </span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> weyy</span>
+<span class="ni">  weyy </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">wly </span><span class="o">-</span><span class="ni"> ly0</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> ly0</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> wevol</span>
+<span class="ni">  wevol </span><span class="p">=</span><span class="ni"> wexx </span><span class="o">+</span><span class="ni"> weyy</span>
+<span class="nb">end</span>
+
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'51'</span><span class="n"> wexx</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'52'</span><span class="n"> weyy</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'53'</span><span class="n"> wevol</span>
+<span class="nb">history purge</span>
+</pre></div>
+</div>
+<p>系统被加载至 7.5% 的竖向应变（参见 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function..."><span class="varfishsym"><span class="null">target</span></span></a> 变量及其在 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">停止标志（<span class="varfishsym"><span class="null">stop_me</span></span>）</a> 函数中的用法）。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="ni">[stop_me </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span><span class="ni">]</span>
+<span class="ni">[target </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.075</span><span class="ni">]</span>
+<span class="nb">fish define</span><span class="ni"> stop_me</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> weyy </span><span class="o">&lt;</span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni">target </span><span class="k">then</span>
+<span class="ni">    stop_me </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+<p class="h3 rubric">密实试样与松散试样的双轴试验</p>
+<p>为评估松散试样与密实试样之间的差异，分别对二者进行双轴试验。为生成松散或密实的颗粒堆积，调整了球-球接触处摩擦系数的相应取值。数据文件“<a class="reference internal" href="#tut-granular-doall-file"><span class="std std-ref">Doall.dat</span></a>”包含以下命令：制备松散试样、在指定围压下对其进行压实，最后执行双轴压缩。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="c">;定义球与墙的摩擦值以生成松散试样</span>
+<span class="ni">[ballFriction </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.3</span><span class="ni"> ]</span>
+<span class="ni">[wallFriction </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">    ]</span>
+<span class="ni">[filename </span><span class="p">=</span><span class="ni"> </span><span class="s">'loose'</span><span class="ni">    ]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'MakeSpecimen'</span>
+<span class="nb">model save</span><span class="n"> </span><span class="ni">[</span><span class="s">'specimen'</span><span class="o">+</span><span class="ni">filename]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'CompactSpecimen'</span>
+<span class="nb">model save</span><span class="n"> </span><span class="ni">[</span><span class="s">'biaxial-iso'</span><span class="o">+</span><span class="ni">filename]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'BiaxialTest'</span>
+<span class="nb">model save</span><span class="n"> </span><span class="ni">[</span><span class="s">'biaxial-final'</span><span class="o">+</span><span class="ni">filename]</span>
+
+<span class="c">;---------密实试样双轴试验</span>
+<span class="nb">model new</span>
+<span class="c">;定义球与墙的摩擦值以生成密实试样</span>
+<span class="ni">[ballFriction </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni"> ]</span>
+<span class="ni">[wallFriction </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">    ]</span>
+<span class="ni">[filename </span><span class="p">=</span><span class="ni"> </span><span class="s">'dense'</span><span class="ni">  ]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'MakeSpecimen'</span>
+<span class="nb">model save</span><span class="n"> </span><span class="ni">[</span><span class="s">'specimen'</span><span class="o">+</span><span class="ni">filename]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'CompactSpecimen'</span>
+<span class="nb">model save</span><span class="n"> </span><span class="ni">[</span><span class="s">'biaxial-iso'</span><span class="o">+</span><span class="ni">filename]</span>
+<span class="ni">[ballFriction </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.3</span><span class="ni">  ]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'BiaxialTest'</span>
+<span class="nb">model save</span><span class="n"> </span><span class="ni">[</span><span class="s">'biaxial-final'</span><span class="o">+</span><span class="ni">filename]</span>
+</pre></div>
+</div>
+<p>为获得松散试样，球-球接触采用 0.3 的摩擦系数。该值在整个模拟过程中保持不变（试样制备、各向同性压实、双轴压缩）。墙摩擦系数设为零，使球-面片接触中不会产生剪力。采用无摩擦的墙可减小制备阶段和压缩阶段的边界效应。</p>
+<p>为制备密实试样，球-球接触处的摩擦系数初始设为零。在制备阶段和压实阶段之后、双轴压缩之前，再将球-球接触的摩擦系数设为所需值 0.3。</p>
+<p>在固结阶段结束时测得，松散试样与密实试样的孔隙率分别为 <span class="math">\(n\)</span> = 0.187 和 <span class="math">\(n\)</span> = 0.151。</p>
+<p>从 <a href="#tut-granular-stressstrainbiax">图 3（Figures  3）</a> 和 <a href="#tut-granular-volstrainbiax">图 4</a> 的应力-应变曲线可以看出，颗粒材料在双轴试验中的典型行为得以再现。密实试样的应力-应变曲线具有明显的峰值，而松散试样则单调地演化至同一临界状态。就体积变形而言，松散试样发生收缩，而密实试样则表现出由收缩向剪胀的转变。</p>
+<div class="figure align-center" id="tut-granular-stressstrainbiax">
+<a class="reference internal image-reference" href="../../../../../../../_images/biaxialStressStrain.png"><img alt="../../../../../../../_images/biaxialStressStrain.png" src="../../../../../../../_images/biaxialStressStrain.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 3：松散（蓝色）与密实（红色）试样在双轴压缩下的应力-应变曲线。</span></p>
+</div>
+<div class="figure align-center" id="tut-granular-volstrainbiax">
+<a class="reference internal image-reference" href="../../../../../../../_images/biaxialEpsVol.png"><img alt="../../../../../../../_images/biaxialEpsVol.png" src="../../../../../../../_images/biaxialEpsVol.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 4：松散（蓝色）与密实（红色）试样在双轴压缩下的体积应变演化。</span></p>
+</div>
+<p class="h3 rubric">弹性参数的计算</p>
+<p>材料的弹性性质可通过在弹性条件下进行加载/卸载试验并测量杨氏模量和泊松比来确定。该过程在文件“<a class="reference internal" href="#tut-granular-loadunload-file"><span class="std std-ref">LoadUnload.dat</span></a>”中实现。<a href="#tut-granular-loadunloadfig">图 5（Figures  5）</a> 和 <a href="#tut-granular-loadunloadvolfig">图 6</a> 给出了密实试样的轴向偏应力与体积应变随轴向应变变化的曲线。由这些图可得，杨氏模量为</p>
+<div class="math" id="equation-tut-granular-young">
+<span class="eqno">(2)</span>\[E = \frac{\Delta \sigma_a}{\Delta \varepsilon_a} \simeq 70 \mbox{MPa}\]</div>
+<p>而泊松比为</p>
+<div class="math" id="equation-tut-granular-poisson">
+<span class="eqno">(3)</span>\[\nu = \frac{\Delta \varepsilon_r}{\Delta \varepsilon_a} \simeq 0.2\]</div>
+<p>剪切模量可用下式估算：</p>
+<div class="math" id="equation-tut-granular-shearmod">
+<span class="eqno">(4)</span>\[G = \frac{E}{2(1+\nu)} \simeq 30  \mbox{MPa}\]</div>
+<div class="figure align-center" id="tut-granular-loadunloadfig">
+<a class="reference internal image-reference" href="../../../../../../../_images/00_LoadUnload.png"><img alt="../../../../../../../_images/00_LoadUnload.png" src="../../../../../../../_images/00_LoadUnload.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 5：弹性加载/卸载试验（密实试样）的轴向偏应力-轴向应变曲线。</span></p>
+</div>
+<div class="figure align-center" id="tut-granular-loadunloadvolfig">
+<a class="reference internal image-reference" href="../../../../../../../_images/00_LoadUnloadVol.png"><img alt="../../../../../../../_images/00_LoadUnloadVol.png" src="../../../../../../../_images/00_LoadUnloadVol.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 6：弹性加载/卸载试验（密实试样）的体积应变-轴向应变曲线。</span></p>
+</div>
+<p class="h2 rubric">简单剪切试验与纯剪切试验</p>
+<p>本节介绍对压实试样进行剪切试验的准备工作。剪切模拟采用密实试样。共执行了简单剪切试验和纯剪切试验（见 <a href="#tut-granular-simsheartestbc">图 7（Figures  7）</a> 和 <a href="#tut-granular-pursheartestbc">图 8</a>）。</p>
+<p>简单剪切（<a href="#tut-granular-simsheartestbc">图 7（Figure  7）</a>）是一种特殊的变形情形，其中速度向量只有一个分量取非零值。在固体力学中，它被定义为等体积的平面变形：在该变形过程中，存在一组具有给定参考方位的线元，其长度和方位保持不变。此情形下，剪应变定义为</p>
+<div class="math" id="equation-tut-granular-simpleshear">
+<span class="eqno">(5)</span>\[\gamma_{xy} = \frac{\Delta x}{L_y}\]</div>
+<p>其中 <span class="math">\(L_y\)</span> 表示沿 <em>y</em> 方向的长度。</p>
+<div class="figure align-center" id="tut-granular-simsheartestbc">
+<a class="reference internal image-reference" href="../../../../../../../_images/simpleshearBC.png"><img alt="../../../../../../../_images/simpleshearBC.png" src="../../../../../../../_images/simpleshearBC.png" style="width: 35%;"/></a>
+<p class="caption"><span class="caption-text">图 7：简单剪切试验的边界条件。</span></p>
+</div>
+<p>纯剪切（<a href="#tut-granular-pursheartestbc">图 8（Figure  8）</a>）是无旋应变的一个示例：物体在一个方向上被拉长，同时在垂直方向上被缩短。纯剪应力 <span class="math">\(\tau\)</span> 与纯剪应变 <span class="math">\(\gamma\)</span> 之间的关系由下式给出：</p>
+<div class="math" id="equation-tut-granular-pureshear1">
+<span class="eqno">(6)</span>\[\tau = \gamma G\]</div>
+<p>其中 <span class="math">\(G\)</span> 为剪切模量。在这些条件下，剪应变可按下式计算：</p>
+<div class="math" id="equation-tut-granular-pureshear2">
+<span class="eqno">(7)</span>\[\gamma_{xy} = \frac{\Delta x}{L_y} + \frac{\Delta y}{L_x}\]</div>
+<div class="figure align-center" id="tut-granular-pursheartestbc">
+<a class="reference internal image-reference" href="../../../../../../../_images/pureshearBC.png"><img alt="../../../../../../../_images/pureshearBC.png" src="../../../../../../../_images/pureshearBC.png" style="width: 70%;"/></a>
+<p class="caption"><span class="caption-text">图 8：纯剪切试验的边界条件。</span></p>
+</div>
+<p class="h3 rubric">简单剪切试验</p>
+<p>数据文件“<a class="reference internal" href="#tut-granular-doall-file"><span class="std std-ref">Doall.dat</span></a>”包含用于恢复压实后的密实试样、定义球-球接触与球-面片接触的摩擦系数并启动简单剪切试验的命令。请注意，在球-面片接触处引入了摩擦，以确保试样的响应均匀。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="ni">[filename </span><span class="p">=</span><span class="ni"> </span><span class="s">'dense'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="s">'biaxial-iso'</span><span class="o">+</span><span class="ni">filename]</span>
+<span class="ni">[ballFriction </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.3</span><span class="ni">  ]</span>
+<span class="ni">[wallFriction </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.3</span><span class="ni">  ]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'SimpleShear'</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'simpleshear-final'</span>
+</pre></div>
+</div>
+<p>下面对数据文件“<a class="reference internal" href="#tut-granular-simpleshear-file"><span class="std std-ref">SimpleShear.dat</span></a>”中的部分命令行进行说明。第一项操作是对所有墙停用伺服机制，并更新摩擦属性。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">wall servo</span><span class="n"> activate </span><span class="sx">off</span>
+<span class="nb">fish callback</span><span class="n"> remove servo_walls </span><span class="m m-Double">1.0</span><span class="n"> </span>
+
+<span class="c">;定义球与墙的摩擦参数</span>
+<span class="nb">ball property</span><span class="n"> </span><span class="s">'fric'</span><span class="n"> </span><span class="ni">[ballFriction]</span>
+<span class="nb">wall property</span><span class="n"> </span><span class="s">'fric'</span><span class="n"> </span><span class="ni">[wallFriction]</span>
+</pre></div>
+</div>
+<p>对顶墙施加平动速度，而对侧墙指定转动速度。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="ni">[rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="ni">[ </span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">rate</span><span class="o">*</span><span class="ni">wly]</span><span class="n"> range set name </span><span class="s">'vesselTop'</span>
+<span class="nb">wall attribute</span><span class="n"> rotation</span><span class="o">-</span><span class="n">center </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">wlx]</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">wly]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">               spin </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">rate]</span><span class="n"> range set name </span><span class="s">'vesselLeft'</span>
+<span class="nb">wall attribute</span><span class="n"> rotation</span><span class="o">-</span><span class="n">center </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">wlx]</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">wly]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">               spin </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">rate]</span><span class="n"> range set name </span><span class="s">'vesselRight'</span>
+</pre></div>
+</div>
+<p>计算平均剪应力（参见实用工具文件“<a class="reference internal" href="#tut-granular-stress-utility-file"><span class="std std-ref">StressUtilities.p2fis</span></a>”）和平均剪应变（采用式 <a class="reference internal" href="#equation-tut-granular-simpleshear">(5)</a>）。</p>
+<p>如前几节所述，可利用在 <a class="reference internal" href="../../../general_components/measure/measure.html#measure-manual">测量（<span class="std std-ref">measurement</span>）</a> 区域内测得的应变率，在每个时步计算应变增量。应力也可通过测量区域获取。请注意，这里使用 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/fish/commands/cmd_fish.callback.html#command:fish.callback" title="Add/remove functions to be executed in response to callback events...">设置FISH回调命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fish</span> <span class="pre">callback</span></code>）</a> 命令调用在每个循环中计算应变的函数。值得注意的是，该 <span class="codename">FISH</span> 函数在系统的运动方程求解之后被调用。与每次循环操作相关的循环编号可用 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/program/commands/cmd_program.list.html#kwd:program.list.cycle-sequence" title="List the doubles indicating the cycle point and names of the cycle entries in
+the cycle sequence...">列出循环序列（<code class="xref fish fish-cmd docutils literal"><span class="pre">program</span> <span class="pre">list</span> <span class="pre">cycle-sequence</span></code>）</a> 命令列出。</p>
+<p>所有与应变和应力相关的量均使用 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/fish/commands/cmd_fish.history.html#command:fish.history" title="Create a history of the |fish| variable  sym .  A  name  can be assigned
+for later reference.  If not assigned, a name will be generated automatically
+based on the internally assigned ID number.  The value of the history will be
+taken at the history interval, the return value is assumed to be a number...">创建FISH变量历程命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fish</span> <span class="pre">history</span></code>）</a> 命令存储。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="ni">[defxy </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span><span class="ni">]</span>
+<span class="nb">fish define</span><span class="ni"> shear_strain</span>
+<span class="ni">  defxy </span><span class="p">=</span><span class="ni"> defxy </span><span class="o">+</span><span class="ni"> rate</span><span class="o">*</span><span class="k">global.timestep</span>
+<span class="nb">end</span>
+
+<span class="ni">[ini_mstrain</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span>
+
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'11'</span><span class="n"> xxmstrain</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'12'</span><span class="n"> xymstrain</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'13'</span><span class="n"> yxmstrain</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'14'</span><span class="n"> yymstrain</span>
+
+<span class="nb">measure history</span><span class="n"> name </span><span class="s">'31'</span><span class="n"> stress</span><span class="o">-</span><span class="n">xx id </span><span class="m m-Double">1</span><span class="n"> </span>
+<span class="nb">measure history</span><span class="n"> name </span><span class="s">'32'</span><span class="n"> stress</span><span class="o">-</span><span class="n">xy id </span><span class="m m-Double">1</span><span class="n"> </span>
+<span class="nb">measure history</span><span class="n"> name </span><span class="s">'33'</span><span class="n"> stress</span><span class="o">-</span><span class="n">yx id </span><span class="m m-Double">1</span><span class="n"> </span>
+<span class="nb">measure history</span><span class="n"> name </span><span class="s">'34'</span><span class="n"> stress</span><span class="o">-</span><span class="n">yy id </span><span class="m m-Double">1</span>
+
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'61'</span><span class="n"> asxy</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'51'</span><span class="n"> defxy</span>
+
+<span class="ni">[ini_gstrain</span><span class="p">(</span><span class="ni">wly</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'21'</span><span class="n"> xygstrain</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'22'</span><span class="n"> xygstrain12</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'23'</span><span class="n"> xygstrain13</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'24'</span><span class="n"> xygstrain14</span>
+
+<span class="nb">fish callback</span><span class="n"> add shear_strain          </span><span class="m m-Double">2.0</span><span class="n"> </span>
+<span class="nb">fish callback</span><span class="n"> add accumulate_mstrain    </span><span class="m m-Double">11.0</span><span class="n"> </span>
+<span class="nb">fish callback</span><span class="n"> add compute_averagestress </span><span class="m m-Double">43.0</span><span class="n"> </span>
+</pre></div>
+</div>
+<p><a href="#tut-granular-simpleshearmeas">图 9（Figures  9）</a> 和 <a href="#tut-granular-simpleshearave"> 10</a> 给出了剪应力与应变的关系，其由 <a class="reference internal" href="../../../general_components/measure/measure.html#measure-manual">测量（<span class="std std-ref">Measure</span>）</a> 逻辑测得，或通过对整个试样取平均计算得到。这两种测量应力和应变的技术都是有效的。材料响应如 <a href="#tut-granular-simpleshearvel">图 11（Figure  11）</a> 所示。</p>
+<div class="figure align-center" id="tut-granular-simpleshearmeas">
+<a class="reference internal image-reference" href="../../../../../../../_images/simpleshearMeas.png"><img alt="../../../../../../../_images/simpleshearMeas.png" src="../../../../../../../_images/simpleshearMeas.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 9：密实试样的简单剪切试验。应力-应变曲线（数据由 <a class="reference internal" href="../../../general_components/measure/measure.html#measure-manual">测量（<span class="std std-ref">measure</span>）</a> 逻辑获得）。</span></p>
+</div>
+<div class="figure align-center" id="tut-granular-simpleshearave">
+<a class="reference internal image-reference" href="../../../../../../../_images/simpleshearAve.png"><img alt="../../../../../../../_images/simpleshearAve.png" src="../../../../../../../_images/simpleshearAve.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 10：密实试样的简单剪切试验。应力-应变曲线（平均值）。</span></p>
+</div>
+<div class="figure align-center" id="tut-granular-simpleshearvel">
+<a class="reference internal image-reference" href="../../../../../../../_images/simpleshearsample.png"><img alt="../../../../../../../_images/simpleshearsample.png" src="../../../../../../../_images/simpleshearsample.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 11：密实试样的简单剪切试验。球颗粒与墙体速度。</span></p>
+</div>
+<p class="h3 rubric">纯剪切试验</p>
+<p>数据文件“<a class="reference internal" href="#tut-granular-doall-file"><span class="std std-ref">Doall.dat</span></a>”包含用于恢复压实后的密实试样、定义球-球接触与球-墙面片接触的摩擦属性、以及启动纯剪切试验的命令。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="ni">[filename </span><span class="p">=</span><span class="ni"> </span><span class="s">'dense'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="s">'biaxial-iso'</span><span class="o">+</span><span class="ni">filename]</span>
+<span class="ni">[ballFriction </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.3</span><span class="ni">  ]</span>
+<span class="ni">[wallFriction </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.3</span><span class="ni">  ]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'PureShear'</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'pureshear-final'</span>
+</pre></div>
+</div>
+<p>调用文件“<a class="reference internal" href="#tut-granular-pureshear-file"><span class="std std-ref">PureShear.dat</span></a>”来执行该计算。在该文件中，所有墙体的伺服机制均被停用，并赋予适当的摩擦属性。保存容器的初始尺寸，以便使用公式 <a class="reference internal" href="#equation-tut-granular-pureshear2">(7)</a> 计算模拟过程中的剪切变形；切向应力则使用以下表达式计算：</p>
+<div class="math" id="equation-tut-granular-shearstress">
+<span class="eqno">(8)</span>\[\tau_{xy} = \frac{\sigma_1 - \sigma_2}{2} = \frac{\sigma_h - \sigma_v}{2}\]</div>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">wall servo</span><span class="n"> activate </span><span class="sx">off</span>
+<span class="nb">fish callback</span><span class="n"> remove servo_walls </span><span class="m m-Double">1.0</span><span class="n"> </span>
+
+<span class="c">;定义球与墙的摩擦参数</span>
+<span class="nb">ball property</span><span class="n"> </span><span class="s">'fric'</span><span class="n"> </span><span class="ni">[ballFriction]</span>
+<span class="nb">wall property</span><span class="n"> </span><span class="s">'fric'</span><span class="n"> </span><span class="ni">[wallFriction]</span>
+
+<span class="ni">[ly0 </span><span class="p">=</span><span class="ni"> wly]</span>
+<span class="ni">[lx0 </span><span class="p">=</span><span class="ni"> wlx]</span>
+
+<span class="ni">[defxy </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span><span class="ni">]</span>
+<span class="ni">[tauxy </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span><span class="ni">]</span>
+<span class="nb">fish define</span><span class="ni"> shear_strain_stress</span>
+<span class="ni">  x_strain </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">wlx</span><span class="o">-</span><span class="ni">lx0</span><span class="p">)</span>
+<span class="ni">  y_strain </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">wly</span><span class="o">-</span><span class="ni">ly0</span><span class="p">)</span>
+<span class="ni">  defxy </span><span class="p">=</span><span class="ni"> x_strain</span><span class="o">/</span><span class="ni">ly0 </span><span class="o">+</span><span class="ni"> y_strain</span><span class="o">/</span><span class="ni">lx0</span>
+<span class="ni">  tauxy </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">wsxx</span><span class="o">-</span><span class="ni">wsyy</span><span class="p">)</span><span class="o">/</span><span class="m m-Double">2</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+<p>通过在循环序列中注册函数 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">循环剪切（<span class="varfishsym"><span class="null">cyclic_shear</span></span>）</a> 来执行加载/卸载循环。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="ni">[load </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span><span class="ni">]</span>
+<span class="ni">[rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.001</span><span class="ni">]</span>
+<span class="ni">[xfactor </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">]</span>
+<span class="ni">[yfactor </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">]</span>
+<span class="nb">fish define</span><span class="ni"> cyclic_shear</span>
+<span class="ni">  </span><span class="k">wall.vel.x</span><span class="p">(</span><span class="ni">wp_left</span><span class="p">)</span><span class="ni">  </span><span class="p">=</span><span class="ni">        xfactor</span><span class="o">*</span><span class="ni">rate </span><span class="c">; 左墙</span>
+<span class="ni">  </span><span class="k">wall.vel.x</span><span class="p">(</span><span class="ni">wp_right</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">1.0</span><span class="ni"> </span><span class="o">*</span><span class="ni"> xfactor</span><span class="o">*</span><span class="ni">rate </span><span class="c">; 右墙</span>
+<span class="ni">  </span><span class="k">wall.vel.y</span><span class="p">(</span><span class="ni">wp_top</span><span class="p">)</span><span class="ni">   </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">1.0</span><span class="ni"> </span><span class="o">*</span><span class="ni"> yfactor</span><span class="o">*</span><span class="ni">rate </span><span class="c">; 顶墙</span>
+<span class="ni">  </span><span class="k">wall.vel.y</span><span class="p">(</span><span class="ni">wp_bot</span><span class="p">)</span><span class="ni">   </span><span class="p">=</span><span class="ni">        yfactor</span><span class="o">*</span><span class="ni">rate </span><span class="c">; 底墙</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> defxy </span><span class="o">&lt;</span><span class="ni"> </span><span class="m m-Double">0.0005</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> load </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">      xfactor </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span>
+<span class="ni">      yfactor </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">2.0</span>
+<span class="ni">      </span><span class="k">exit</span>
+<span class="ni">    </span><span class="k">else</span>
+<span class="ni">      </span><span class="k">if</span><span class="ni"> defxy </span><span class="o">&lt;</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">0.0005</span>
+<span class="ni">        load </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">        </span><span class="k">exit</span>
+<span class="ni">      </span><span class="k">endif</span>
+<span class="ni">      </span><span class="k">exit</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">else</span>
+<span class="ni">    xfactor </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">1.0</span>
+<span class="ni">    yfactor </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2.0</span>
+<span class="ni">    load </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+<p>使用 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/fish/commands/cmd_fish.callback.html#command:fish.callback" title="Add/remove functions to be executed in response to callback events...">设置FISH回调命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fish</span> <span class="pre">callback</span></code>）</a> 命令在每个循环中执行该函数，同时一并执行计算剪应力和应变的函数。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish callback</span><span class="n"> add shear_strain_stress </span><span class="m m-Double">2.0</span><span class="n"> </span>
+<span class="nb">fish callback</span><span class="n"> add cyclic_shear        </span><span class="m m-Double">3.0</span><span class="n"> </span>
+</pre></div>
+</div>
+<p><a href="#tut-granular-pureshearave">图 12（Figure  12）</a> 展示了模拟过程中剪应力与应变的演化。曲线表现出滞回效应。利用公式 <a class="reference internal" href="#equation-tut-granular-pureshear1">(6)</a> 可以估算剪切模量，得到 <span class="math">\(G \simeq 100 \mbox{MPa}\)</span>。</p>
+<div class="figure align-center" id="tut-granular-pureshearave">
+<a class="reference internal image-reference" href="../../../../../../../_images/10_PS_StressStrainAve.png"><img alt="../../../../../../../_images/10_PS_StressStrainAve.png" src="../../../../../../../_images/10_PS_StressStrainAve.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 12：密实试样的纯剪切试验。应力-应变曲线。</span></p>
+</div>
+<div class="figure align-center" id="tut-granular-pureshearsamplevel">
+<a class="reference internal image-reference" href="../../../../../../../_images/08_PS_Sample.png"><img alt="../../../../../../../_images/08_PS_Sample.png" src="../../../../../../../_images/08_PS_Sample.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 13：密实试样的纯剪切试验。球颗粒速度。</span></p>
+</div>
+<p class="h2 rubric">讨论</p>
+<p>本例演示了在二维条件下生成并测试松散与密实颗粒试样的过程，并讨论了可用于探测模型力学响应的不同方法。相同方法也可用于三维情形以及黏结颗粒模型。本例中的材料生成阶段保持简单。对于实际应用的模型，应注意再现能够代表所研究材料的微结构。</p>
+<p class="h2 rubric" id="tut-granular-datafiles">数据文件</p>
+<p class="h2 rubric" id="tut-granular-strain-utility-file">StrainUtilities.p2fis</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; excerpt-mxlr-start</span>
+<span class="nb">fish define</span><span class="ni"> ini_mstrain</span><span class="p">(</span><span class="ni">sid</span><span class="p">)</span>
+<span class="k">  command</span>
+<span class="nb">    ball attribute</span><span class="n"> displacement multiply </span><span class="m m-Double">0.0</span>
+<span class="k">  endcommand</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> mstrains </span><span class="p">=</span><span class="ni"> matrix</span><span class="p">(</span><span class="m m-Double">2</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> mp </span><span class="p">=</span><span class="ni"> </span><span class="k">measure.find</span><span class="p">(</span><span class="ni">sid</span><span class="p">)</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> accumulate_mstrain</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> msrate </span><span class="p">=</span><span class="ni">  </span><span class="k">measure.strain.rate</span><span class="p">(</span><span class="ni">mp</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> mstrains </span><span class="p">=</span><span class="ni"> mstrains </span><span class="o">+</span><span class="ni"> msrate </span><span class="o">*</span><span class="ni"> </span><span class="k">global.timestep</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> xxmstrain </span><span class="p">=</span><span class="ni"> mstrains</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> xymstrain </span><span class="p">=</span><span class="ni"> mstrains</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> yxmstrain </span><span class="p">=</span><span class="ni"> mstrains</span><span class="p">(</span><span class="m m-Double">2</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> yymstrain </span><span class="p">=</span><span class="ni"> mstrains</span><span class="p">(</span><span class="m m-Double">2</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span>
+<span class="nb">end</span>
+<span class="c">; excerpt-mxlr-end</span>
+
+<span class="c">; excerpt-ybnr-start</span>
+<span class="nb">fish define</span><span class="ni"> ini_gstrain</span><span class="p">(</span><span class="ni">ly</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> pos </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">ly</span><span class="p">)</span><span class="o">*</span><span class="m m-Double">0.75</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> gb1 </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="ni">pos</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">gb1</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'gauge_balls'</span>
+<span class="ni">  pos </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">ly</span><span class="p">)</span><span class="o">*</span><span class="m m-Double">0.25</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> gb2 </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="ni">pos</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">gb2</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'gauge_balls'</span>
+<span class="ni">  pos </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="p">,</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">ly</span><span class="p">)</span><span class="o">*</span><span class="m m-Double">0.25</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> gb3 </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="ni">pos</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">gb3</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'gauge_balls'</span>
+<span class="ni">  pos </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">ly</span><span class="p">)</span><span class="o">*</span><span class="m m-Double">0.75</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> gb4 </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="ni">pos</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">gb4</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'gauge_balls'</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> gl1</span><span class="m m-Double">2</span><span class="ni">_0  </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">gb2</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">gb1</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> gl1</span><span class="m m-Double">3</span><span class="ni">_0  </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">gb3</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">gb1</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> gl1</span><span class="m m-Double">4</span><span class="ni">_0  </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">gb4</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">gb1</span><span class="p">)</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> xygstrain</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> gl1</span><span class="m m-Double">2</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">gb2</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">gb1</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> xygstrain1</span><span class="m m-Double">2</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="k">comp.x</span><span class="p">(</span><span class="ni">gl1</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">comp.x</span><span class="p">(</span><span class="ni">gl1</span><span class="m m-Double">2</span><span class="ni">_0</span><span class="p">))</span><span class="o">/</span><span class="ni"> </span><span class="k">comp.y</span><span class="p">(</span><span class="ni">gl1</span><span class="m m-Double">2</span><span class="ni">_0</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> gl1</span><span class="m m-Double">3</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">gb3</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">gb1</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> xygstrain1</span><span class="m m-Double">3</span><span class="ni"> </span><span class="p">=</span><span class="ni">  </span><span class="p">(</span><span class="k">comp.x</span><span class="p">(</span><span class="ni">gl1</span><span class="m m-Double">3</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">comp.x</span><span class="p">(</span><span class="ni">gl1</span><span class="m m-Double">3</span><span class="ni">_0</span><span class="p">))</span><span class="o">/</span><span class="ni"> </span><span class="k">comp.y</span><span class="p">(</span><span class="ni">gl1</span><span class="m m-Double">3</span><span class="ni">_0</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> gl1</span><span class="m m-Double">4</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">gb4</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">gb1</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> xygstrain1</span><span class="m m-Double">4</span><span class="ni"> </span><span class="p">=</span><span class="ni">  </span><span class="p">(</span><span class="k">comp.x</span><span class="p">(</span><span class="ni">gl1</span><span class="m m-Double">4</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">comp.x</span><span class="p">(</span><span class="ni">gl1</span><span class="m m-Double">4</span><span class="ni">_0</span><span class="p">))</span><span class="o">/</span><span class="ni"> </span><span class="k">comp.y</span><span class="p">(</span><span class="ni">gl1</span><span class="m m-Double">4</span><span class="ni">_0</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">  xygstrain </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">xygstrain1</span><span class="m m-Double">2</span><span class="ni"> </span><span class="o">+</span><span class="ni"> xygstrain1</span><span class="m m-Double">3</span><span class="ni"> </span><span class="o">+</span><span class="ni"> xygstrain1</span><span class="m m-Double">4</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="m m-Double">3.0</span>
+<span class="nb">end</span>
+<span class="c">; excerpt-ybnr-end</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="tut-granular-stress-utility-file">StressUtilities.p2fis</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; excerpt-rxlr-start</span>
+<span class="nb">fish define</span><span class="ni"> wsxx</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> wp_left</span><span class="p">,</span><span class="ni"> wp_right</span><span class="p">,</span><span class="ni"> wly</span>
+<span class="ni">    wsxx </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="p">(</span><span class="k">wall.force.contact.x</span><span class="p">(</span><span class="ni">wp_left</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">           </span><span class="k">wall.force.contact.x</span><span class="p">(</span><span class="ni">wp_right</span><span class="p">))</span><span class="o">/</span><span class="ni"> wly </span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> wsyy</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> wp_bot</span><span class="p">,</span><span class="ni"> wp_top</span><span class="p">,</span><span class="ni"> wlx</span>
+<span class="ni">    wsyy </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="p">(</span><span class="k">wall.force.contact.y</span><span class="p">(</span><span class="ni">wp_bot</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni">  </span><span class="sx">...</span>
+<span class="ni">           </span><span class="k">wall.force.contact.y</span><span class="p">(</span><span class="ni">wp_top</span><span class="p">)</span><span class="ni">  </span><span class="p">)</span><span class="o">/</span><span class="ni"> wlx</span>
+<span class="nb">end</span>
+<span class="c">; excerpt-rxlr-end</span>
+
+<span class="c">; excerpt-xmps-start</span>
+<span class="nb">fish define</span><span class="ni"> compute_averagestress</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> asxx </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> asxy </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> asyx </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> asyy </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> contact </span><span class="k">contact.list</span><span class="p">(</span><span class="s">"ball-ball"</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> cforce </span><span class="p">=</span><span class="ni">  </span><span class="k">contact.force.global</span><span class="p">(</span><span class="ni">contact</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> cl </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="k">contact.end2</span><span class="p">(</span><span class="ni">contact</span><span class="p">))</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">               </span><span class="k">ball.pos</span><span class="p">(</span><span class="k">contact.end1</span><span class="p">(</span><span class="ni">contact</span><span class="p">))</span>
+<span class="ni">    asxx </span><span class="p">=</span><span class="ni"> asxx </span><span class="o">+</span><span class="ni"> </span><span class="k">comp.x</span><span class="p">(</span><span class="ni">cforce</span><span class="p">)</span><span class="o">*</span><span class="k">comp.x</span><span class="p">(</span><span class="ni">cl</span><span class="p">)</span>
+<span class="ni">    asxy </span><span class="p">=</span><span class="ni"> asxy </span><span class="o">+</span><span class="ni"> </span><span class="k">comp.x</span><span class="p">(</span><span class="ni">cforce</span><span class="p">)</span><span class="o">*</span><span class="k">comp.y</span><span class="p">(</span><span class="ni">cl</span><span class="p">)</span>
+<span class="ni">    asyx </span><span class="p">=</span><span class="ni"> asyx </span><span class="o">+</span><span class="ni"> </span><span class="k">comp.y</span><span class="p">(</span><span class="ni">cforce</span><span class="p">)</span><span class="o">*</span><span class="k">comp.x</span><span class="p">(</span><span class="ni">cl</span><span class="p">)</span>
+<span class="ni">    asyy </span><span class="p">=</span><span class="ni"> asyy </span><span class="o">+</span><span class="ni"> </span><span class="k">comp.y</span><span class="p">(</span><span class="ni">cforce</span><span class="p">)</span><span class="o">*</span><span class="k">comp.y</span><span class="p">(</span><span class="ni">cl</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">endloop</span>
+<span class="ni">  asxx </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni"> asxx </span><span class="o">/</span><span class="ni"> </span><span class="p">(</span><span class="ni">wlx</span><span class="o">*</span><span class="ni">wly</span><span class="p">)</span>
+<span class="ni">  asxy </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni"> asxy </span><span class="o">/</span><span class="ni"> </span><span class="p">(</span><span class="ni">wlx</span><span class="o">*</span><span class="ni">wly</span><span class="p">)</span>
+<span class="ni">  asyx </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni"> asyx </span><span class="o">/</span><span class="ni"> </span><span class="p">(</span><span class="ni">wlx</span><span class="o">*</span><span class="ni">wly</span><span class="p">)</span>
+<span class="ni">  asyy </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni"> asyy </span><span class="o">/</span><span class="ni"> </span><span class="p">(</span><span class="ni">wlx</span><span class="o">*</span><span class="ni">wly</span><span class="p">)</span>
+<span class="nb">end</span>
+<span class="c">; excerpt-xmps-end</span>
+
+<span class="c">; excerpt-womr-start</span>
+<span class="nb">fish define</span><span class="ni"> compute_spherestress</span><span class="p">(</span><span class="ni">rad</span><span class="p">)</span>
+<span class="k">  command</span>
+<span class="nb">    contact group</span><span class="n"> </span><span class="s">'insphere'</span><span class="n"> remove</span>
+<span class="nb">    contact group</span><span class="n"> </span><span class="s">'insphere'</span><span class="n"> range circle radius </span><span class="ni">[rad]</span>
+<span class="k">  endcommand</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> ssxx </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> ssxy </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> ssyx </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> ssyy </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> contact </span><span class="k">contact.groupmap</span><span class="p">(</span><span class="s">"insphere"</span><span class="p">,</span><span class="s">"ball-ball"</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> cf </span><span class="p">=</span><span class="ni"> </span><span class="k">contact.force.global</span><span class="p">(</span><span class="ni">contact</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> cl </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="k">contact.end2</span><span class="p">(</span><span class="ni">contact</span><span class="p">))</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">               </span><span class="k">ball.pos</span><span class="p">(</span><span class="k">contact.end1</span><span class="p">(</span><span class="ni">contact</span><span class="p">))</span>
+<span class="ni">    ssxx </span><span class="p">=</span><span class="ni"> ssxx </span><span class="o">+</span><span class="ni"> </span><span class="k">comp.x</span><span class="p">(</span><span class="ni">cf</span><span class="p">)</span><span class="ni"> </span><span class="o">*</span><span class="k">comp.x</span><span class="p">(</span><span class="ni">cl</span><span class="p">)</span>
+<span class="ni">    ssxy </span><span class="p">=</span><span class="ni"> ssxy </span><span class="o">+</span><span class="ni"> </span><span class="k">comp.x</span><span class="p">(</span><span class="ni">cf</span><span class="p">)</span><span class="ni"> </span><span class="o">*</span><span class="k">comp.y</span><span class="p">(</span><span class="ni">cl</span><span class="p">)</span>
+<span class="ni">    ssyx </span><span class="p">=</span><span class="ni"> ssyx </span><span class="o">+</span><span class="ni"> </span><span class="k">comp.y</span><span class="p">(</span><span class="ni">cf</span><span class="p">)</span><span class="ni"> </span><span class="o">*</span><span class="k">comp.x</span><span class="p">(</span><span class="ni">cl</span><span class="p">)</span>
+<span class="ni">    ssyy </span><span class="p">=</span><span class="ni"> ssyy </span><span class="o">+</span><span class="ni"> </span><span class="k">comp.y</span><span class="p">(</span><span class="ni">cf</span><span class="p">)</span><span class="ni"> </span><span class="o">*</span><span class="k">comp.y</span><span class="p">(</span><span class="ni">cl</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">endloop</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> vol </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="k">math.pi</span><span class="o">*</span><span class="ni">rad</span><span class="o">^</span><span class="m m-Double">2</span><span class="p">)</span>
+<span class="ni">  ssxx </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni"> ssxx </span><span class="o">/</span><span class="ni"> vol</span>
+<span class="ni">  ssxy </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni"> ssxy </span><span class="o">/</span><span class="ni"> vol</span>
+<span class="ni">  ssyx </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni"> ssyx </span><span class="o">/</span><span class="ni"> vol</span>
+<span class="ni">  ssyy </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni"> ssyy </span><span class="o">/</span><span class="ni"> vol</span>
+<span class="nb">end</span>
+<span class="c">; excerpt-womr-end</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="tut-granular-granular-make-specimen-datafile2d">MakeSpecimen.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="c">; 文件名：make_specimen.p2dat</span>
+<span class="c">;</span>
+<span class="c">; 在箱体内生成密实颗粒集合体</span>
+<span class="c">;</span>
+<span class="c">; ========================================================================</span>
+
+<span class="c">; 加载供后续使用的 FISH 工具函数</span>
+<span class="c">; excerpt-slng-start</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'StrainUtilities.p2fis'</span><span class="n"> suppress  </span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'StressUtilities.p2fis'</span><span class="n"> suppress</span>
+<span class="c">; excerpt-slng-end</span>
+
+<span class="c">; 在 CMAT 中定义计算域范围以及默认接触模型和参数</span>
+<span class="c">; 注意，由于未设置摩擦（默认值为零），剪力</span>
+<span class="c">; 不会产生</span>
+<span class="c">; excerpt-aobs-start</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">0.1</span><span class="n"> </span><span class="m m-Double">0.1</span><span class="n"> </span>
+<span class="nb">contact cmat</span><span class="n"> default model linear method deformability emod </span><span class="m m-Double">1.0e8</span><span class="n"> kratio </span><span class="m m-Double">2.5</span>
+<span class="c">; excerpt-aobs-end</span>
+
+<span class="c">; 生成由 4 面独立墙组成的箱形墙。每面墙都进行了扩展 </span>
+<span class="c">; 以便为后续运动作准备，同时创建用于保存 </span>
+<span class="c">; 墙指针的全局 FISH 变量，以方便使用。 </span>
+<span class="c">; excerpt-inal-start</span>
+<span class="nb">wall generate</span><span class="n"> name </span><span class="s">'vessel'</span><span class="n"> box </span><span class="o">-</span><span class="m m-Double">0.035</span><span class="n"> </span><span class="m m-Double">0.035</span><span class="n"> expand </span><span class="m m-Double">1.5</span>
+<span class="ni">[wp_left  </span><span class="p">=</span><span class="ni"> </span><span class="k">wall.find</span><span class="p">(</span><span class="s">'vesselLeft'</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[wp_right </span><span class="p">=</span><span class="ni"> </span><span class="k">wall.find</span><span class="p">(</span><span class="s">'vesselRight'</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[wp_bot   </span><span class="p">=</span><span class="ni"> </span><span class="k">wall.find</span><span class="p">(</span><span class="s">'vesselBottom'</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[wp_top   </span><span class="p">=</span><span class="ni"> </span><span class="k">wall.find</span><span class="p">(</span><span class="s">'vesselTop'</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">; excerpt-inal-end</span>
+
+<span class="c">; 获取容器尺寸的 FISH 函数</span>
+<span class="c">; excerpt-zpmw-start</span>
+<span class="nb">fish define</span><span class="ni"> wlx</span>
+<span class="ni">  wlx  </span><span class="p">=</span><span class="ni"> </span><span class="k">wall.pos.x</span><span class="p">(</span><span class="ni">wp_right</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">wall.pos.x</span><span class="p">(</span><span class="ni">wp_left</span><span class="p">)</span>
+<span class="nb">end</span>
+<span class="nb">fish define</span><span class="ni"> wly</span>
+<span class="ni">  wly  </span><span class="p">=</span><span class="ni"> </span><span class="k">wall.pos.y</span><span class="p">(</span><span class="ni">wp_top</span><span class="p">)</span><span class="ni">   </span><span class="o">-</span><span class="ni"> </span><span class="k">wall.pos.y</span><span class="p">(</span><span class="ni">wp_bot</span><span class="p">)</span>
+<span class="nb">end</span>
+<span class="c">; excerpt-zpmw-end</span>
+
+<span class="c">; 生成具有目标孔隙率的重叠球集合</span>
+<span class="c">; 并赋予密度和局部阻尼属性</span>
+<span class="c">; excerpt-qoxf-start</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+<span class="nb">ball distribute</span><span class="n"> porosity </span><span class="m m-Double">0.2</span><span class="n"> radius </span><span class="m m-Double">0.0006</span><span class="n"> </span><span class="m m-Double">0.0009</span><span class="n"> box </span><span class="o">-</span><span class="m m-Double">0.035</span><span class="n"> </span><span class="m m-Double">0.035</span>
+<span class="c">; excerpt-qoxf-end</span>
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="m m-Double">2500.0</span><span class="n"> damp </span><span class="m m-Double">0.7</span>
+<span class="c">;定义球与墙的摩擦参数</span>
+<span class="c">; excerpt-wing-start</span>
+<span class="nb">ball property</span><span class="n"> </span><span class="s">'fric'</span><span class="n"> </span><span class="ni">[ballFriction]</span>
+<span class="nb">wall property</span><span class="n"> </span><span class="s">'fric'</span><span class="n"> </span><span class="ni">[wallFriction]</span>
+<span class="c">; excerpt-wing-end</span>
+<span class="c">; 求解至平衡</span>
+<span class="c">; excerpt-unlw-start</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span><span class="n"> calm </span><span class="m m-Double">10</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+<span class="nb">model calm</span>
+<span class="c">; excerpt-unlw-end</span>
+
+<span class="c">; 使用 make_utilities.p2fis 中定义的 FISH 函数识别漂浮颗粒</span>
+<span class="c">; excerpt-enxe-start</span>
+<span class="nb">fish define</span><span class="ni"> identify_floaters</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> ball </span><span class="k">ball.list</span>
+<span class="ni">    </span><span class="k">ball.group.remove</span><span class="p">(</span><span class="ni">ball</span><span class="p">,</span><span class="s">'floaters'</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> contactmap </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.contactmap</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> size </span><span class="p">=</span><span class="ni"> </span><span class="k">map.size</span><span class="p">(</span><span class="ni">contactmap</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> size </span><span class="o">&lt;</span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">      </span><span class="k">ball.group</span><span class="p">(</span><span class="ni">ball</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'floaters'</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">endloop</span>
+<span class="nb">end</span>
+<span class="ni">[identify_floaters]</span>
+<span class="ni">[ini_gstrain</span><span class="p">(</span><span class="ni">wly</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">; excerpt-enxe-end</span>
+
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">; ========================================================================</span>
+<span class="c">; 文件结束：make_specimen.p2dat</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="tut-granular-compact-specimen-datafile2d">CompactSpecimen.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="ni">[ly0 </span><span class="p">=</span><span class="ni"> wly]</span>
+<span class="ni">[lx0 </span><span class="p">=</span><span class="ni"> wlx]</span>
+<span class="ni">[v0 </span><span class="p">=</span><span class="ni"> wlx</span><span class="o">*</span><span class="ni">wly]</span>
+
+<span class="c">; excerpt-ionr-start</span>
+<span class="ni">[txx </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">5.0e5</span><span class="ni">]</span>
+<span class="ni">[tyy </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">5.0e5</span><span class="ni">]</span>
+<span class="nb">wall servo</span><span class="n"> activate </span><span class="sx">on</span><span class="n"> force</span><span class="o">-</span><span class="n">x </span><span class="ni">[ txx</span><span class="o">*</span><span class="ni">wly]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                       velocity</span><span class="o">-</span><span class="n">max </span><span class="m m-Double">0.1</span><span class="n"> range set name </span><span class="s">'vesselRight'</span>
+<span class="nb">wall servo</span><span class="n"> activate </span><span class="sx">on</span><span class="n"> force</span><span class="o">-</span><span class="n">x </span><span class="ni">[</span><span class="o">-</span><span class="ni">txx</span><span class="o">*</span><span class="ni">wly]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                       velocity</span><span class="o">-</span><span class="n">max </span><span class="m m-Double">0.1</span><span class="n"> range set name </span><span class="s">'vesselLeft'</span>
+<span class="nb">wall servo</span><span class="n"> activate </span><span class="sx">on</span><span class="n"> force</span><span class="o">-</span><span class="n">y </span><span class="ni">[ tyy</span><span class="o">*</span><span class="ni">wlx]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                       velocity</span><span class="o">-</span><span class="n">max </span><span class="m m-Double">0.1</span><span class="n"> range set name </span><span class="s">'vesselTop'</span>
+<span class="nb">wall servo</span><span class="n"> activate </span><span class="sx">on</span><span class="n"> force</span><span class="o">-</span><span class="n">y </span><span class="ni">[</span><span class="o">-</span><span class="ni">tyy</span><span class="o">*</span><span class="ni">wlx]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                       velocity</span><span class="o">-</span><span class="n">max </span><span class="m m-Double">0.1</span><span class="n"> range set name </span><span class="s">'vesselBottom'</span>
+<span class="c">; excerpt-ionr-end</span>
+
+<span class="c">; excerpt-vvre-start</span>
+<span class="nb">fish define</span><span class="ni"> servo_walls</span>
+<span class="ni">  </span><span class="k">wall.servo.force.x</span><span class="p">(</span><span class="ni">wp_right</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni">   txx</span><span class="o">*</span><span class="ni">wly</span>
+<span class="ni">  </span><span class="k">wall.servo.force.x</span><span class="p">(</span><span class="ni">wp_left</span><span class="p">)</span><span class="ni">  </span><span class="p">=</span><span class="ni">  </span><span class="o">-</span><span class="ni">txx</span><span class="o">*</span><span class="ni">wly</span>
+<span class="ni">  </span><span class="k">wall.servo.force.y</span><span class="p">(</span><span class="ni">wp_top</span><span class="p">)</span><span class="ni">   </span><span class="p">=</span><span class="ni">   tyy</span><span class="o">*</span><span class="ni">wlx</span>
+<span class="ni">  </span><span class="k">wall.servo.force.y</span><span class="p">(</span><span class="ni">wp_bot</span><span class="p">)</span><span class="ni">   </span><span class="p">=</span><span class="ni">  </span><span class="o">-</span><span class="ni">tyy</span><span class="o">*</span><span class="ni">wlx</span>
+<span class="nb">end</span>
+<span class="nb">fish callback</span><span class="n"> add servo_walls  </span><span class="m m-Double">9.0</span><span class="n"> </span>
+<span class="c">; excerpt-vvre-end</span>
+
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'41'</span><span class="n"> wsxx</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'42'</span><span class="n"> wsyy </span>
+
+<span class="nb">model orientation-tracking</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">model calm</span>
+
+<span class="c">; excerpt-plnm-start</span>
+<span class="ni">[tol </span><span class="p">=</span><span class="ni">  </span><span class="m m-Double">5e-3</span><span class="ni">]</span>
+<span class="nb">fish define</span><span class="ni"> stop_me</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> </span><span class="k">math.abs</span><span class="p">((</span><span class="ni">wsyy </span><span class="o">-</span><span class="ni"> tyy</span><span class="p">)</span><span class="o">/</span><span class="ni">tyy</span><span class="p">)</span><span class="ni"> </span><span class="o">&gt;</span><span class="ni"> tol</span>
+<span class="ni">    </span><span class="k">exit</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> </span><span class="k">math.abs</span><span class="p">((</span><span class="ni">wsxx </span><span class="o">-</span><span class="ni"> txx</span><span class="p">)</span><span class="o">/</span><span class="ni">txx</span><span class="p">)</span><span class="ni"> </span><span class="o">&gt;</span><span class="ni"> tol</span>
+<span class="ni">    </span><span class="k">exit</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> </span><span class="k">mech.solve</span><span class="p">(</span><span class="s">"ratio-average"</span><span class="p">)</span><span class="ni"> </span><span class="o">&gt;</span><span class="ni"> </span><span class="m m-Double">1e-6</span>
+<span class="ni">    </span><span class="k">exit</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  stop_me </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="nb">end</span>
+<span class="c">; excerpt-plnm-end</span>
+
+<span class="nb">ball attribute</span><span class="n"> displacement multiply </span><span class="m m-Double">0.0</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fish</span><span class="o">-</span><span class="n">halt stop_me</span>
+
+<span class="c">; excerpt-aaar-start</span>
+<span class="nb">measure create</span><span class="n"> id </span><span class="m m-Double">1</span><span class="n"> rad </span><span class="ni">[</span><span class="m m-Double">0.4</span><span class="o">*</span><span class="p">(</span><span class="k">math.min</span><span class="p">(</span><span class="ni">lx0</span><span class="p">,</span><span class="ni">ly0</span><span class="p">))</span><span class="ni">]</span>
+<span class="ni">[porosity </span><span class="p">=</span><span class="ni"> </span><span class="k">measure.porosity</span><span class="p">(</span><span class="k">measure.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">))</span><span class="ni">]</span>
+<span class="ni">[compute_spherestress</span><span class="p">(</span><span class="m m-Double">0.4</span><span class="o">*</span><span class="p">(</span><span class="k">math.min</span><span class="p">(</span><span class="ni">lx0</span><span class="p">,</span><span class="ni">ly0</span><span class="p">)))</span><span class="ni">]</span>
+<span class="ni">[compute_averagestress]</span>
+<span class="c">; excerpt-aaar-end</span>
+
+<span class="ni">[identify_floaters]</span>
+
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="tut-granular-loadunload-file">LoadUnload.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="c">;定义球与墙的摩擦参数</span>
+<span class="nb">ball property</span><span class="n"> </span><span class="s">'fric'</span><span class="n"> </span><span class="ni">[ballFriction]</span>
+<span class="nb">wall property</span><span class="n"> </span><span class="s">'fric'</span><span class="n"> </span><span class="ni">[wallFriction]</span>
+
+<span class="ni">[rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.01</span><span class="ni">]</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="ni">[</span><span class="o">-</span><span class="ni">rate</span><span class="o">*</span><span class="ni">wly]</span><span class="n"> range set name </span><span class="s">'vesselTop'</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="ni">[ rate</span><span class="o">*</span><span class="ni">wly]</span><span class="n"> range set name </span><span class="s">'vesselBottom'</span>
+<span class="nb">wall servo</span><span class="n"> activate </span><span class="sx">off</span><span class="n"> range set name </span><span class="s">'vesselTop'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                              set name </span><span class="s">'vesselBottom'</span><span class="n"> union </span>
+<span class="nb">model calm</span>
+
+<span class="ni">[ly0 </span><span class="p">=</span><span class="ni"> wly]</span>
+<span class="ni">[lx0 </span><span class="p">=</span><span class="ni"> wlx]</span>
+<span class="ni">[wsyy0 </span><span class="p">=</span><span class="ni"> wsyy]</span>
+
+<span class="ni">[wexx </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">]</span>
+<span class="ni">[weyy </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">]</span>
+<span class="ni">[wevol </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">]</span>
+<span class="nb">fish define</span><span class="ni"> wexx</span>
+<span class="ni">  wexx  </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2.0</span><span class="o">*</span><span class="p">(</span><span class="ni">wlx </span><span class="o">-</span><span class="ni"> lx0</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> </span><span class="p">(</span><span class="ni">wlx</span><span class="o">+</span><span class="ni">lx0</span><span class="p">)</span><span class="ni"> </span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> weyy</span>
+<span class="ni">  weyy </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2.0</span><span class="o">*</span><span class="p">(</span><span class="ni">wly </span><span class="o">-</span><span class="ni"> ly0</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> </span><span class="p">(</span><span class="ni">wly</span><span class="o">+</span><span class="ni">ly0</span><span class="p">)</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> wevol</span>
+<span class="ni">  wevol </span><span class="p">=</span><span class="ni"> wexx </span><span class="o">+</span><span class="ni"> weyy</span>
+<span class="nb">end</span>
+
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'51'</span><span class="n"> weyy</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'52'</span><span class="n"> wexx</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'53'</span><span class="n"> wevol</span>
+<span class="nb">history purge</span>
+
+<span class="ni">[stop_load </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span><span class="ni">]</span>
+<span class="ni">[target </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">5e-4</span><span class="ni">]</span>
+<span class="nb">fish define</span><span class="ni"> stop_load</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> </span><span class="o">-</span><span class="ni">weyy </span><span class="o">&gt;</span><span class="p">=</span><span class="ni"> target </span><span class="k">then</span>
+<span class="ni">    stop_load </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="nb">end</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fish</span><span class="o">-</span><span class="n">halt stop_load</span>
+
+<span class="ni">[young_modulus </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">wsyy</span><span class="o">-</span><span class="ni">wsyy0</span><span class="p">)</span><span class="o">/</span><span class="ni">weyy]</span>
+<span class="ni">[poisson_ratio </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni">wexx</span><span class="o">/</span><span class="ni">weyy]</span>
+<span class="ni">[shear_modulus </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">young_modulus</span><span class="o">/</span><span class="p">(</span><span class="m m-Double">1</span><span class="o">+</span><span class="ni">poisson_ratio</span><span class="p">)</span><span class="ni">]</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'biaxial-load'</span>
+
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="ni">[ rate</span><span class="o">*</span><span class="ni">wly]</span><span class="n"> range set name </span><span class="s">'vesselTop'</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="ni">[</span><span class="o">-</span><span class="ni">rate</span><span class="o">*</span><span class="ni">wly]</span><span class="n"> range set name </span><span class="s">'vesselBottom'</span>
+
+<span class="ni">[stop_unload </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span><span class="ni">]</span>
+<span class="nb">fish define</span><span class="ni"> stop_unload</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> weyy </span><span class="o">&gt;</span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">    stop_unload </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="nb">end</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fish</span><span class="o">-</span><span class="n">halt stop_unload</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="tut-granular-biaxialfile">BiaxialTest.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="c">;定义球与墙的摩擦参数</span>
+<span class="c">; excerpt-esar-start</span>
+<span class="nb">ball property</span><span class="n"> </span><span class="s">'fric'</span><span class="n"> </span><span class="ni">[ballFriction]</span>
+<span class="nb">wall property</span><span class="n"> </span><span class="s">'fric'</span><span class="n"> </span><span class="ni">[wallFriction]</span>
+<span class="c">; excerpt-esar-end</span>
+
+<span class="c">; excerpt-oncc-start</span>
+<span class="ni">[ly0 </span><span class="p">=</span><span class="ni"> wly]</span>
+<span class="ni">[lx0 </span><span class="p">=</span><span class="ni"> wlx]</span>
+<span class="ni">[wexx </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">]</span>
+<span class="ni">[weyy </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">]</span>
+<span class="ni">[wevol </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">]</span>
+
+<span class="nb">fish define</span><span class="ni"> wexx</span>
+<span class="ni">  wexx  </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">wlx </span><span class="o">-</span><span class="ni"> lx0</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> lx0 </span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> weyy</span>
+<span class="ni">  weyy </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">wly </span><span class="o">-</span><span class="ni"> ly0</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> ly0</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> wevol</span>
+<span class="ni">  wevol </span><span class="p">=</span><span class="ni"> wexx </span><span class="o">+</span><span class="ni"> weyy</span>
+<span class="nb">end</span>
+
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'51'</span><span class="n"> wexx</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'52'</span><span class="n"> weyy</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'53'</span><span class="n"> wevol</span>
+<span class="nb">history purge</span>
+<span class="c">; excerpt-oncc-end</span>
+
+<span class="c">; excerpt-inrw-start</span>
+<span class="ni">[rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.2</span><span class="ni">]</span>
+<span class="nb">wall servo</span><span class="n"> activate </span><span class="sx">off</span><span class="n"> range set name </span><span class="s">'vesselTop'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                              set name </span><span class="s">'vesselBottom'</span><span class="n"> union </span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="ni">[</span><span class="o">-</span><span class="ni">rate</span><span class="o">*</span><span class="ni">wly]</span><span class="n"> range set name </span><span class="s">'vesselTop'</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="ni">[ rate</span><span class="o">*</span><span class="ni">wly]</span><span class="n"> range set name </span><span class="s">'vesselBottom'</span>
+<span class="c">; excerpt-inrw-end</span>
+<span class="c">; excerpt-prlr-start</span>
+<span class="ni">[stop_me </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span><span class="ni">]</span>
+<span class="ni">[target </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.075</span><span class="ni">]</span>
+<span class="nb">fish define</span><span class="ni"> stop_me</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> weyy </span><span class="o">&lt;</span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni">target </span><span class="k">then</span>
+<span class="ni">    stop_me </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="nb">end</span>
+<span class="c">; excerpt-prlr-end</span>
+
+<span class="nb">ball attribute</span><span class="n"> displacement multiply </span><span class="m m-Double">0.0</span>
+<span class="nb">model calm</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fish</span><span class="o">-</span><span class="n">halt stop_me</span>
+
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="tut-granular-measurestress-file">MeasureStress.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;恢复试样</span>
+
+<span class="c">;measure create id 1 radius [0.4*math.min(wlx,wly)]</span>
+<span class="c">;list measure</span>
+
+<span class="c">;set echo off</span>
+<span class="c">;  program call 004_stress_utilities.p2fis</span>
+<span class="c">;set echo on</span>
+
+<span class="ni">[compute_averagestress]</span>
+<span class="c">;[compute_wallstress]</span>
+<span class="ni">[compute_spherestress</span><span class="p">(</span><span class="ni">[</span><span class="m m-Double">0.3</span><span class="o">*</span><span class="k">math.min</span><span class="p">(</span><span class="ni">wlx</span><span class="p">,</span><span class="ni">wly</span><span class="p">)</span><span class="ni">]</span><span class="p">)</span><span class="n">]</span>
+
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="tut-granular-pureshear-file">PureShear.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="c">; excerpt-ttnr-start</span>
+<span class="nb">wall servo</span><span class="n"> activate </span><span class="sx">off</span>
+<span class="nb">fish callback</span><span class="n"> remove servo_walls </span><span class="m m-Double">1.0</span><span class="n"> </span>
+
+<span class="c">;定义球与墙的摩擦参数</span>
+<span class="nb">ball property</span><span class="n"> </span><span class="s">'fric'</span><span class="n"> </span><span class="ni">[ballFriction]</span>
+<span class="nb">wall property</span><span class="n"> </span><span class="s">'fric'</span><span class="n"> </span><span class="ni">[wallFriction]</span>
+
+<span class="ni">[ly0 </span><span class="p">=</span><span class="ni"> wly]</span>
+<span class="ni">[lx0 </span><span class="p">=</span><span class="ni"> wlx]</span>
+
+<span class="ni">[defxy </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span><span class="ni">]</span>
+<span class="ni">[tauxy </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span><span class="ni">]</span>
+<span class="nb">fish define</span><span class="ni"> shear_strain_stress</span>
+<span class="ni">  x_strain </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">wlx</span><span class="o">-</span><span class="ni">lx0</span><span class="p">)</span>
+<span class="ni">  y_strain </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">wly</span><span class="o">-</span><span class="ni">ly0</span><span class="p">)</span>
+<span class="ni">  defxy </span><span class="p">=</span><span class="ni"> x_strain</span><span class="o">/</span><span class="ni">ly0 </span><span class="o">+</span><span class="ni"> y_strain</span><span class="o">/</span><span class="ni">lx0</span>
+<span class="ni">  tauxy </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">wsxx</span><span class="o">-</span><span class="ni">wsyy</span><span class="p">)</span><span class="o">/</span><span class="m m-Double">2</span>
+<span class="nb">end</span>
+<span class="c">; excerpt-ttnr-end</span>
+
+<span class="c">; excerpt-ioxx-start</span>
+<span class="ni">[load </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span><span class="ni">]</span>
+<span class="ni">[rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.001</span><span class="ni">]</span>
+<span class="ni">[xfactor </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">]</span>
+<span class="ni">[yfactor </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">]</span>
+<span class="nb">fish define</span><span class="ni"> cyclic_shear</span>
+<span class="ni">  </span><span class="k">wall.vel.x</span><span class="p">(</span><span class="ni">wp_left</span><span class="p">)</span><span class="ni">  </span><span class="p">=</span><span class="ni">        xfactor</span><span class="o">*</span><span class="ni">rate </span><span class="c">; 左墙</span>
+<span class="ni">  </span><span class="k">wall.vel.x</span><span class="p">(</span><span class="ni">wp_right</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">1.0</span><span class="ni"> </span><span class="o">*</span><span class="ni"> xfactor</span><span class="o">*</span><span class="ni">rate </span><span class="c">; 右墙</span>
+<span class="ni">  </span><span class="k">wall.vel.y</span><span class="p">(</span><span class="ni">wp_top</span><span class="p">)</span><span class="ni">   </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">1.0</span><span class="ni"> </span><span class="o">*</span><span class="ni"> yfactor</span><span class="o">*</span><span class="ni">rate </span><span class="c">; 顶墙</span>
+<span class="ni">  </span><span class="k">wall.vel.y</span><span class="p">(</span><span class="ni">wp_bot</span><span class="p">)</span><span class="ni">   </span><span class="p">=</span><span class="ni">        yfactor</span><span class="o">*</span><span class="ni">rate </span><span class="c">; 底墙</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> defxy </span><span class="o">&lt;</span><span class="ni"> </span><span class="m m-Double">0.0005</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> load </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">      xfactor </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span>
+<span class="ni">      yfactor </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">2.0</span>
+<span class="ni">      </span><span class="k">exit</span>
+<span class="ni">    </span><span class="k">else</span>
+<span class="ni">      </span><span class="k">if</span><span class="ni"> defxy </span><span class="o">&lt;</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">0.0005</span>
+<span class="ni">        load </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">        </span><span class="k">exit</span>
+<span class="ni">      </span><span class="k">endif</span>
+<span class="ni">      </span><span class="k">exit</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">else</span>
+<span class="ni">    xfactor </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">1.0</span>
+<span class="ni">    yfactor </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2.0</span>
+<span class="ni">    load </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="nb">end</span>
+<span class="c">; excerpt-ioxx-end</span>
+
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'51'</span><span class="n"> tauxy</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'61'</span><span class="n"> defxy</span>
+
+<span class="c">; excerpt-nnvv-start</span>
+<span class="nb">fish callback</span><span class="n"> add shear_strain_stress </span><span class="m m-Double">2.0</span><span class="n"> </span>
+<span class="nb">fish callback</span><span class="n"> add cyclic_shear        </span><span class="m m-Double">3.0</span><span class="n"> </span>
+<span class="c">; excerpt-nnvv-end</span>
+
+<span class="nb">model orientation-tracking</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time </span><span class="m m-Double">0.2</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="tut-granular-simpleshear-file">SimpleShear.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; excerpt-oppo-start</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">wall servo</span><span class="n"> activate </span><span class="sx">off</span>
+<span class="nb">fish callback</span><span class="n"> remove servo_walls </span><span class="m m-Double">1.0</span><span class="n"> </span>
+
+<span class="c">;定义球与墙的摩擦参数</span>
+<span class="nb">ball property</span><span class="n"> </span><span class="s">'fric'</span><span class="n"> </span><span class="ni">[ballFriction]</span>
+<span class="nb">wall property</span><span class="n"> </span><span class="s">'fric'</span><span class="n"> </span><span class="ni">[wallFriction]</span>
+<span class="c">; excerpt-oppo-end</span>
+
+<span class="c">; excerpt-ubvy-start</span>
+<span class="ni">[rate </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span><span class="ni">]</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="ni">[ </span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">rate</span><span class="o">*</span><span class="ni">wly]</span><span class="n"> range set name </span><span class="s">'vesselTop'</span>
+<span class="nb">wall attribute</span><span class="n"> rotation</span><span class="o">-</span><span class="n">center </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">wlx]</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">wly]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">               spin </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">rate]</span><span class="n"> range set name </span><span class="s">'vesselLeft'</span>
+<span class="nb">wall attribute</span><span class="n"> rotation</span><span class="o">-</span><span class="n">center </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">wlx]</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">wly]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">               spin </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">rate]</span><span class="n"> range set name </span><span class="s">'vesselRight'</span>
+<span class="c">; excerpt-ubvy-end</span>
+
+<span class="c">; excerpt-qzzz-start</span>
+<span class="ni">[defxy </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span><span class="ni">]</span>
+<span class="nb">fish define</span><span class="ni"> shear_strain</span>
+<span class="ni">  defxy </span><span class="p">=</span><span class="ni"> defxy </span><span class="o">+</span><span class="ni"> rate</span><span class="o">*</span><span class="k">global.timestep</span>
+<span class="nb">end</span>
+
+<span class="ni">[ini_mstrain</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span>
+
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'11'</span><span class="n"> xxmstrain</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'12'</span><span class="n"> xymstrain</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'13'</span><span class="n"> yxmstrain</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'14'</span><span class="n"> yymstrain</span>
+
+<span class="nb">measure history</span><span class="n"> name </span><span class="s">'31'</span><span class="n"> stress</span><span class="o">-</span><span class="n">xx id </span><span class="m m-Double">1</span><span class="n"> </span>
+<span class="nb">measure history</span><span class="n"> name </span><span class="s">'32'</span><span class="n"> stress</span><span class="o">-</span><span class="n">xy id </span><span class="m m-Double">1</span><span class="n"> </span>
+<span class="nb">measure history</span><span class="n"> name </span><span class="s">'33'</span><span class="n"> stress</span><span class="o">-</span><span class="n">yx id </span><span class="m m-Double">1</span><span class="n"> </span>
+<span class="nb">measure history</span><span class="n"> name </span><span class="s">'34'</span><span class="n"> stress</span><span class="o">-</span><span class="n">yy id </span><span class="m m-Double">1</span>
+
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'61'</span><span class="n"> asxy</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'51'</span><span class="n"> defxy</span>
+
+<span class="ni">[ini_gstrain</span><span class="p">(</span><span class="ni">wly</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'21'</span><span class="n"> xygstrain</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'22'</span><span class="n"> xygstrain12</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'23'</span><span class="n"> xygstrain13</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'24'</span><span class="n"> xygstrain14</span>
+
+<span class="nb">fish callback</span><span class="n"> add shear_strain          </span><span class="m m-Double">2.0</span><span class="n"> </span>
+<span class="nb">fish callback</span><span class="n"> add accumulate_mstrain    </span><span class="m m-Double">11.0</span><span class="n"> </span>
+<span class="nb">fish callback</span><span class="n"> add compute_averagestress </span><span class="m m-Double">43.0</span><span class="n"> </span>
+<span class="c">; excerpt-qzzz-end</span>
+
+<span class="nb">model orientation-tracking</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time </span><span class="m m-Double">0.01</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="tut-granular-doall-file">Doall.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;---------松散试样双轴试验</span>
+<span class="c">; excerpt-nror-start</span>
+<span class="nb">model new</span>
+<span class="c">;定义球与墙的摩擦值以生成松散试样</span>
+<span class="ni">[ballFriction </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.3</span><span class="ni"> ]</span>
+<span class="ni">[wallFriction </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">    ]</span>
+<span class="ni">[filename </span><span class="p">=</span><span class="ni"> </span><span class="s">'loose'</span><span class="ni">    ]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'MakeSpecimen'</span>
+<span class="nb">model save</span><span class="n"> </span><span class="ni">[</span><span class="s">'specimen'</span><span class="o">+</span><span class="ni">filename]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'CompactSpecimen'</span>
+<span class="nb">model save</span><span class="n"> </span><span class="ni">[</span><span class="s">'biaxial-iso'</span><span class="o">+</span><span class="ni">filename]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'BiaxialTest'</span>
+<span class="nb">model save</span><span class="n"> </span><span class="ni">[</span><span class="s">'biaxial-final'</span><span class="o">+</span><span class="ni">filename]</span>
+
+<span class="c">;---------密实试样双轴试验</span>
+<span class="nb">model new</span>
+<span class="c">;定义球与墙的摩擦值以生成密实试样</span>
+<span class="ni">[ballFriction </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni"> ]</span>
+<span class="ni">[wallFriction </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">    ]</span>
+<span class="ni">[filename </span><span class="p">=</span><span class="ni"> </span><span class="s">'dense'</span><span class="ni">  ]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'MakeSpecimen'</span>
+<span class="nb">model save</span><span class="n"> </span><span class="ni">[</span><span class="s">'specimen'</span><span class="o">+</span><span class="ni">filename]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'CompactSpecimen'</span>
+<span class="nb">model save</span><span class="n"> </span><span class="ni">[</span><span class="s">'biaxial-iso'</span><span class="o">+</span><span class="ni">filename]</span>
+<span class="ni">[ballFriction </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.3</span><span class="ni">  ]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'BiaxialTest'</span>
+<span class="nb">model save</span><span class="n"> </span><span class="ni">[</span><span class="s">'biaxial-final'</span><span class="o">+</span><span class="ni">filename]</span>
+<span class="c">; excerpt-nror-end</span>
+
+<span class="c">;---------弹性参数估算 - 加卸载试验</span>
+<span class="ni">[filename </span><span class="p">=</span><span class="ni"> </span><span class="s">'dense'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="s">'biaxial-iso'</span><span class="o">+</span><span class="ni">filename]</span>
+<span class="ni">[ballFriction </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.3</span><span class="ni">  ]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'LoadUnload'</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'biaxial-unload'</span>
+
+<span class="c">;---------密实试样简单剪切试验</span>
+<span class="c">; excerpt-nnaa-start</span>
+<span class="ni">[filename </span><span class="p">=</span><span class="ni"> </span><span class="s">'dense'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="s">'biaxial-iso'</span><span class="o">+</span><span class="ni">filename]</span>
+<span class="ni">[ballFriction </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.3</span><span class="ni">  ]</span>
+<span class="ni">[wallFriction </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.3</span><span class="ni">  ]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'SimpleShear'</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'simpleshear-final'</span>
+<span class="c">; excerpt-nnaa-end</span>
+
+<span class="c">;---------密实试样纯剪切试验</span>
+<span class="c">; excerpt-ewwa-start</span>
+<span class="ni">[filename </span><span class="p">=</span><span class="ni"> </span><span class="s">'dense'</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="ni">[</span><span class="s">'biaxial-iso'</span><span class="o">+</span><span class="ni">filename]</span>
+<span class="ni">[ballFriction </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.3</span><span class="ni">  ]</span>
+<span class="ni">[wallFriction </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.3</span><span class="ni">  ]</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'PureShear'</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'pureshear-final'</span>
+<span class="c">; excerpt-ewwa-end</span>
+
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+<p class="endnotesection rubric">尾注</p>
+<table class="docutils footnote" frame="void" id="id2" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><p class="first">要在 <span class="codename">PFC</span> 中查看本项目，请使用程序菜单。</p>
+<p><span class="menuselection">帮助 ▼ 算例…</span></p>
+<p class="last">  ⮡   PFC <br/>
+    ⮡   示例 <br/>
+      ⮡   颗粒 <br/>
+        ⮡   Granular.prj</p>
+</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../pfc_model_components/pfc_examples.html">Examples</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../examples.html">Example Applications</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../hopper_dynamic/HopperDynamic.html" title="previous chapter"> Hopper Flow</a> |    
+       <a href="../ribbon_blender/ribbon_blender.html" title="next chapter">Ribbon Blender</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Probing a Granular Specimen" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

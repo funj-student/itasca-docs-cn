@@ -1,0 +1,334 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>10.0 - 运动定律 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="body_coupling.html" rel="next" title="15.0 - Body Coupling"/>
+<link href="timestep_constraints.html" rel="prev" title="0.0 - Timestep Determination"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="law-of-motion">
+<span id="id1"></span><h1>10.0 - 运动定律</h1>
+<p>力学运动定律以及热学体属性的更新在
+循环点 10.0 进行。本节将介绍力学运动定律。有关热学公式的
+细节，请参阅 <a class="reference internal" href="../../optional_features/thermal_option/thermal_formulation.html#pfc-thermal-formulation"><span class="std std-ref">PFC 热学公式</span>（PFC Thermal Formulation）</a>。</p>
+<p>单个刚性颗粒的运动由作用在其上的合力和力矩向量
+决定，并可以通过颗粒中某一点的平动运动
+以及颗粒的转动运动来描述。质心的运动通过
+其位置 <span class="math">\(\mathbf x\)</span>、速度 <span class="math">\(\dot{\mathbf x}\)</span> 和加速度 <span class="math">\(\ddot
+{\mathbf x}\)</span> 来描述。颗粒的转动运动通过其角速度
+<span class="math">\(\pmb \omega\)</span> 和角加速度 <span class="math">\(\dot {\pmb \omega}\)</span> 来描述。</p>
+<p>运动方程可以表示为两个向量方程：一个将合力
+与平动运动联系起来，另一个将合力矩与转动运动联系起来。</p>
+<p class="h2 rubric">平动运动</p>
+<p>平动运动的方程可以写成向量形式</p>
+<div class="math" id="equation-law_of_motion_1">
+<span id="translation-eom"></span><span class="eqno">(1)</span>\[\mathbf F=m(\ddot{\mathbf x} - \mathbf g)\qquad\hbox{(translational motion)}\]</div>
+<p>式中，<span class="math">\(\mathbf F\)</span> 为合力，即作用在
+颗粒上的所有外施力的总和；<span class="math">\(m\)</span> 为颗粒的质量；<span class="math">\(\mathbf g\)</span> 为体力加速度向量
+（例如重力荷载）。</p>
+<p>球颗粒和刚性团簇的平动运动方程通过二阶 Velocity
+Verlet 算法 <a class="reference internal" href="#verlet1967" id="id2">[Verlet1967]</a> 求解。这种积分方法具有二阶精度，经常
+用于分子动力学模拟，因为对于保守系统，能量围绕
+与系统精确能量相对应的常值振荡。</p>
+<p>假设上一循环在时刻 <span class="math">\(t\)</span> 求解了方程 <a class="reference internal" href="#equation-law_of_motion_1">(1)</a>，并且
+为当前循环确定的时步为 <span class="math">\(\Delta t\)</span>。半步速度
+<span class="math">\(\dot{\mathbf{x}}^{(t+\Delta t/2)}\)</span> 按下式计算</p>
+<div class="math" id="equation-law_of_motion_2">
+<span class="eqno">(2)</span>\[\dot{\mathbf{x}}^{(t+\Delta t/2)} = \dot{\mathbf{x}}^{(t)} + \frac{1}{2}
+\left(\frac{\mathbf{F}^{(t)}}{m}+\mathbf{g}\right) \Delta t\]</div>
+<p>时刻 <span class="math">\(t+\Delta t\)</span> 的位置采用半步速度进行更新</p>
+<div class="math" id="equation-law_of_motion_3">
+<span class="eqno">(3)</span>\[\mathbf{x}^{(t+\Delta t)} = \mathbf{x}^{(t)} + \dot{\mathbf{x}}^{(t+\Delta t/2)} \Delta t\]</div>
+<p>在 <a class="reference internal" href="force_displacement.html#force-displacement"><span class="std std-ref">力-位移</span>（force displacement）</a> 循环点期间，针对
+当前循环更新作用力，从而得到更新后的加速度 <span class="math">\(\ddot{\mathbf{x}}^{(t+\Delta t)}\)</span>。随后
+更新速度</p>
+<div class="math" id="equation-law_of_motion_4">
+<span class="eqno">(4)</span>\[\dot{\mathbf{x}}^{(t+\Delta t)} = \dot{\mathbf{x}}^{(t+\Delta t/2)} + \frac{1}{2}
+\left(\frac{\mathbf{F}^{(t+\Delta t)}}{m}+\mathbf{g}\right) \Delta t\]</div>
+<p>在 <span class="codename">PFC</span> 中，方程 <a class="reference internal" href="#equation-law_of_motion_4">(4)</a> 的最终速度更新发生在 <a class="reference internal" href="timestep_constraints.html#timestep-constraints"><span class="std std-ref">时步确定</span>（timestep determination）</a> 循环点的初始
+步骤中，或在完成一系列循环时的收尾阶段中（如 <a class="reference internal" href="cycling.html#series-of-cycles"><span class="std std-ref">此处</span>（here）</a> 所述）。
+因此，如果在循环点 10.0 之后查询球颗粒或刚性团簇的速度，实际查询到的是
+半步速度 <span class="math">\(\dot{\mathbf{x}}^{(t+\Delta t/2)}\)</span>。</p>
+<p class="h2 rubric">旋转运动</p>
+<p>刚体旋转运动的基本方程为</p>
+<div class="math" id="equation-law_of_motion_5">
+<span class="eqno">(5)</span>\[\mathbf L = \mathbf I \pmb \omega \qquad\hbox{(rotational motion)}\]</div>
+<p>其中 <span class="math">\(\mathbf L\)</span> 为角动量，<span class="math">\(\mathbf I\)</span> 为惯性张量，<span class="math">\(\pmb \omega\)</span> 为
+角速度。对时间求导，即可由方程 <a class="reference internal" href="#equation-law_of_motion_5">(5)</a> 得到
+欧拉方程</p>
+<div class="math" id="equation-law_of_motion_6">
+<span id="rotation-eom"></span><span class="eqno">(6)</span>\[\mathbf M = \dot {\mathbf L} = \mathbf I \dot{\pmb\omega} + \pmb{\omega} \times \mathbf L\]</div>
+<p>其中 <span class="math">\(\mathbf M\)</span> 为作用在刚体上的合力矩。该关系式是在固连于刚体质心的局部
+坐标系中表述的。</p>
+<p class="h3 rubric">球颗粒与二维刚性团簇的旋转运动</p>
+<p>若局部坐标系的取向使其沿物体的
+惯性主轴，则方程 <a class="reference internal" href="#equation-law_of_motion_6">(6)</a> 简化为欧拉运动方程：</p>
+<div class="math" id="equation-law_of_motion_7">
+<span class="eqno">(7)</span>\[\begin{split}M_1 &amp;= I_1\ \dot\omega_1 + (I_3-I_2)\omega_3\omega_2 \\
+M_2 &amp;= I_2\ \dot\omega_2 + (I_1-I_3)\omega_1\omega_3 \\
+M_3 &amp;= I_3\ \dot\omega_3 + (I_2-I_1)\omega_2\omega_1 \\\end{split}\]</div>
+<p>其中 <span class="math">\(I_1\)</span>、<span class="math">\(I_2\)</span> 和 <span class="math">\(I_3\)</span> 为物体的主转动惯量；
+<span class="math">\(\dot \omega_1\)</span>、<span class="math">\(\dot \omega_2\)</span> 和 <span class="math">\(\dot \omega_3\)</span> 为绕各主轴的
+角加速度；<span class="math">\(\omega_1\)</span>、<span class="math">\(\omega_2\)</span> 和 <span class="math">\(\omega_3\)</span> 为绕各主轴的
+角速度；<span class="math">\(M_1\)</span>、<span class="math">\(M_2\)</span> 和 <span class="math">\(M_3\)</span> 为参考主轴坐标系表述的
+合力矩分量。</p>
+<p>对于半径为 <span class="math">\(R\)</span> 的{二维为圆盘形；三维为球形}物体，其质量均匀
+分布于整个体积中，质心与其形心重合。对于轴线始终保持
+在面外方向的圆盘形物体，<span class="math">\(\omega_1 = \omega_2 \equiv 0\)</span>，从而可得</p>
+<div class="math" id="equation-law_of_motion_8">
+<span class="eqno">(8)</span>\[M_3 = I \dot{\omega_3} = (\frac{1}{2}mR^2)\dot{\omega_3}\]</div>
+<p>对于球形物体，任何固连于质心的局部坐标轴系统都是主轴
+系统，且三个主转动惯量彼此相等。对于球形物体，
+方程 <a class="reference internal" href="#equation-law_of_motion_7">(7)</a> 在整体坐标轴系统中可简化为</p>
+<div class="math" id="equation-law_of_motion_9">
+<span class="eqno">(9)</span>\[\mathbf M = \mathbf I \dot{\pmb{\omega}} = (\frac{2}{5}mR^2)\dot{\pmb{\omega}}\]</div>
+<p>对于球颗粒（二维和三维）以及二维刚性团簇，旋转运动方程采用上文所述的
+Velocity Verlet 算法求解。在不失一般性的前提下采用向量记法，其中
+二维时 <span class="math">\(\omega_1 = \omega_2 \equiv 0\)</span>，且惯性张量为对角阵。请注意，对于二维
+刚性团簇，极转动惯量可取用户指定的任意值。</p>
+<p>首先计算半步角速度</p>
+<div class="math" id="equation-law_of_motion_10">
+<span class="eqno">(10)</span>\[{\pmb{\omega}}^{(t+\Delta t/2)} = {\pmb{\omega}}^{(t)} + \frac{1}{2}
+\left( \frac{\mathbf{M}^{(t)}}{\mathbf I} \right) \Delta t\]</div>
+<p>在 <a class="reference internal" href="force_displacement.html#force-displacement"><span class="std std-ref">力-位移</span>（force displacement）</a> 循环点期间，针对当前循环
+更新力矩，从而得到更新后的角加速度 <span class="math">\(\dot{\pmb{\omega}}^{(t+\Delta
+t)}\)</span>。随后更新角速度</p>
+<div class="math" id="equation-law_of_motion_11">
+<span class="eqno">(11)</span>\[{\pmb{\omega}}^{(t+\Delta t)} = {\pmb{\omega}}^{(t+\Delta t/2)} + \frac{1}{2}
+\left( \frac{\mathbf{M}^{(t+\Delta t)}}{\mathbf I} \right) \Delta t\]</div>
+<p class="h3 rubric">三维刚性团簇的旋转运动</p>
+<p>三维刚性团簇在整体坐标系中可能具有完整的惯性张量，因此其
+旋转运动方程无法在整体坐标系中简化为欧拉方程（方程
+<a class="reference internal" href="#equation-law_of_motion_7">(7)</a>）。在 <span class="codename">PFC3D</span> 中，二阶和四阶算法均可用于对刚性团簇的旋转运动进行积分（请参阅 <a class="reference internal" href="../../../../../pfcmodule/doc/manual/clump_manual/clump_commands/cmd_clump_order.html#command:clump.order" title="|..."><code class="xref fish fish-cmd docutils literal"><span class="pre">clump</span> <span class="pre">order</span></code></a> 命令）。
+在两种情形下，均存储角动量 <span class="math">\(\mathbf L\)</span>、表示相对主轴系统取向的四元数 <span class="math">\(q_c\)</span> 以及主转动惯量 <span class="math">\(\mathbf J\)</span>。
+在详细介绍这些二阶与
+四阶格式之前，先介绍四元数的基础知识。</p>
+<p class="h4 rubric">四元数</p>
+<p>四元数是四维向量，常用于表示三维旋转和
+取向 <a class="reference internal" href="#shoemake1985" id="id3">[Shoemake1985]</a>。与欧拉角表示法相比，四元数不会出现
+万向节死锁（即某些构型下自由度的丧失）。四元数
+定义如下</p>
+<div class="math" id="equation-law_of_motion_12">
+<span class="eqno">(12)</span>\[q = q_0 + q_i i + q_j j + q_k k = q_0 + \mathbf q\]</div>
+<p>其中 <span class="math">\(i\)</span>、<span class="math">\(j\)</span> 和 <span class="math">\(k\)</span> 为基元素。<span class="math">\(q_0\)</span> 称为标量部分，<span class="math">\(\mathbf q\)</span> 为
+向量部分。基元素之间的乘积由下列恒等式定义</p>
+<div class="math" id="equation-law_of_motion_13">
+<span class="eqno">(13)</span>\[\begin{split}\begin{array}{c}
+i^2 = j^2 = k^2 = ijk = -1 \\
+ij = k \\
+jk = i \\
+ki = j
+\end{array}\end{split}\]</div>
+<p>两个四元数的乘积称为 Hamilton 积，它由分配律
+和上述恒等式确定。在标量/向量记法下，该乘积由下式给出</p>
+<div class="math" id="equation-law_of_motion_14">
+<span class="eqno">(14)</span>\[q p = p_0 q_0 - \mathbf p \cdot \mathbf q + p_0 \mathbf q + q_0 \mathbf p + \mathbf p \times
+\mathbf q\]</div>
+<p>由于叉积的存在，两个四元数的乘积一般不可交换（<span class="math">\(q p \neq
+p q\)</span>）。向量 <span class="math">\(\mathbf v\)</span> 与四元数的乘积，可通过构造标量部分为 0 的纯向量四元数（即在标量/向量记法下为 <span class="math">\(v = 0 + \mathbf v\)</span>）并按方程 <a class="reference internal" href="#equation-law_of_motion_14">(14)</a> 的定义执行乘法来实现。四元数的加法与
+减法按分量逐一进行。</p>
+<p>四元数的共轭定义为</p>
+<div class="math" id="equation-law_of_motion_15">
+<span class="eqno">(15)</span>\[q^* = q_0 - \mathbf q\]</div>
+<p>而四元数的模长由下式给出</p>
+<div class="math" id="equation-law_of_motion_16">
+<span class="eqno">(16)</span>\[\|q\| =  q_0^2 + q_i^2 + q_j^2 + q_k^2 = q q^* = q^* q\]</div>
+<p>单位四元数（其中 <span class="math">\(\|q\| = 1\)</span>）可转换为纯旋转矩阵。要用单位四元数旋转
+向量 <span class="math">\(\mathbf v\)</span>，需构造纯向量四元数 <span class="math">\(v=0+\mathbf v\)</span>
+（标量部分为 0），并作乘积</p>
+<div class="math" id="equation-law_of_motion_17">
+<span class="eqno">(17)</span>\[v' = qvq^*\]</div>
+<p><span class="math">\(v'\)</span> 的向量分量即为旋转后的向量。先进行旋转 <span class="math">\(q\)</span> 再进行
+旋转 <span class="math">\(p\)</span> 的连续旋转由四元数乘积 <span class="math">\(p q\)</span> 给出，这意味着只要它们都是单位四元数，任意多次旋转都可以
+合成为单个四元数并一次施加。单位四元数的性质有：<span class="math">\(q\)</span> 与 <span class="math">\(-q\)</span> 表示相同的旋转，<span class="math">\(q\)</span> 的逆
+旋转为其共轭 <span class="math">\(q^*\)</span>，而零旋转为 <span class="math">\(q = 1\)</span>，此时向量部分为
+<span class="math">\(\mathbf 0\)</span>。</p>
+<p class="h4 rubric">二阶解法</p>
+<p><a class="reference internal" href="#buss2000" id="id4">[Buss2000]</a> 提出了不同阶次的算法，用于求解上文定义的转动运动方程。
+这些算法基于角速度的泰勒级数展开，以便在一个时步内提供
+更精确的平均角速度估计值。<span class="codename">PFC</span> 实现了
+所谓的增广二阶方法。时刻 <span class="math">\(t\)</span> 的角速度通过
+重新整理方程 <a class="reference internal" href="#equation-law_of_motion_5">(5)</a> 计算得到</p>
+<div class="math" id="equation-law_of_motion_18">
+<span class="eqno">(18)</span>\[\pmb \omega^{(t)} = \mathbf{I}^{(t)-1} \mathbf L^{(t)}\]</div>
+<p>请注意，整体坐标系中的惯性张量（或逆惯性张量）可以通过
+用刚性团簇朝向 <span class="math">\(q_c\)</span> 旋转主惯性矩来获得</p>
+<div class="math" id="equation-law_of_motion_19">
+<span class="eqno">(19)</span>\[\begin{split}\begin{array}{c}
+\mathbf{I} = q_c \mathbf J q_c^* \\
+\mathbf{I}^{-1} = q_c \mathbf J^{(-1)} q_c^*
+\end{array}\end{split}\]</div>
+<p>时刻 <span class="math">\(t\)</span> 的角加速度通过重新整理方程 <a class="reference internal" href="#equation-law_of_motion_6">(6)</a> 并
+使用方程 <a class="reference internal" href="#equation-law_of_motion_19">(19)</a> 确定</p>
+<div class="math" id="equation-law_of_motion_20">
+<span class="eqno">(20)</span>\[\dot{\pmb \omega}^{(t)} = q_c^{(t)} \mathbf J^{(-1)} q_c^{(t)*} \left(\mathbf M^{(t)}-\mathbf
+\omega^{(t)} \times \mathbf L^{(t)} \right)\]</div>
+<p>而该时步内的平均角速度估计为</p>
+<div class="math" id="equation-law_of_motion_21">
+<span class="eqno">(21)</span>\[\bar{\pmb{\omega}} = \pmb \omega^{(t)} + \dot{\pmb \omega}^{(t)} \frac{\Delta t}{2} +
+\left(\dot{\pmb{\omega}}^{(t)} \times \pmb \omega^{(t)} \right) \frac{\Delta t^2}{12}\]</div>
+<p>平均角速度用于更新刚性团簇朝向 <span class="math">\(q_c^{(t + \Delta t)}\)</span>，具体做法是
+计算角位移 <span class="math">\(\theta=\bar{\pmb{\omega}}\Delta t\)</span>，将其转换为
+单位四元数，并用该单位四元数旋转 <span class="math">\(q_c^{(t)}\)</span></p>
+<div class="math" id="equation-law_of_motion_22">
+<span class="eqno">(22)</span>\[q_c^{(t + \Delta t)} = \left(cos\left(\frac{\theta}{2}\right) + sin\left(\frac{\theta}{2}\right)
+\frac{\bar{\pmb{\omega}}}{\|\bar{\pmb{\omega}}\|}\right) q_c^{(t)}\]</div>
+<p>刚性团簇朝向更新完成后，新的角速度 <span class="math">\(\pmb \omega ^{(t + \Delta t)}\)</span>
+由下式给出</p>
+<div class="math" id="equation-law_of_motion_23">
+<span class="eqno">(23)</span>\[\pmb \omega ^{(t + \Delta t)} = q_c^{(t+\Delta t)} \mathbf J^{(-1)} q_c^{(t+\Delta t)*} \mathbf
+L^{(t)}\]</div>
+<p class="h4 rubric">四阶解法</p>
+<p>可以证明，四元数的时间导数由下式给出</p>
+<div class="math" id="equation-law_of_motion_24">
+<span class="eqno">(24)</span>\[\dot q_c = \frac{1}{2} \omega q_c\]</div>
+<p>其中 <span class="math">\(\omega\)</span> 是纯矢量四元数，其矢量分量为 <span class="math">\(\pmb\omega\)</span>（即角
+速度）。将方程 <a class="reference internal" href="#equation-law_of_motion_18">(18)</a> 和 <a class="reference internal" href="#equation-law_of_motion_19">(19)</a> 代入 <a class="reference internal" href="#equation-law_of_motion_24">(24)</a> 可得：</p>
+<div class="math" id="equation-law_of_motion_25">
+<span class="eqno">(25)</span>\[\dot q_c = \frac{1}{2} \left(q_c \mathbf J^{(-1)} q_c^* \mathbf L \right) q_c\]</div>
+<p>将标准四阶 Runge-Kutta 方法应用于上述方程。时刻 <span class="math">\(t + \Delta t\)</span>
+的朝向由下式给出</p>
+<div class="math" id="equation-law_of_motion_26">
+<span class="eqno">(26)</span>\[q_c^{(t+\Delta t)} = q_c^{(t)} + \frac{\Delta t}{6} \left(k_1+2k_2+2k_3+k_4\right)\]</div>
+<p>四元数 <span class="math">\(k_1\)</span> 按下式计算</p>
+<div class="math" id="equation-law_of_motion_26a">
+<span class="eqno">(27)</span>\[k_1 = \frac{1}{2} \left(q_c^{(t)} \mathbf J^{(-1)} q_c^{(t)*} \mathbf L^{(t)} \right) q_c^{(t)}\]</div>
+<p>朝向四元数的一个中间值</p>
+<div class="math" id="equation-law_of_motion_27">
+<span class="eqno">(28)</span>\[ {q_{c1}} = q_c^{(t)}+k_1 \frac{\Delta t}{2}\]</div>
+<p>用于计算 <span class="math">\(k_2\)</span> 四元数</p>
+<div class="math" id="equation-law_of_motion_28">
+<span class="eqno">(29)</span>\[k_2 = \frac{1}{2} \left( {q_{c1}} \mathbf J^{(-1)}  {q_{c1}^*} \mathbf L^{(t)} \right)
+ {q_{c1}}\]</div>
+<p>朝向四元数的下一个中间值</p>
+<div class="math" id="equation-law_of_motion_29">
+<span class="eqno">(30)</span>\[ {q_{c2}} = q_c^{(t)}+k_2 \frac{\Delta t}{2}\]</div>
+<p>用于按下式计算 <span class="math">\(k_3\)</span> 四元数</p>
+<div class="math" id="equation-law_of_motion_30">
+<span class="eqno">(31)</span>\[k_3 = \frac{1}{2} \left( {q_{c2}} \mathbf J^{(-1)}  {q_{c2}^*} \mathbf L^{(t)} \right)
+ {q_{c2}}\]</div>
+<p>朝向四元数的最后一个中间值</p>
+<div class="math" id="equation-law_of_motion_31">
+<span class="eqno">(32)</span>\[ {q_{c3}} = q_c^{(t)}+k_3 \Delta t\]</div>
+<p>用于按下式计算 <span class="math">\(k_4\)</span> 四元数</p>
+<div class="math" id="equation-law_of_motion_30a">
+<span class="eqno">(33)</span>\[k_4 = \frac{1}{2} \left( {q_{c3}} \mathbf J^{(-1)}  {q_{c3}^*} \mathbf L^{(t)} \right)
+ {q_{c3}}\]</div>
+<p>刚性团簇朝向更新完成后，使用方程
+<a class="reference internal" href="#equation-law_of_motion_23">(23)</a> 将角速度更新至时刻 <span class="math">\(t + \Delta t\)</span>。该
+公式与 <a class="reference internal" href="#johnson2008" id="id5">[Johnson2008]</a> 中给出的公式类似。</p>
+<p class="h2 rubric">参考文献</p>
+<table class="docutils citation" frame="void" id="johnson2008" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id5">[Johnson2008]</a></td><td>Johnson, S. M.、J. R. Williams 与 B. K. Cook，“用于颗粒方法的基于四元数的刚体
+转动积分算法”（Quaternion-based Rigid Body Rotation Integration Algorithms for use in Particle Methods），Int. J. Num. Meth. Eng.，74，
+第 1303-1313 页（2008 年）。</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="buss2000" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id4">[Buss2000]</a></td><td>Buss, S. R.，“刚体转动的精确高效模拟”（Accurate and Efficient Simulation of Rigid-Body Rotations），J. Comp. Phys.，164，第 377-406 页（2000 年）。</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="shoemake1985" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[Shoemake1985]</a></td><td>Shoemake, K.，“使用四元数制作转动动画”（Animating Rotation using Quaternions），SIGGRAPH85，San Francisco，
+CA，USA（1985 年）。</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="verlet1967" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[Verlet1967]</a></td><td>Verlet, L.，“经典流体的计算机‘实验’。I. Lennard-Jones 分子的热力学性质”（Computer ‘Experiments’ on Classical Fluids. I. Thermodynamical
+Properties of Lennard-Jones Molecules），Phys. Rev.，159，第 98-103 页（1967 年）。</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../numerical_simulations_with_pfc.html">Numerical Simulations with <span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-3"><a href="pfc_model_formulation.html"><span class="codename">PFC</span> Model Formulation</a> »</li>
+<li class="nav-item nav-item-4"><a accesskey="U" href="cycling.html">Cycling</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="timestep_constraints.html" title="previous chapter"> 0.0 - Timestep Determination</a> |    
+       <a href="body_coupling.html" title="next chapter">15.0 - Body Coupling</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?10.0 - Law of Motion" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

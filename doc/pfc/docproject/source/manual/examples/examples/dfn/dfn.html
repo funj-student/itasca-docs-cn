@@ -1,0 +1,782 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>离散裂隙网络的生成、分析与简化 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../../search.html" rel="search" title="Search"/>
+<link href="../rocktest/rocktest.html" rel="next" title="Rock Testing"/>
+<link href="../ribbon_blender/ribbon_blender.html" rel="prev" title="Ribbon Blender"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="dfn-generation-analysis-and-simplification">
+<span id="exap-dfn"></span><h1>离散裂隙网络的生成、分析与简化</h1>
+<p class="h2 rubric">说明</p>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">本算例的项目文件可在 <span class="codename">PFC</span> 中查看或运行。<a class="footnote-reference" href="#id3" id="id1">[1]</a>所用的<a class="reference internal" href="#exap-dfn-datafile"><span class="std std-ref">数据文件</span>（data files）</a>列于本算例末尾。</p>
+</div>
+<p>本算例介绍 DFN 模型的定义、生成和显示。DFN 模型是一组描述离散裂隙网络几何特征的统计分布，所描述的特征包括裂隙尺寸、方位和位置。结合密度项和随机种子，可用它生成 DFN 随机实现。DFN 随机实现是一组特征符合 DFN 模型统计描述的裂隙。本算例从一个通用 DFN 模型生成一次随机实现。首先简要回顾 DFN 建模框架，然后定义基准 DFN 模型的参数并生成随机实现，再计算和显示生成的 DFN 特征，包括连通性。在此基础上还构建一个简化 DFN，通过修改网络来减少后续力学建模中可能遇到的数值问题。DFN 模型采用常见的裂隙描述方式，即由若干裂隙组组成，各组密度根据钻孔和测线上的表观裂隙强度、体积密度或体积内的裂隙总数确定。因此，DFN 密度会针对这些一维观测裂隙强度或预期的三维裂隙密度进行标定。</p>
+<p class="h2 rubric">生成 DFN 模型算例的随机实现</p>
+<p>所需的 DFN 模型应具有以下特征。</p>
+<ul class="simple">
+<li>在三维中采用圆盘模拟裂隙。</li>
+<li>裂隙方位由三组裂隙组合而成，即近水平组、近竖直组，以及一组分布更分散的裂隙（称为“背景裂隙”）。</li>
+<li>背景裂隙组对应较小尺寸的裂隙，其尺寸分布不同于其他由较大裂隙组成的裂隙组。</li>
+<li>裂隙位置在空间中均匀分布，即采用泊松分布模型。</li>
+<li>每个裂隙组均具有指定的密度。</li>
+</ul>
+<p>先回顾一下，裂隙的尺寸、方位和位置分布通过 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_template.create.html#command:fracture.template.create" title="Create a fracture generation template. The name of the template is  s .
+A fracture generation...">创建裂隙模板命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fracture</span> <span class="pre">template</span> <span class="pre">create</span></code>）</a> 命令定义。DFN 模板是 DFN 的统计描述，而不是裂隙的一次实际随机实现。要生成符合所需模型的裂隙，需要三个 DFN 模板。定义模板后，在 DFN 生成阶段指定对应裂隙组的密度，例如使用 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_generate.html#command:fracture.generate" title="Generate fractures from a statistical description. A model domain must be specified
+prior to...">生成裂隙命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fracture</span> <span class="pre">generate</span></code>）</a> 命令。将 DFN 模板、密度项和随机种子相结合，即可创建一次 DFN 随机实现。这三个 DFN 模板的裂隙尺寸均采用幂律分布，方位和密度则可由现场观测确定。近竖直组与近水平组的裂隙尺寸标度指数均设为 4，尺寸分布下限 <span class="math">\(l_{min}\)</span> 为 10 m。各组均具有一个优势方位及一定的离散程度，采用 Fisher 分布模拟。近竖直组的 <span class="math">\(\kappa\)</span> 参数为 200，近水平组的 <span class="math">\(\kappa\)</span> =500。Fisher 分布是一种三维对称分布，可视为正态分布的对应形式，通常用于模拟在均值周围具有一定离散程度的优势方位，例如参见 <a class="reference internal" href="#fisher1993" id="id2">[Fisher1993]</a>。</p>
+<p>背景裂隙的尺寸标度指数设为 3.2，尺寸范围为 [2; 10]。它们的方位通过对用户自定义分布进行自助重采样获得，该分布定义在方位文件中，见<a href="#exap-dfn-romtable1">表 1（Table  1）</a>。用户自定义分布文件本质上是裂隙极点方位（倾角与倾向）的离散值列表。通过<em>权重</em>列定义的乘数，可提高各离散极点方位在整个分布中的统计权重。该权重通常用于引入指定的数量和／或进行 Terzaghi 修正，以补偿沿一维钻孔或测线采样三维 DFN 时可能产生的方位偏差。用户自定义分布文件中的<em>权重</em>列为可选列。分布文件格式如下。</p>
+<ul class="simple">
+<li>一行文件头。</li>
+<li>随后 x 行定义离散分布。每行包含一个 ID，后跟分布的两个值，即倾角和倾向。最后一列为可选列，用于定义这些值对应的数量。若省略，各值具有相同的概率。分隔符可为空格、制表符、逗号或分号。</li>
+<li>文件结尾由任意空行表示。</li>
+</ul>
+<table border="1" class="colwidths-given blank col2center col3center col4center docutils" id="exap-dfn-romtable1">
+<caption><span class="caption-text">表 1：用户自定义方位分布文件示例</span></caption>
+<colgroup>
+<col width="14%"/>
+<col width="29%"/>
+<col width="29%"/>
+<col width="29%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">;ID</th>
+<th class="head">倾角（Dip）</th>
+<th class="head">倾向（DipDirection）</th>
+<th class="head">权重（Weight）</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>1</td>
+<td>44.533</td>
+<td>195.30</td>
+<td>1.52</td>
+</tr>
+<tr class="row-odd"><td>2</td>
+<td>55.795</td>
+<td>218.98</td>
+<td>2.49</td>
+</tr>
+<tr class="row-even"><td>3</td>
+<td>56.963</td>
+<td>209.31</td>
+<td>2.34</td>
+</tr>
+<tr class="row-odd"><td>4</td>
+<td>40.202</td>
+<td>344.11</td>
+<td>1.61</td>
+</tr>
+<tr class="row-even"><td>5</td>
+<td>18.688</td>
+<td>  98.29</td>
+<td>1.00</td>
+</tr>
+<tr class="row-odd"><td>6</td>
+<td>77.365</td>
+<td>295.80</td>
+<td>5.76</td>
+</tr>
+<tr class="row-even"><td>…</td>
+<td> </td>
+<td> </td>
+<td> </td>
+</tr>
+</tbody>
+</table>
+<p>生成裂隙时，按权重列所规定的相对比例随机选取裂隙方位。<a href="#exap-dfn-dfnstereonet">图 1（Figure  1）</a>展示了本算例所用分布的赤平投影图，由 <span class="codename">PFC</span> 的赤平投影绘图项输出。</p>
+<div class="figure align-center" id="exap-dfn-dfnstereonet">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d-dfntuto-stereonet-background.png"><img alt="../../../../../../../_images/p3d-dfntuto-stereonet-background.png" src="../../../../../../../_images/p3d-dfntuto-stereonet-background.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 1：方位文件分布的赤平投影图。</span></p>
+</div>
+<p>这些裂隙组的密度以三种不同方式定义，对应实际现场可能出现的常见条件。对于近竖直裂隙，直接给定裂隙面积密度 P32。对于近水平裂隙，指定在竖直露头剖面上观测到的该组裂隙数量，并据此定义密度。对于背景裂隙，通过给定钻孔上的 P10 定义密度，钻孔近似为一维直线。三个裂隙组的 DFN 模板参数列于<a href="#exap-dfn-romtable2">表 2（Table  2）</a>。为减小有限尺寸效应，裂隙位置的生成域大于观测域。实际上，某些大裂隙虽然中心位于观测域之外，仍可能与该域相交并被观测到。因此，相对于观测域，生成域向外扩展一个最大裂隙尺寸。</p>
+<table border="1" class="colwidths-auto col3center col4right rowliner docutils" id="exap-dfn-romtable2">
+<caption><span class="caption-text">表 2：用于生成三个裂隙组的 DFN 模板与密度参数</span></caption>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head"> </th>
+<th class="head">属性</th>
+<th class="head">分布</th>
+<th class="head">参数</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>第 1 组：近竖直裂隙</td>
+<td>位置</td>
+<td>均匀分布</td>
+<td>在整个空间内生成</td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td>方位</td>
+<td>Fisher 分布</td>
+<td>倾角 90°，倾向 120°，<span class="math">\(\kappa\)</span>=200</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td>长度</td>
+<td>幂律分布</td>
+<td>标度指数 <span class="math">\(a=4\)</span>，<span class="math">\(l_{min}=10\)</span>，<span class="math">\(l_{max}=500\)</span></td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td>density</td>
+<td> </td>
+<td>模型计算域范围内 <span class="math">\(P_{32}\)</span>=0.33</td>
+</tr>
+<tr class="row-even"><td>第 2 组：近水平裂隙</td>
+<td>位置</td>
+<td>均匀分布</td>
+<td>在整个空间内生成</td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td>方位</td>
+<td>Fisher 分布</td>
+<td>倾角 20°，倾向 30°，<span class="math">\(\kappa\)</span>=200</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td>长度</td>
+<td>幂律分布</td>
+<td>标度指数 <span class="math">\(a=4\)</span>，<span class="math">\(l_{min}=10\)</span>，<span class="math">\(l_{max}=500\)</span></td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td>density</td>
+<td> </td>
+<td>竖直露头上观测到的裂隙数量：39</td>
+</tr>
+<tr class="row-even"><td>第 3 组：背景裂隙</td>
+<td>位置</td>
+<td>均匀分布</td>
+<td>在整个空间内生成</td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td>方位</td>
+<td>自助重采样</td>
+<td>从文件读取</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td>长度</td>
+<td>幂律分布</td>
+<td>标度指数 <span class="math">\(a=3.2\)</span>，<span class="math">\(l_{min}=2\)</span>，<span class="math">\(l_{max}=10\)</span></td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td>density</td>
+<td> </td>
+<td>在竖直钻孔上测得 <span class="math">\(P_{10}=0.5\)</span>（<span class="math">\(l=85\)</span> m）</td>
+</tr>
+</tbody>
+</table>
+<script>
+   // and now, some filth of the highest order (table manipulations)
+   $("#exap-dfn-romtable2").css("border-collapse","collapse");
+   $("#exap-dfn-romtable2 tr:first th:nth-child(1)").css("border-right","2px solid white");
+   $("#exap-dfn-romtable2 tr:first th:nth-child(2)").css("border-right","2px solid white");
+   $("#exap-dfn-romtable2 tr:first th:nth-child(3)").css("border-right","2px solid white");
+   $("#exap-dfn-romtable2 tr:nth-child(4) td").css("border-bottom","2px solid #e0e0d8");
+   $("#exap-dfn-romtable2 tr:nth-child(4) td").css("padding-bottom","0.5em");
+   $("#exap-dfn-romtable2 tr:nth-child(8) td").css("border-bottom","2px solid #e0e0d8");
+   $("#exap-dfn-romtable2 tr:nth-child(8) td").css("padding-bottom","0.5em");
+</script><p class="h2 rubric">初始化</p>
+<p>生成裂隙之前，必须通过 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.domain.html#kwd:model.domain.extent" title="Specify the locations of the sides of the domain. Each set of values applies
+to the...">模型计算域范围命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">domain</span> <span class="pre">extent</span></code>）</a> 命令指定计算域。裂隙只能存在于这个长方体体积内，并在其边界处被截断。还可以在生成命令中定义生成体积和容许体积，但容许体积必须包含在计算域范围内。此时，在生成体积内随机生成裂隙位置，仅保留部分或全部位于容许体积内的裂隙，并在容许体积的边界处截断。此外，为使生成的随机实现可重复，需固定生成过程的初始随机种子。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+
+<span class="c">; 定义计算域</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">50</span><span class="n"> </span><span class="m m-Double">50</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">50</span><span class="n"> </span><span class="m m-Double">50</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">50</span><span class="n"> </span><span class="m m-Double">50</span>
+
+<span class="c">; 固定随机种子</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">101</span>
+</pre></div>
+</div>
+<p>为便于显示和标定，定义若干几何对象以模拟露头和钻孔。可以计算裂隙与一维或二维几何对象的交线或交点，并进行分析和显示。这里定义两个钻孔（一个竖直，另一个倾斜 45°）以及两个露头。露头由单个平面二维多边形组成，钻孔则定义为一维线。也可以采用圆柱形几何对象模拟钻孔。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 创建钻孔 </span>
+<span class="n">geom set </span><span class="s">'vertical_borehole'</span>
+<span class="n">geom edge create by</span><span class="o">-</span><span class="n">position </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">45</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">40</span><span class="p">)</span>
+
+<span class="n">geom set </span><span class="s">'45_degree_borehole'</span>
+<span class="nb">fish def</span><span class="ni"> make_4</span><span class="m m-Double">5</span><span class="ni">_borehole</span>
+<span class="ni">   </span><span class="k">local</span><span class="ni"> x1 </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">50</span>
+<span class="ni">   </span><span class="k">local</span><span class="ni"> x2 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">50</span>
+<span class="ni">   </span><span class="c">; 旋转 45 度</span>
+<span class="ni">   </span><span class="k">local</span><span class="ni"> x1rot </span><span class="p">=</span><span class="ni"> x1</span><span class="o">*</span><span class="k">math.cos</span><span class="p">(</span><span class="k">math.pi</span><span class="o">/</span><span class="m m-Double">4</span><span class="p">)</span>
+<span class="ni">   </span><span class="k">local</span><span class="ni"> z1rot </span><span class="p">=</span><span class="ni"> x1</span><span class="o">*</span><span class="k">math.sin</span><span class="p">(</span><span class="k">math.pi</span><span class="o">/</span><span class="m m-Double">4</span><span class="p">)</span>
+<span class="ni">   </span><span class="k">local</span><span class="ni"> x2rot </span><span class="p">=</span><span class="ni"> x2</span><span class="o">*</span><span class="k">math.cos</span><span class="p">(</span><span class="k">math.pi</span><span class="o">/</span><span class="m m-Double">4</span><span class="p">)</span>
+<span class="ni">   </span><span class="k">local</span><span class="ni"> z2rot </span><span class="p">=</span><span class="ni"> x2</span><span class="o">*</span><span class="k">math.sin</span><span class="p">(</span><span class="k">math.pi</span><span class="o">/</span><span class="m m-Double">4</span><span class="p">)</span>
+<span class="k">   command</span><span class="n"> </span>
+<span class="n">       geom edge create by</span><span class="o">-</span><span class="n">position </span><span class="ni">[</span><span class="p">(</span><span class="ni">x1rot</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">z1rot</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[</span><span class="p">(</span><span class="ni">x2rot</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">z2rot</span><span class="p">)</span><span class="ni">]</span>
+<span class="k">   endcommand</span>
+<span class="nb">end</span>
+<span class="ni">[make_4</span><span class="m m-Double">5</span><span class="ni">_borehole]</span>
+
+<span class="c">; 创建露头 </span>
+<span class="n">geom set </span><span class="s">'horizontal_outcrop'</span>
+<span class="n">geom polygon create by</span><span class="o">-</span><span class="n">position </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">40</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">40</span><span class="p">,</span><span class="m m-Double">40</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">40</span><span class="p">,</span><span class="m m-Double">40</span><span class="p">,</span><span class="m m-Double">40</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                </span><span class="p">(</span><span class="m m-Double">40</span><span class="p">,</span><span class="m m-Double">40</span><span class="p">,</span><span class="m m-Double">40</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">40</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">40</span><span class="p">,</span><span class="m m-Double">40</span><span class="p">)</span>
+<span class="n">geom set </span><span class="s">'vertical_outcrop'</span>
+<span class="n">geom polygon create by</span><span class="o">-</span><span class="n">position </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">41</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">41</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">41</span><span class="p">,</span><span class="m m-Double">41</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">41</span><span class="p">,</span><span class="m m-Double">41</span><span class="p">,</span><span class="m m-Double">40</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">41</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">41</span><span class="p">,</span><span class="m m-Double">40</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>几何对象如<a href="#exap-dfn-dfngeometries">图 2（Figure  2）</a>所示。</p>
+<div class="figure align-center" id="exap-dfn-dfngeometries">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d-dfntuto-geometries.png"><img alt="../../../../../../../_images/p3d-dfntuto-geometries.png" src="../../../../../../../_images/p3d-dfntuto-geometries.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：计算域、钻孔和露头。</span></p>
+</div>
+<p class="h2 rubric">生成 DFN</p>
+<p>这三个裂隙组分别通过 DFN 模板定义，并分步生成。对于每个裂隙组，通过 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_template.create.html#command:fracture.template.create" title="Create a fracture generation template. The name of the template is  s .
+A fracture generation...">创建裂隙模板命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fracture</span> <span class="pre">template</span> <span class="pre">create</span></code>）</a> 命令定义 DFN 模板参数，指定尺寸和方位分布。随后使用 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_generate.html#command:fracture.generate" title="Generate fractures from a statistical description. A model domain must be specified
+prior to...">生成裂隙命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fracture</span> <span class="pre">generate</span></code>）</a> 命令生成裂隙，同时指定所用模板及目标密度。生成域在 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_generate.html#command:fracture.generate" title="Generate fractures from a statistical description. A model domain must be specified
+prior to...">生成裂隙命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fracture</span> <span class="pre">generate</span></code>）</a> 命令中定义，容许域则未单独指定，因此采用模型计算域。对于近竖直裂隙，使用内置分布，相应的两条命令较为简单。通过 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_generate.html#kwd:fracture.generate.mass-density" title="Generation terminates when the fracture density {P21 in 2D; P32 in 3D} in the..."><code class="xref fish fish-kwd docutils literal"><span class="pre">mass-density</span></code></a> 关键字定义的目标密度为裂隙面积密度 <span class="math">\(P_{32}\)</span>，数值为 0.33。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 定义第 1 组的模板，即竖直裂隙</span>
+<span class="nb">fracture template</span><span class="n"> create </span><span class="s">'sub_vertical'</span><span class="n"> orientation fisher </span><span class="m m-Double">90</span><span class="p">,</span><span class="m m-Double">120</span><span class="p">,</span><span class="m m-Double">200</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     size power</span><span class="o">-</span><span class="n">law </span><span class="m m-Double">4</span><span class="n"> size</span><span class="o">-</span><span class="n">limit </span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">500</span>
+<span class="nb">fracture generate</span><span class="n"> dfn </span><span class="s">'sub_vertical'</span><span class="n"> generation</span><span class="o">-</span><span class="n">box </span><span class="sx">...</span>
+<span class="n">     </span><span class="o">-</span><span class="m m-Double">100</span><span class="n"> </span><span class="m m-Double">100</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">100</span><span class="n"> </span><span class="m m-Double">100</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">100</span><span class="n"> </span><span class="m m-Double">100</span><span class="n"> template </span><span class="s">'sub_vertical'</span><span class="n"> mass</span><span class="o">-</span><span class="n">density </span><span class="m m-Double">0.33</span>
+</pre></div>
+</div>
+<p>对于近水平裂隙，当竖直露头上可见的裂隙数量达到前文指定值时，即达到目标密度。由于生成命令没有内置这一选项，因此需要定义用户自定义停止准则。为达到该密度，在 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_generate.html#command:fracture.generate" title="Generate fractures from a statistical description. A model domain must be specified
+prior to...">生成裂隙命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fracture</span> <span class="pre">generate</span></code>）</a> 命令中使用两个 <span class="codename">FISH</span> 函数，一个作为修改函数（通过 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_generate.html#kwd:fracture.generate.modify" title="The |FISH| function  s  is called after each fracture is generated. The
+first argument of...">修改（<code class="xref fish fish-kwd docutils literal"><span class="pre">modify</span></code>）</a> 关键字指定的 <span class="fishname">hori_study</span> 函数），另一个作为用户自定义停止函数（通过 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_generate.html#kwd:fracture.generate.fish-stop" title="Generation is terminated if the |FISH| function  s , with arguments  a_{1}...a_{n} ,...">FISH 停止函数（<code class="xref fish fish-kwd docutils literal"><span class="pre">fish-stop</span></code>）</a> 关键字指定的 <span class="fishname">hori_stop</span> 函数）。每生成一条裂隙，程序都会调用修改函数，并将该裂隙的指针作为参数传入。本算例用它统计与竖直露头相交的裂隙数量，所用 <span class="codename">FISH</span> 内置函数为 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_fish/dfn.fracture_utilities/fish_dfn.fracture.gintersect.html#function:fracture.gintersect" title="Get the fracture/geometry intersection status...">裂隙与几何对象交切状态（<code class="xref fish fish-func docutils literal"><span class="pre">fracture.gintersect</span></code>）</a>。每生成一条裂隙后还会调用停止函数，若该函数返回 1，则停止生成。在此，该函数用于检查与竖直露头相交的裂隙数量是否已达到目标值。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 定义第 2 组的模板，即水平裂隙</span>
+<span class="nb">fracture template</span><span class="n"> create </span><span class="s">'sub_horizontal'</span><span class="n"> orientation fisher </span><span class="m m-Double">20</span><span class="n"> </span><span class="m m-Double">30</span><span class="n"> </span><span class="m m-Double">500</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     size power</span><span class="o">-</span><span class="n">law </span><span class="m m-Double">4</span><span class="n"> size</span><span class="o">-</span><span class="n">limit </span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">500</span>
+
+<span class="nb">fish define</span><span class="ni"> variables</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> nb_hori </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> nb_hori_aimed </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">39</span>
+<span class="nb">end</span>
+<span class="ni">[variables]</span>
+
+<span class="nb">fish define</span><span class="ni"> hori_study</span><span class="p">(</span><span class="ni">frac</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> outc </span><span class="p">=</span><span class="ni"> </span><span class="k">geom.set.find</span><span class="p">(</span><span class="s">'vertical_outcrop'</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> is_inter </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.gintersect</span><span class="p">(</span><span class="ni">frac</span><span class="p">,</span><span class="ni">outc</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> is_inter</span><span class="o">&gt;</span><span class="m m-Double">0</span>
+<span class="ni">    nb_hori </span><span class="p">=</span><span class="ni"> nb_hori</span><span class="o">+</span><span class="m m-Double">1</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> hori_stop</span>
+<span class="ni">    hori_stop </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> nb_hori </span><span class="o">&gt;</span><span class="p">=</span><span class="ni"> nb_hori_aimed</span>
+<span class="ni">        hori_stop</span><span class="p">=</span><span class="m m-Double">1</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="nb">end</span>
+
+<span class="nb">fracture generate</span><span class="n"> dfn </span><span class="s">'sub_horizontal'</span><span class="n"> generation</span><span class="o">-</span><span class="n">box </span><span class="sx">...</span>
+<span class="n">     </span><span class="o">-</span><span class="m m-Double">100</span><span class="n"> </span><span class="m m-Double">100</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">100</span><span class="n"> </span><span class="m m-Double">100</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">100</span><span class="n"> </span><span class="m m-Double">100</span><span class="n"> template </span><span class="s">'sub_horizontal'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     modify hori_study fish</span><span class="o">-</span><span class="n">stop hori_stop</span>
+</pre></div>
+</div>
+<p>对于第三组背景裂隙，通过竖直钻孔上的 <span class="math">\(P_{10}\)</span> 定义密度。在 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_generate.html#command:fracture.generate" title="Generate fractures from a statistical description. A model domain must be specified
+prior to...">生成裂隙命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fracture</span> <span class="pre">generate</span></code>）</a> 中使用 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_generate.html#kwd:fracture.generate.p10" title="Generation terminates when P10 measured along either a specified scanline (using
+the..."><code class="xref fish fish-kwd docutils literal"><span class="pre">p10</span></code></a> 和 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_generate.html#kwd:fracture.generate.p10.geometry" title="Specify that the scanlines come from the edges in a geometry set. Generation
+terminates when...">几何（<code class="xref fish fish-kwd docutils literal"><span class="pre">geometry</span></code>）</a> 关键字，通过几何集指定钻孔。持续生成裂隙，直到生成命令所定义钻孔上的裂隙频率，即 <span class="math">\(P_{10}\)</span>，达到目标值。虽然计算了 <span class="math">\(P_{10}\)</span>，但并未实际计算钻孔截交点。此外，还可以直接指定钻孔的直线，而不使用几何集。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 定义第 3 组的模板，即背景节理</span>
+<span class="nb">fracture template</span><span class="n"> create </span><span class="s">'background'</span><span class="n"> orientation bootstrapped </span><span class="sx">...</span>
+<span class="n">     </span><span class="s">'orientation_distribution.inp'</span><span class="n"> size power</span><span class="o">-</span><span class="n">law </span><span class="m m-Double">3.2</span><span class="n"> size</span><span class="o">-</span><span class="n">limit </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">fracture generate</span><span class="n"> dfn </span><span class="s">'background'</span><span class="n"> generation</span><span class="o">-</span><span class="n">box </span><span class="sx">...</span>
+<span class="n">     </span><span class="o">-</span><span class="m m-Double">55</span><span class="n"> </span><span class="m m-Double">55</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">55</span><span class="n"> </span><span class="m m-Double">55</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">55</span><span class="n"> </span><span class="m m-Double">55</span><span class="n"> template </span><span class="s">'background'</span><span class="n"> p10 </span><span class="m m-Double">0.5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     geometry </span><span class="s">'vertical_borehole'</span>
+</pre></div>
+</div>
+<p>生成的 DFN 如<a href="#exap-dfn-dfnfracs">图 3（Figure  3）</a>所示，包含约 110,000 条裂隙。该图通过添加<em>裂隙</em>绘图项，并在<em>标签</em>中按 DFN 名称着色获得。对应的赤平投影图见<a href="#exap-dfn-dfnstereonet1">图 4（Figure  4）</a>，两个优势方位清晰可见。该图通过添加<em>裂隙赤平投影</em>绘图项获得。</p>
+<div class="figure align-center" id="exap-dfn-dfnfracs">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d-dfntuto-stereonet.png"><img alt="../../../../../../../_images/p3d-dfntuto-stereonet.png" src="../../../../../../../_images/p3d-dfntuto-stereonet.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 3：由三个裂隙组组成的生成 DFN。</span></p>
+</div>
+<div class="figure align-center" id="exap-dfn-dfnstereonet1">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d-dfntuto-fractures.png"><img alt="../../../../../../../_images/p3d-dfntuto-fractures.png" src="../../../../../../../_images/p3d-dfntuto-fractures.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 4：完整 DFN 的赤平投影图（等面积投影、Fisher 集中度），采用 1% 圆面积绘制等值线。</span></p>
+</div>
+<p class="h3 rubric">DFN 分析</p>
+<p>本节分析 DFN 的部分特征。首先输出 DFN 的整体统计量，并对露头和钻孔进行简单采样，同时分析 DFN 的连通性。本节分析较为基础，可作为开展更深入分析的起点。<a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_compute.html#command:fracture.compute" title="Compute fracture statistics. Various density measures of fractures, filtered
+by...">计算裂隙统计量命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fracture</span> <span class="pre">compute</span></code>）</a> 命令可显示 DFN 密度，并输出不同形式的密度，例如通过 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_generate.html#kwd:fracture.generate.mass-density" title="Generation terminates when the fracture density {P21 in 2D; P32 in 3D} in the..."><code class="xref fish fish-kwd docutils literal"><span class="pre">mass-density</span></code></a> 关键字输出裂隙面积密度，通过 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_generate.html#kwd:fracture.generate.p10" title="Generation terminates when P10 measured along either a specified scanline (using
+the..."><code class="xref fish fish-kwd docutils literal"><span class="pre">p10</span></code></a> 关键字输出任意直线上的 <span class="math">\(P_{10}\)</span> 等。还可以使用 <span class="codename">FISH</span> 内置函数输出其他整体统计量。本算例的总裂隙密度 <span class="math">\(P_{32}\)</span> 为 1.6 m<sup>2</sup>/m<sup>3</sup>。注意，<a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_compute.html#kwd:fracture.compute.p10" title="Return the P10 along the line defined by  begin  and  end , or along
+the geometry...">裂隙 P10 计算命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fracture</span> <span class="pre">compute</span> <span class="pre">p10</span></code>）</a> 命令和 <span class="codename">FISH</span> 内置函数 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_fish/dfn.fracture_utilities/fish_dfn.fracture.geomp21.html#function:fracture.geomp21" title="Get the P21 of polygons. The P21 is the cumulative sum of intersection lengths
+with the geometry polygons per unit...">裂隙与几何多边形交切的P21值（<code class="xref fish fish-func docutils literal"><span class="pre">fracture.geomp21</span></code>）</a> 能够快速获取 DFN 密度，但不会实际计算交线或交点。此外，<a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_compute.html#kwd:fracture.compute.p10" title="Return the P10 along the line defined by  begin  and  end , or along
+the geometry...">裂隙 P10 计算命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fracture</span> <span class="pre">compute</span> <span class="pre">p10</span></code>）</a> 命令不需要预先建立几何对象，因为该对象会在命令行中临时定义。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fracture compute</span><span class="n"> mass</span><span class="o">-</span><span class="n">density</span>
+<span class="nb">fracture compute</span><span class="n"> p10 begin </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">50</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> end </span><span class="p">(</span><span class="m m-Double">50</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="nb">fish define</span><span class="ni"> geometry_density</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> poutcrop </span><span class="p">=</span><span class="ni"> </span><span class="k">geom.set.find</span><span class="p">(</span><span class="s">'vertical_outcrop'</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> pborehole </span><span class="p">=</span><span class="ni"> </span><span class="k">geom.set.find</span><span class="p">(</span><span class="s">'vertical_borehole'</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> oo </span><span class="p">=</span><span class="ni"> </span><span class="k">io.out</span><span class="p">(</span><span class="s">'p21 vertical = '</span><span class="o">+</span><span class="ni">string</span><span class="p">(</span><span class="k">fracture.geomp21</span><span class="p">(</span><span class="ni">poutcrop</span><span class="p">)))</span>
+<span class="ni">    oo </span><span class="p">=</span><span class="ni"> </span><span class="k">io.out</span><span class="p">(</span><span class="s">'p10 vertical = '</span><span class="o">+</span><span class="ni">string</span><span class="p">(</span><span class="k">fracture.geomp10</span><span class="p">(</span><span class="ni">pborehole</span><span class="p">)))</span>
+<span class="nb">end</span>
+<span class="ni">[geometry_density]</span>
+</pre></div>
+</div>
+<p>要生成迹线图并获得沿钻孔的截交点，首先必须计算 DFN 与露头的相交关系。裂隙与平面的交线称为迹线，裂隙与直线的交点称为截交点。使用 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_intersections.compute.html#command:fracture.intersections.compute" title="Compute intersections. Intersections can exist between fractures, and between
+fractures...">计算裂隙交点命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fracture</span> <span class="pre">intersections</span> <span class="pre">compute</span></code>）</a> 命令及 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_intersections.compute.html#kwd:fracture.intersections.compute.with-geometry" title="Delineate the intersections between fractures and the geometry set with name
+ s . An...">与几何集求交（<code class="xref fish fish-kwd docutils literal"><span class="pre">with-geometry</span></code>）</a> 关键字，计算裂隙与几何对象的交线或交点，并将其保存在不同的相交集合中。随后，为便于进一步分析，使用 <span class="fishname">assign_extras</span> <span class="codename">FISH</span> 函数为裂隙附加变量赋予索引，以标识裂隙是否与当前某一几何集相交。这里分别将附加变量 1、2、3 赋值为 1、2、3，从而识别与各相交集合关联的裂隙。使用多个附加变量，是因为同一裂隙可能同时与多个不同的几何对象相交。也可以使用类似的 <span class="codename">FISH</span> 函数导出迹线属性。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 迹线和截交点</span>
+<span class="nb">fracture intersection</span><span class="n"> compute with</span><span class="o">-</span><span class="n">geometry </span><span class="s">'horizontal_outcrop'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     intersection</span><span class="o">-</span><span class="n">set </span><span class="s">'inter_hori_out'</span><span class="n"> group</span><span class="o">-</span><span class="n">slot </span><span class="s">'1'</span>
+<span class="nb">fracture intersection</span><span class="n"> compute with</span><span class="o">-</span><span class="n">geometry </span><span class="s">'vertical_outcrop'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     intersection</span><span class="o">-</span><span class="n">set </span><span class="s">'inter_vert_out'</span><span class="n"> group</span><span class="o">-</span><span class="n">slot </span><span class="s">'2'</span>
+<span class="nb">fracture intersection</span><span class="n"> compute with</span><span class="o">-</span><span class="n">geometry </span><span class="s">'vertical_borehole'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     intersection</span><span class="o">-</span><span class="n">set </span><span class="s">'inter_vert_bore'</span><span class="n"> group</span><span class="o">-</span><span class="n">slot </span><span class="s">'3'</span>
+
+<span class="nb">fish define</span><span class="ni"> assign_extras</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> set1 </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.inter.set.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> intlist </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.inter.set.interlist</span><span class="p">(</span><span class="ni">set1</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> e1 intlist</span>
+<span class="ni">        </span><span class="k">local</span><span class="ni"> f1 </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.inter.end1</span><span class="p">(</span><span class="ni">e1</span><span class="p">)</span>
+<span class="ni">        </span><span class="k">if</span><span class="ni"> </span><span class="k">type.pointer.id</span><span class="p">(</span><span class="ni">f1</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.typeid</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">            </span><span class="k">fracture.extra</span><span class="p">(</span><span class="ni">f1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">        </span><span class="k">endif</span>
+<span class="ni">    </span><span class="k">endloop</span><span class="ni">    </span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> set2 </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.inter.set.find</span><span class="p">(</span><span class="m m-Double">2</span><span class="p">)</span>
+<span class="ni">    intlist </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.inter.set.interlist</span><span class="p">(</span><span class="ni">set2</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> e1 intlist</span>
+<span class="ni">        f1 </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.inter.end1</span><span class="p">(</span><span class="ni">e1</span><span class="p">)</span>
+<span class="ni">        </span><span class="k">if</span><span class="ni"> </span><span class="k">type.pointer.id</span><span class="p">(</span><span class="ni">f1</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.typeid</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">            </span><span class="k">fracture.extra</span><span class="p">(</span><span class="ni">f1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2</span>
+<span class="ni">        </span><span class="k">endif</span>
+<span class="ni">    </span><span class="k">endloop</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> set3 </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.inter.set.find</span><span class="p">(</span><span class="m m-Double">3</span><span class="p">)</span>
+<span class="ni">    intlist </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.inter.set.interlist</span><span class="p">(</span><span class="ni">set3</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> e1 intlist</span>
+<span class="ni">        f1 </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.inter.end1</span><span class="p">(</span><span class="ni">e1</span><span class="p">)</span>
+<span class="ni">        </span><span class="k">if</span><span class="ni"> </span><span class="k">type.pointer.id</span><span class="p">(</span><span class="ni">f1</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.typeid</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">            </span><span class="k">fracture.extra</span><span class="p">(</span><span class="ni">f1</span><span class="p">,</span><span class="m m-Double">3</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">3</span>
+<span class="ni">        </span><span class="k">endif</span>
+<span class="ni">    </span><span class="k">endloop</span>
+<span class="nb">end</span><span class="n"> </span>
+
+<span class="ni">[assign_extras]</span>
+</pre></div>
+</div>
+<p><a href="#exap-dfn-dfntraces1">图 5（Figure  5）</a>和<a href="#exap-dfn-dfntraces2">图 6（Figure  6）</a>给出了由前述代码计算得到的两个露头迹线图。添加<em>DFN 相交对象</em>绘图项，在<em>数值</em>中选择按长度着色，并在<em>显示</em>选项中仅选取相应的相交集合，即此处的 <em>inter_hori_out</em> 和 <em>inter_vert_out</em>，即可得到这些图。<a href="#exap-dfn-dfnborehole">图 7（Figure  7）</a>显示与竖直钻孔相交的裂隙。该图通过添加<em>DFN 数值</em>绘图项，按面积着色，并基于附加变量 3 进行筛选得到。</p>
+<div class="figure align-center" id="exap-dfn-dfntraces1">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d-dfntuto-tracesH.png"><img alt="../../../../../../../_images/p3d-dfntuto-tracesH.png" src="../../../../../../../_images/p3d-dfntuto-tracesH.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 5：水平露头上的迹线，按长度着色。</span></p>
+</div>
+<div class="figure align-center" id="exap-dfn-dfntraces2">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d-dfntuto-tracesV.png"><img alt="../../../../../../../_images/p3d-dfntuto-tracesV.png" src="../../../../../../../_images/p3d-dfntuto-tracesV.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 6：竖直露头上的迹线，按长度着色。</span></p>
+</div>
+<div class="figure align-center" id="exap-dfn-dfnborehole">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d-dfntuto-fracturesV.png"><img alt="../../../../../../../_images/p3d-dfntuto-fracturesV.png" src="../../../../../../../_images/p3d-dfntuto-fracturesV.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 7：与竖直钻孔相交的裂隙。</span></p>
+</div>
+<p>最后，分析 DFN 中裂隙之间的连通性。第一步计算裂隙之间的相交关系，再次使用 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_intersections.compute.html#command:fracture.intersections.compute" title="Compute intersections. Intersections can exist between fractures, and between
+fractures...">计算裂隙交点命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fracture</span> <span class="pre">intersections</span> <span class="pre">compute</span></code>）</a> 命令，但不使用 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_intersections.compute.html#kwd:fracture.intersections.compute.with-geometry" title="Delineate the intersections between fractures and the geometry set with name
+ s . An...">与几何集求交（<code class="xref fish fish-kwd docutils literal"><span class="pre">with-geometry</span></code>）</a> 关键字，得到约 500,000 个裂隙间相交对象。第二步计算相互连通的裂隙簇。裂隙簇定义为相互交切的一组裂隙；换言之，同一簇内任意两条裂隙之间都存在一条连通路径，而不同簇中的两条裂隙彼此不连通。通过 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_cluster.html#command:fracture.cluster" title="Compute fracture clusters. Clusters are defined as sets of...">计算裂隙聚类命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fracture</span> <span class="pre">cluster</span></code>）</a> 命令计算裂隙簇。所得到的相交对象和裂隙簇分别见<a href="#exap-dfn-dfninters">图 8（Figure  8）</a>和<a href="#exap-dfn-dfnclusters">图 9（Figure  9）</a>。<a href="#exap-dfn-dfninters">图 8（Figure  8）</a>通过添加<em>DFN 相交对象</em>绘图项，在<em>数值</em>中按长度着色，并在<em>显示</em>选项中仅选择名为 <em>all</em> 的集合得到。<a href="#exap-dfn-dfnclusters">图 9（Figure  9）</a>通过添加<em>DFN 数值</em>绘图项，并在<em>数值</em>中按裂隙簇着色得到。如图所示，本算例的裂隙连通性良好，只有极少数裂隙不属于总体主簇。不过，对于连通性较弱的 DFN，裂隙簇之间的组织关系可能复杂得多。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fracture intersection</span><span class="n"> compute intersection</span><span class="o">-</span><span class="n">set </span><span class="s">'all'</span>
+<span class="nb">fracture cluster</span><span class="n"> group</span><span class="o">-</span><span class="n">slot </span><span class="s">'1'</span><span class="n"> intersection</span><span class="o">-</span><span class="n">set </span><span class="s">'all'</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="exap-dfn-dfninters">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d-dfntuto-intersect.png"><img alt="../../../../../../../_images/p3d-dfntuto-intersect.png" src="../../../../../../../_images/p3d-dfntuto-intersect.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 8：系统中的相交对象，按长度着色。</span></p>
+</div>
+<div class="figure align-center" id="exap-dfn-dfnclusters">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d-dfntuto-clusters.png"><img alt="../../../../../../../_images/p3d-dfntuto-clusters.png" src="../../../../../../../_images/p3d-dfntuto-clusters.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 9：按裂隙簇索引着色的裂隙，蓝色为主簇，绿色为其他簇。</span></p>
+</div>
+<p class="h2 rubric">DFN 简化</p>
+<p>在某些情况下，DFN 中的裂隙数量过多，无法用于后续力学建模。因此，可能需要对 DFN 进行简化，同时保留原始 DFN 的诸多特征。本算例基于以下假设，依次对 DFN 进行处理。</p>
+<ul class="simple">
+<li>对于所研究的应用，某些裂隙可以忽略，因此可以将其删除，具体情形如下。</li>
+<li>裂隙不属于最大的连通裂隙簇，或者</li>
+<li>裂隙距离给定注入点较远。</li>
+<li>可以将裂隙投影至共同平面进行组合，或者根据邻近程度进行合并。</li>
+</ul>
+<p>这些假设可用于从给定点实施水力压裂增产的情形，以简化模型。简化假设是否合理由用户负责判断，且显然取决于目标应用的具体条件。特别是，通过 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_combine.html#command:fracture.combine" title="Simplify fractures. Fractures are sorted by decreasing size and, starting with
+the...">合并裂隙命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fracture</span> <span class="pre">combine</span></code>）</a> 命令合并裂隙，并不能保证保留 DFN 的全部特征。用户应针对具体用途评估 DFN 的有效性。首先识别所有不属于最大裂隙簇的裂隙。这里假设仅最大裂隙簇与基准钻孔连通，因此使用 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_delete.html#command:fracture.delete" title="Delete fractures. If the optional  dfn  keyword is given then deletion...">删除裂隙命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fracture</span> <span class="pre">delete</span></code>）</a> 命令并指定适当范围，删除不属于该簇的孤立裂隙。计算裂隙簇时，程序会根据所依据的相交集合名称和裂隙簇索引，将分组与裂隙簇关联起来。本算例中，最大簇内的裂隙位于 <em>all1</em> 分组中。实际操作时，为提高计算速度，建议在修改 DFN 前使用 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_intersections.delete.html#command:fracture.intersections.delete" title="Delete intersections. An intersection set can be specified with  intersection-set...">删除裂隙交点命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fracture</span> <span class="pre">intersections</span> <span class="pre">delete</span></code>）</a> 命令清除相交对象和裂隙簇，操作完成后再重新计算相交关系。在当前条件下，大多数裂隙属于最大簇，孤立裂隙所占比例很小。这一步简化从 DFN 中剔除了 2000 条裂隙。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 仅保留无限连通簇</span>
+<span class="nb">fracture intersection</span><span class="n"> delete</span>
+<span class="nb">fracture delete</span><span class="n"> range group </span><span class="s">"all1"</span><span class="n"> not</span>
+<span class="nb">fracture intersection</span><span class="n"> compute intersection</span><span class="o">-</span><span class="n">set </span><span class="s">'all'</span>
+</pre></div>
+</div>
+<p>下一步，删除至指定注入截面的“连通距离”过长的裂隙。裂隙与基准区域，例如注入截面之间的“连通距离”，是二者之间最短连通路径的总长度，见<a href="#exap-dfn-dfnconnec">图 10（Figure  10）</a>。该距离是沿途为到达该截面而必须经过的裂隙交线中心之间距离的总和。</p>
+<div class="figure align-center" id="exap-dfn-dfnconnec">
+<a class="reference internal image-reference" href="../../../../../../../_images/dfnconnec1.png"><img alt="../../../../../../../_images/dfnconnec1.png" src="../../../../../../../_images/dfnconnec1.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 10：四条裂隙至红色立方体所示基准区域的连通距离示意图。F1 与基准区域直接相连，连通距离为 0；F2 的连通距离为橙色线段的长度；F3 为黑色线段与橙色线段长度之和；F4 为橙色线段与灰色线段长度之和。</span></p>
+</div>
+<p>首先建立用于定义注入截面的二维几何对象，并使用 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_connectivity.html#kwd:fracture.connectivity.distance" title="Connectivity is assigned to the extra variable in an index specified with the
+ extra-index  keyword. Connectivity is given as the physical distance
+from the structure to the fracture, calculated as the path through the centers
+of intersections...">裂隙连通距离计算命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fracture</span> <span class="pre">connectivity</span> <span class="pre">distance</span></code>）</a> 命令计算连通距离。随后删除“连通距离”大于 50 m 的裂隙。这一步简化又从 DFN 中剔除了 75,000 条裂隙。筛选后的 DFN 如<a href="#exap-dfn-dfnsimp1">图 11（Figure  11）</a>所示，其中 DFN 数值绘图项按附加变量 6 着色。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 按连通距离筛选</span>
+
+<span class="n">geom set </span><span class="s">'injection_section'</span>
+<span class="n">geom poly create by</span><span class="o">-</span><span class="n">position </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="n">geom poly create by</span><span class="o">-</span><span class="n">position </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="n">geom poly create by</span><span class="o">-</span><span class="n">position </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="n">geom poly create by</span><span class="o">-</span><span class="n">position </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="n">geom poly create by</span><span class="o">-</span><span class="n">position </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="n">geom poly create by</span><span class="o">-</span><span class="n">position </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span>
+<span class="nb">fracture connectivity</span><span class="n"> distance extra</span><span class="o">-</span><span class="n">index </span><span class="m m-Double">6</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     starting</span><span class="o">-</span><span class="n">geometry </span><span class="s">'injection_section'</span><span class="n"> intersection</span><span class="o">-</span><span class="n">set </span><span class="s">'5'</span>
+<span class="nb">fracture intersection</span><span class="n"> delete</span>
+<span class="nb">fracture delete</span><span class="n"> range extra </span><span class="m m-Double">6</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">50</span><span class="n"> not</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="exap-dfn-dfnsimp1">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d-dfntuto-simplified1.png"><img alt="../../../../../../../_images/p3d-dfntuto-simplified1.png" src="../../../../../../../_images/p3d-dfntuto-simplified1.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 11：基于连通性筛选裂隙后得到的简化 DFN，仅保留位于主簇内且连通距离小于或等于 50 m 的裂隙。裂隙按其至注入截面的距离着色。</span></p>
+</div>
+<p>进一步的简化通过将裂隙投影至有限数量的基准平面，并使用 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_combine.html#kwd:fracture.combine.merge" title="Merge fractures that would overlap the reference fractures if they were collapsed
+onto the..."><code class="xref fish fish-kwd docutils literal"><span class="pre">merge</span></code></a> 命令合并相互重叠的裂隙实现。该命令以最大裂隙所在平面为基准。当满足以下条件时，将较小裂隙投影至该平面。</p>
+<ul class="simple">
+<li>裂隙中心至该平面的距离小于给定距离，并且</li>
+<li>该平面方位与裂隙方位之间的夹角小于给定角度。</li>
+</ul>
+<p>这一过程按裂隙尺寸从大到小依次迭代。投影后，若干裂隙共面且可能相互重叠。使用 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_combine.html#kwd:fracture.combine.merge" title="Merge fractures that would overlap the reference fractures if they were collapsed
+onto the..."><code class="xref fish fish-kwd docutils literal"><span class="pre">merge</span></code></a> 关键字合并重叠裂隙。如果某条裂隙完全包含在较大裂隙中，则将其删除。根据裂隙至注入点的距离，采用三组不同的合并准则。这可用于反映以下情况，即注入点附近的裂隙对结果影响较强，而远处裂隙的影响相对较小。因此，近处裂隙采用严格准则合并，远处裂隙则采用较宽松的准则。这一步又从 DFN 中剔除了 33,000 条裂隙。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 裂隙合并</span>
+
+
+<span class="nb">fracture combine</span><span class="n"> distance </span><span class="m m-Double">1</span><span class="n"> angle </span><span class="m m-Double">20</span><span class="n"> merge range extra </span><span class="m m-Double">6</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">20</span><span class="n"> </span>
+<span class="nb">fracture combine</span><span class="n"> distance </span><span class="m m-Double">5</span><span class="n"> angle </span><span class="m m-Double">45</span><span class="n"> merge range extra </span><span class="m m-Double">6</span><span class="n"> </span><span class="m m-Double">20</span><span class="n"> </span><span class="m m-Double">30</span><span class="n"> </span>
+<span class="nb">fracture combine</span><span class="n"> distance </span><span class="m m-Double">10</span><span class="n"> angle </span><span class="m m-Double">80</span><span class="n"> merge range extra </span><span class="m m-Double">6</span><span class="n"> </span><span class="m m-Double">30</span><span class="n"> </span><span class="m m-Double">50</span><span class="n"> </span>
+</pre></div>
+</div>
+<p>最终 DFN 包含约 4,000 条裂隙，如<a href="#exap-dfn-dfnsimp2">图 12（Figure  12）</a>所示，其中 DFN 数值绘图项按附加变量 6 着色。</p>
+<div class="figure align-center" id="exap-dfn-dfnsimp2">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d-dfntuto-simplified2.png"><img alt="../../../../../../../_images/p3d-dfntuto-simplified2.png" src="../../../../../../../_images/p3d-dfntuto-simplified2.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 12：通过投影至基准平面并合并重叠裂隙得到的简化 DFN。</span></p>
+</div>
+<p class="h2 rubric">参考文献</p>
+<table class="docutils citation" frame="void" id="fisher1993" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[Fisher1993]</a></td><td>Fisher, N. I.，<span class="bi">《圆周数据的统计分析》（Statistical Analysis of Circular Data）</span>，Cambridge University Press，1993 年。</td></tr>
+</tbody>
+</table>
+<p class="h2 rubric" id="exap-dfn-datafile">dfntutorial.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;-----------</span>
+<span class="c">;  代码 1</span>
+<span class="c">;-----------</span>
+
+<span class="c">; excerpt-init-start</span>
+<span class="nb">model new</span>
+
+<span class="c">; 定义计算域</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">50</span><span class="n"> </span><span class="m m-Double">50</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">50</span><span class="n"> </span><span class="m m-Double">50</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">50</span><span class="n"> </span><span class="m m-Double">50</span>
+
+<span class="c">; 固定随机种子</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">101</span>
+<span class="c">; excerpt-init-end</span>
+
+<span class="c">;-----------</span>
+<span class="c">;  代码 2</span>
+<span class="c">;----------- </span>
+
+<span class="c">; excerpt-bhss-start</span>
+<span class="c">; 创建钻孔 </span>
+<span class="n">geom set </span><span class="s">'vertical_borehole'</span>
+<span class="n">geom edge create by</span><span class="o">-</span><span class="n">position </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">45</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">40</span><span class="p">)</span>
+
+<span class="n">geom set </span><span class="s">'45_degree_borehole'</span>
+<span class="nb">fish def</span><span class="ni"> make_4</span><span class="m m-Double">5</span><span class="ni">_borehole</span>
+<span class="ni">   </span><span class="k">local</span><span class="ni"> x1 </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">50</span>
+<span class="ni">   </span><span class="k">local</span><span class="ni"> x2 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">50</span>
+<span class="ni">   </span><span class="c">; 旋转 45 度</span>
+<span class="ni">   </span><span class="k">local</span><span class="ni"> x1rot </span><span class="p">=</span><span class="ni"> x1</span><span class="o">*</span><span class="k">math.cos</span><span class="p">(</span><span class="k">math.pi</span><span class="o">/</span><span class="m m-Double">4</span><span class="p">)</span>
+<span class="ni">   </span><span class="k">local</span><span class="ni"> z1rot </span><span class="p">=</span><span class="ni"> x1</span><span class="o">*</span><span class="k">math.sin</span><span class="p">(</span><span class="k">math.pi</span><span class="o">/</span><span class="m m-Double">4</span><span class="p">)</span>
+<span class="ni">   </span><span class="k">local</span><span class="ni"> x2rot </span><span class="p">=</span><span class="ni"> x2</span><span class="o">*</span><span class="k">math.cos</span><span class="p">(</span><span class="k">math.pi</span><span class="o">/</span><span class="m m-Double">4</span><span class="p">)</span>
+<span class="ni">   </span><span class="k">local</span><span class="ni"> z2rot </span><span class="p">=</span><span class="ni"> x2</span><span class="o">*</span><span class="k">math.sin</span><span class="p">(</span><span class="k">math.pi</span><span class="o">/</span><span class="m m-Double">4</span><span class="p">)</span>
+<span class="k">   command</span><span class="n"> </span>
+<span class="n">       geom edge create by</span><span class="o">-</span><span class="n">position </span><span class="ni">[</span><span class="p">(</span><span class="ni">x1rot</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">z1rot</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[</span><span class="p">(</span><span class="ni">x2rot</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">z2rot</span><span class="p">)</span><span class="ni">]</span>
+<span class="k">   endcommand</span>
+<span class="nb">end</span>
+<span class="ni">[make_4</span><span class="m m-Double">5</span><span class="ni">_borehole]</span>
+
+<span class="c">; 创建露头 </span>
+<span class="n">geom set </span><span class="s">'horizontal_outcrop'</span>
+<span class="n">geom polygon create by</span><span class="o">-</span><span class="n">position </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">40</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">40</span><span class="p">,</span><span class="m m-Double">40</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">40</span><span class="p">,</span><span class="m m-Double">40</span><span class="p">,</span><span class="m m-Double">40</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                </span><span class="p">(</span><span class="m m-Double">40</span><span class="p">,</span><span class="m m-Double">40</span><span class="p">,</span><span class="m m-Double">40</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">40</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">40</span><span class="p">,</span><span class="m m-Double">40</span><span class="p">)</span>
+<span class="n">geom set </span><span class="s">'vertical_outcrop'</span>
+<span class="n">geom polygon create by</span><span class="o">-</span><span class="n">position </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">41</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">41</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">41</span><span class="p">,</span><span class="m m-Double">41</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">41</span><span class="p">,</span><span class="m m-Double">41</span><span class="p">,</span><span class="m m-Double">40</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">41</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">41</span><span class="p">,</span><span class="m m-Double">40</span><span class="p">)</span>
+<span class="c">; excerpt-bhss-end</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'geometries'</span>
+
+
+<span class="c">;------------</span>
+<span class="c">;  代码 3</span>
+<span class="c">;------------</span>
+
+<span class="c">; excerpt-gnfs-start</span>
+<span class="c">; 定义第 1 组的模板，即竖直裂隙</span>
+<span class="nb">fracture template</span><span class="n"> create </span><span class="s">'sub_vertical'</span><span class="n"> orientation fisher </span><span class="m m-Double">90</span><span class="p">,</span><span class="m m-Double">120</span><span class="p">,</span><span class="m m-Double">200</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     size power</span><span class="o">-</span><span class="n">law </span><span class="m m-Double">4</span><span class="n"> size</span><span class="o">-</span><span class="n">limit </span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">500</span>
+<span class="nb">fracture generate</span><span class="n"> dfn </span><span class="s">'sub_vertical'</span><span class="n"> generation</span><span class="o">-</span><span class="n">box </span><span class="sx">...</span>
+<span class="n">     </span><span class="o">-</span><span class="m m-Double">100</span><span class="n"> </span><span class="m m-Double">100</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">100</span><span class="n"> </span><span class="m m-Double">100</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">100</span><span class="n"> </span><span class="m m-Double">100</span><span class="n"> template </span><span class="s">'sub_vertical'</span><span class="n"> mass</span><span class="o">-</span><span class="n">density </span><span class="m m-Double">0.33</span>
+<span class="c">; excerpt-gnfs-end</span>
+
+<span class="c">;-----------</span>
+<span class="c">;  代码 4</span>
+<span class="c">;-----------</span>
+
+<span class="c">; excerpt-set2-start</span>
+<span class="c">; 定义第 2 组的模板，即水平裂隙</span>
+<span class="nb">fracture template</span><span class="n"> create </span><span class="s">'sub_horizontal'</span><span class="n"> orientation fisher </span><span class="m m-Double">20</span><span class="n"> </span><span class="m m-Double">30</span><span class="n"> </span><span class="m m-Double">500</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     size power</span><span class="o">-</span><span class="n">law </span><span class="m m-Double">4</span><span class="n"> size</span><span class="o">-</span><span class="n">limit </span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">500</span>
+
+<span class="nb">fish define</span><span class="ni"> variables</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> nb_hori </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> nb_hori_aimed </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">39</span>
+<span class="nb">end</span>
+<span class="ni">[variables]</span>
+
+<span class="nb">fish define</span><span class="ni"> hori_study</span><span class="p">(</span><span class="ni">frac</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> outc </span><span class="p">=</span><span class="ni"> </span><span class="k">geom.set.find</span><span class="p">(</span><span class="s">'vertical_outcrop'</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> is_inter </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.gintersect</span><span class="p">(</span><span class="ni">frac</span><span class="p">,</span><span class="ni">outc</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> is_inter</span><span class="o">&gt;</span><span class="m m-Double">0</span>
+<span class="ni">    nb_hori </span><span class="p">=</span><span class="ni"> nb_hori</span><span class="o">+</span><span class="m m-Double">1</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> hori_stop</span>
+<span class="ni">    hori_stop </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> nb_hori </span><span class="o">&gt;</span><span class="p">=</span><span class="ni"> nb_hori_aimed</span>
+<span class="ni">        hori_stop</span><span class="p">=</span><span class="m m-Double">1</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="nb">end</span>
+
+<span class="nb">fracture generate</span><span class="n"> dfn </span><span class="s">'sub_horizontal'</span><span class="n"> generation</span><span class="o">-</span><span class="n">box </span><span class="sx">...</span>
+<span class="n">     </span><span class="o">-</span><span class="m m-Double">100</span><span class="n"> </span><span class="m m-Double">100</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">100</span><span class="n"> </span><span class="m m-Double">100</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">100</span><span class="n"> </span><span class="m m-Double">100</span><span class="n"> template </span><span class="s">'sub_horizontal'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     modify hori_study fish</span><span class="o">-</span><span class="n">stop hori_stop</span>
+<span class="c">; excerpt-set2-end</span>
+
+<span class="c">;-----------</span>
+<span class="c">;  代码 5</span>
+<span class="c">;-----------</span>
+
+<span class="c">; excerpt-set3-start</span>
+<span class="c">; 定义第 3 组的模板，即背景节理</span>
+<span class="nb">fracture template</span><span class="n"> create </span><span class="s">'background'</span><span class="n"> orientation bootstrapped </span><span class="sx">...</span>
+<span class="n">     </span><span class="s">'orientation_distribution.inp'</span><span class="n"> size power</span><span class="o">-</span><span class="n">law </span><span class="m m-Double">3.2</span><span class="n"> size</span><span class="o">-</span><span class="n">limit </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">fracture generate</span><span class="n"> dfn </span><span class="s">'background'</span><span class="n"> generation</span><span class="o">-</span><span class="n">box </span><span class="sx">...</span>
+<span class="n">     </span><span class="o">-</span><span class="m m-Double">55</span><span class="n"> </span><span class="m m-Double">55</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">55</span><span class="n"> </span><span class="m m-Double">55</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">55</span><span class="n"> </span><span class="m m-Double">55</span><span class="n"> template </span><span class="s">'background'</span><span class="n"> p10 </span><span class="m m-Double">0.5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     geometry </span><span class="s">'vertical_borehole'</span>
+<span class="c">; excerpt-set3-end</span>
+
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'dfngeneration'</span>
+
+<span class="c">;-----------</span>
+<span class="c">;  代码 6</span>
+<span class="c">;-----------</span>
+
+<span class="c">; 输出密度</span>
+
+<span class="c">; excerpt-dens-start</span>
+<span class="nb">fracture compute</span><span class="n"> mass</span><span class="o">-</span><span class="n">density</span>
+<span class="nb">fracture compute</span><span class="n"> p10 begin </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">50</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> end </span><span class="p">(</span><span class="m m-Double">50</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="nb">fish define</span><span class="ni"> geometry_density</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> poutcrop </span><span class="p">=</span><span class="ni"> </span><span class="k">geom.set.find</span><span class="p">(</span><span class="s">'vertical_outcrop'</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> pborehole </span><span class="p">=</span><span class="ni"> </span><span class="k">geom.set.find</span><span class="p">(</span><span class="s">'vertical_borehole'</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> oo </span><span class="p">=</span><span class="ni"> </span><span class="k">io.out</span><span class="p">(</span><span class="s">'p21 vertical = '</span><span class="o">+</span><span class="ni">string</span><span class="p">(</span><span class="k">fracture.geomp21</span><span class="p">(</span><span class="ni">poutcrop</span><span class="p">)))</span>
+<span class="ni">    oo </span><span class="p">=</span><span class="ni"> </span><span class="k">io.out</span><span class="p">(</span><span class="s">'p10 vertical = '</span><span class="o">+</span><span class="ni">string</span><span class="p">(</span><span class="k">fracture.geomp10</span><span class="p">(</span><span class="ni">pborehole</span><span class="p">)))</span>
+<span class="nb">end</span>
+<span class="ni">[geometry_density]</span>
+<span class="c">; excerpt-dens-end</span>
+
+<span class="c">;-----------</span>
+<span class="c">;  代码 7</span>
+<span class="c">;-----------</span>
+
+<span class="c">; excerpt-tnis-start</span>
+<span class="c">; 迹线和截交点</span>
+<span class="nb">fracture intersection</span><span class="n"> compute with</span><span class="o">-</span><span class="n">geometry </span><span class="s">'horizontal_outcrop'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     intersection</span><span class="o">-</span><span class="n">set </span><span class="s">'inter_hori_out'</span><span class="n"> group</span><span class="o">-</span><span class="n">slot </span><span class="s">'1'</span>
+<span class="nb">fracture intersection</span><span class="n"> compute with</span><span class="o">-</span><span class="n">geometry </span><span class="s">'vertical_outcrop'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     intersection</span><span class="o">-</span><span class="n">set </span><span class="s">'inter_vert_out'</span><span class="n"> group</span><span class="o">-</span><span class="n">slot </span><span class="s">'2'</span>
+<span class="nb">fracture intersection</span><span class="n"> compute with</span><span class="o">-</span><span class="n">geometry </span><span class="s">'vertical_borehole'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     intersection</span><span class="o">-</span><span class="n">set </span><span class="s">'inter_vert_bore'</span><span class="n"> group</span><span class="o">-</span><span class="n">slot </span><span class="s">'3'</span>
+
+<span class="nb">fish define</span><span class="ni"> assign_extras</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> set1 </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.inter.set.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> intlist </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.inter.set.interlist</span><span class="p">(</span><span class="ni">set1</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> e1 intlist</span>
+<span class="ni">        </span><span class="k">local</span><span class="ni"> f1 </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.inter.end1</span><span class="p">(</span><span class="ni">e1</span><span class="p">)</span>
+<span class="ni">        </span><span class="k">if</span><span class="ni"> </span><span class="k">type.pointer.id</span><span class="p">(</span><span class="ni">f1</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.typeid</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">            </span><span class="k">fracture.extra</span><span class="p">(</span><span class="ni">f1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">        </span><span class="k">endif</span>
+<span class="ni">    </span><span class="k">endloop</span><span class="ni">    </span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> set2 </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.inter.set.find</span><span class="p">(</span><span class="m m-Double">2</span><span class="p">)</span>
+<span class="ni">    intlist </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.inter.set.interlist</span><span class="p">(</span><span class="ni">set2</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> e1 intlist</span>
+<span class="ni">        f1 </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.inter.end1</span><span class="p">(</span><span class="ni">e1</span><span class="p">)</span>
+<span class="ni">        </span><span class="k">if</span><span class="ni"> </span><span class="k">type.pointer.id</span><span class="p">(</span><span class="ni">f1</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.typeid</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">            </span><span class="k">fracture.extra</span><span class="p">(</span><span class="ni">f1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2</span>
+<span class="ni">        </span><span class="k">endif</span>
+<span class="ni">    </span><span class="k">endloop</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> set3 </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.inter.set.find</span><span class="p">(</span><span class="m m-Double">3</span><span class="p">)</span>
+<span class="ni">    intlist </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.inter.set.interlist</span><span class="p">(</span><span class="ni">set3</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> e1 intlist</span>
+<span class="ni">        f1 </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.inter.end1</span><span class="p">(</span><span class="ni">e1</span><span class="p">)</span>
+<span class="ni">        </span><span class="k">if</span><span class="ni"> </span><span class="k">type.pointer.id</span><span class="p">(</span><span class="ni">f1</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.typeid</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">            </span><span class="k">fracture.extra</span><span class="p">(</span><span class="ni">f1</span><span class="p">,</span><span class="m m-Double">3</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">3</span>
+<span class="ni">        </span><span class="k">endif</span>
+<span class="ni">    </span><span class="k">endloop</span>
+<span class="nb">end</span><span class="n"> </span>
+
+<span class="ni">[assign_extras]</span>
+<span class="c">; excerpt-tnis-end</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'traces'</span>
+
+<span class="c">;-----------</span>
+<span class="c">;  代码 8</span>
+<span class="c">;-----------</span>
+
+<span class="c">; 连通性</span>
+
+<span class="c">; excerpt-kelx-start</span>
+<span class="nb">fracture intersection</span><span class="n"> compute intersection</span><span class="o">-</span><span class="n">set </span><span class="s">'all'</span>
+<span class="nb">fracture cluster</span><span class="n"> group</span><span class="o">-</span><span class="n">slot </span><span class="s">'1'</span><span class="n"> intersection</span><span class="o">-</span><span class="n">set </span><span class="s">'all'</span>
+<span class="c">; excerpt-kelx-end</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'connectivity'</span>
+
+<span class="c">;-----------</span>
+<span class="c">;  代码 9</span>
+<span class="c">;-----------</span>
+
+<span class="c">; excerpt-wlns-start</span>
+<span class="c">; 仅保留无限连通簇</span>
+<span class="nb">fracture intersection</span><span class="n"> delete</span>
+<span class="nb">fracture delete</span><span class="n"> range group </span><span class="s">"all1"</span><span class="n"> not</span>
+<span class="nb">fracture intersection</span><span class="n"> compute intersection</span><span class="o">-</span><span class="n">set </span><span class="s">'all'</span>
+<span class="c">; excerpt-wlns-end</span>
+
+<span class="c">;-----------</span>
+<span class="c">;  代码 10</span>
+<span class="c">;-----------</span>
+
+<span class="c">; excerpt-lake-start</span>
+<span class="c">; 按连通距离筛选</span>
+
+<span class="n">geom set </span><span class="s">'injection_section'</span>
+<span class="n">geom poly create by</span><span class="o">-</span><span class="n">position </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="n">geom poly create by</span><span class="o">-</span><span class="n">position </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="n">geom poly create by</span><span class="o">-</span><span class="n">position </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="n">geom poly create by</span><span class="o">-</span><span class="n">position </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="n">geom poly create by</span><span class="o">-</span><span class="n">position </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="n">geom poly create by</span><span class="o">-</span><span class="n">position </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span>
+<span class="nb">fracture connectivity</span><span class="n"> distance extra</span><span class="o">-</span><span class="n">index </span><span class="m m-Double">6</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     starting</span><span class="o">-</span><span class="n">geometry </span><span class="s">'injection_section'</span><span class="n"> intersection</span><span class="o">-</span><span class="n">set </span><span class="s">'5'</span>
+<span class="nb">fracture intersection</span><span class="n"> delete</span>
+<span class="nb">fracture delete</span><span class="n"> range extra </span><span class="m m-Double">6</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">50</span><span class="n"> not</span>
+<span class="c">; excerpt-lake-end</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'simplification1'</span>
+
+<span class="c">;-----------</span>
+<span class="c">;  代码 10</span>
+<span class="c">;-----------</span>
+
+<span class="c">; excerpt-snel-start</span>
+<span class="c">; 裂隙合并</span>
+
+
+<span class="nb">fracture combine</span><span class="n"> distance </span><span class="m m-Double">1</span><span class="n"> angle </span><span class="m m-Double">20</span><span class="n"> merge range extra </span><span class="m m-Double">6</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">20</span><span class="n"> </span>
+<span class="nb">fracture combine</span><span class="n"> distance </span><span class="m m-Double">5</span><span class="n"> angle </span><span class="m m-Double">45</span><span class="n"> merge range extra </span><span class="m m-Double">6</span><span class="n"> </span><span class="m m-Double">20</span><span class="n"> </span><span class="m m-Double">30</span><span class="n"> </span>
+<span class="nb">fracture combine</span><span class="n"> distance </span><span class="m m-Double">10</span><span class="n"> angle </span><span class="m m-Double">80</span><span class="n"> merge range extra </span><span class="m m-Double">6</span><span class="n"> </span><span class="m m-Double">30</span><span class="n"> </span><span class="m m-Double">50</span><span class="n"> </span>
+<span class="c">; excerpt-snel-end</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'simplification2'</span>
+</pre></div>
+</div>
+<p class="endnotesection rubric">尾注</p>
+<table class="docutils footnote" frame="void" id="id3" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><p class="first">要在 <span class="codename">PFC</span> 中查看本项目，请使用程序菜单。</p>
+<p><span class="menuselection">帮助 ▼ 算例…</span></p>
+<p class="last"> ⮡ PFC <br/>
+  ⮡ 算例 <br/>
+    ⮡ DFNGeneration <br/>
+      ⮡ dfntutorial.prj <br/></p>
+</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../pfc_model_components/pfc_examples.html">Examples</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../examples.html">Example Applications</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../ribbon_blender/ribbon_blender.html" title="previous chapter"> Ribbon Blender</a> |    
+       <a href="../rocktest/rocktest.html" title="next chapter">Rock Testing</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?DFN Generation, Analysis, and Simplification" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

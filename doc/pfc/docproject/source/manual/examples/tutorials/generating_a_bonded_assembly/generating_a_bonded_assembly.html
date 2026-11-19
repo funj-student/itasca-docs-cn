@@ -1,0 +1,388 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>生成黏结颗粒集合体 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../../search.html" rel="search" title="Search"/>
+<link href="../granulometry/granulometry.html" rel="next" title="Replicating a Particle Size Distribution"/>
+<link href="../using_cmat/using_cmat.html" rel="prev" title="Using the CMAT"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="generating-a-bonded-assembly">
+<span id="tut-gbass"></span><span id="cmlinearpond-simple"></span><span id="index-0"></span><h1>生成黏结颗粒集合体</h1>
+<p class="h2 rubric">引言</p>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">本算例的项目文件可在 <span class="codename">PFC</span> 中查看或运行。<a class="footnote-reference" href="#id3" id="id1">[1]</a>所用的<a class="reference internal" href="#tut-gbass-datafiles"><span class="std std-ref">数据文件</span>（data files）</a>列于本算例末尾。</p>
+</div>
+<p><span class="codename">PFC</span> 能够借助接触模型再现固体材料中观察到的许多行为，这些接触模型允许在接触处生成黏结。黏结在概念上代表部件（piece）之间能够承受荷载直至规定极限的材料，这些部件即球颗粒、子颗粒和墙面片。如果施加的应力低于该阈值，材料的表现可能类似于固体的连续体近似。一旦局部强度极限被超过，黏结就会断裂，相邻部件便可像处于无黏结状态一样自由运动。例如，局部可能发生摩擦滑移，从而模拟裂隙的萌生与扩展。宏观响应可以与类似的室内试验进行定量比较，从而对合成材料进行校准。黏结颗粒建模方法在 <a class="reference internal" href="#potyondy2015a" id="id2">[Potyondy2015a]</a> 中有详尽论述。</p>
+<p>本教程使用 <a class="reference internal" href="../../../../../../../common/contactmodel/linearpbond/doc/manual/cmlinearpbond.html#cmlinearpbond"><span class="std std-ref">线性平行黏结模型</span>（linear parallel bond model）</a> 创建一个简单材料。直接指定接触特性，并使试样达到平衡。</p>
+<p class="h2 rubric">数值模型</p>
+<p>任何 <span class="codename">PFC</span> 模型的第一步都是选择模拟<a class="reference internal" href="../../../../../../../common/kernel/doc/manual/domain_manual/domain.html#domain"><span class="std std-ref">域</span>（domain）</a>的尺寸。按照定义，<a class="reference internal" href="../../../../../../../common/kernel/doc/manual/domain_manual/domain.html#domain"><span class="std std-ref">域</span>（domain）</a>是一个轴对齐的盒子，所有模型组件都位于其中。此命令将域范围设置为一个立方体盒子，其边长为 20.0 个单位，且以模型原点（始终位于 (0.0,0.0,0.0)）为中心。这是通过仅指定 <em>x</em> 方向的范围边界来实现的。如果未指定 <em>y</em> 和/或 <em>z</em> 方向的范围边界，则采用前一方向的范围边界。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">10</span>
+</pre></div>
+</div>
+<p>下一步是使用 <a class="reference internal" href="../../../pfc_model_components/contacts/cmat_description.html#cmat"><span class="std std-ref">接触模型分配表（CMAT）</span>（Contact Model Assignment Table (CMAT)）</a> 显式指定默认接触模型。这是 <span class="codename">PFC</span> 建模过程中一个重要且必需的步骤。在本模型中，将出现两种类型的接触：球-球接触和球-面片接触。对于球-面片接触，我们将使用 <a class="reference internal" href="../../../../../../../common/contactmodel/linear/doc/manual/cmlinear.html#cmlinear"><span class="std std-ref">线性接触模型</span>（linear contact model）</a>。为了生成黏结试样，我们将对球-球接触使用 <a class="reference internal" href="../../../../../../../common/contactmodel/linearpbond/doc/manual/cmlinearpbond.html#cmlinearpbond"><span class="std std-ref">线性平行黏结模型</span>（linear parallel bond model）</a>。另请注意 <span class="cmdkey">proximity</span> 关键字的使用；它确保只要部件的表面位于指定的间隙之内，就会在它们之间创建接触。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">contact cmat</span><span class="n"> default model linear property kn </span><span class="m m-Double">5e6</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">ball model linearpbond </span><span class="sx">...</span>
+<span class="n">                                          property kn </span><span class="m m-Double">5e6</span><span class="n"> proximity </span><span class="m m-Double">0.1</span>
+</pre></div>
+</div>
+<p>上述命令并未专门提及球-面片接触。实际上，通过省略 <span class="cmdkey">type</span> 关键字，<a class="reference internal" href="../../../pfc_model_components/contacts/cmat_description.html#cmat">接触模型分配表（<span class="std std-ref">CMAT</span>）</a> 中的所有默认条目首先被修改为使用 <a class="reference internal" href="../../../../../../../common/contactmodel/linear/doc/manual/cmlinear.html#cmlinear"><span class="std std-ref">线性接触模型</span>（linear contact model）</a>。只有球-球接触条目被修改为使用 <a class="reference internal" href="../../../../../../../common/contactmodel/linearpbond/doc/manual/cmlinearpbond.html#cmlinearpbond"><span class="std std-ref">线性平行黏结模型</span>（linear parallel bond model）</a>（详见 <a class="reference internal" href="../../../../../../../common/contact/doc/contact_manual/contact_commands/cmd_cmat.default.html#command:contact.cmat.default" title="Set the default slot(s) of the CMAT..."><code class="xref fish fish-cmd docutils literal"><span class="pre">contact</span> <span class="pre">cmat</span> <span class="pre">default</span></code></a> 命令说明）。</p>
+<p>必须对生成的球颗粒加以约束，才能将它们黏结起来。容纳球颗粒的材料容器是使用 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/wall_manual/wall_commands/cmd_wall_generate.html#command:wall.generate" title="Generate walls with specified shapes. The wall shapes include: {box, circle,
+and point in 2D; box, cone, cylinder, disk, line, plane, point, polygon, and
+sphere in 3D}..."><code class="xref fish fish-cmd docutils literal"><span class="pre">wall</span> <span class="pre">generate</span></code></a> 命令生成的封闭盒子。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">wall generate</span><span class="n"> box </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> one</span><span class="o">-</span><span class="n">wall</span>
+</pre></div>
+</div>
+<p>使用 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.distribute.html#command:ball.distribute" title="Distribute balls with overlaps..."><code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">distribute</span></code></a> 命令创建一组球颗粒。正如 <a class="reference internal" href="../../../pfc_model_components/balls/balls.html#ball">球体（<span class="std std-ref">ball</span>）</a> 一节所述，此命令通过在指定盒子中随机生成球颗粒而不考虑重叠，来匹配目标孔隙率。为防止球颗粒从材料容器中逸出，球颗粒被布置在比材料容器稍小的盒子中。此外，指定的孔隙率被略微调低，以便在随后的平衡过程中达到所需的孔隙率。使用 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.random.html#command:model.random" title="Set the seed for the random-number generator. By default  i  =  10,000 .
+The...">设置随机数种子命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">random</span></code>）</a> 命令指定随机数发生器的状态，从而可以多次创建完全相同的球颗粒分布。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+<span class="nb">ball distribute</span><span class="n"> porosity </span><span class="m m-Double">0.2</span><span class="n"> radius </span><span class="m m-Double">0.5</span><span class="n"> </span><span class="m m-Double">0.6</span><span class="n"> box </span><span class="o">-</span><span class="m m-Double">4.5</span><span class="n"> </span><span class="m m-Double">4.5</span><span class="n"> </span>
+</pre></div>
+</div>
+<p><a href="#tut-gbass-simple-system-balls">图 1（Figure  1）</a> 显示了发出此命令后系统的状态，其中包括存在的较大重叠。</p>
+<div class="figure" id="tut-gbass-simple-system-balls">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d_cmlinearpbond_simple_system_balls.png"><img alt="../../../../../../../_images/p3d_cmlinearpbond_simple_system_balls.png" src="../../../../../../../_images/p3d_cmlinearpbond_simple_system_balls.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 1：发出 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.distribute.html#command:ball.distribute" title="Distribute balls with overlaps..."><code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">distribute</span></code></a> 命令后系统的状态。请注意存在的较大重叠。</span></p>
+</div>
+<p>使用 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.attribute.html#command:ball.attribute" title="Set the value of ball attributes. This command is a synonym for the  ball.initialize 
+command. Individual attributes can be listed with the  ball.list  command
+and all attributes can be visualized..."><code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">attribute</span></code></a> 命令设置球颗粒密度和局部阻尼系数。正如“<a class="reference internal" href="../attributes_and_properties/attributes_and_properties.html#attributes-and-properties"><span class="std std-ref">属性和特性</span>（Attributes and Properties）</a>”教程中所述，密度和局部阻尼系数是属性（<em>而</em>不是特性）。随后将系统求解至平衡判据，以获得密实堆积。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">ball attribute</span><span class="n"> density </span><span class="m m-Double">1000.0</span><span class="n"> damp </span><span class="m m-Double">0.7</span>
+</pre></div>
+</div>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">2000</span><span class="n"> calm </span><span class="m m-Double">50</span>
+</pre></div>
+</div>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model mechanical</span><span class="n"> timestep scale</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-3</span>
+<span class="nb">model mechanical</span><span class="n"> timestep auto</span>
+<span class="nb">model calm</span>
+</pre></div>
+</div>
+<p>请注意，球颗粒密度是必需属性，因为非零值对于 <span class="codename">PFC</span> 正确求解运动方程并计算时步至关重要。在本模拟中设置局部阻尼系数，是为了有效从系统中移除动能，因为我们关注的是最终构型。给出 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.cycle.html#command:model.cycle" title="Execute timesteps. The synonym  model.step  may also be used.  This is
+the equivalent of calling  model.solve  with the  cycles  keyword
+set to  i ...">执行计算时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">cycle</span></code>）</a> 命令时使用了 <span class="cmdkey">calm</span> 关键字，以周期性地将全部球颗粒的平动/转动速度置零，从而有效从系统中移除动能。这使球颗粒能够在不产生显著重叠、也不产生显著运动的情况下重新排列，从而相对快速地获得密实堆积。使用密度缩放以快速达到平衡，并以目标平均力比限值发出 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令。这些步骤以最少的计算量确保了密实堆积。</p>
+<p>为进一步分析，创建了一个测量球，并设置了历程监测，以记录集合体内对角应力的演化。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">measure create</span><span class="n"> id </span><span class="m m-Double">1</span><span class="n"> radius </span><span class="m m-Double">5.0</span>
+<span class="nb">measure history</span><span class="n"> name </span><span class="s">'1'</span><span class="n"> stress</span><span class="o">-</span><span class="n">xx id </span><span class="m m-Double">1</span><span class="n">  </span>
+<span class="nb">measure history</span><span class="n"> name </span><span class="s">'2'</span><span class="n"> stress</span><span class="o">-</span><span class="n">yy id </span><span class="m m-Double">1</span><span class="n">  </span>
+<span class="nb">measure history</span><span class="n"> name </span><span class="s">'3'</span><span class="n"> stress</span><span class="o">-</span><span class="n">zz id </span><span class="m m-Double">1</span>
+</pre></div>
+</div>
+<p><a href="#tut-gbass-simple-system-ini">图 2（Figure  2）</a> 显示了此阶段的系统。图中绘制了球颗粒、墙体和测量球（为便于查看，后两者已平移）。测量球按计算得到的孔隙率值着色。</p>
+<div class="figure" id="tut-gbass-simple-system-ini">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d_cmlinearpbond_simple_system_ini.png"><img alt="../../../../../../../_images/p3d_cmlinearpbond_simple_system_ini.png" src="../../../../../../../_images/p3d_cmlinearpbond_simple_system_ini.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：移除墙体之前系统的初始状态。在此视图中，为便于查看，墙体和测量
+球已平移。</span></p>
+</div>
+<p>既然球颗粒密实集合体已达到平衡，下一阶段就是在系统中安装平行黏结。这分两步完成：(1) 发出 <a class="reference internal" href="../../../../../../../common/contact/doc/contact_manual/contact_commands/cmd_contact.method.html#command:contact.method" title="Call a contact method. The method, along with its specific list of pairs of
+argument names and values, is invoked..."><code class="xref fish fish-cmd docutils literal"><span class="pre">contact</span> <span class="pre">method</span></code></a> 命令，采用与上述 CMAT 槽位设置一致的间隙对接触进行黏结；以及 (2) 发出 <a class="reference internal" href="../../../../../../../common/contact/doc/contact_manual/contact_commands/cmd_contact.property.html#command:contact.property" title="Assign contact properties. All contacts with a contact model that recognizes
+the property..."><code class="xref fish fish-cmd docutils literal"><span class="pre">contact</span> <span class="pre">property</span></code></a> 命令，设置黏结的弹性和强度性质。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">contact method</span><span class="n"> bond gap </span><span class="m m-Double">0.1</span>
+<span class="nb">contact property</span><span class="n"> pb_kn </span><span class="m m-Double">1e6</span><span class="n"> pb_ks </span><span class="m m-Double">1e6</span><span class="n"> pb_ten </span><span class="m m-Double">1e6</span><span class="n"> pb_coh </span><span class="m m-Double">1e6</span><span class="n"> pb_fa </span><span class="m m-Double">30.0</span>
+</pre></div>
+</div>
+<p>至此初始状态构建完毕。随后重置位移并保存模型状态。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">ball attribute</span><span class="n"> displacement multiply </span><span class="m m-Double">0.0</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'initial'</span>
+</pre></div>
+</div>
+<p class="h2 rubric">解除围压</p>
+<p>至此，已生成一种平行黏结材料。现在我们通过删除墙体来改变模型，并将系统求解至目标平衡判据。请注意，在球-球接触处，线性弹簧与平行黏结同时存在。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">wall delete</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-3</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'final1'</span>
+</pre></div>
+</div>
+<p><a href="#tut-gbass-simple-forcechains-final1">图 3（Figure  3）</a> 显示了系统中的球颗粒位移向量和力链。在 <a class="reference internal" href="../../../../../../../common/contactmodel/linear/doc/manual/cmlinear.html#cmlinear"><span class="std std-ref">linear</span></a> 公式中，法向力默认由模型各分量之间的绝对重叠量产生。因此，在有墙体存在的条件下，线性弹簧处于受压状态。另一方面，带<a class="reference internal" href="../../../../../../../common/contactmodel/linearpbond/doc/manual/cmlinearpbond.html#cmlinearpbond"><span class="std std-ref">平行黏结</span>（parallel bonds）</a>的接触对法向力采用增量公式。于是，平行黏结会抵抗所施加的力，以力图恢复到其插入时的构型。当线性弹簧与平行黏结同时存在且墙体被移除时，部分荷载会转移到使平行黏结受拉伸上。</p>
+<div class="figure" id="tut-gbass-simple-forcechains-final1">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d_cmlinearpbond_simple_forcechains_final1.png"><img alt="../../../../../../../_images/p3d_cmlinearpbond_simple_forcechains_final1.png" src="../../../../../../../_images/p3d_cmlinearpbond_simple_forcechains_final1.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 3：移除墙体并采用线性刚度求解后的最终状态。图中给出力链与球颗粒
+位移。</span></p>
+</div>
+<p><a href="#tut-gbass-simple-forces-final1">图 4（Figure  4）</a> 给出了线性弹簧中以及接触中的力，而 <a href="#tut-gbass-simple-histstr-final1">图 5（Figure  5）</a> 给出了集合体内应力的演化。</p>
+<div class="figure" id="tut-gbass-simple-forces-final1">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d_cmlinearpbond_simple_forces_final1.png"><img alt="../../../../../../../_images/p3d_cmlinearpbond_simple_forces_final1.png" src="../../../../../../../_images/p3d_cmlinearpbond_simple_forces_final1.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 4：移除墙体并采用线性刚度求解后的最终状态。线性弹簧中的力（左）
+与平行黏结中的力（右，为便于查看已平移）。</span></p>
+</div>
+<div class="figure" id="tut-gbass-simple-histstr-final1">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d_cmlinearpbond_simple_histstr_final1.png"><img alt="../../../../../../../_images/p3d_cmlinearpbond_simple_histstr_final1.png" src="../../../../../../../_images/p3d_cmlinearpbond_simple_histstr_final1.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 5：由测量球计算得到的集合体内主应力历程，其中线性
+刚度非零。</span></p>
+</div>
+<p>前面的模拟同时涉及线性刚度和平行黏结刚度。接下来我们重复该模拟，但将线性刚度设为 0.0。这样就不应存在因球颗粒相互重叠而产生的力，模型应处于平衡状态。但请注意，由于先前累积在球颗粒上的力在第一个循环中起作用，会出现轻微扰动（图<a href="#tut-gbass-simple-forcechains-final2"> 6</a> 至图<a href="#tut-gbass-simple-histstr-final2"> 8</a>）。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model restore</span><span class="n"> </span><span class="s">'initial'</span>
+<span class="nb">wall delete</span>
+<span class="nb">contact property</span><span class="n"> kn </span><span class="m m-Double">0.0</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-3</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'final2'</span>
+</pre></div>
+</div>
+<div class="figure" id="tut-gbass-simple-forcechains-final2">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d_cmlinearpbond_simple_forcechains_final2.png"><img alt="../../../../../../../_images/p3d_cmlinearpbond_simple_forcechains_final2.png" src="../../../../../../../_images/p3d_cmlinearpbond_simple_forcechains_final2.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 6：移除墙体并在无线性刚度条件下求解后的最终状态。图中给出力链与球颗粒
+位移。</span></p>
+</div>
+<div class="figure" id="tut-gbass-simple-forces-final2">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d_cmlinearpbond_simple_forces_final2.png"><img alt="../../../../../../../_images/p3d_cmlinearpbond_simple_forces_final2.png" src="../../../../../../../_images/p3d_cmlinearpbond_simple_forces_final2.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 7：移除墙体并在无线性刚度条件下求解后的最终状态。线性弹簧中的力（左）
+与平行黏结中的力（右）。</span></p>
+</div>
+<div class="figure" id="tut-gbass-simple-histstr-final2">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d_cmlinearpbond_simple_histstr_final2.png"><img alt="../../../../../../../_images/p3d_cmlinearpbond_simple_histstr_final2.png" src="../../../../../../../_images/p3d_cmlinearpbond_simple_histstr_final2.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 8：由测量球计算得到的集合体内主应力历程，无线性刚度。</span></p>
+</div>
+<p>为消除这一扰动，必须重置在前一次力-位移计算循环中累积到物体上的接触力（可能还包括接触力矩）。为保持一致，下面的代码行还重置了线性平行黏结接触模型的 <a class="reference internal" href="../../../../../../../common/contactmodel/linearpbond/doc/manual/cmlinearpbond.html#cmlinearpbond-proptable">线性力（<span class="std std-ref">lin_force</span>）</a> 属性（尽管该步骤并非必需）。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model restore</span><span class="n"> </span><span class="s">'initial'</span>
+<span class="nb">wall delete</span>
+<span class="nb">contact property</span><span class="n"> kn </span><span class="m m-Double">0.0</span><span class="n"> lin_force </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="m m-Double">0.0</span>
+<span class="nb">ball attribute</span><span class="n"> force</span><span class="o">-</span><span class="n">contact multiply </span><span class="m m-Double">0.0</span><span class="n"> moment</span><span class="o">-</span><span class="n">contact multiply </span><span class="m m-Double">0.0</span><span class="n"> </span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-3</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'final3'</span>
+</pre></div>
+</div>
+<div class="figure" id="tut-gbass-simple-forces-final3">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d_cmlinearpbond_simple_forces_final3.png"><img alt="../../../../../../../_images/p3d_cmlinearpbond_simple_forces_final3.png" src="../../../../../../../_images/p3d_cmlinearpbond_simple_forces_final3.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 9：移除墙体、在无线性刚度条件下求解并重置累积接触力后的最终状态。线性弹簧中的力（左）
+与平行黏结中的力（右）均为零。</span></p>
+</div>
+<p class="h2 rubric">讨论</p>
+<p>本示例介绍了构建简单平行黏结材料的步骤，以及线性弹簧刚度对无侧限阶段的影响，并图示了最终状态。这是一个基础性示例，用于演示使用 <span class="codename">PFC</span> 进行黏结颗粒建模的机理，并突出了其中一些重要特性。要创建能代表真实材料的有意义试样，还需要许多额外步骤（例如，控制初始状态的组构、标定材料属性和接触属性等）。这些额外步骤的支持由 <a class="reference internal" href="../../../numerical_simulations_with_pfc/material_modeling_support_for_pfc.html#material-modeling-support-for-pfc"><span class="std std-ref">材料建模支持</span>（material-modeling support）</a> 软件包提供。</p>
+<p class="h2 rubric">参考文献</p>
+<table class="docutils citation" frame="void" id="potyondy2015a" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[Potyondy2015a]</a></td><td>Potyondy, D. O.，“黏结颗粒模型作为岩石力学研究与应用的工具：当前趋势与未来方向”（The Bonded-Particle Model as a Tool for Rock Mechanics Research and Application: Current Trends and Future Directions），Geosystem Engineering，18(1)，第 1–28 页（2015），DOI:10.1080/12269328.2014.998346。</td></tr>
+</tbody>
+</table>
+<p class="h2 rubric" id="tut-gbass-datafiles">数据文件</p>
+<p class="h3 rubric" id="tut-gbass-cmlinearpbond-simple-datafile3d">cmlinearpbond_simple.dat (3D)</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：cmlinearpbond_simpledat (3D)</span>
+<span class="c">;</span>
+<span class="c">;  演练线性平行黏结接触模型</span>
+<span class="c">;=========================================================================</span>
+<span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'Generating a bonded assembly (Linear Parallel-Bond contact model)'</span>
+
+<span class="c">; 设置域范围。</span>
+<span class="c">; excerpt-oiyv-start</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="c">; excerpt-oiyv-end</span>
+
+<span class="c">; 修改接触模型分配表的默认槽位。</span>
+<span class="c">; 这里对所有接触类型选用线性接触模型 (kn=1e6)，但</span>
+<span class="c">; 球-球接触除外，对其指定 linearpbond 模型。</span>
+<span class="c">; 注意，仅激活了 linearpbond 模型的线性部分， </span>
+<span class="c">; 因此该模型的表现将与线性模型完全一致。</span>
+<span class="c">; excerpt-xwsu-start</span>
+<span class="nb">contact cmat</span><span class="n"> default model linear property kn </span><span class="m m-Double">5e6</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">ball model linearpbond </span><span class="sx">...</span>
+<span class="n">                                          property kn </span><span class="m m-Double">5e6</span><span class="n"> proximity </span><span class="m m-Double">0.1</span>
+<span class="c">; excerpt-xwsu-end</span>
+
+<span class="c">; 生成一个盒子 </span>
+<span class="c">; excerpt-gavv-start</span>
+<span class="nb">wall generate</span><span class="n"> box </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> one</span><span class="o">-</span><span class="n">wall</span>
+<span class="c">; excerpt-gavv-end</span>
+
+<span class="c">; 在盒子中分布球。</span>
+<span class="c">; 伪随机数生成器的种子已固定，从而确保 </span>
+<span class="c">; 每次执行该文件时都会产生相同的初始构型。</span>
+<span class="c">; 另请注意，用 'ball distribute' 命令指定的盒子范围</span>
+<span class="c">; 小于上面生成的箱体墙。这样做是为了避免球 </span>
+<span class="c">; 从材料容器中逸出。因此，用 'ball distribute' 命令 </span>
+<span class="c">; 指定的孔隙率被调低，以便在平衡后获得所需的 </span>
+<span class="c">; 孔隙率。</span>
+<span class="c">;</span>
+<span class="c">; excerpt-fvvo-start</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+<span class="nb">ball distribute</span><span class="n"> porosity </span><span class="m m-Double">0.2</span><span class="n"> radius </span><span class="m m-Double">0.5</span><span class="n"> </span><span class="m m-Double">0.6</span><span class="n"> box </span><span class="o">-</span><span class="m m-Double">4.5</span><span class="n"> </span><span class="m m-Double">4.5</span><span class="n"> </span>
+<span class="c">; excerpt-fvvo-end</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'balls'</span>
+
+<span class="c">; 设置球属性。</span>
+<span class="c">; excerpt-unoa-start</span>
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="m m-Double">1000.0</span><span class="n"> damp </span><span class="m m-Double">0.7</span>
+<span class="c">; excerpt-unoa-end</span>
+
+<span class="c">; 使系统平静。</span>
+<span class="c">; 由于上面使用了 "ball distribute" 命令，球在生成时</span>
+<span class="c">; 未考虑重叠。 </span>
+<span class="c">; excerpt-tdiw-start</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">2000</span><span class="n"> calm </span><span class="m m-Double">50</span>
+<span class="c">; excerpt-tdiw-end</span>
+
+<span class="c">; 将系统求解至目标限值（此处为平均力比）。</span>
+<span class="c">; 为更快达到稳定构型，启用了密度缩放。</span>
+<span class="c">; excerpt-vluc-start</span>
+<span class="nb">model mechanical</span><span class="n"> timestep scale</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-3</span>
+<span class="nb">model mechanical</span><span class="n"> timestep auto</span>
+<span class="nb">model calm</span>
+<span class="c">; excerpt-vluc-end</span>
+
+<span class="c">; 安装测量球以监测 </span>
+<span class="c">; 试样内部的应力。同时重置球位移。</span>
+<span class="c">; excerpt-gpnu-start</span>
+<span class="nb">measure create</span><span class="n"> id </span><span class="m m-Double">1</span><span class="n"> radius </span><span class="m m-Double">5.0</span>
+<span class="nb">measure history</span><span class="n"> name </span><span class="s">'1'</span><span class="n"> stress</span><span class="o">-</span><span class="n">xx id </span><span class="m m-Double">1</span><span class="n">  </span>
+<span class="nb">measure history</span><span class="n"> name </span><span class="s">'2'</span><span class="n"> stress</span><span class="o">-</span><span class="n">yy id </span><span class="m m-Double">1</span><span class="n">  </span>
+<span class="nb">measure history</span><span class="n"> name </span><span class="s">'3'</span><span class="n"> stress</span><span class="o">-</span><span class="n">zz id </span><span class="m m-Double">1</span>
+<span class="c">; excerpt-gpnu-end</span>
+
+<span class="c">; 安装平行黏结 - 只有采用 linearpbond 模型的接触会受影响。</span>
+<span class="c">; excerpt-exdr-start</span>
+<span class="nb">contact method</span><span class="n"> bond gap </span><span class="m m-Double">0.1</span>
+<span class="nb">contact property</span><span class="n"> pb_kn </span><span class="m m-Double">1e6</span><span class="n"> pb_ks </span><span class="m m-Double">1e6</span><span class="n"> pb_ten </span><span class="m m-Double">1e6</span><span class="n"> pb_coh </span><span class="m m-Double">1e6</span><span class="n"> pb_fa </span><span class="m m-Double">30.0</span>
+<span class="c">; excerpt-exdr-end</span>
+
+<span class="c">; 重置球位移并保存初始状态。</span>
+<span class="c">; excerpt-kien-start</span>
+<span class="nb">ball attribute</span><span class="n"> displacement multiply </span><span class="m m-Double">0.0</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'initial'</span>
+<span class="c">; excerpt-kien-end</span>
+
+<span class="c">; 删除墙并求解至目标平均力比。 </span>
+<span class="c">; excerpt-lqsl-start</span>
+<span class="nb">wall delete</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-3</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'final1'</span>
+<span class="c">; excerpt-lqsl-end</span>
+
+<span class="c">; 重复该模拟，但将线性刚度设为 0.0。</span>
+<span class="c">; 注意，上一时步计算出的接触力已</span>
+<span class="c">; 累积到相接触的球上 - 因此会出现轻微的</span>
+<span class="c">; 平衡偏离。</span>
+<span class="c">; excerpt-vkrg-start</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'initial'</span>
+<span class="nb">wall delete</span>
+<span class="nb">contact property</span><span class="n"> kn </span><span class="m m-Double">0.0</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-3</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'final2'</span>
+<span class="c">; excerpt-vkrg-end</span>
+
+<span class="c">; 重复该模拟，但将线性刚度设为 0.0，</span>
+<span class="c">; 并强制重置线性接触力。所有球均被固定， </span>
+<span class="c">; 系统循环 1 步，以重置线性力。</span>
+<span class="c">; excerpt-stqj-start</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'initial'</span>
+<span class="nb">wall delete</span>
+<span class="nb">contact property</span><span class="n"> kn </span><span class="m m-Double">0.0</span><span class="n"> lin_force </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="m m-Double">0.0</span>
+<span class="nb">ball attribute</span><span class="n"> force</span><span class="o">-</span><span class="n">contact multiply </span><span class="m m-Double">0.0</span><span class="n"> moment</span><span class="o">-</span><span class="n">contact multiply </span><span class="m m-Double">0.0</span><span class="n"> </span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-3</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'final3'</span>
+<span class="c">; excerpt-stqj-end</span>
+
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">;========================================================================</span>
+<span class="c">; 文件结束：cmlinearpbond_simple.dat (3D)</span>
+</pre></div>
+</div>
+<p class="endnotesection rubric">尾注</p>
+<table class="docutils footnote" frame="void" id="id3" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><p class="first">要在 <span class="codename">PFC</span> 中查看本项目，请使用程序菜单。</p>
+<p><span class="menuselection">帮助 ▼ 算例…</span></p>
+<p class="last">  ⮡    PFC <br/>
+    ⮡    教程 <br/>
+      ⮡    BondedAssembly <br/>
+        ⮡    CMLinearPBondSimple.prj</p>
+</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../pfc_model_components/pfc_examples.html">Examples</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../tutorials.html">Tutorials</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../using_cmat/using_cmat.html" title="previous chapter"> Using the CMAT</a> |    
+       <a href="../granulometry/granulometry.html" title="next chapter">Replicating a Particle Size Distribution</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Generating a Bonded Assembly" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

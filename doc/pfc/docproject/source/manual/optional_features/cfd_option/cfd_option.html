@@ -1,0 +1,197 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>用于 PFC3D 6.0 的 CFD 模块 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="cfd_theory.html" rel="next" title="PFC3D Fluid-Particle Interaction Formulation"/>
+<link href="../../../../../../common/module/doc/manual/process_manual/thermal_fish/thermal_fish.html" rel="prev" title="Thermal Process FISH Functions"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="cfd-module-for-pfc3d6-0">
+<span id="pfc-cfd-addon"></span><h1>用于 <span class="codename">PFC3D</span><span class="codename">6.0</span> 的 CFD 模块</h1>
+<div class="admonition note">
+<p class="first admonition-title">注意</p>
+<ul class="last simple">
+<li>用于 <span class="codename">PFC3D</span><span class="codename">6.0</span> 的耦合计算流体动力学（CCFD）附加模块已停止发布。已购买 CCFD 附加模块的现有客户仍可在 <span class="codename">PFC3D</span><span class="codename">6.0</span> 中继续使用该附加模块。</li>
+<li>CCFD 模块已更名为 CFD 模块。所有命令、FISH 内置函数和 Python 绑定均相同，只是前缀由“ccfd”改为“cfd”。</li>
+<li>本节介绍如何将新的 CFD 模块与第三方流体流动求解器配合使用。<span class="flag3">[CS：以下内容是否可考虑删除？] 原始 CCFD 模块文档可在此处获取：ref-pfc_ccfd_addon-。</span></li>
+</ul>
+</div>
+<p>计算流体动力学（CFD）模块允许在 <span class="codename">PFC3D</span> 中求解某些
+流体-颗粒相互作用问题。CFD 模块不包含 CFD 求解器。
+CFD 模块仅在 <span class="codename">PFC</span> 的三维版本中可用。该模块提供命令和
+脚本函数，用于连接 CFD 软件并求解流体-颗粒
+相互作用问题，其方法是体积平均的粗网格方法，
+该方法最初由（Tsuji et. al, 1993）描述 <a class="reference internal" href="#tsuji1993" id="id1">[Tsuji1993]</a>。
+并非所有流体-颗粒相互作用问题都能用本模块提供的
+粗网格方法求解。有关其他 DEM/流体耦合方法和
+应用的概述，请参阅
+（Furtney et. al, 2013）
+<a class="reference internal" href="#furtney2013" id="id2">[Furtney2013]</a>。</p>
+<p>在粗网格方法中，描述流体流动的方程在一组
+尺寸大于 <span class="codename">PFC</span> 颗粒的单元上进行数值求解。
+流体对颗粒的作用力按局部方式分配给
+每个颗粒，并基于该颗粒所占流体单元中的流体状态。
+流体-颗粒相互作用力的公式在
+实际孔隙率和雷诺数范围内是准确且平滑变化的
+（湍流效应已包含在流体-颗粒
+相互作用项中）。</p>
+<p>相应的体积力以某个流体单元上的平均值形式
+施加到流体上。孔隙率和流体的曳力由
+每个流体单元中颗粒属性的平均值计算得到。双向
+耦合通过周期性地在 <span class="codename">PFC</span> 与流体流动求解器之间
+交换这些信息来实现。<span class="codename">PFC</span> 与流体流动软件
+之间信息的同步与交换通常通过
+TCP socket 通信完成。</p>
+<p>用该方法可研究的流体流动结构的长度尺度
+大于 <span class="codename">PFC</span> 颗粒。任何基于连续介质的
+流体流动模型都可与 <span class="codename">PFC</span> 一起使用，包括 Navier-Stokes
+方程、势流和 Euler 方程。<span class="codename">PFC</span> 所作的假设
+为：(i) 流体单元大于
+<span class="codename">PFC</span> 颗粒；(ii) 流体属性在流体单元上呈分段线性，
+以及 (iii) 流体单元不发生移动。</p>
+<p>该模块提供以下方法：</p>
+<ul class="simple">
+<li>读取流体网格，</li>
+<li>在每个流体单元中存储流体速度、流体压力、流体压力梯度、流体黏度和流体密度，</li>
+<li>计算孔隙率，以及</li>
+<li>在 <span class="codename">PFC</span> 循环过程中自动将流体-颗粒相互作用力施加到颗粒上。</li>
+</ul>
+<p>下文首先概述公式与实现，
+随后给出三个使用 CFD 模块求解流体-颗粒
+相互作用问题的示例。</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="cfd_theory.html"><span class="codename">PFC3D</span> 流体-颗粒相互作用公式表述（PFC3D Fluid-Particle Interaction Formulation）</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cfd_theory.html#implementation-details">实现细节（Implementation Details）</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="cfd_theory.html#porosity-calculation">孔隙率计算（Porosity Calculation）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cfd_theory.html#fluid-mesh-and-data-format">流体网格与数据格式（Fluid Mesh and Data Format）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cfd_theory.html#practical-considerations">实际考虑（Practical Considerations）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cfd_theory.html#coupling">耦合（Coupling）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cfd_theory.html#calculation-cycle">计算循环（Calculation Cycle）</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="cfd_coupling.html">示例（Examples）</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="one_way_cfd.html">单向流体耦合（One-way Fluid Coupling）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cfd_darcy.html">使用达西定律模拟多孔介质中的流动（Modeling Flow in Porous Media with Darcy’s Law）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="cfd_third_party.html">将 <span class="codename">PFC3D</span> 与第三方流体流动软件耦合（Coupling PFC3D with 3rd Party Fluid Flow Software）</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="general/cfd_general.html">CFD 概述（CFD General）</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../ccfd/doc/cfd_manual/cfd_commands/cfd_commands2.html">命令（Commands）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../ccfd/doc/cfd_manual/cfd_fish/cfd_fish.html"><span class="codename">FISH</span> 函数（FISH Functions）</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="balls/cfd_balls.html">CFD 球体（CFD Balls）</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../ccfd/doc/ball_cfd_manual/ball_cfd_commands/ball_cfd_commands.html">命令（Commands）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../ccfd/doc/ball_cfd_manual/ball_cfd_fish/ball_cfd_fish.html"><span class="codename">FISH</span> 函数（FISH Functions）</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="clumps/cfd_clumps.html">CFD 刚性团簇（CFD Clumps）</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../ccfd/doc/clump_cfd_manual/clump_cfd_commands/clump_cfd_commands.html">命令（Commands）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../ccfd/doc/clump_cfd_manual/clump_cfd_fish/clump_cfd_fish.html"><span class="codename">FISH</span> 函数（FISH Functions）</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="elements/cfd_elements.html">CFD 单元（CFD Elements）</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../ccfd/doc/element_cfd_manual/element_cfd_commands/element_cfd_commands.html">命令（Commands）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../ccfd/doc/element_cfd_manual/element_cfd_fish/element_cfd_fish.html"><span class="codename">FISH</span> 函数（FISH Functions）</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<p class="h3 rubric">参考文献</p>
+<table class="docutils citation" frame="void" id="tsuji1993" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[Tsuji1993]</a></td><td>Tsuji, Y.、T. Kawaguchi 和 Tanata, T.，“二维流化床的离散颗粒模拟”（Discrete Particle Simulation of Two-Dimensional Fluidized Bed），<em>Powder Tech.</em>，77，79-87（1993）。</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="furtney2013" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[Furtney2013]</a></td><td>Furtney, J. K.、F. Zhang 和 Y. Han，“将流体流动引入离散元方法的方法与应用综述”（Review of Methods and Applications for Incorporating Fluid Flow in the Discrete Element Method），载于《第五届国际 FLAC/DEM 研讨会论文集》（The Fifth International FLAC/DEM Symposium），（中国杭州，2013 年 10 月）。Minneapolis：Itasca International Inc.（2013）。<a class="reference external" href="http://www.itascacg.com/sites/itascacg.com/files/documents/10-01.pdf">Itasca 文档 10-01（http://www.itascacg.com/sites/itascacg.com/files/documents/10-01.pdf）</a></td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a accesskey="U" href="../options.html">Additional Features</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../../../../../../common/module/doc/manual/process_manual/thermal_fish/thermal_fish.html" title="previous chapter"> Thermal Process <span class="codename">FISH</span> Functions</a> |    
+       <a href="cfd_theory.html" title="next chapter"><span class="codename">PFC3D</span> Fluid-Particle Interaction Formulation</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?CFD module for PFC3D6.0" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

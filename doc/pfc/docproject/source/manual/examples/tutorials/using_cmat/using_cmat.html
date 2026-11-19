@@ -1,0 +1,688 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>使用 CMAT — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../../search.html" rel="search" title="Search"/>
+<link href="../generating_a_bonded_assembly/generating_a_bonded_assembly.html" rel="next" title="Generating a Bonded Assembly"/>
+<link href="../attributes_and_properties/attributes_and_properties.html" rel="prev" title="Attributes and Properties"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="using-the-cmat">
+<span id="tut-cmat"></span><span id="tuto-cmat"></span><span id="index-0"></span><h1>使用 CMAT</h1>
+<p class="h2 rubric">引言</p>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">本算例的项目文件可在 <span class="codename">PFC</span> 中查看或运行。<a class="footnote-reference" href="#id5" id="id1">[1]</a>所用的<a class="reference internal" href="#tut-cmat-datafiles"><span class="std std-ref">数据文件</span>（data files）</a>列于本算例末尾。</p>
+</div>
+<p>接触形成时应安装哪种接触模型？这一问题的答案决定了 <span class="codename">PFC</span> 模型的本构力学行为，因而是一个根本性的问题，并与每个 <span class="codename">PFC</span> 模型的具体情况密切相关。除建模者本人外，无人能够回答，而 <span class="codename">PFC</span> 本身也无法做出任何通用的假设<a class="footnote-reference" href="#id6" id="id2">[2]</a>。因此，<span class="codename">PFC</span> 默认采用 <a class="reference internal" href="../../../../../../../common/contactmodel/mechanicalnull/doc/manual/cmnull.html#cmnull"><span class="std std-ref">空模型</span>（null model）</a> 接触模型，从而要求用户在每个 <span class="codename">PFC</span> 模型中明确指定应使用何种接触模型。</p>
+<p><a class="reference internal" href="../../../pfc_model_components/contacts/cmat_description.html#cmat"><span class="std std-ref">接触模型分配表（CMAT）</span>（Contact Model Assignment Table (CMAT)）</a> 已在 <span class="codename">PFC</span> 中引入，使用户能够指定这一信息。CMAT 是一种非常通用的工具，既能处理<a class="reference internal" href="../../../pfc_model_components/contacts/contact_built-in.html#built-in-contact-models"><span class="std std-ref">内置接触模型</span>（built-in contact models）</a>，也能处理<a class="reference internal" href="../../../pfc_model_components/contacts/contact_user-defined.html#user-defined-cm"><span class="std std-ref">用户自定义接触模型</span>（user-defined contact models）</a>。此外，只需少量命令行，它便可用来构建简单系统，也可构建复杂系统（即包含多种接触模型和/或非均质力学性质的系统）。</p>
+<p>本教程说明 CMAT 的主要功能以及如何恰当地使用它们。每当模型中创建新的接触时都会查询 CMAT，以确定应在该特定接触处安装哪种接触模型。</p>
+<p class="h2 rubric">数值模型</p>
+<p>本教程使用的数值模型有意保持简单。在一个容器（用墙模拟）中填入
+一组球颗粒，并执行循环计算，使模型在各种加载条件下达到平衡。</p>
+<p>以下讨论侧重于与 CMAT 相关的功能。有关模型其他方面（集合体的生成）的更多信息，请参阅教程“<a class="reference internal" href="../balls_in_a_box/balls_in_a_box.html#cmlinear-verif-simple"><span class="std std-ref">箱中的球颗粒</span>（Balls in a Box）</a>”。</p>
+<p class="h3 rubric">使用默认槽位</p>
+<p>如<a class="reference internal" href="../../../pfc_model_components/contacts/cmat_description.html#cmat"><span class="std std-ref">此处</span>（here）</a>所述，CMAT 由一组有序的（可选）槽位以及针对每种接触类型的默认槽位组成。在许多情况下，系统的本构行为是均质的，此时只需设置 CMAT 的默认槽位即可。</p>
+<p>在“<a class="reference internal" href="#tut-cmat-cmat1-datafile2d">cmat1.dat 数据文件（<span class="std std-ref">cmat1.dat</span>）</a>”中，CMAT 的默认槽位填入 <a class="reference internal" href="../../../../../../../common/contactmodel/linear/doc/manual/cmlinear.html#cmlinear"><span class="std std-ref">线性</span>（linear）</a> 接触模型，其法向刚度 <span class="math">\(k_n\)</span>=1.0e6、法向临界阻尼比 <span class="math">\(\beta_n\)</span>=0.2<a class="footnote-reference" href="#id7" id="id3">[3]</a>。这通过以下命令实现</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 设置 CMAT 的全部默认槽位</span>
+<span class="nb">contact cmat</span><span class="n"> default model linear property kn </span><span class="m m-Double">1e6</span><span class="n"> dp_nratio </span><span class="m m-Double">0.2</span>
+</pre></div>
+</div>
+<p>请注意，除非指定了类型，否则 <a class="reference internal" href="../../../../../../../common/contact/doc/contact_manual/contact_commands/cmd_cmat.default.html#command:contact.cmat.default" title="Set the default slot(s) of the CMAT..."><code class="xref fish fish-cmd docutils literal"><span class="pre">contact</span> <span class="pre">cmat</span> <span class="pre">default</span></code></a> 命令将自动应用于所有默认槽位。此处构建的系统同时包含球颗粒-球颗粒接触和球颗粒-面片接触；所有这些接触都使用同一线性模型，其 <span class="math">\(k_n\)</span>=1.0e6、<span class="math">\(\beta_n\)</span>=0.2。<a href="#tut-cmat-cmat1">图  1（Figure  1）</a> 显示了球颗粒在重力作用下沉积到箱体底部后系统的最终状态。</p>
+<div class="figure" id="tut-cmat-cmat1">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d-usingcmat-cmat1.png"><img alt="../../../../../../../_images/p2d-usingcmat-cmat1.png" src="../../../../../../../_images/p2d-usingcmat-cmat1.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 1：由“<a class="reference internal" href="#tut-cmat-cmat1-datafile2d">cmat1.dat 数据文件（<span class="std std-ref">cmat1.dat</span>）</a>”构建的最终系统。</span></p>
+</div>
+<p>数据文件“<a class="reference internal" href="#tut-cmat-cmat2-datafile2d">cmat2.dat 数据文件（<span class="std std-ref">cmat2.dat</span>）</a>”构建的系统与上述系统类似，只是使用了两种不同的接触模型而非一种。球颗粒之间的接触被赋予 <a class="reference internal" href="../../../../../../../common/contactmodel/hertz/doc/manual/cmhertz.html#cmhertz"><span class="std std-ref">赫兹模型</span>（Hertz Model）</a> 接触模型，而球颗粒与墙面片之间的接触则保留线性接触模型。由于这种区分仅基于接触的类型，CMAT 的默认槽位同样足以胜任：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 为球-球和球-面片接触类型设置不同的接触模型</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">ball                     </span><span class="sx">...</span>
+<span class="n">                   model hertz                          </span><span class="sx">...</span>
+<span class="n">                   property hz_shear </span><span class="m m-Double">30e9</span><span class="n"> hz_poiss </span><span class="m m-Double">0.3</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">                            fric </span><span class="m m-Double">0.25</span><span class="n">                   </span><span class="sx">...</span>
+<span class="n">                            dp_nratio </span><span class="m m-Double">0.2</span>
+<span class="n">               </span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">facet                    </span><span class="sx">...</span>
+<span class="n">                   model linear                         </span><span class="sx">...</span>
+<span class="n">                   property kn </span><span class="m m-Double">1e6</span><span class="n"> dp_nratio </span><span class="m m-Double">0.2</span>
+</pre></div>
+</div>
+<p><a href="#tut-cmat-cmat2">图  2（Figure  2）</a> 显示了系统的最终状态；在模拟过程中已恰当地赋予这两种不同的接触模型。</p>
+<div class="figure" id="tut-cmat-cmat2">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d-usingcmat-cmat2.png"><img alt="../../../../../../../_images/p2d-usingcmat-cmat2.png" src="../../../../../../../_images/p2d-usingcmat-cmat2.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：由“<a class="reference internal" href="#tut-cmat-cmat2-datafile2d">cmat2.dat 数据文件（<span class="std std-ref">cmat2.dat</span>）</a>”构建的最终系统。
+本模型使用了两种不同的接触模型，具体取决于接触类型。</span></p>
+</div>
+<p class="h3 rubric">使用附加槽位</p>
+<p>数据文件“<a class="reference internal" href="#tut-cmat-cmat3-datafile2d">cmat3.dat 数据文件（<span class="std std-ref">cmat3.dat</span>）</a>”为模型引入了更高的复杂性，其目的在于使用 hertz 接触模型模拟由钢和玻璃制成的混合球颗粒。在本例中，创建了两组不同的球颗粒以代表这两种材料，并在 CMAT 中注册可选槽位，从而根据两个接触部件的分组来控制 hertz 接触模型所使用的力学性质。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">contact cmat</span><span class="n"> add </span><span class="m m-Double">1</span><span class="n"> model hertz                          </span><span class="sx">...</span>
+<span class="n">                 property hz_shear </span><span class="m m-Double">30e9</span><span class="n"> hz_poiss </span><span class="m m-Double">0.3</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">                          fric </span><span class="m m-Double">0.25</span><span class="n">                     </span><span class="sx">...</span>
+<span class="n">                          dp_nratio </span><span class="m m-Double">0.2</span><span class="n">                 </span><span class="sx">...</span>
+<span class="n">             range group </span><span class="s">'glass'</span><span class="n"> matches </span><span class="m m-Double">2</span>
+
+<span class="nb">contact cmat</span><span class="n"> add </span><span class="m m-Double">2</span><span class="n"> model hertz                          </span><span class="sx">...</span>
+<span class="n">                 property hz_shear </span><span class="m m-Double">70e9</span><span class="n"> hz_poiss </span><span class="m m-Double">0.3</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">                          fric </span><span class="m m-Double">0.05</span><span class="n">                     </span><span class="sx">...</span>
+<span class="n">                          dp_nratio </span><span class="m m-Double">0.2</span><span class="n">                 </span><span class="sx">...</span>
+<span class="n">             range group </span><span class="s">'steel'</span><span class="n"> matches </span><span class="m m-Double">2</span>
+
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">ball                     </span><span class="sx">...</span>
+<span class="n">                   model hertz                          </span><span class="sx">...</span>
+<span class="n">                   property hz_shear </span><span class="m m-Double">50e9</span><span class="n"> hz_poiss </span><span class="m m-Double">0.3</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">                           fric </span><span class="m m-Double">0.05</span><span class="n">                    </span><span class="sx">...</span>
+<span class="n">                           dp_nratio </span><span class="m m-Double">0.2</span>
+
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">facet                    </span><span class="sx">...</span>
+<span class="n">                   model linear                         </span><span class="sx">...</span>
+<span class="n">                   property kn </span><span class="m m-Double">1e6</span><span class="n"> dp_nratio </span><span class="m m-Double">0.2</span>
+</pre></div>
+</div>
+<p>上述命令定义了三个与 ball-ball 接触相关的槽位。</p>
+<ol class="arabic simple">
+<li>槽位 1 控制 hertz 接触模型的分配，该模型的性质与玻璃-玻璃相互作用相一致。这是通过 glass 分组标识符实现的。</li>
+<li>槽位 2 控制 hertz 接触模型的分配，该模型的性质与钢-钢相互作用相一致。这是通过 steel 分组标识符实现的。</li>
+<li>ball-ball 接触的默认槽位控制 hertz 接触模型的分配，该模型的性质与玻璃-钢相互作用相一致。</li>
+</ol>
+<p>在模拟过程中每当创建接触时，都会按如下方式处理 CMAT：首先，按索引号递增的顺序访问两个可选槽位。然后，若该接触不满足任何可选槽位的范围，则使用与所创建接触类型相对应的默认槽位。一旦在本模型中创建了接触，就会检查 CMAT 的槽位 1，以根据分配判据（即两个球颗粒的分组标识符为 glass）确定是否应使用相应的接触模型。若未满足分配判据，则以类似方式检查 CMAT 的槽位 2。若已访问 CMAT 的所有槽位且未找到合适的接触模型，则分配 CMAT 默认槽位中所保存的接触模型。</p>
+<p>请注意，本示例中所用的范围选择基于为接触部件定义的分组。
+<a class="reference internal" href="../../../../../../../common/module/doc/manual/group_manual/groupkwd.html#group-manual"><span class="std std-ref">分组</span>（Groups）</a>逻辑是一种通用工具，可用于标识同一模型组件的多个实例。分组可以赋予球颗粒、墙和刚性团簇，以及面片或子颗粒，甚至接触。然而，如本例所示，通常更有效的是根据赋予接触部件的分组来筛选接触，而不是使用为接触本身定义的分组。为此，可以使用 group 范围元素的 <span class="cmdkey">match</span> 关键字。</p>
+<p><a href="#tut-cmat-cmat3">图 3（Figure  3）</a> 显示了系统的最终状态。球颗粒按其分组着色，接触则按剪切模量属性 <a class="reference internal" href="../../../../../../../common/contactmodel/hertz/doc/manual/cmhertz.html#cmhertz-proptable">剪切滞回（<span class="std std-ref">hz_shear</span>）</a> 的值着色（仅显示具有 hertz 模型的接触）。在模拟过程中，各接触模型属性均已得到适当的赋值。</p>
+<div class="figure" id="tut-cmat-cmat3">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d-usingcmat-cmat3.png"><img alt="../../../../../../../_images/p2d-usingcmat-cmat3.png" src="../../../../../../../_images/p2d-usingcmat-cmat3.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 3：由“<a class="reference internal" href="#tut-cmat-cmat3-datafile2d">cmat3.dat 数据文件（<span class="std std-ref">cmat3.dat</span>）</a>”构建的最终系统。
+球颗粒按分组（钢和玻璃）着色，接触按
+剪切模量属性 <a class="reference internal" href="../../../../../../../common/contactmodel/hertz/doc/manual/cmhertz.html#cmhertz-proptable">剪切滞回（<span class="std std-ref">hz_shear</span>）</a> 的值着色。</span></p>
+</div>
+<p class="h3 rubric">属性继承</p>
+<p>上文讨论的示例说明了如何使用 CMAT 中的可选槽位来指定接触模型性质的非均匀性。另一种可行方式是使用 <em>性质继承</em>，如下所示。</p>
+<p>在接触模型的所有性质中，只有一组受限的性质可以从为接触部件定义的性质中继承。可继承的性质集合取决于各接触模型的具体实现，每个内置接触模型说明中包含的 <em>性质</em> 表都有一列，用于指示每种性质能否从表面性质继承（更多细节请参阅“<a class="reference internal" href="../../../pfc_model_components/contacts/contact_model_framework.html#contact-model-framework"><span class="std std-ref">接触模型框架</span>（Contact Model Framework）</a>”一节）。在“<a class="reference internal" href="#tut-cmat-cmat4-datafile2d">cmat4.dat 数据文件（<span class="std std-ref">cmat4.dat</span>）</a>”中，利用了 hertz 接触模型继承剪切模量 <span class="math">\(G\)</span>、泊松比 <span class="math">\(\nu\)</span> 和摩擦系数 <span class="math">\(\mu\)</span> 的能力。与“<a class="reference internal" href="#tut-cmat-cmat3-datafile2d">cmat3.dat 数据文件（<span class="std std-ref">cmat3.dat</span>）</a>”中通过 CMAT 的可选槽位指定所有接触模型性质的做法不同，这里只指定 CMAT 的默认槽位，并在球颗粒上定义可继承的性质。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">ball         </span><span class="sx">...</span>
+<span class="n">                   model hertz              </span><span class="sx">...</span>
+<span class="n">                   property dp_nratio </span><span class="m m-Double">0.2</span>
+
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">facet             </span><span class="sx">...</span>
+<span class="n">                   model linear                  </span><span class="sx">...</span>
+<span class="n">                   property kn </span><span class="m m-Double">1e6</span><span class="n"> dp_nratio </span><span class="m m-Double">0.2</span>
+
+<span class="nb">ball property</span><span class="n"> </span><span class="s">'hz_shear'</span><span class="n"> </span><span class="m m-Double">30e9</span><span class="n"> </span><span class="s">'hz_poiss'</span><span class="n"> </span><span class="m m-Double">0.3</span><span class="n"> </span><span class="s">'fric'</span><span class="n"> </span><span class="m m-Double">0.25</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     range group </span><span class="s">'glass'</span>
+
+<span class="nb">ball property</span><span class="n"> </span><span class="s">'hz_shear'</span><span class="n"> </span><span class="m m-Double">70e9</span><span class="n"> </span><span class="s">'hz_poiss'</span><span class="n"> </span><span class="m m-Double">0.3</span><span class="n"> </span><span class="s">'fric'</span><span class="n"> </span><span class="m m-Double">0.05</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     range group </span><span class="s">'steel'</span>
+</pre></div>
+</div>
+<p>使用上述命令后，在模拟过程中每当形成接触时：</p>
+<ul class="simple">
+<li>对于 ball-facet 接触，保留线性接触模型，其线性刚度为 <span class="math">\(k_n\)</span>=10<sup>6</sup>，法向临界阻尼比为 <span class="math">\(\beta_n\)</span>=0.2；并且</li>
+<li>对于 ball-ball 接触，安装 hertz 接触模型，其法向临界阻尼比为 <span class="math">\(\beta_n\)</span>=0.2。</li>
+</ul>
+<p>每个 ball-ball 接触的剪切模量 <span class="math">\(G\)</span>、泊松比 <span class="math">\(\nu\)</span> 和摩擦系数 <span class="math">\(\mu\)</span>
+的值并未在 CMAT 中直接指定。相反，这些性质定义在球颗粒上，接触创建时会根据球颗粒性质推导出相应的接触模型性质。有关 hertz 接触模型如何从部件性质推导接触模型性质的细节，请参阅 hertz 模型的<a class="reference internal" href="../../../../../../../common/contactmodel/hertz/doc/manual/cmhertz.html#cmhertz-propinh"><span class="std std-ref">性质继承一节</span>（property inheritance section）</a>。</p>
+<p>实际上，所得到的 <span class="codename">PFC</span> 模型（如 <a href="#tut-cmat-cmat4">图 4（Figure  4）</a> 所示）与此前讨论的模型（<a href="#tut-cmat-cmat3">图 3（Figure  3）</a>）完全相同，但在本模型中只使用了 CMAT 的默认槽位。本例中使用了性质继承来推导接触模型性质。请注意，所有 ball-ball 接触的法向临界阻尼比取值均已设为相同值。由于后一种性质无法从部件性质中继承，因此若要针对接触球颗粒的不同分组使用不同的取值，就必须使用 CMAT 中的可选槽位。</p>
+<div class="figure" id="tut-cmat-cmat4">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d-usingcmat-cmat4.png"><img alt="../../../../../../../_images/p2d-usingcmat-cmat4.png" src="../../../../../../../_images/p2d-usingcmat-cmat4.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 4：由“<a class="reference internal" href="#tut-cmat-cmat4-datafile2d">cmat4.dat 数据文件（<span class="std std-ref">cmat4.dat</span>）</a>”构建的最终系统。
+球颗粒按分组（钢和玻璃）着色，接触按
+剪切模量性质 <a class="reference internal" href="../../../../../../../common/contactmodel/hertz/doc/manual/cmhertz.html#cmhertz-proptable">剪切滞回（<span class="std std-ref">hz_shear</span>）</a> 的值着色。</span></p>
+</div>
+<p class="h3 rubric">修改已有接触</p>
+<p>上述所有示例讨论了指定 CMAT 的不同方式，以控制在循环计算过程中新建的接触应分配哪种接触模型（以及哪些性质）。构建 <span class="codename">PFC</span> 模型时经常需要的另一项操作是修改已有接触（既可以完全覆盖现有的接触模型，也可以只修改选定的性质）。</p>
+<p>数据文件“<a class="reference internal" href="#tut-cmat-cmat5-datafile2d">cmat5.dat 数据文件（<span class="std std-ref">cmat5.dat</span>）</a>”演示了两种可用于修改已有接触的策略：</p>
+<ol class="arabic simple">
+<li>修改 CMAT 并发出 <a class="reference internal" href="../../../../../../../common/contact/doc/contact_manual/contact_commands/cmd_cmat.apply.html#command:contact.cmat.apply" title="Apply the CMAT to existing contacts. Visit each contact in the specified range
+and override its contact model according to the CMAT..."><code class="xref fish fish-cmd docutils literal"><span class="pre">contact</span> <span class="pre">cmat</span> <span class="pre">apply</span></code></a> 命令以重置接触模型；以及</li>
+<li>使用 <a class="reference internal" href="../../../../../../../common/contact/doc/contact_manual/contact_commands/contact_commands.html#contact-command"><span class="std std-ref">contact 命令</span>（contact commands）</a> 修改选定的接触。</li>
+</ol>
+<p>其目标是修改由“<a class="reference internal" href="#tut-cmat-cmat3-datafile2d">cmat3.dat 数据文件（<span class="std std-ref">cmat3.dat</span>）</a>”产生的状态，即一个玻璃球颗粒与钢球颗粒在容器中于重力作用下完成沉降的模型，并为玻璃球颗粒之间的所有接触安装 <a class="reference internal" href="../../../../../../../common/contactmodel/linearpbond/doc/manual/cmlinearpbond.html#cmlinearpbond">线性平行粘结（<span class="std std-ref">linear parallel-bond</span>）</a> 接触模型。所得到的模型可以表示一种系统，其中玻璃-玻璃接触已通过热过程或化学过程烧结在一起。</p>
+<p>第一种方式通过以下命令实现：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 修改 CMAT 的第 1 个可选槽位（玻璃球之间的接触）</span>
+<span class="nb">contact cmat</span><span class="n"> modify </span><span class="m m-Double">1</span><span class="n"> model linearpbond                        </span><span class="sx">...</span>
+<span class="n">                    method deformability    emod </span><span class="m m-Double">1e6</span><span class="n"> krat </span><span class="m m-Double">0.5</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">                           pb_deformability emod </span><span class="m m-Double">1e6</span><span class="n"> krat </span><span class="m m-Double">0.5</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">                    property fric </span><span class="m m-Double">0.25</span><span class="n"> dp_nratio </span><span class="m m-Double">0.2</span><span class="n">           </span><span class="sx">...</span>
+<span class="n">                           pb_ten </span><span class="m m-Double">1e8</span><span class="n"> pb_coh </span><span class="m m-Double">1e8</span><span class="n"> pb_fa </span><span class="m m-Double">30.0</span><span class="n">  </span>
+<span class="n">                      </span>
+<span class="c">; 应用 CMAT——模型中所有已有接触都会被处理，并</span>
+<span class="c">; 安装新的接触模型。注意，原有接触模型中的全部信息在 </span>
+<span class="c">; 被新接触模型替换后都将丢失。</span>
+<span class="nb">contact cmat</span><span class="n"> apply</span>
+</pre></div>
+</div>
+<p>在本例中，修改 CMAT 的第一个槽位，使其使用带有相应性质的线性平行黏结接触模型，并发出 <a class="reference internal" href="../../../../../../../common/contact/doc/contact_manual/contact_commands/cmd_cmat.apply.html#command:contact.cmat.apply" title="Apply the CMAT to existing contacts. Visit each contact in the specified range
+and override its contact model according to the CMAT..."><code class="xref fish fish-cmd docutils literal"><span class="pre">contact</span> <span class="pre">cmat</span> <span class="pre">apply</span></code></a> 命令。请回顾，CMAT 的第一个槽位是在“<a class="reference internal" href="#tut-cmat-cmat3-datafile2d">cmat3.dat 数据文件（<span class="std std-ref">cmat3.dat</span>）</a>”中定义的，用于作用于玻璃球颗粒之间的接触。执行 <a class="reference internal" href="../../../../../../../common/contact/doc/contact_manual/contact_commands/cmd_cmat.apply.html#command:contact.cmat.apply" title="Apply the CMAT to existing contacts. Visit each contact in the specified range
+and override its contact model according to the CMAT..."><code class="xref fish fish-cmd docutils literal"><span class="pre">contact</span> <span class="pre">cmat</span> <span class="pre">apply</span></code></a> 命令后系统的状态如 <a href="#tut-cmat-cmat5a">图 5（Figure  5）</a> 所示。左侧显示了球颗粒（按分组着色），以及按接触模型名称着色的接触。正如预期，该模型中并存三种接触模型：ball-facet 接触处的线性接触模型、涉及至少一个钢球颗粒的接触的 hertz 接触模型，以及玻璃球颗粒之间接触的线性平行黏结接触模型。然而，必须注意，<a class="reference internal" href="../../../../../../../common/contact/doc/contact_manual/contact_commands/cmd_cmat.apply.html#command:contact.cmat.apply" title="Apply the CMAT to existing contacts. Visit each contact in the specified range
+and override its contact model according to the CMAT..."><code class="xref fish fish-cmd docutils literal"><span class="pre">contact</span> <span class="pre">cmat</span> <span class="pre">apply</span></code></a> 命令作用于<em>所有</em>已有接触；所有接触都已被处理，并根据 CMAT 中的当前设定重新分配了新的接触模型。因此，接触模型中存储的所有先前信息均已被重置。例如，<a href="#tut-cmat-cmat5a">图 5（Figure  5）</a> 右侧显示了按 hertz 力的当前值着色的其余 hertz 接触。由于接触模型刚刚被重新分配，当前力等于其默认的初始零值。</p>
+<div class="figure" id="tut-cmat-cmat5a">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d-usingcmat-cmat5a.png"><img alt="../../../../../../../_images/p2d-usingcmat-cmat5a.png" src="../../../../../../../_images/p2d-usingcmat-cmat5a.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 5：向所有接触发出 <a class="reference internal" href="../../../../../../../common/contact/doc/contact_manual/contact_commands/cmd_cmat.apply.html#command:contact.cmat.apply" title="Apply the CMAT to existing contacts. Visit each contact in the specified range
+and override its contact model according to the CMAT..."><code class="xref fish fish-cmd docutils literal"><span class="pre">contact</span> <span class="pre">cmat</span> <span class="pre">apply</span></code></a> 命令后系统的状态。</span></p>
+</div>
+<p>若要在修改玻璃-玻璃接触的同时保留其余接触，可以随 <a class="reference internal" href="../../../../../../../common/contact/doc/contact_manual/contact_commands/cmd_cmat.apply.html#command:contact.cmat.apply" title="Apply the CMAT to existing contacts. Visit each contact in the specified range
+and override its contact model according to the CMAT..."><code class="xref fish fish-cmd docutils literal"><span class="pre">contact</span> <span class="pre">cmat</span> <span class="pre">apply</span></code></a> 命令一并指定一个范围，以将其作用限制在选定的一组接触上（在本例中，即玻璃球颗粒之间的接触）。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 修改 CMAT 的第 1 个可选槽位（玻璃球之间的接触）</span>
+<span class="nb">contact cmat</span><span class="n"> modify </span><span class="m m-Double">1</span><span class="n"> model linearpbond                        </span><span class="sx">...</span>
+<span class="n">                    method deformability    emod </span><span class="m m-Double">1e6</span><span class="n"> krat </span><span class="m m-Double">0.5</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">                           pb_deformability emod </span><span class="m m-Double">1e6</span><span class="n"> krat </span><span class="m m-Double">0.5</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">                    property fric </span><span class="m m-Double">0.25</span><span class="n"> dp_nratio </span><span class="m m-Double">0.2</span><span class="n">           </span><span class="sx">...</span>
+<span class="n">                           pb_ten </span><span class="m m-Double">1e8</span><span class="n"> pb_coh </span><span class="m m-Double">1e8</span><span class="n"> pb_fa </span><span class="m m-Double">30.0</span><span class="n">  </span>
+<span class="n">                      </span>
+<span class="c">; 应用 CMAT——模型中所有已有接触都会被处理，并</span>
+<span class="c">; 安装新的接触模型。注意，原有接触模型中的全部信息在 </span>
+<span class="c">; 被新接触模型替换后都将丢失。</span>
+<span class="nb">contact cmat</span><span class="n"> apply</span>
+<span class="nb">contact method</span><span class="n"> bond</span>
+</pre></div>
+</div>
+<p>执行上述命令后系统的状态如 <a href="#tut-cmat-cmat5c">图 6（Figure  6）</a> 所示。图左侧显示按接触模型名称着色的接触，图右侧显示按力着色的 hertz 接触。在本例中，线性平行黏结接触模型已被恰当地分配给玻璃-玻璃接触，而所有其他接触都保留了先前的接触模型和数据，因为只有玻璃-玻璃接触被修改。</p>
+<div class="figure" id="tut-cmat-cmat5c">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d-usingcmat-cmat5c.png"><img alt="../../../../../../../_images/p2d-usingcmat-cmat5c.png" src="../../../../../../../_images/p2d-usingcmat-cmat5c.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 6：向选定的一组接触发出 <a class="reference internal" href="../../../../../../../common/contact/doc/contact_manual/contact_commands/cmd_cmat.apply.html#command:contact.cmat.apply" title="Apply the CMAT to existing contacts. Visit each contact in the specified range
+and override its contact model according to the CMAT..."><code class="xref fish fish-cmd docutils literal"><span class="pre">contact</span> <span class="pre">cmat</span> <span class="pre">apply</span></code></a> 命令后
+系统的状态。</span></p>
+</div>
+<p>尽管该策略可用于修改已有接触，但必须注意，对 CMAT 的任何改动也会影响后续循环计算期间新建的接触。在 CMAT 被上述命令修改之后，玻璃球颗粒之间未来形成的接触将被分配线性平行黏结接触模型，这可能并非所期望的。克服该问题的一种可能做法是：在执行 <a class="reference internal" href="../../../../../../../common/contact/doc/contact_manual/contact_commands/cmd_cmat.apply.html#command:contact.cmat.apply" title="Apply the CMAT to existing contacts. Visit each contact in the specified range
+and override its contact model according to the CMAT..."><code class="xref fish fish-cmd docutils literal"><span class="pre">contact</span> <span class="pre">cmat</span> <span class="pre">apply</span></code></a> 命令修改选定接触之后，将 CMAT 中的改动还原，以便在玻璃球颗粒之间新建的接触上安装 hertz 接触模型<a class="footnote-reference" href="#id8" id="id4">[4]</a>。</p>
+<p>如果目的是在构建 <span class="codename">PFC</span> 模型的某一阶段修改选定的接触（或选定的接触模型性质），那么使用 <a class="reference internal" href="../../../../../../../common/contact/doc/contact_manual/contact_commands/contact_commands.html#contact-command"><span class="std std-ref">contact 命令</span>（contact commands）</a>（只影响已有接触）可能比修改 CMAT（可能影响未来接触）更为合适。在本例中，可以只修改玻璃球颗粒之间的活动接触，使其使用具有所需性质的线性平行黏结接触模型，这可通过以下命令实现：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 修改 CMAT 的第 1 个可选槽位（玻璃球之间的接触）</span>
+<span class="nb">contact cmat</span><span class="n"> modify </span><span class="m m-Double">1</span><span class="n"> model linearpbond                        </span><span class="sx">...</span>
+<span class="n">                    method deformability    emod </span><span class="m m-Double">1e6</span><span class="n"> krat </span><span class="m m-Double">0.5</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">                           pb_deformability emod </span><span class="m m-Double">1e6</span><span class="n"> krat </span><span class="m m-Double">0.5</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">                    property fric </span><span class="m m-Double">0.25</span><span class="n"> dp_nratio </span><span class="m m-Double">0.2</span><span class="n">           </span><span class="sx">...</span>
+<span class="n">                             pb_ten </span><span class="m m-Double">1e8</span><span class="n"> pb_coh </span><span class="m m-Double">1e8</span><span class="n"> pb_fa </span><span class="m m-Double">30.0</span><span class="n">  </span>
+<span class="n">                      </span>
+<span class="c">; 仅对选中的接触应用 CMAT。但请注意，由于 </span>
+<span class="c">; CMAT 已被修改，之后在玻璃球之间创建的接触将</span>
+<span class="c">; 安装线性平行黏结接触模型。</span>
+<span class="nb">contact cmat</span><span class="n"> apply range group </span><span class="s">'glass'</span><span class="n"> matches </span><span class="m m-Double">2</span>
+<span class="nb">contact method</span><span class="n"> bond</span>
+</pre></div>
+</div>
+<p>系统的最终状态如 <a href="#tut-cmat-cmat5e">图 7（Figure  7）</a> 所示。玻璃球颗粒之间的活动接触已赋予线性平行黏结模型，黏结已安装，系统在重力作用下达到平衡。所有接触（活动的与非活动的）均已显示，并按各自接触模型的名称着色。在该系统中，非活动接触以及玻璃球颗粒之间的新接触将使用相应的 hertz 接触模型（如 CMAT 相应槽位中所定义）。</p>
+<div class="figure" id="tut-cmat-cmat5e">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d-usingcmat-cmat5e.png"><img alt="../../../../../../../_images/p2d-usingcmat-cmat5e.png" src="../../../../../../../_images/p2d-usingcmat-cmat5e.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 7：使用 <a class="reference internal" href="../../../../../../../common/contact/doc/contact_manual/contact_commands/contact_commands.html#contact-command"><span class="std std-ref">contact 命令</span>（contact commands）</a> 在选定接触处安装线性平行黏结接触模型后的系统状态。</span></p>
+</div>
+<p class="h3 rubric">指定接近距离</p>
+<p>CMAT 的另一个重要特性是可以为 CMAT 的每个槽位同时指定一个 <em>接近距离</em>。<em>接近距离</em> 用于强制规定在模拟过程中创建接触时应满足的最小距离（更多细节请参阅“<a class="reference internal" href="../../../numerical_simulations_with_pfc/pfc_formulation/cellspace_update.html#cellspace-update"><span class="std std-ref">30.0 - 更新空间搜索数据结构</span>（30.0 - Update Spatial Searching Data Structures）</a>”）。例如，当需要修改非活动接触时，这一特性会很有用，如下文所示。</p>
+<p>数据文件“<a class="reference internal" href="#tut-cmat-cmat6-datafile2d">cmat6.dat 数据文件（<span class="std std-ref">cmat6.dat</span>）</a>”在容器中构建了一个密实的球颗粒集合体（对所有接触类型均使用线性接触模型），随后使用 <a class="reference internal" href="../../../../../../../common/contact/doc/contact_manual/contact_commands/cmd_contact.model.html#command:contact.model" title="Assign contact models. The selected contact model applies to contacts in the
+specified range...">接触模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">contact</span> <span class="pre">model</span></code>）</a> 命令在 ball-ball 接触处安装线性平行黏结接触模型，并使用 <a class="reference internal" href="../../../../../../../common/contact/doc/contact_manual/contact_commands/cmd_contact.property.html#command:contact.property" title="Assign contact properties. All contacts with a contact model that recognizes
+the property..."><code class="xref fish fish-cmd docutils literal"><span class="pre">contact</span> <span class="pre">property</span></code></a> 修改这些接触的性质。</p>
+<p>在此阶段，使用 <a class="reference internal" href="../../../../../../../common/contact/doc/contact_manual/contact_commands/cmd_contact.method.html#command:contact.method" title="Call a contact method. The method, along with its specific list of pairs of
+argument names and values, is invoked..."><code class="xref fish fish-cmd docutils literal"><span class="pre">contact</span> <span class="pre">method</span></code></a> 命令执行由线性平行黏结接触模型定义的 <a class="reference internal" href="../../../../../../../common/contactmodel/linearpbond/doc/manual/cmlinearpbond.html#cmlinearpbond-bond">粘结（<span class="std std-ref">bond</span>）</a> 方法。默认情况下，该方法会在间隙小于或等于零的接触处安装黏结，但也可以指定一个正的黏结安装间隙。这里比较了多种情况，黏结安装间隙分别为 0.0、5 × 10<sup>-5</sup> 和 2.5 × 10<sup>-4</sup>。相应的系统如图<a href="#tut-cmat-cmat6a"> 8</a> 至<a href="#tut-cmat-cmat6c"> 10</a> 所示，其中左侧显示按间隙值着色的接触，右侧显示活动的和非活动的线性平行黏结接触。在该模型中，初始共有 1115 个 ball-ball 接触（间隙为负的活动接触和间隙为正的非活动接触），非活动 ball-ball 接触的最大间隙约为 1.8343 × 10<sup>-4</sup>。对间隙小于或等于零的接触执行 bond 方法（<a href="#tut-cmat-cmat6a">图 8（Figure  8）</a>）后，有 983 个接触被黏结，132 个接触保持未黏结。对间隙小于或等于 5 × 10<sup>-5</sup> 的接触执行 bond 方法（<a href="#tut-cmat-cmat6b">图 9（Figure  9）</a>）后，有 1025 个接触被黏结，90 个接触保持未黏结。最后，对间隙小于或等于 2.5 × 10<sup>-4</sup> 的接触执行 bond 方法（<a href="#tut-cmat-cmat6c">图 10（Figure  10）</a>）后，全部 1115 个 ball-ball 接触均被黏结。</p>
+<div class="figure" id="tut-cmat-cmat6a">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d-usingcmat-cmat6a.png"><img alt="../../../../../../../_images/p2d-usingcmat-cmat6a.png" src="../../../../../../../_images/p2d-usingcmat-cmat6a.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 8：在黏结安装间隙为 0.0 的条件下（使用线性平行黏结接触模型）
+对接触进行黏结后的系统状态。</span></p>
+</div>
+<div class="figure" id="tut-cmat-cmat6b">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d-usingcmat-cmat6b.png"><img alt="../../../../../../../_images/p2d-usingcmat-cmat6b.png" src="../../../../../../../_images/p2d-usingcmat-cmat6b.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 9：在黏结安装间隙为 5 × 10<sup>-5</sup> 的条件下（使用线性平行黏结接触模型）
+对接触进行黏结后的系统状态。</span></p>
+</div>
+<div class="figure" id="tut-cmat-cmat6c">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d-usingcmat-cmat6c.png"><img alt="../../../../../../../_images/p2d-usingcmat-cmat6c.png" src="../../../../../../../_images/p2d-usingcmat-cmat6c.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 10：在黏结安装间隙为 2.5 × 10<sup>-4</sup> 的条件下（使用线性平行黏结接触模型）
+对接触进行黏结后的系统状态。</span></p>
+</div>
+<p>但请注意，由于 CMAT 中未指定接近距离，创建非活动接触时所采用的最小距离由接触检测逻辑自行决定。在此情况下，该值（1.8343 × 10<sup>-4</sup>）小于期望的黏结安装间隙。由于 <a class="reference internal" href="../../../../../../../common/contact/doc/contact_manual/contact_commands/cmd_contact.method.html#command:contact.method" title="Call a contact method. The method, along with its specific list of pairs of
+argument names and values, is invoked..."><code class="xref fish fish-cmd docutils literal"><span class="pre">contact</span> <span class="pre">method</span></code></a> 命令只对<em>现有</em>接触进行操作，系统中可能存在一些球颗粒对，其间隙介于 1.8343 × 10<sup>-4</sup> 与 2.5 × 10<sup>-4</sup> 之间，但尚未为它们创建接触，因此这些球颗粒对未被黏结。为确保球颗粒相互接近到小于期望的接近距离时能够创建接触，可以修改 CMAT 以使用 <span class="cmdkey">proximity</span> 关键字。例如，以下命令将修改 CMAT、<a class="reference internal" href="../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.clean.html#command:model.clean" title="Clean the model...">清理模型对象命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">clean</span></code>）</a> 模型以强制按照新的接近距离设置创建新接触，将新的 CMAT 条目应用于现有的 ball-ball 接触，最后对间隙小于或等于 2.5 × 10<sup>-4</sup> 的接触进行黏结。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model restore</span><span class="n"> </span><span class="s">'cmat6'</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">ball     </span><span class="sx">...</span>
+<span class="n">                     model linearpbond  </span><span class="sx">...</span>
+<span class="n">                     property kn </span><span class="m m-Double">1e6</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">                     proximity </span><span class="m m-Double">2.5e-4</span>
+
+<span class="c">; CLEAN 命令强制进行接触检测</span>
+<span class="c">; 执行后将创建新的接触，从而确保间距</span>
+<span class="c">; &lt;= 2.5e-4 的球对现在具有未激活的接触</span>
+<span class="nb">model clean</span>
+<span class="c">; 还必须执行 CMAT APPLY 命令，以修改已有接触</span>
+<span class="nb">contact cmat</span><span class="n"> apply range contact type </span><span class="s">'ball-ball'</span>
+
+<span class="c">; 现在可以修改间隙 &lt;= 2.5e-4 的接触</span>
+<span class="nb">contact model</span><span class="n"> linearpbond range contact type </span><span class="s">'ball-ball'</span><span class="n"> gap </span><span class="m m-Double">2.5e-4</span>
+<span class="nb">contact property</span><span class="n"> kn </span><span class="m m-Double">1e6</span><span class="n"> ks </span><span class="m m-Double">1e6</span><span class="n"> fric </span><span class="m m-Double">0.5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                 pb_kn </span><span class="m m-Double">1e6</span><span class="n"> pb_ks </span><span class="m m-Double">1e6</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">                 pb_ten </span><span class="m m-Double">1e8</span><span class="n"> pb_coh </span><span class="m m-Double">1e8</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">                 range contact model </span><span class="s">'linearpbond'</span>
+
+<span class="nb">contact method</span><span class="n"> bond gap </span><span class="m m-Double">2.5e-4</span>
+</pre></div>
+</div>
+<p>最终模型如 <a href="#tut-cmat-cmat6d">图 11（Figure  11）</a> 所示。采用这些新设置后，系统中总共有 1280 个接触，其中 1163 个接触被有效黏结。所有间隙小于或等于期望值 2.5 × 10<sup>-4</sup> 的球颗粒对均已黏结。</p>
+<div class="figure" id="tut-cmat-cmat6d">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d-usingcmat-cmat6d.png"><img alt="../../../../../../../_images/p2d-usingcmat-cmat6d.png" src="../../../../../../../_images/p2d-usingcmat-cmat6d.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 11：在黏结安装间隙为 2.5 × 10<sup>-4</sup> 的条件下（使用线性平行黏结接触模型）
+对接触进行黏结后的系统状态。</span></p>
+</div>
+<p class="h2 rubric">讨论</p>
+<p>本教程说明了 CMAT 的主要用途，并着重强调了一些重要特性，可归纳如下。</p>
+<ul class="simple">
+<li>CMAT 规定了创建接触时应安装哪些接触模型。默认情况下，<span class="codename">PFC</span> 安装的接触模型为 <a class="reference internal" href="../../../../../../../common/contactmodel/mechanicalnull/doc/manual/cmnull.html#cmnull"><span class="std std-ref">空模型</span>（null model）</a>。因此，用户需要自行设置 CMAT。</li>
+<li>CMAT 由附加于各接触类型的默认槽位组成，也可以包含附加于范围的可选槽位。结合性质继承，这为构建接触本构行为呈非均匀分布的模型提供了灵活性。</li>
+<li>CMAT 可以修改，并重新施加到全部接触或选定接触上。然而，对 CMAT 的任何改动都可能改变将来接触上安装的接触模型。若只想修改已有接触，则应优先使用 <a class="reference internal" href="../../../../../../../common/contact/doc/contact_manual/contact_commands/contact_commands.html#contact-command"><span class="std std-ref">contact 命令</span>（contact commands）</a>。</li>
+<li>可在 CMAT 中使用 <span class="cmdkey">proximity</span> 关键字指定可创建接触的最小距离。例如，这可确保接触在所需距离内创建，并能够修改这些接触。</li>
+</ul>
+<p class="h2 rubric" id="tut-cmat-datafiles">数据文件</p>
+<p class="h3 rubric" id="tut-cmat-cmat1-datafile2d">cmat1.dat (2D)</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：cmat1.dat (2D)</span>
+<span class="c">;</span>
+<span class="c">;  演示 CMAT 的简单用法 </span>
+<span class="c">;  （所有默认槽位填入相同数据）  </span>
+<span class="c">;=========================================================================</span>
+<span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">1.5e-2</span><span class="n"> </span><span class="m m-Double">1.5e-2</span><span class="n"> condition destroy</span>
+<span class="nb">wall generate</span><span class="n"> box </span><span class="o">-</span><span class="m m-Double">1.0e-2</span><span class="n"> </span><span class="m m-Double">1.0e-2</span><span class="n"> one</span><span class="o">-</span><span class="n">wall</span>
+<span class="nb">ball generate</span><span class="n"> number </span><span class="m m-Double">200</span><span class="n"> radius </span><span class="m m-Double">0.4e-3</span><span class="n"> </span><span class="m m-Double">0.6e-3</span><span class="n"> box </span><span class="o">-</span><span class="m m-Double">1.0e-2</span><span class="n"> </span><span class="m m-Double">1.0e-2</span><span class="n"> </span>
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="m m-Double">2500.0</span>
+
+<span class="c">; excerpt-wals-start</span>
+<span class="c">; 设置 CMAT 的全部默认槽位</span>
+<span class="nb">contact cmat</span><span class="n"> default model linear property kn </span><span class="m m-Double">1e6</span><span class="n"> dp_nratio </span><span class="m m-Double">0.2</span>
+<span class="c">; excerpt-wals-end</span>
+
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">9.81</span>
+<span class="nb">model </span><span class="ss">solve</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'cmat1'</span>
+
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：cmat1.dat (2D)</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="tut-cmat-cmat2-datafile2d">cmat2.dat (2D)</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：cmat2.dat (2D)</span>
+<span class="c">;</span>
+<span class="c">;  演示 CMAT 的简单用法 </span>
+<span class="c">;  （默认槽位填入不同的数据）  </span>
+<span class="c">;=========================================================================</span>
+<span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">1.5e-2</span><span class="n"> </span><span class="m m-Double">1.5e-2</span><span class="n"> condition destroy</span>
+<span class="nb">wall generate</span><span class="n"> box </span><span class="o">-</span><span class="m m-Double">1.0e-2</span><span class="n"> </span><span class="m m-Double">1.0e-2</span><span class="n"> one</span><span class="o">-</span><span class="n">wall</span>
+<span class="nb">ball generate</span><span class="n"> number </span><span class="m m-Double">200</span><span class="n"> radius </span><span class="m m-Double">0.4e-3</span><span class="n"> </span><span class="m m-Double">0.6e-3</span><span class="n"> box </span><span class="o">-</span><span class="m m-Double">1.0e-2</span><span class="n"> </span><span class="m m-Double">1.0e-2</span><span class="n"> </span>
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="m m-Double">2500.0</span>
+
+<span class="c">; excerpt-duwx-start</span>
+<span class="c">; 为球-球和球-面片接触类型设置不同的接触模型</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">ball                     </span><span class="sx">...</span>
+<span class="n">                   model hertz                          </span><span class="sx">...</span>
+<span class="n">                   property hz_shear </span><span class="m m-Double">30e9</span><span class="n"> hz_poiss </span><span class="m m-Double">0.3</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">                            fric </span><span class="m m-Double">0.25</span><span class="n">                   </span><span class="sx">...</span>
+<span class="n">                            dp_nratio </span><span class="m m-Double">0.2</span>
+<span class="n">               </span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">facet                    </span><span class="sx">...</span>
+<span class="n">                   model linear                         </span><span class="sx">...</span>
+<span class="n">                   property kn </span><span class="m m-Double">1e6</span><span class="n"> dp_nratio </span><span class="m m-Double">0.2</span>
+<span class="c">; excerpt-duwx-end</span>
+
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">9.81</span>
+<span class="nb">model </span><span class="ss">solve</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">"cmat2"</span>
+
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：cmat2.dat (2D)</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="tut-cmat-cmat3-datafile2d">cmat3.dat (2D)</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：cmat3.dat (2D)</span>
+<span class="c">;</span>
+<span class="c">;  演示 CMAT 的高级用法</span>
+<span class="c">;  （默认槽位与可选槽位填入不同的数据）</span>
+<span class="c">;=========================================================================</span>
+<span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">1.5e-2</span><span class="n"> </span><span class="m m-Double">1.5e-2</span><span class="n"> condition destroy</span>
+<span class="nb">wall generate</span><span class="n"> box </span><span class="o">-</span><span class="m m-Double">1.0e-2</span><span class="n"> </span><span class="m m-Double">1.0e-2</span><span class="n"> one</span><span class="o">-</span><span class="n">wall</span>
+<span class="nb">ball generate</span><span class="n"> number </span><span class="m m-Double">100</span><span class="n"> radius </span><span class="m m-Double">0.4e-3</span><span class="n"> </span><span class="m m-Double">0.6e-3</span><span class="n"> box </span><span class="o">-</span><span class="m m-Double">1.0e-2</span><span class="n"> </span><span class="m m-Double">1.0e-2</span><span class="n"> group </span><span class="s">'glass'</span>
+<span class="nb">ball generate</span><span class="n"> number </span><span class="m m-Double">100</span><span class="n"> radius </span><span class="m m-Double">0.4e-3</span><span class="n"> </span><span class="m m-Double">0.6e-3</span><span class="n"> box </span><span class="o">-</span><span class="m m-Double">1.0e-2</span><span class="n"> </span><span class="m m-Double">1.0e-2</span><span class="n"> group </span><span class="s">'steel'</span>
+
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="m m-Double">2500.0</span><span class="n"> range group </span><span class="s">'glass'</span>
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="m m-Double">7500.0</span><span class="n"> range group </span><span class="s">'steel'</span>
+
+<span class="c">; excerpt-oohc-start</span>
+<span class="nb">contact cmat</span><span class="n"> add </span><span class="m m-Double">1</span><span class="n"> model hertz                          </span><span class="sx">...</span>
+<span class="n">                 property hz_shear </span><span class="m m-Double">30e9</span><span class="n"> hz_poiss </span><span class="m m-Double">0.3</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">                          fric </span><span class="m m-Double">0.25</span><span class="n">                     </span><span class="sx">...</span>
+<span class="n">                          dp_nratio </span><span class="m m-Double">0.2</span><span class="n">                 </span><span class="sx">...</span>
+<span class="n">             range group </span><span class="s">'glass'</span><span class="n"> matches </span><span class="m m-Double">2</span>
+
+<span class="nb">contact cmat</span><span class="n"> add </span><span class="m m-Double">2</span><span class="n"> model hertz                          </span><span class="sx">...</span>
+<span class="n">                 property hz_shear </span><span class="m m-Double">70e9</span><span class="n"> hz_poiss </span><span class="m m-Double">0.3</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">                          fric </span><span class="m m-Double">0.05</span><span class="n">                     </span><span class="sx">...</span>
+<span class="n">                          dp_nratio </span><span class="m m-Double">0.2</span><span class="n">                 </span><span class="sx">...</span>
+<span class="n">             range group </span><span class="s">'steel'</span><span class="n"> matches </span><span class="m m-Double">2</span>
+
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">ball                     </span><span class="sx">...</span>
+<span class="n">                   model hertz                          </span><span class="sx">...</span>
+<span class="n">                   property hz_shear </span><span class="m m-Double">50e9</span><span class="n"> hz_poiss </span><span class="m m-Double">0.3</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">                           fric </span><span class="m m-Double">0.05</span><span class="n">                    </span><span class="sx">...</span>
+<span class="n">                           dp_nratio </span><span class="m m-Double">0.2</span>
+
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">facet                    </span><span class="sx">...</span>
+<span class="n">                   model linear                         </span><span class="sx">...</span>
+<span class="n">                   property kn </span><span class="m m-Double">1e6</span><span class="n"> dp_nratio </span><span class="m m-Double">0.2</span>
+<span class="c">; excerpt-oohc-end</span>
+
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">9.81</span>
+<span class="nb">model </span><span class="ss">solve</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'cmat3'</span>
+
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：cmat3.dat (2D)</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="tut-cmat-cmat4-datafile2d">cmat4.dat (2D)</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：cmat4.dat (2D)</span>
+<span class="c">;</span>
+<span class="c">;  演示带参数继承的 CMAT 用法</span>
+<span class="c">;=========================================================================</span>
+<span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">1.5e-2</span><span class="n"> </span><span class="m m-Double">1.5e-2</span><span class="n"> condition destroy</span>
+<span class="nb">wall generate</span><span class="n"> box </span><span class="o">-</span><span class="m m-Double">1.0e-2</span><span class="n"> </span><span class="m m-Double">1.0e-2</span><span class="n"> one</span><span class="o">-</span><span class="n">wall</span>
+<span class="nb">ball generate</span><span class="n"> number </span><span class="m m-Double">100</span><span class="n"> radius </span><span class="m m-Double">0.4e-3</span><span class="n"> </span><span class="m m-Double">0.6e-3</span><span class="n"> box </span><span class="o">-</span><span class="m m-Double">1.0e-2</span><span class="n"> </span><span class="m m-Double">1.0e-2</span><span class="n"> group </span><span class="s">'glass'</span>
+<span class="nb">ball generate</span><span class="n"> number </span><span class="m m-Double">100</span><span class="n"> radius </span><span class="m m-Double">0.4e-3</span><span class="n"> </span><span class="m m-Double">0.6e-3</span><span class="n"> box </span><span class="o">-</span><span class="m m-Double">1.0e-2</span><span class="n"> </span><span class="m m-Double">1.0e-2</span><span class="n"> group </span><span class="s">'steel'</span>
+
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="m m-Double">2500.0</span><span class="n"> range group </span><span class="s">'glass'</span>
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="m m-Double">7500.0</span><span class="n"> range group </span><span class="s">'steel'</span>
+
+<span class="c">; excerpt-ntmp-start</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">ball         </span><span class="sx">...</span>
+<span class="n">                   model hertz              </span><span class="sx">...</span>
+<span class="n">                   property dp_nratio </span><span class="m m-Double">0.2</span>
+
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">facet             </span><span class="sx">...</span>
+<span class="n">                   model linear                  </span><span class="sx">...</span>
+<span class="n">                   property kn </span><span class="m m-Double">1e6</span><span class="n"> dp_nratio </span><span class="m m-Double">0.2</span>
+
+<span class="nb">ball property</span><span class="n"> </span><span class="s">'hz_shear'</span><span class="n"> </span><span class="m m-Double">30e9</span><span class="n"> </span><span class="s">'hz_poiss'</span><span class="n"> </span><span class="m m-Double">0.3</span><span class="n"> </span><span class="s">'fric'</span><span class="n"> </span><span class="m m-Double">0.25</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     range group </span><span class="s">'glass'</span>
+
+<span class="nb">ball property</span><span class="n"> </span><span class="s">'hz_shear'</span><span class="n"> </span><span class="m m-Double">70e9</span><span class="n"> </span><span class="s">'hz_poiss'</span><span class="n"> </span><span class="m m-Double">0.3</span><span class="n"> </span><span class="s">'fric'</span><span class="n"> </span><span class="m m-Double">0.05</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     range group </span><span class="s">'steel'</span>
+<span class="c">; excerpt-ntmp-end</span>
+
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">9.81</span>
+<span class="nb">model </span><span class="ss">solve</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'cmat4'</span>
+
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：cmat4.dat (2D)</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="tut-cmat-cmat5-datafile2d">cmat5.dat (2D)</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：cmat5.dat (2D)</span>
+<span class="c">;</span>
+<span class="c">;  演示 CMAT 的高级用法 </span>
+<span class="c">;  通过 CMAT APPLY 或 contact 命令修改已有接触 </span>
+<span class="c">;=========================================================================</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'cmat3'</span>
+
+<span class="c">; excerpt-xkbh-start</span>
+<span class="c">; 修改 CMAT 的第 1 个可选槽位（玻璃球之间的接触）</span>
+<span class="nb">contact cmat</span><span class="n"> modify </span><span class="m m-Double">1</span><span class="n"> model linearpbond                        </span><span class="sx">...</span>
+<span class="n">                    method deformability    emod </span><span class="m m-Double">1e6</span><span class="n"> krat </span><span class="m m-Double">0.5</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">                           pb_deformability emod </span><span class="m m-Double">1e6</span><span class="n"> krat </span><span class="m m-Double">0.5</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">                    property fric </span><span class="m m-Double">0.25</span><span class="n"> dp_nratio </span><span class="m m-Double">0.2</span><span class="n">           </span><span class="sx">...</span>
+<span class="n">                           pb_ten </span><span class="m m-Double">1e8</span><span class="n"> pb_coh </span><span class="m m-Double">1e8</span><span class="n"> pb_fa </span><span class="m m-Double">30.0</span><span class="n">  </span>
+<span class="n">                      </span>
+<span class="c">; 应用 CMAT——模型中所有已有接触都会被处理，并</span>
+<span class="c">; 安装新的接触模型。注意，原有接触模型中的全部信息在 </span>
+<span class="c">; 被新接触模型替换后都将丢失。</span>
+<span class="nb">contact cmat</span><span class="n"> apply</span>
+<span class="nb">contact method</span><span class="n"> bond</span>
+<span class="c">; excerpt-xkbh-end</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'cmat5a'</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">model </span><span class="ss">solve</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'cmat5b'</span>
+
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'cmat3'</span>
+
+<span class="c">; excerpt-nvet-start</span>
+<span class="c">; 修改 CMAT 的第 1 个可选槽位（玻璃球之间的接触）</span>
+<span class="nb">contact cmat</span><span class="n"> modify </span><span class="m m-Double">1</span><span class="n"> model linearpbond                        </span><span class="sx">...</span>
+<span class="n">                    method deformability    emod </span><span class="m m-Double">1e6</span><span class="n"> krat </span><span class="m m-Double">0.5</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">                           pb_deformability emod </span><span class="m m-Double">1e6</span><span class="n"> krat </span><span class="m m-Double">0.5</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">                    property fric </span><span class="m m-Double">0.25</span><span class="n"> dp_nratio </span><span class="m m-Double">0.2</span><span class="n">           </span><span class="sx">...</span>
+<span class="n">                             pb_ten </span><span class="m m-Double">1e8</span><span class="n"> pb_coh </span><span class="m m-Double">1e8</span><span class="n"> pb_fa </span><span class="m m-Double">30.0</span><span class="n">  </span>
+<span class="n">                      </span>
+<span class="c">; 仅对选中的接触应用 CMAT。但请注意，由于 </span>
+<span class="c">; CMAT 已被修改，之后在玻璃球之间创建的接触将</span>
+<span class="c">; 安装线性平行黏结接触模型。</span>
+<span class="nb">contact cmat</span><span class="n"> apply range group </span><span class="s">'glass'</span><span class="n"> matches </span><span class="m m-Double">2</span>
+<span class="nb">contact method</span><span class="n"> bond</span>
+<span class="c">; excerpt-nvet-end</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'cmat5c'</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">model </span><span class="ss">solve</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'cmat5d'</span>
+
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'cmat3'</span>
+<span class="n">                                 </span>
+<span class="c">; 使用 contact 命令修改玻璃球之间的已有接触。</span>
+<span class="nb">contact model</span><span class="n"> linearpbond range group </span><span class="s">'glass'</span><span class="n"> matches </span><span class="m m-Double">2</span><span class="n"> contact gap </span><span class="m m-Double">0.0</span>
+<span class="nb">contact method</span><span class="n"> deformability emod </span><span class="m m-Double">1e6</span><span class="n"> krat </span><span class="m m-Double">0.5</span><span class="n">     </span><span class="sx">...</span>
+<span class="n">               pb_deformability emod </span><span class="m m-Double">1e6</span><span class="n"> krat </span><span class="m m-Double">0.5</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">               bond                                </span><span class="sx">...</span>
+<span class="n">        range contact model </span><span class="s">'linearpbond'</span>
+<span class="n">                 </span>
+<span class="nb">contact property</span><span class="n"> fric </span><span class="m m-Double">0.25</span><span class="n"> dp_nratio </span><span class="m m-Double">0.2</span><span class="n">           </span><span class="sx">...</span>
+<span class="n">                 pb_ten </span><span class="m m-Double">1e8</span><span class="n"> pb_coh </span><span class="m m-Double">1e8</span><span class="n"> pb_fa </span><span class="m m-Double">30.0</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">        range group </span><span class="s">'glass'</span><span class="n"> matches </span><span class="m m-Double">2</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">model </span><span class="ss">solve</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'cmat5e'</span>
+
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：cmat5.dat (2D)</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="tut-cmat-cmat6-datafile2d">cmat6.dat (2D)</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：cmat6.dat (2D)</span>
+<span class="c">;</span>
+<span class="c">;  演示结合 PROXIMITY 关键字的 CMAT 高级用法</span>
+<span class="c">;=========================================================================</span>
+<span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">1.5e-2</span><span class="n"> </span><span class="m m-Double">1.5e-2</span><span class="n"> condition destroy</span>
+<span class="nb">contact cmat</span><span class="n"> default model linear property kn </span><span class="m m-Double">1e6</span>
+
+<span class="nb">wall generate</span><span class="n"> box </span><span class="o">-</span><span class="m m-Double">1.0e-2</span><span class="n"> </span><span class="m m-Double">1.0e-2</span><span class="n"> one</span><span class="o">-</span><span class="n">wall</span>
+<span class="nb">ball distribute</span><span class="n"> porosity </span><span class="m m-Double">0.12</span><span class="n">        </span><span class="sx">...</span>
+<span class="n">                radius </span><span class="m m-Double">0.4e-3</span><span class="n"> </span><span class="m m-Double">0.6e-3</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                box </span><span class="o">-</span><span class="m m-Double">1.0e-2</span><span class="n"> </span><span class="m m-Double">1.0e-2</span>
+
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="m m-Double">2000.0</span><span class="n"> damp </span><span class="m m-Double">0.7</span>
+<span class="nb">model mechanical</span><span class="n"> timestep update </span><span class="m m-Double">1</span><span class="n"> increment </span><span class="m m-Double">1.05</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span><span class="n"> calm </span><span class="m m-Double">10</span>
+<span class="nb">model </span><span class="ss">solve</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'cmat6'</span>
+
+<span class="c">; 为球-球接触安装 linearpbond 模型</span>
+<span class="nb">contact model</span><span class="n"> </span><span class="s">'linearpbond'</span><span class="n"> range contact type </span><span class="s">'ball-ball'</span>
+
+<span class="c">; 设置 linearpbond 接触的参数</span>
+<span class="nb">contact property</span><span class="n"> kn </span><span class="m m-Double">1e6</span><span class="n"> ks </span><span class="m m-Double">1e6</span><span class="n"> fric </span><span class="m m-Double">0.5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                 pb_kn </span><span class="m m-Double">1e6</span><span class="n"> pb_ks </span><span class="m m-Double">1e6</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">                 pb_ten </span><span class="m m-Double">1e8</span><span class="n"> pb_coh </span><span class="m m-Double">1e8</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">                 range contact model </span><span class="s">'linearpbond'</span>
+
+<span class="c">; 此时接触尚未黏结——对其进行黏结</span>
+<span class="nb">contact method</span><span class="n"> bond </span><span class="c">; gap 0.0</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'cmat6a'</span>
+
+<span class="c">; 也可以用正的间隙黏结未激活的接触</span>
+<span class="nb">contact method</span><span class="n"> bond gap </span><span class="m m-Double">5e-5</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'cmat6b'</span>
+
+<span class="c">; 这里希望黏结间隙 &lt;= 2.5e-4 的接触</span>
+<span class="c">; 但已创建的接触并没有</span>
+<span class="c">; 这么大的间隙（即使是未激活的接触）</span>
+<span class="nb">contact method</span><span class="n"> bond gap </span><span class="m m-Double">2.5e-4</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'cmat6c'</span>
+
+<span class="c">; 为确保在所需的黏结</span>
+<span class="c">; 安装间隙处存在未激活接触，必须在 CMAT 中使用 PROXIMITY 关键字。</span>
+<span class="c">; excerpt-ltyf-start</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'cmat6'</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">ball     </span><span class="sx">...</span>
+<span class="n">                     model linearpbond  </span><span class="sx">...</span>
+<span class="n">                     property kn </span><span class="m m-Double">1e6</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">                     proximity </span><span class="m m-Double">2.5e-4</span>
+
+<span class="c">; CLEAN 命令强制进行接触检测</span>
+<span class="c">; 执行后将创建新的接触，从而确保间距</span>
+<span class="c">; &lt;= 2.5e-4 的球对现在具有未激活的接触</span>
+<span class="nb">model clean</span>
+<span class="c">; 还必须执行 CMAT APPLY 命令，以修改已有接触</span>
+<span class="nb">contact cmat</span><span class="n"> apply range contact type </span><span class="s">'ball-ball'</span>
+
+<span class="c">; 现在可以修改间隙 &lt;= 2.5e-4 的接触</span>
+<span class="nb">contact model</span><span class="n"> linearpbond range contact type </span><span class="s">'ball-ball'</span><span class="n"> gap </span><span class="m m-Double">2.5e-4</span>
+<span class="nb">contact property</span><span class="n"> kn </span><span class="m m-Double">1e6</span><span class="n"> ks </span><span class="m m-Double">1e6</span><span class="n"> fric </span><span class="m m-Double">0.5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                 pb_kn </span><span class="m m-Double">1e6</span><span class="n"> pb_ks </span><span class="m m-Double">1e6</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">                 pb_ten </span><span class="m m-Double">1e8</span><span class="n"> pb_coh </span><span class="m m-Double">1e8</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">                 range contact model </span><span class="s">'linearpbond'</span>
+
+<span class="nb">contact method</span><span class="n"> bond gap </span><span class="m m-Double">2.5e-4</span>
+<span class="c">; excerpt-ltyf-end</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'cmat6d'</span>
+
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：cmat6.dat (2D)</span>
+</pre></div>
+</div>
+<p class="endnotesection rubric">尾注</p>
+<table class="docutils footnote" frame="void" id="id5" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><p class="first">要在 <span class="codename">PFC</span> 中查看本项目，请使用程序菜单。</p>
+<p><span class="menuselection">帮助 ▼ 算例…</span></p>
+<p class="last">  ⮡    PFC <br/>
+    ⮡    教程 <br/>
+      ⮡    CMAT <br/>
+        ⮡    UsingTheCMAT.prj</p>
+</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id6" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>在 <span class="codename">PFC2D</span> 和 <span class="codename">PFC3D</span> 的早期版本中（直至 4.0 版），默认假定采用 <em>linear</em> 或 <em>Hertz</em> 接触模型。当时没有通用机制可以方便地使用其他接触模型，或在同一个 <span class="codename">PFC</span> 模型中使用多种接触模型。因此，这类模型过去需要借助高级而繁琐的 <span class="codename">FISH</span> 编程。本文讨论的 CMAT 工具是一种通用工具，可以简化此类任务。</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id7" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>接触模型的属性特定于各个接触模型。内置接触模型的列表见 <a class="reference internal" href="../../../pfc_model_components/contacts/contact_built-in.html#built-in-contact-models"><span class="std std-ref">此处</span>（here）</a>，每个模型的说明中都详细列出了其全部属性。</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id8" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id4">[4]</a></td><td>当然，还应细化随 <a class="reference internal" href="../../../../../../../common/contact/doc/contact_manual/contact_commands/cmd_cmat.apply.html#command:contact.cmat.apply" title="Apply the CMAT to existing contacts. Visit each contact in the specified range
+and override its contact model according to the CMAT..."><code class="xref fish fish-cmd docutils literal"><span class="pre">contact</span> <span class="pre">cmat</span> <span class="pre">apply</span></code></a> 命令一同指定的范围，以便只修改活动接触。</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../pfc_model_components/pfc_examples.html">Examples</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../tutorials.html">Tutorials</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../attributes_and_properties/attributes_and_properties.html" title="previous chapter"> Attributes and Properties</a> |    
+       <a href="../generating_a_bonded_assembly/generating_a_bonded_assembly.html" title="next chapter">Generating a Bonded Assembly</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Using the CMAT" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

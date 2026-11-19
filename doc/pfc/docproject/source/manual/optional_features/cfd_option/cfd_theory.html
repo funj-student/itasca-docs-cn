@@ -1,0 +1,496 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>PFC3D 流体-颗粒相互作用公式 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="cfd_coupling.html" rel="next" title="Examples"/>
+<link href="cfd_option.html" rel="prev" title="CFD module for PFC3D6.0"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="pfc3d-fluid-particle-interaction-formulation">
+<span id="ccfd-theory2"></span><h1><span class="codename">PFC3D</span> 流体-颗粒相互作用公式</h1>
+<p>下表给出了典型流体属性的符号以及
+一套一致单位。任何一套单位都可使用，
+只要这些单位与 <span class="codename">PFC</span> 力学计算
+中所使用的单位一致。</p>
+<span class="target" id="siunits"></span><p>只要与力学计算中使用的单位一致，任何单位制均可使用。</p>
+<table border="1" class="colwidths-given underrow col2center col3center docutils" id="id3">
+<caption><span class="caption-text">表 1：流体流动的 SI 单位制</span></caption>
+<colgroup>
+<col width="40%"/>
+<col width="30%"/>
+<col width="30%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">属性</th>
+<th class="head">单位</th>
+<th class="head">符号</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>长度</td>
+<td>m</td>
+<td>l</td>
+</tr>
+<tr class="row-odd"><td>流体密度</td>
+<td>kg/m<sup>3</sup></td>
+<td><span class="math">\(\rho_f\)</span></td>
+</tr>
+<tr class="row-even"><td>时间</td>
+<td>s</td>
+<td>t</td>
+</tr>
+<tr class="row-odd"><td>流体速度</td>
+<td>m/s</td>
+<td><span class="math">\(\vec{v}\)</span></td>
+</tr>
+<tr class="row-even"><td>颗粒速度</td>
+<td>m/s</td>
+<td><span class="math">\(\vec{u}\)</span></td>
+</tr>
+<tr class="row-odd"><td>孔隙率</td>
+<td> </td>
+<td><span class="math">\(\epsilon\)</span></td>
+</tr>
+<tr class="row-even"><td>动力黏度</td>
+<td>Pa·s</td>
+<td><span class="math">\(\mu\)</span></td>
+</tr>
+<tr class="row-odd"><td>阻力系数</td>
+<td> </td>
+<td><span class="math">\(C_d\)</span></td>
+</tr>
+<tr class="row-even"><td>雷诺数</td>
+<td> </td>
+<td><span class="math">\(Re\)</span></td>
+</tr>
+<tr class="row-odd"><td>流体压力</td>
+<td>Pa</td>
+<td>p</td>
+</tr>
+<tr class="row-even"><td>流体压力梯度</td>
+<td>Pa/m</td>
+<td><span class="math">\(\vec{\nabla}p\)</span></td>
+</tr>
+<tr class="row-odd"><td>流体运动压力</td>
+<td>m<sup>2</sup>/s <sup>2</sup></td>
+<td>P</td>
+</tr>
+<tr class="row-even"><td>运动黏度</td>
+<td>m<sup>2</sup>/s</td>
+<td><span class="math">\(\nu\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>多孔流动中有两种速度定义。
+在 CFD 模块中，流体速度 <span class="math">\(\vec{v}\)</span> 是宏观速度或 Darcy 速度。
+宏观速度是单位横截面积上的体积流量。
+这是一种非物理速度，因为它假定流动发生在整个横截面上，而流体流动实际上只发生在孔隙空间中。
+间隙速度是流体微团在孔隙空间中运动时实际具有的速度。
+将宏观速度换算为间隙速度需除以孔隙率。</p>
+<p>本节简要概述描述流体-颗粒相互作用的方程组。
+<span class="codename">PFC3D</span> 颗粒的运动方程由标准的 <span class="codename">PFC3D</span> 方程给出，这些方程在“<a class="reference internal" href="../../numerical_simulations_with_pfc/pfc_formulation/pfc_model_formulation.html#pfc-model-formulation"><span class="std std-ref">PFC 模型表述</span>（PFC Model Formulation）</a>”一节中描述，
+并附加一个强迫项以计入与流体的相互作用：</p>
+<div class="math" id="equation-mech1">
+<span class="eqno">(1)</span>\[\frac{\partial \vec{u}}{\partial t} = \frac{\vec{f}_{mech} + \vec{f}_{fluid}}{m} + \vec{g}\]</div>
+<div class="math" id="equation-mech2">
+<span class="eqno">(2)</span>\[\frac{\partial \vec{\omega}}{\partial t} = \frac{\vec{M}}{I}\]</div>
+<p>其中 <span class="math">\(\vec{u}\)</span> 为颗粒速度，<span class="math">\(m\)</span> 为颗粒质量，<span class="math">\(\vec{f}_{fluid}\)</span> 为流体施加于颗粒的总力，
+<span class="math">\(\vec{f}_{mech}\)</span> 为作用在颗粒上的附加力（外部施加的力与接触力）之和，
+<span class="math">\(\vec{g}\)</span> 为重力加速度，<span class="math">\(\vec{\omega}\)</span> 为颗粒角速度，<span class="math">\(I\)</span> 为转动惯量，<span class="math">\(M\)</span> 为作用在颗粒上的力矩。
+流体施加于颗粒的力（流体-颗粒相互作用力）<span class="math">\(\vec{f}_{fluid}\)</span> 由两部分组成：曳力，以及由流体压力梯度产生的力。</p>
+<p>流体施加于颗粒的曳力是针对每个颗粒单独定义的，依据是包含该颗粒的流体单元中的条件。
+取决于孔隙率的计算方式，一个颗粒可能与多个流体单元相交。
+在这种情况下，力按颗粒与流体单元之间的重叠比例进行分配。
+请注意，流体-颗粒相互作用力始终施加在颗粒质心上，且不对颗粒施加转动力矩。
+为计算流体-颗粒相互作用力，<span class="codename">PFC</span> 刚性团簇被视为单个球体，其等效半径由刚性团簇体积计算。
+流体-颗粒相互作用力施加于刚性团簇质心，且不施加力矩。
+与 <span class="codename">PFC</span> 球颗粒一样，<span class="codename">PFC</span> 刚性团簇也可能受到来自多个流体单元的流体-颗粒相互作用力。
+曳力 <span class="math">\(\vec{f}_{drag}\)</span> 定义为</p>
+<div class="math" id="equation-drag0">
+<span id="forceeqn-theory"></span><span class="eqno">(3)</span>\[\vec{f}_{drag} = \vec{f}_0 \epsilon ^{-\chi}.\]</div>
+<p><span class="math">\(\vec{f}_0\)</span> 为单颗粒曳力，<span class="math">\(\epsilon\)</span> 为颗粒所在流体单元的孔隙率。
+<span class="math">\(\epsilon^{-\chi}\)</span> 项是一个经验因子，用于考虑局部孔隙率。
+该修正项使作用力适用于高孔隙率和低孔隙率系统，并适用于较大的 Reynolds 数范围（<a class="reference internal" href="#difelice1994" id="id1">[DiFelice1994]</a>、<a class="reference internal" href="#xu1997" id="id2">[Xu1997]</a>）。</p>
+<p>单颗粒曳力定义为</p>
+<div class="math" id="equation-drag1">
+<span class="eqno">(4)</span>\[\vec{f}_0 = \left(\frac{1}{2} C_d \rho_f \pi r^2 |\vec{u}-\vec{v}|(\vec{u}-\vec{v})  \right)\]</div>
+<p>其中 <span class="math">\(C_d\)</span> 为曳力系数，<span class="math">\(\rho_f\)</span> 为流体密度，
+<span class="math">\(r\)</span> 为颗粒半径，<span class="math">\(\vec{v}\)</span> 为流体速度，
+<span class="math">\(\vec{u}\)</span> 为颗粒速度。</p>
+<p>曳力系数定义为</p>
+<div class="math" id="equation-drag2">
+<span class="eqno">(5)</span>\[C_d = \left(0.63 + \frac{4.8}{\sqrt{Re_p}}\right)^2,\]</div>
+<p>其中 <span class="math">\(Re_p\)</span> 为颗粒 Reynolds 数。</p>
+<p>经验系数 <span class="math">\(\chi\)</span> 定义为</p>
+<div class="math" id="equation-drag3">
+<span class="eqno">(6)</span>\[\chi = 3.7-0.65 \exp \left( -\frac{(1.5-\log_{10}Re_p)^2}{2}\right)\]</div>
+<p>颗粒 Reynolds 数为</p>
+<div class="math" id="equation-drag4">
+<span class="eqno">(7)</span>\[Re_p = \frac{2\rho_f r |\vec{u}-\vec{v}|}{\mu_f}\]</div>
+<p>其中 <span class="math">\(\mu_f\)</span> 为流体的动力黏度。</p>
+<p>流体所受的单位体积体积力为</p>
+<div class="math" id="equation-drag5">
+<span class="eqno">(8)</span>\[\vec{f_b}=\frac{\sum_j \vec{f^j}_{drag}}{V}\]</div>
+<p>其中 <span class="math">\(V\)</span> 为流体单元的体积，
+求和针对与该流体单元重叠的颗粒进行。</p>
+<div class="math" id="equation-drag6">
+<span id="drag6"></span><span class="eqno">(9)</span>\[\vec{f}_{fluid} = \vec{f}_{drag} + \frac{4}{3}\pi r^3\left(\nabla p - \rho_f\vec{g}  \right)\]</div>
+<p>请注意，浮力是显式添加的，因为流体压力场可能不包含静水压力分量。
+显式浮力项的添加可通过命令
+<a class="reference internal" href="../../../../../ccfd/doc/cfd_manual/cfd_commands/cmd_cfd.buoyancy.html#command:cfd.buoyancy" title="Activate/deactivate buoyancy terms. This is  off  by default..."><code class="xref fish fish-cmd docutils literal"><span class="pre">cfd</span> <span class="pre">buoyancy</span></code></a> 控制。</p>
+</div>
+<div class="section" id="implementation-details">
+<h1>实现细节</h1>
+<div class="section" id="porosity-calculation">
+<h2>孔隙率计算</h2>
+<p>计算流体单元中的孔隙率有两种选项：
+使用颗粒质心的位置，或者使用颗粒的多面体表示。
+命令 <a class="reference internal" href="../../../../../ccfd/doc/cfd_manual/cfd_commands/cmd_cfd.porosity.html#command:cfd.porosity" title="Specify the porosity calculation mode. The  centroid  mode is the default
+mode..."><code class="xref fish fish-cmd docutils literal"><span class="pre">cfd</span> <span class="pre">porosity</span></code></a> 可更改该模式。</p>
+<p>质心法认为，若颗粒的质心位于某个流体单元内，则该颗粒完全处于该单元中。
+该方法速度快，且能保持颗粒体积守恒。
+然而，该方法可能在颗粒运动时导致孔隙率发生跳跃，从而降低求解的平滑性。
+随着颗粒尺寸相对于流体单元尺寸的减小，这种效应也会减弱。</p>
+<p>多面体法将颗粒表示为一个立方体，其高度、长度和宽度均等于颗粒的直径。
+计算该立方体与流体单元的交集体积，并对其进行调整以保持颗粒体积守恒。
+该方法速度较慢，但其优点是，当颗粒从一个流体单元移动到另一个单元时，孔隙率的变化是平滑的。</p>
+<p>流体单元中出现的零孔隙率会导致流体控制方程出现奇异性。
+为避免由奇异性引起的问题，<span class="codename">PFC3D</span> 将孔隙率限制为 &lt; 0.005。
+请注意，孔隙率计算中使用的是球形颗粒的完整体积。
+对于相互重叠的颗粒，不进行体积调整。</p>
+<p><span class="codename">PFC</span> 刚性团簇对流体单元的孔隙率贡献，其处理方式与 <span class="codename">PFC</span> 球颗粒不同。
+刚性团簇的每个子颗粒对零个或多个流体单元的孔隙率有贡献，并且会对这些贡献进行修正，以保持刚性团簇总体积守恒。
+刚性团簇子颗粒与单元之间的重叠体积，采用与 <span class="codename">PFC</span> 球颗粒相同的方法确定（使用质心法或多面体法）。
+随后对该重叠体积进行缩放，使每个子颗粒的原始体积等于刚性团簇体积除以该刚性团簇中的子颗粒数。</p>
+</div>
+<div class="section" id="fluid-mesh-and-data-format">
+<h2>流体网格与数据格式</h2>
+<p>CFD 模块支持由全四面体单元或全六面体
+单元组成的网格。六面体单元的面片必须在
+较小容差内为平面。<span class="codename">PFC</span> 期望采用以下六面体
+节点顺序：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="n">       z</span>
+<span class="m m-Double">3</span><span class="o">----------</span><span class="m m-Double">0</span>
+<span class="o">|\</span><span class="n">     </span><span class="o">^</span><span class="n">   </span><span class="o">|\</span>
+<span class="o">|</span><span class="n"> </span><span class="o">\</span><span class="n">    </span><span class="o">|</span><span class="n">   </span><span class="o">|</span><span class="n"> </span><span class="o">\</span>
+<span class="o">|</span><span class="n">  </span><span class="o">\</span><span class="n">   </span><span class="o">|</span><span class="n">   </span><span class="o">|</span><span class="n">  </span><span class="o">\</span>
+<span class="o">|</span><span class="n">   </span><span class="m m-Double">2</span><span class="o">------+---</span><span class="m m-Double">1</span>
+<span class="o">|</span><span class="n">   </span><span class="o">|</span><span class="n">  </span><span class="o">+--</span><span class="n"> </span><span class="o">|--</span><span class="n"> </span><span class="o">|</span><span class="n"> </span><span class="o">-&gt;</span><span class="n"> x</span>
+<span class="m m-Double">7</span><span class="o">---+---\--</span><span class="m m-Double">4</span><span class="n">   </span><span class="o">|</span>
+<span class="n"> </span><span class="o">\</span><span class="n">  </span><span class="o">|</span><span class="n">    </span><span class="o">\</span><span class="n">  </span><span class="o">\</span><span class="n">  </span><span class="o">|</span>
+<span class="n">  </span><span class="o">\</span><span class="n"> </span><span class="o">|</span><span class="n">     </span><span class="o">\</span><span class="n">  </span><span class="o">\</span><span class="n"> </span><span class="o">|</span>
+<span class="n">   </span><span class="o">\|</span><span class="n">      y  </span><span class="o">\|</span>
+<span class="n">    </span><span class="m m-Double">6</span><span class="o">----------</span><span class="m m-Double">5</span>
+</pre></div>
+</div>
+<p>有两种方法可用于导入流体
+网格：<a class="reference internal" href="../../../../../../common/docproject/source/manual/scripting/python/doc/itasca.cfdarray.html#itasca.cfdarray.create_mesh" title="itasca.cfdarray.create_mesh"><code class="xref py py-func docutils literal"><span class="pre">itasca.cfdarray.create_mesh</span></code></a> Python 函数，
+或 <a class="reference internal" href="../../../../../ccfd/doc/cfd_manual/cfd_commands/cmd_cfd.read.html#kwd:cfd.read.nodes" title="Read the node file  s . Nodes and elements cannot previously exist...">读取 CFD 节点命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">cfd</span> <span class="pre">read</span> <span class="pre">nodes</span></code>）</a> 与 <a class="reference internal" href="../../../../../ccfd/doc/cfd_manual/cfd_commands/cmd_cfd.read.html#kwd:cfd.read.elements" title="Read the element file  s . Nodes must exist, but elements cannot previously
+exist...">读取 CFD 单元命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">cfd</span> <span class="pre">read</span> <span class="pre">elements</span></code>）</a> 命令。</p>
+<p>以下是使用 Python 导入流体网格的示例</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">itasca</span> <span class="kn">import</span> <span class="n">cfdarray</span> <span class="k">as</span> <span class="n">ca</span>
+
+<span class="n">nodes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(((</span><span class="mf">0.0</span><span class="p">,</span>  <span class="mf">1.0</span><span class="p">,</span>  <span class="mf">0.0</span><span class="p">),</span> <span class="p">(</span><span class="mf">1.0</span><span class="p">,</span>  <span class="mf">1.0</span><span class="p">,</span>  <span class="mf">0.0</span><span class="p">),</span>
+                  <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span>  <span class="mf">1.0</span><span class="p">,</span>  <span class="mf">1.0</span><span class="p">),</span> <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span>  <span class="mf">0.0</span><span class="p">,</span>  <span class="mf">0.0</span><span class="p">),</span>
+                  <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span>  <span class="mf">0.0</span><span class="p">,</span>  <span class="mf">1.0</span><span class="p">),</span> <span class="p">(</span><span class="mf">1.0</span><span class="p">,</span>  <span class="mf">0.0</span><span class="p">,</span>  <span class="mf">0.0</span><span class="p">),</span>
+                  <span class="p">(</span><span class="mf">1.0</span><span class="p">,</span>  <span class="mf">1.0</span><span class="p">,</span>  <span class="mf">1.0</span><span class="p">),</span> <span class="p">(</span><span class="mf">1.0</span><span class="p">,</span>  <span class="mf">0.0</span><span class="p">,</span>  <span class="mf">1.0</span><span class="p">),</span>
+                  <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span>  <span class="mf">1.0</span><span class="p">,</span>  <span class="mf">2.0</span><span class="p">),</span> <span class="p">(</span><span class="mf">1.0</span><span class="p">,</span>  <span class="mf">1.0</span><span class="p">,</span>  <span class="mf">2.0</span><span class="p">),</span>
+                  <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span>  <span class="mf">0.0</span><span class="p">,</span>  <span class="mf">2.0</span><span class="p">),</span> <span class="p">(</span><span class="mf">1.0</span><span class="p">,</span>  <span class="mf">0.0</span><span class="p">,</span>  <span class="mf">2.0</span><span class="p">)))</span>
+
+<span class="n">elements</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(((</span><span class="mi">7</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
+                     <span class="p">(</span><span class="mi">11</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+
+<span class="n">ca</span><span class="o">.</span><span class="n">create_mesh</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">elements</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><span class="codename">PFC</span> 可以从文本文件读取流体网格。网格信息
+分为两个文件：节点文件和单元文件。</p>
+<div class="section" id="example-node-file">
+<h3>节点文件示例</h3>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="n">        </span><span class="m m-Double">12</span><span class="n">        </span><span class="m m-Double">12</span>
+<span class="n">         </span><span class="m m-Double">1</span><span class="n">  </span><span class="m m-Double">0.00000E+00</span><span class="n">  </span><span class="m m-Double">1.00000E+00</span><span class="n">  </span><span class="m m-Double">0.00000E+00</span>
+<span class="n">         </span><span class="m m-Double">2</span><span class="n">  </span><span class="m m-Double">1.00000E+00</span><span class="n">  </span><span class="m m-Double">1.00000E+00</span><span class="n">  </span><span class="m m-Double">0.00000E+00</span>
+<span class="n">         </span><span class="m m-Double">3</span><span class="n">  </span><span class="m m-Double">0.00000E+00</span><span class="n">  </span><span class="m m-Double">1.00000E+00</span><span class="n">  </span><span class="m m-Double">1.00000E+00</span>
+<span class="n">         </span><span class="m m-Double">4</span><span class="n">  </span><span class="m m-Double">0.00000E+00</span><span class="n">  </span><span class="m m-Double">0.00000E+00</span><span class="n">  </span><span class="m m-Double">0.00000E+00</span>
+<span class="n">         </span><span class="m m-Double">5</span><span class="n">  </span><span class="m m-Double">0.00000E+00</span><span class="n">  </span><span class="m m-Double">0.00000E+00</span><span class="n">  </span><span class="m m-Double">1.00000E+00</span>
+<span class="n">         </span><span class="m m-Double">6</span><span class="n">  </span><span class="m m-Double">1.00000E+00</span><span class="n">  </span><span class="m m-Double">0.00000E+00</span><span class="n">  </span><span class="m m-Double">0.00000E+00</span>
+<span class="n">         </span><span class="m m-Double">7</span><span class="n">  </span><span class="m m-Double">1.00000E+00</span><span class="n">  </span><span class="m m-Double">1.00000E+00</span><span class="n">  </span><span class="m m-Double">1.00000E+00</span>
+<span class="n">         </span><span class="m m-Double">8</span><span class="n">  </span><span class="m m-Double">1.00000E+00</span><span class="n">  </span><span class="m m-Double">0.00000E+00</span><span class="n">  </span><span class="m m-Double">1.00000E+00</span>
+<span class="n">         </span><span class="m m-Double">9</span><span class="n">  </span><span class="m m-Double">0.00000E+00</span><span class="n">  </span><span class="m m-Double">1.00000E+00</span><span class="n">  </span><span class="m m-Double">2.00000E+00</span>
+<span class="n">        </span><span class="m m-Double">10</span><span class="n">  </span><span class="m m-Double">1.00000E+00</span><span class="n">  </span><span class="m m-Double">1.00000E+00</span><span class="n">  </span><span class="m m-Double">2.00000E+00</span>
+<span class="n">        </span><span class="m m-Double">11</span><span class="n">  </span><span class="m m-Double">0.00000E+00</span><span class="n">  </span><span class="m m-Double">0.00000E+00</span><span class="n">  </span><span class="m m-Double">2.00000E+00</span>
+<span class="n">        </span><span class="m m-Double">12</span><span class="n">  </span><span class="m m-Double">1.00000E+00</span><span class="n">  </span><span class="m m-Double">0.00000E+00</span><span class="n">  </span><span class="m m-Double">2.00000E+00</span>
+</pre></div>
+</div>
+<p>第一行上的两个整数是节点的数量。
+后续各行包含一个整数节点编号（从 1 开始），随后是
+节点位置的 <em>x</em>、<em>y</em> 和 <em>z</em> 分量。</p>
+</div>
+<div class="section" id="example-element-file">
+<h3>单元文件示例</h3>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="n">         </span><span class="m m-Double">2</span><span class="n">  </span><span class="m m-Double">2</span>
+<span class="n">         </span><span class="m m-Double">8</span>
+<span class="n">         </span><span class="m m-Double">1</span><span class="n">  </span><span class="m m-Double">8</span><span class="n">  </span><span class="m m-Double">7</span><span class="n">  </span><span class="m m-Double">2</span><span class="n">  </span><span class="m m-Double">6</span><span class="n">  </span><span class="m m-Double">5</span><span class="n">  </span><span class="m m-Double">3</span><span class="n">  </span><span class="m m-Double">1</span><span class="n">  </span><span class="m m-Double">4</span><span class="n">  </span><span class="m m-Double">1.004E-3</span><span class="n">  </span><span class="m m-Double">1.428E-4</span><span class="n">  </span><span class="m m-Double">9.98230E+02</span><span class="n">  </span><span class="m m-Double">1.18E-4</span><span class="n"> </span>
+<span class="n">    </span><span class="m m-Double">0</span>
+<span class="n">         </span><span class="m m-Double">8</span>
+<span class="n">         </span><span class="m m-Double">2</span><span class="n">  </span><span class="m m-Double">12</span><span class="n">  </span><span class="m m-Double">10</span><span class="n">  </span><span class="m m-Double">7</span><span class="n">  </span><span class="m m-Double">8</span><span class="n">  </span><span class="m m-Double">11</span><span class="n">  </span><span class="m m-Double">9</span><span class="n">  </span><span class="m m-Double">3</span><span class="n">  </span><span class="m m-Double">5</span><span class="n">  </span><span class="m m-Double">1.004E-3</span><span class="n"> </span><span class="m m-Double">1.428E-4</span><span class="n">  </span><span class="m m-Double">9.98230E+02</span><span class="n">  </span><span class="m m-Double">1.18E-4</span>
+<span class="n">    </span><span class="m m-Double">0</span>
+</pre></div>
+</div>
+<p>第一行上的两个整数是单元的数量。
+随后每个单元用三行来指定。</p>
+<p>每个单元描述的第一行是一个整数，给出
+单元类型代码（六面体网格为 8；四面体
+网格为 6）。第二行以一个整数单元编号
+（从 1 开始）开头，随后是 8 个（四面体网格为 4 个）整数
+值，它们与节点编号相对应。该行最后四个浮
+点值是必需的，但 <span class="codename">PFC3D</span> 不使用它们。第
+三行包含一个整数。该行是必需的，
+但 <span class="codename">PFC3D</span> 不使用它。</p>
+</div>
+<div class="section" id="reading-fluid-flow-data-into-pfc">
+<h3>将流体流动数据读入 <span class="codename">PFC</span></h3>
+<p>CFD 模块将流体属性与每个流体单元相关联。
+有几种方法可以设置这些属性。可以使用 FISH 或 Python
+脚本以编程方式设置这些属性。
+命令 <a class="reference internal" href="../../../../../ccfd/doc/element_cfd_manual/element_cfd_commands/cmd_element.cfd.attribute.html#command:element.cfd.attribute" title="Set the value of element CFD attributes. This command is a synonym for the  element.cfd.initialize 
+command..."><code class="xref fish fish-cmd docutils literal"><span class="pre">element</span> <span class="pre">cfd</span> <span class="pre">attribute</span></code></a> 可以设置这些属性。
+最后，以下命令：</p>
+<ul class="simple">
+<li><a class="reference internal" href="../../../../../ccfd/doc/cfd_manual/cfd_commands/cmd_cfd.read.html#kwd:cfd.read.velocity" title="Read the fluid velocity from the file  s ...">读取 CFD 速度命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">cfd</span> <span class="pre">read</span> <span class="pre">velocity</span></code>）</a></li>
+<li><a class="reference internal" href="../../../../../ccfd/doc/cfd_manual/cfd_commands/cmd_cfd.read.html#kwd:cfd.read.pressure" title="Read the fluid pressure from the file  s ...">读取 CFD 压力命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">cfd</span> <span class="pre">read</span> <span class="pre">pressure</span></code>）</a></li>
+<li><a class="reference internal" href="../../../../../ccfd/doc/cfd_manual/cfd_commands/cmd_cfd.read.html#kwd:cfd.read.gradp" title="Read the fluid pressure gradient from the file  s ...">读取 CFD 压力梯度命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">cfd</span> <span class="pre">read</span> <span class="pre">gradp</span></code>）</a></li>
+<li><a class="reference internal" href="../../../../../ccfd/doc/cfd_manual/cfd_commands/cmd_cfd.read.html#kwd:cfd.read.viscosity" title="Read the fluid viscosity from the file  s ...">读取 CFD 黏性命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">cfd</span> <span class="pre">read</span> <span class="pre">viscosity</span></code>）</a></li>
+<li><a class="reference internal" href="../../../../../ccfd/doc/cfd_manual/cfd_commands/cmd_cfd.read.html#kwd:cfd.read.density" title="Read the fluid density from the file  s ...">读取 CFD 密度命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">cfd</span> <span class="pre">read</span> <span class="pre">density</span></code>）</a></li>
+</ul>
+<p>可用于从文本文件设置这些属性。这些文件
+的格式由以下规则给出：</p>
+<ul class="simple">
+<li>第一行应为单元的数量。</li>
+<li>之后每个单元应有一行。</li>
+<li>对于标量（压力、黏度、密度），这些行应给出一个数；
+对于向量（速度或压力梯度），
+应给出三个数。</li>
+<li>如果一行中出现多个数，则各数之间应以空格分隔。</li>
+</ul>
+</div>
+</div>
+<div class="section" id="practical-considerations">
+<h2>实际考虑</h2>
+<p>本节概述输入参数的实际限制。流体
+网格应足够精细，以分辨流动结构。应满足
+以下不等式：</p>
+<div class="math" id="equation-p1">
+<span class="eqno">(10)</span>\[\frac{d_c}{\Delta x_{cfd}} &gt; 5\]</div>
+<p>其中 <span class="math">\(d_c\)</span> 是流动域的最小宽度，
+<span class="math">\(\Delta x_{cfd}\)</span> 是流体单元长度。</p>
+<p>此耦合方法旨在描述单个流体单元内发生的平均
+耦合力。颗粒周围的流动
+未被显式表示，因为假定局部孔隙率
+在单个单元内均匀分布。为获得良好结果，
+一个 CFD 单元内应能容纳若干个 <span class="codename">PFC3D</span> 颗粒：</p>
+<div class="math" id="equation-p2">
+<span class="eqno">(11)</span>\[\frac{\Delta x_{cfd}}{2r} &gt; 3\]</div>
+<p>当颗粒的精确微观属性
+对问题并非关键时，可以在一定程度上降低颗粒刚度，以
+增大允许的 <span class="codename">PFC3D</span> 时步。然而，以
+最大速度与 <span class="codename">PFC3D</span> 墙体碰撞的颗粒，其重叠量不应超过
+颗粒半径的一半。以下不等式
+描述了该限制：</p>
+<div class="math" id="equation-p3">
+<span class="eqno">(12)</span>\[\frac{2}{3} \pi r^3 \rho_p \left|\vec{u}_{max}\right|^2 &lt; \frac{k_n r^2}{8}\]</div>
+<p>其中 <span class="math">\(\rho_p\)</span> 是颗粒密度，<span class="math">\(k_n\)</span> 是颗粒的
+法向接触刚度。</p>
+<p class="h3 rubric" id="cfd-timing">时间控制</p>
+<p>耦合间隔应足够小，以分辨所需的
+耦合行为。当颗粒穿过一个流体单元时，耦合信息应交换
+若干次。当满足以下不等式时，
+即满足该条件：</p>
+<div class="math" id="equation-p4">
+<span class="eqno">(13)</span>\[\frac{\Delta x_{cfd}}{|\vec{u}|t_c} &gt; 3\]</div>
+<p>其中 <span class="math">\(t_c\)</span> 是耦合间隔。</p>
+<p>在实践中，<span class="codename">PFC3D</span> 时步通常小于流体
+时步。因此，常常需要多个 <span class="codename">PFC3D</span> 循环才能
+满足一个流体步。</p>
+<p class="h3 rubric" id="cfd-meshing">网格划分</p>
+<p>如果颗粒与流体边界发生相互作用，则与流体边界相对应的
+<span class="codename">PFC3D</span> 墙体需要在
+<span class="codename">PFC3D</span> 内创建。如果几何形状简单，可以使用 <span class="codename">PFC</span> 墙体来
+生成计算域边界。如果边界几何复杂，
+可以用三角形对流体域表面进行网格划分，并
+将其作为 STL 文件导入 <span class="codename">PFC3D</span>。大量墙面片
+可能导致 <span class="codename">PFC3D</span> 中执行缓慢。通常，可以
+采用上述两种技术的组合。</p>
+</div>
+<div class="section" id="coupling">
+<h2>耦合</h2>
+<p>当 CFD 模块处于活动状态时，流体-颗粒相互作用力
+（<span class="math">\(\vec{f}^{j}_{fluid}\)</span>）会施加到 <span class="codename">PFC</span> 颗粒上，施加过程发生在 <span class="codename">PFC</span>
+循环序列中。有关 <span class="codename">PFC</span>
+循环序列的更多信息，请参阅 <a class="reference internal" href="../../numerical_simulations_with_pfc/pfc_formulation/cycling.html#cycles">循环计算（<span class="std std-ref">Cycling</span>）</a>。在 <span class="codename">PFC3D</span>
+循环过程中，流体-颗粒相互作用力 <span class="math">\(\vec{f}^{j}_{fluid}\)</span> 以及每个流体单元中的孔隙率
+<span class="math">\(\epsilon^i\)</span> 会依据 <a class="reference internal" href="../../../../../ccfd/doc/cfd_manual/cfd_commands/cmd_cfd.interval.html#command:cfd.interval" title="Specify the update interval. The porosity, particle-applied force, and drag
+force..."><code class="xref fish fish-cmd docutils literal"><span class="pre">cfd</span> <span class="pre">interval</span></code></a> 命令按给定间隔
+重新计算。上标 i 表示流体单元，上标 j 表示
+颗粒。可使用 <a class="reference internal" href="../../../../../ccfd/doc/cfd_manual/cfd_commands/cmd_cfd.update.html#command:cfd.update" title="Update the porosity, particle-applied force, and drag force. This happens automatically..."><code class="xref fish fish-cmd docutils literal"><span class="pre">cfd</span> <span class="pre">update</span></code></a> 命令强制更新
+这些量。使用 <a class="reference internal" href="../../../../../ccfd/doc/cfd_manual/cfd_commands/cmd_cfd.coupling.html#command:cfd.coupling" title="Activate/deactivate |pfc| coupling. If  off , |pfc| cycles as usual without
+calculating drag/buoyancy forces or..."><code class="xref fish fish-cmd docutils literal"><span class="pre">cfd</span> <span class="pre">coupling</span></code></a> 命令可以启用或禁用
+耦合项。</p>
+<p>双向水力-力学耦合通过流体流动求解器与 <span class="codename">PFC3D</span> 之间的一系列数据
+交换来实现。每个流体单元中的孔隙率
+<span class="math">\(\epsilon^i\)</span> 由 <span class="codename">PFC3D</span> 确定。
+每个流体单元中的单位体积体力 <span class="math">\(\vec{f}^{i}_{b}\)</span> 由 <span class="codename">PFC3D</span> 确定，
+即</p>
+<div class="math" id="equation-coup1">
+<span class="eqno">(14)</span>\[\vec{f}^{i}_{b} = \frac{\sum_j \vec{f}^{i}_{drag}}{V_i}\]</div>
+<p>其中求和遍及给定流体单元内的所有颗粒，
+<span class="math">\(V_i\)</span> 为该单元的体积。每个单元中的流体速度
+<span class="math">\(\vec{v}^i\)</span>、流体压力 <span class="math">\(p^i\)</span>、流体压力梯度
+<span class="math">\(\vec{\nabla} p^i\)</span>、流体密度 <span class="math">\(\rho^i_f\)</span> 以及流体
+动力黏度 <span class="math">\(\mu^i\)</span> 均由
+流体流动软件确定。</p>
+<p>与流体流动求解器交换信息并不是自动完成的，
+必须在 <span class="codename">PFC</span> 数据文件中显式完成。同步与数据交换
+可通过使用 FISH 或 Python 脚本的 TCP socket
+通信来实现。</p>
+</div>
+<div class="section" id="calculation-cycle">
+<h2>计算循环</h2>
+<p>使用 <span class="codename">PFC</span> 求解流体-颗粒相互作用问题需要
+以下步骤：</p>
+<ol class="arabic">
+<li><p class="first">初始化 <span class="codename">PFC</span>：创建颗粒和墙。</p>
+</li>
+<li><p class="first">初始化流体流动求解器。</p>
+</li>
+<li><p class="first">流体流动求解器将流体网格发送到 <span class="codename">PFC</span> 中。</p>
+</li>
+<li><p class="first"><span class="codename">PFC</span> 初始化 CFD 模块，并计算孔隙率与
+曳力。</p>
+</li>
+<li><p class="first"><span class="codename">PFC</span> 将孔隙率和曳力发送给流体流动求解器。</p>
+</li>
+<li><p class="first">流体流动求解器更新并发送 <span class="math">\(\vec{v}^i\)</span>、<span class="math">\(p^i\)</span>、
+<span class="math">\(\vec{\nabla} p^i\)</span>，以及可选的流体密度
+<span class="math">\(\rho^i_f\)</span> 和流体动力黏度 <span class="math">\(\mu^i\)</span> 到
+<span class="codename">PFC</span>。</p>
+</li>
+<li><p class="first"><span class="codename">PFC</span> 向前循环一个时间增量，该增量等于耦合
+间隔 <span class="math">\(t_c\)</span>。</p>
+<blockquote>
+<div><p>7.1 <span class="codename">PFC</span> 运动方程</p>
+<p>7.2 如果正在更新孔隙率和流体-颗粒相互作用力（当 cycle % interval == 0 时），则执行以下三个步骤，否则跳转到步骤 8。</p>
+<blockquote>
+<div><p>7.2.1 <span class="codename">PFC</span> 调用在 <code class="docutils literal"><span class="pre">CFD_BEFORE_UPDATE</span></code> 调用点注册的函数。</p>
+<p>7.2.2 <span class="codename">PFC</span> 重新计算孔隙率场 <span class="math">\(\epsilon^i\)</span>、流体-颗粒相互作用力 <span class="math">\(\vec{f}^i_{fluid}\)</span> 以及流体曳力 <span class="math">\(\vec{f}^i_b\)</span>。</p>
+<p>7.2.3 <span class="codename">PFC</span> 调用在 <code class="docutils literal"><span class="pre">CFD_AFTER_UPDATE</span></code> 调用点注册的函数。该调用点在流体-颗粒相互作用力计算完成之后、但在该力被添加到球颗粒或刚性团簇的不平衡力之前执行。这样便可通过 FISH 或 Python 脚本修改流体-颗粒相互作用力。</p>
+</div></blockquote>
+<p>7.3 <span class="codename">PFC</span> 力-位移定律</p>
+<p>7.4 如果 <span class="codename">PFC</span> 的力学时间小于 <span class="math">\(t_c\)</span>，则返回步骤 7.1。</p>
+</div></blockquote>
+</li>
+<li><p class="first">返回步骤 5。</p>
+</li>
+</ol>
+<p>本列表中的步骤 7 由 <span class="codename">PFC</span> 在循环过程中自动完成。其余步骤
+需要在 <span class="codename">PFC</span> 数据文件中显式完成。</p>
+<p class="h3 rubric">参考文献</p>
+<table class="docutils citation" frame="void" id="difelice1994" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[DiFelice1994]</a></td><td>Di Felice, R. D. “The voidage function for fluid-particle interaction systems”（流体-颗粒相互作用系统的空隙率函数），<em>Int. J. Multiphase Flow</em>, Vol. 20, No. 1, 153-159 (1994).</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="xu1997" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[Xu1997]</a></td><td>Xu, B. H., and A. B. Yu. “Numerical simulation of the gas-solid flow in a fluidized bed by combining discrete particle method with computational fluid dynamics”（将离散颗粒法与计算流体动力学相结合对流化床中气固流动的数值模拟），<em>Chemical Engineering Science</em>, Vol. 52, No. 16, 2785-2809 (1997).</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../options.html">Additional Features</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="cfd_option.html">CFD module for <span class="codename">PFC3D</span><span class="codename">6.0</span></a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="cfd_option.html" title="previous chapter"> CFD module for <span class="codename">PFC3D</span><span class="codename">6.0</span></a> |    
+       <a href="cfd_coupling.html" title="next chapter">Examples</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?PFC3D Fluid-Particle Interaction Formulation" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

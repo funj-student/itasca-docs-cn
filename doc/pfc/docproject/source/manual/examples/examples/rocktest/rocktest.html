@@ -1,0 +1,1084 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>岩石试验 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../../search.html" rel="search" title="Search"/>
+<link href="../buttress/buttress.html" rel="next" title="Rigid Block Model of Flying Buttresses"/>
+<link href="../dfn/dfn.html" rel="prev" title="DFN Generation, Analysis, and Simplification"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="rock-testing">
+<span id="exap-rockest"></span><span id="rocktest-example"></span><h1>岩石试验</h1>
+<p class="h2 rubric" id="exap-rocktest-introduction">引言</p>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">本算例的项目文件可在 <span class="codename">PFC</span> 中查看或运行。<a class="footnote-reference" href="#id5" id="id1">[1]</a>所用的<a class="reference internal" href="#exap-rocktest-datafiles"><span class="std std-ref">数据文件</span>（data files）</a>列于本算例末尾。</p>
+</div>
+<p>本算例演示如何模拟岩芯试样的室内试验，具体包括无侧限压缩试验和直接拉伸试验。在实验室中，直接拉伸试验难以实施，但在数值模型的理想化环境中，该试验是可行的，并且与间接的巴西劈裂试验相比，能提供更可靠的岩石抗拉强度估计值。</p>
+<p>比较了两种不同的模型：一种试样用 <a class="reference internal" href="../../../../../../../common/contactmodel/linearpbond/doc/manual/cmlinearpbond.html#cmlinearpbond"><span class="std std-ref">线性平行黏结</span>（linear parallel bonds）</a> 黏结，另一种试样采用 <a class="reference internal" href="../../../../../../../common/contactmodel/flatjoint/doc/manual/cmflatjoint.html#cmflatjoint"><span class="std std-ref">平节理</span>（flat joint）</a> 接触模型。众所周知，<span class="codename">PFC</span> 中的平行黏结模型给出的抗压强度与抗拉强度之比过低，不符合实际 <a class="reference internal" href="#potyondy2004" id="id2">[Potyondy2004]</a>。采用平节理接触模型可以克服这一问题：该模型中接触具有有限长度，因此颗粒的转动会受到抵抗 <a class="reference internal" href="#potyondy2012" id="id3">[Potyondy2012]</a>。</p>
+<p class="h2 rubric"><span class="codename">PFC2D</span> 模型</p>
+<p class="h3 rubric">无黏结试样</p>
+<p>首先，按照教程“<a class="reference internal" href="../../tutorials/generating_a_bonded_assembly/generating_a_bonded_assembly.html#cmlinearpond-simple"><span class="std std-ref">生成黏结颗粒集合体</span>（Generating a Bonded Assembly）</a>”中的类似步骤，生成一个所有接触均赋予线性模型的无黏结集合体。试样长 10 cm、直径 5 cm，符合典型室内岩芯试样的尺寸。墙体的生成方式使其延伸超出试样边缘，以便在加载过程中适应试样尺寸的变化（参见 {二维“<a class="reference internal" href="#exap-rocktest-make-samplep2dat">make_sample.p2dat 数据文件（<span class="std std-ref">make_sample.p2dat</span>）</a>”；三维“<a class="reference internal" href="#exap-rocktest-make-samplep3dat">make_sample.p3dat 数据文件（<span class="std std-ref">make_sample.p3dat</span>）</a>”}）。</p>
+<p>接触刚度通过接触 <em>methods</em> 而非 <em>properties</em> 设置。接触方法会执行少量计算以自动设置属性。例如，在三维中，接触处的法向刚度与有效杨氏模量和颗粒半径成正比 <a class="reference internal" href="../../../../../../../common/contactmodel/linear/doc/manual/cmlinear.html#linear-model-methods"><span class="std std-ref">如此处所述</span>（as described here）</a>。因此，可以设置接触的变形特性 ‘emod’（以应力为单位），线性刚度将根据颗粒半径自动计算。本算例中假定应力量均以 Pa 为单位。无黏结试样如下所示。</p>
+<div class="figure align-center" id="exap-rocktest-unbonded">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d-tuto-rocktest-unbonded.png"><img alt="../../../../../../../_images/p2d-tuto-rocktest-unbonded.png" src="../../../../../../../_images/p2d-tuto-rocktest-unbonded.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 1：无黏结材料模型。</span></p>
+</div>
+<p>平行黏结试样使用 {二维“<a class="reference internal" href="#exap-rocktest-parallel-bondedp2dat">parallel_bonded.p2dat 数据文件（<span class="std std-ref">parallel_bonded.p2dat</span>）</a>”；三维“<a class="reference internal" href="#exap-rocktest-parallel-bondedp3dat">parallel_bonded.p3dat 数据文件（<span class="std std-ref">parallel_bonded.p3dat</span>）</a>”} 中的命令生成。平行黏结刚度同样使用 methods 设置。使用平行黏结时需要注意，线性刚度（<span class="cmdkey">contact method deform</span>）和黏结材料刚度（<span class="cmdkey">contact method pb_deform</span>）都需要设置。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 设置线性刚度</span>
+<span class="nb">contact method</span><span class="n"> deform emod </span><span class="m m-Double">1.0e9</span><span class="n"> krat </span><span class="m m-Double">1.0</span>
+
+<span class="c">; 设置黏结材料的刚度</span>
+<span class="nb">contact method</span><span class="n"> pb_deform emod </span><span class="m m-Double">1.0e9</span><span class="n"> krat </span><span class="m m-Double">1.0</span>
+</pre></div>
+</div>
+<p>当接触类型由线性改为平行黏结时，线性刚度不会被继承，必须重新设置。</p>
+<p>另一点需要注意的是 <span class="cmdkey">lin-mode</span> <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">1</span></span></a> 的使用，</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 将线性力设为 0.0，并强制重置线性接触力。</span>
+<span class="nb">contact property</span><span class="n"> lin_force </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> lin_mode </span><span class="m m-Double">1</span>
+<span class="nb">ball attribute</span><span class="n"> force</span><span class="o">-</span><span class="n">contact multiply </span><span class="m m-Double">0.0</span><span class="n"> moment</span><span class="o">-</span><span class="n">contact multiply </span><span class="m m-Double">0.0</span>
+</pre></div>
+</div>
+<p>即在将线性力重置为 0 时。</p>
+<p class="h3 rubric" id="exap-rocktest-ucs">无侧限抗压强度</p>
+<p>UCS 试验的执行方式很简单：如 {二维“<a class="reference internal" href="#exap-rocktest-ucsp2dat">ucs.p2dat 数据文件（<span class="std std-ref">ucs.p2dat</span>）</a>”；三维“<a class="reference internal" href="#exap-rocktest-ucsp3dat">ucs.p3dat 数据文件（<span class="std std-ref">ucs.p3dat</span>）</a>”} 文件所示，只需使顶墙向下移动、底墙向上移动。唯一的技巧在于记录轴向应力和应变。使用一个小的 <span class="codename">FISH</span> 函数对所有作用在墙上的竖向力求和，再除以试样宽度，即可得到轴向应力。应变则直接由墙的位移除以试样初始长度计算。试样的初始宽度和长度在试验开始时确定。请注意，这会在应力计算中引入小的误差，因为试验过程中试样宽度实际上会发生变化，而该函数并未考虑这一点。</p>
+<p>模拟岩石试验时非常有用的 <span class="codename">FISH</span> 函数集在 {二维“<a class="reference internal" href="#exap-rocktest-fracturep2fis"><span class="std std-ref">fracture.p2fis</span></a>”；三维“<a class="reference internal" href="#exap-rocktest-fracturep3fis">fracture.p3fis 文件（<span class="std std-ref">fracture.p3fis</span>）</a>”} 中给出。这些函数跟踪黏结断裂，并对每一处黏结断裂向 DFN 中添加一条裂隙。随后，在试验过程中和/或试验结束后都可以方便地绘制这些裂缝。此外，这些函数还可勾勒出试样中的破碎块体。破碎块体是指模型中与其他部分之间没有完整黏结相连的一块区域。</p>
+<p>对试样进行加载，直至轴向应力降至峰值应力的 70% 以下。平行黏结试样的 UCS 试验结果示于下一幅图中，同时在试样图像上方绘制了轴向应力随轴向应变的变化曲线。应力与应变的计算假定压应力为负；但在下一幅图中，为符合岩石力学惯例，绘图作了反向处理，以压缩为正。该试样的 UCS 为 33.9 MPa。请注意，由于颗粒堆积本身具有随机性，在不同计算机上运行本算例可能会得到略有差异的结果。</p>
+<div class="figure align-center" id="exap-rocktest-parallel">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d-tuto-rocktest-parallel-ucs.png"><img alt="../../../../../../../_images/p2d-tuto-rocktest-parallel-ucs.png" src="../../../../../../../_images/p2d-tuto-rocktest-parallel-ucs.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：UCS 试验后的平行黏结材料。裂纹以黑色线条和红色线条表示，分别对应拉伸破坏与剪切破坏。轴向应力随轴向应变的变化关系（压缩为正）以绿色线条绘制。</span></p>
+</div>
+<p class="h3 rubric" id="exap-rocktest-directtension">直接拉伸试验</p>
+<p>在与 UCS 试验相同的数值试样上模拟直接拉伸试验（二维情形参见“<a class="reference internal" href="#exap-rocktest-tensionp2dat">tension.p2dat 数据文件（<span class="std std-ref">tension.p2dat</span>）</a>”，三维情形参见“<a class="reference internal" href="#exap-rocktest-tensionp3dat">tension.p3dat 数据文件（<span class="std std-ref">tension.p3dat</span>）</a>”）。为实施该试验，需删除墙体，并将试样顶部和底部的一排球颗粒指定为“夹具”（见下图）。顶部夹具向上移动、底部夹具向下移动，以施加拉伸荷载。</p>
+<div class="figure align-center" id="exap-rocktest-grips">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d-tuto-rocktest-parallel-grips.png"><img alt="../../../../../../../_images/p2d-tuto-rocktest-parallel-grips.png" src="../../../../../../../_images/p2d-tuto-rocktest-parallel-grips.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 3：用于施加拉伸荷载的颗粒夹具以绿色和红色显示。</span></p>
+</div>
+<p>由于墙体已被删除，应力与应变必须以其他方式测量。应力通过在试样中心创建一个测量圆来测量。该应力通过对测量圆内的接触力求平均来计算，<a class="reference internal" href="../../../general_components/measure/measure_quantities.html#measure-stress"><span class="std std-ref">具体说明见此处</span>（as described here）</a>。</p>
+<p>应变通过观测两个标距颗粒的位移来计算：一个位于模型顶部，另一个位于模型底部。两个标距颗粒的相对位移除以二者的初始间距，即为轴向应变。</p>
+<p>与 UCS 试验相同，模型加载至轴向应力达到峰值的 70%。应力-应变响应与试样的最终形态如图 4 所示。请记住这里假定压缩为正，因此抗拉强度是图中最负的值。峰值拉应力为 6.8 MPa。由此得到抗压强度与抗拉强度之比为 ≈5，远低于 10–20 的预期值。</p>
+<div class="figure align-center" id="exap-rocktest-tt">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d-tuto-rocktest-parallel-tt.png"><img alt="../../../../../../../_images/p2d-tuto-rocktest-parallel-tt.png" src="../../../../../../../_images/p2d-tuto-rocktest-parallel-tt.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 4：直接拉伸试验后的平行黏结材料，同时绘出了轴向应力随轴向应变的变化（压缩为正）。</span></p>
+</div>
+<p class="h3 rubric" id="exap-rocktest-flatjoint">平节理接触模型</p>
+<p>众所周知，平行黏结模型给出的岩石抗压强度与抗拉强度之比以及摩擦角都低得不切实际 <a class="reference internal" href="#potyondy2004" id="id4">[Potyondy2004]</a>。一个可能的原因是，这里用圆形颗粒来模拟棱角状颗粒，因而对转动的抵抗不足，黏结断裂之后尤其如此。平节理接触模型通过将接触模拟为由许多子接触组成的 {二维中为平直连线；三维中为圆盘}，使转动受到抵抗，从而克服了这一缺陷（详细描述请参阅“<a class="reference internal" href="../../../../../../../common/contactmodel/flatjoint/doc/manual/cmflatjoint.html#cmflatjoint"><span class="std std-ref">平节理模型</span>（Flat-Joint Model）</a>”一节）。</p>
+<p>采用平节理材料重复进行了 UCS 试验和直接拉伸试验（二维情形参见“<a class="reference internal" href="#exap-rocktest-flat-jointp2dat">flat_joint.p2dat 数据文件（<span class="std std-ref">flat_joint.p2dat</span>）</a>”，三维情形参见“<a class="reference internal" href="#exap-rocktest-flat-jointp3dat">flat_joint.p3dat 数据文件（<span class="std std-ref">flat_joint.p3dat</span>）</a>”）。所赋材料属性与平行黏结模型相同。两项试验的应力-应变曲线和破坏后的试样示于接下来的两幅图中。这些图显示峰值压应力为 70.5 MPa、抗拉强度为 7.1 MPa，由此得到抗压强度与抗拉强度之比为 ≈10。</p>
+<p>有趣的是，其抗拉强度与平行黏结材料几乎相同，但抗压强度却高得多。两个试样的拉伸破坏机制大致相同：少数黏结在拉伸作用下断裂，裂隙随即迅速贯穿试样。而在压缩条件下，破坏要复杂得多，涉及轴向劈裂与沿雁列式张拉裂纹阵列发生的剪切破坏的某种组合。平节理模型中出现更多的裂纹，但强度更高，这可能是因为颗粒转动在某种程度上受到抑制，裂纹不易相互贯通而导致破坏。</p>
+<div class="figure align-center" id="exap-rocktest-fj-ucs">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d-tuto-rocktest-fj-ucs.png"><img alt="../../../../../../../_images/p2d-tuto-rocktest-fj-ucs.png" src="../../../../../../../_images/p2d-tuto-rocktest-fj-ucs.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 5：平节理模型 UCS 试验的结果。</span></p>
+</div>
+<div class="figure align-center" id="exap-rocktest-fj-tt">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d-tuto-rocktest-fj-tt.png"><img alt="../../../../../../../_images/p2d-tuto-rocktest-fj-tt.png" src="../../../../../../../_images/p2d-tuto-rocktest-fj-tt.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 6：平节理模型直接拉伸试验的结果。</span></p>
+</div>
+<p class="h2 rubric" id="exap-rocktest-pfc3d-model"><span class="codename">PFC3D</span> 模型</p>
+<p>三维模型基本相同，只是球颗粒尺寸略大。三维试样的形状为圆柱体。平节理三维模型在 UCS 试验中的最终状态如下所示。</p>
+<div class="figure align-center" id="exap-rocktest-fj-ucs-3d">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d-tuto-rocktest-fj-ucs.png"><img alt="../../../../../../../_images/p3d-tuto-rocktest-fj-ucs.png" src="../../../../../../../_images/p3d-tuto-rocktest-fj-ucs.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 7：UCS 试验后的三维平节理模型。</span></p>
+</div>
+<p class="h2 rubric" id="exap-rocktest-discussion">讨论</p>
+<p>本例演示了如何模拟 UCS 试验和直接拉伸试验，并说明了平节理接触模型为何能给出比平行黏结模型更符合实际的抗压强度与抗拉强度之比。本例实际上是 <a class="reference internal" href="../../../numerical_simulations_with_pfc/material_modeling_support_for_pfc.html#material-modeling-support-for-pfc"><span class="std std-ref">材料建模支持</span>（material-modeling support）</a> 软件包中所提供内容的简化版本。该软件包可创建并定义平行黏结材料和平节理材料的具体实例，还提供裂纹监测功能，以及对这些材料执行标准岩石力学试验（包括直接拉伸和压缩）的便捷工具。</p>
+<p class="h2 rubric" id="exap-rocktest-references">参考文献</p>
+<table class="docutils citation" frame="void" id="potyondy2004" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Potyondy2004]</td><td><em>(<a class="fn-backref" href="#id2">1</a>, <a class="fn-backref" href="#id4">2</a>)</em> Potyondy D. O.、Cundall P. A.，“岩石的黏结颗粒模型”（A Bonded-Particle Model for Rock），<em>Int. J. Rock Mech. &amp; Min. Sci.</em>，<span class="bi">41</span>(8)，第 1329-1364 页（2004 年）。</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="potyondy2012" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[Potyondy2012]</a></td><td>Potyondy, D.O.（2012）“硬岩的扁平节理黏结颗粒材料”，论文 ARMA 12-501，载于<span class="bi">第 46 届美国岩石力学/地质力学研讨会论文集</span>，美国芝加哥，2012 年 6 月 24–27 日。</td></tr>
+</tbody>
+</table>
+<p class="h2 rubric" id="exap-rocktest-datafiles">数据文件</p>
+<p class="h2 rubric" id="exap-rocktest-make-samplep2dat">make_sample.dat（二维）</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：make_sample.p2dat</span>
+<span class="c">;</span>
+<span class="c">;  创建无黏结试样</span>
+<span class="c">;=========================================================================</span>
+<span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'Testing Bonded Particle Model'</span>
+
+<span class="c">; 设置模型域范围</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">0.05</span><span class="n"> </span><span class="m m-Double">0.05</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.1</span><span class="n"> </span><span class="m m-Double">0.1</span><span class="n"> condition destroy</span>
+
+<span class="nb">contact cmat</span><span class="n"> default model linear method deform emod </span><span class="m m-Double">1.0e9</span><span class="n"> kratio </span><span class="m m-Double">0.0</span><span class="n"> </span>
+<span class="nb">contact cmat</span><span class="n"> default property dp_nratio </span><span class="m m-Double">0.5</span><span class="n"> </span>
+
+<span class="c">; 创建延伸至试样边缘之外的墙</span>
+<span class="nb">wall create</span><span class="n"> vertices </span><span class="o">-</span><span class="m m-Double">0.03</span><span class="p">,</span><span class="m m-Double">0.05</span><span class="n"> </span><span class="m m-Double">0.03</span><span class="p">,</span><span class="m m-Double">0.05</span><span class="n"> id </span><span class="m m-Double">1</span>
+<span class="nb">wall create</span><span class="n"> vertices </span><span class="o">-</span><span class="m m-Double">0.03</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">0.05</span><span class="n"> </span><span class="m m-Double">0.03</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">0.05</span><span class="n"> id </span><span class="m m-Double">2</span>
+<span class="nb">wall create</span><span class="n"> vertices </span><span class="o">-</span><span class="m m-Double">0.025</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">0.06</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.025</span><span class="p">,</span><span class="m m-Double">0.06</span><span class="n"> id </span><span class="m m-Double">3</span>
+<span class="nb">wall create</span><span class="n"> vertices </span><span class="m m-Double">0.025</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">0.06</span><span class="n"> </span><span class="m m-Double">0.025</span><span class="p">,</span><span class="m m-Double">0.06</span><span class="n"> id </span><span class="m m-Double">4</span>
+
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+<span class="nb">ball distribute</span><span class="n"> porosity </span><span class="m m-Double">0.1</span><span class="n"> radius </span><span class="m m-Double">0.5e-3</span><span class="n"> </span><span class="m m-Double">0.75e-3</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                box </span><span class="o">-</span><span class="m m-Double">0.025</span><span class="n"> </span><span class="m m-Double">0.025</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.05</span><span class="n"> </span><span class="m m-Double">0.05</span>
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="m m-Double">2500</span><span class="n"> damp </span><span class="m m-Double">0.7</span>
+
+<span class="c">; 使系统平静</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span><span class="n"> calm </span><span class="m m-Double">10</span>
+<span class="c">; 求解系统至目标限值 (此处为平均力比)</span>
+<span class="c">; 使用密度缩放快速达到平衡</span>
+<span class="nb">model mechanical</span><span class="n"> timestep scale</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-4</span>
+<span class="nb">model mechanical</span><span class="n"> timestep auto</span>
+<span class="nb">model calm</span>
+
+<span class="c">; 删除侧墙</span>
+<span class="nb">wall delete</span><span class="n"> range id </span><span class="m m-Double">3</span>
+<span class="nb">wall delete</span><span class="n"> range id </span><span class="m m-Double">4</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'unbonded'</span>
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：make_sample.p2dat</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="exap-rocktest-parallel-bondedp2dat">parallel_bonded.dat（二维）</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：parallel_bonded.p2dat</span>
+<span class="c">;</span>
+<span class="c">;  创建平行黏结试样</span>
+<span class="c">;=========================================================================</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'unbonded'</span>
+
+<span class="nb">contact model</span><span class="n"> linearpbond range contact type </span><span class="s">'ball-ball'</span>
+<span class="nb">contact method</span><span class="n"> bond gap </span><span class="m m-Double">0.5e-4</span>
+
+<span class="c">; excerpt-nrnz-start</span>
+<span class="c">; 设置线性刚度</span>
+<span class="nb">contact method</span><span class="n"> deform emod </span><span class="m m-Double">1.0e9</span><span class="n"> krat </span><span class="m m-Double">1.0</span>
+
+<span class="c">; 设置黏结材料的刚度</span>
+<span class="nb">contact method</span><span class="n"> pb_deform emod </span><span class="m m-Double">1.0e9</span><span class="n"> krat </span><span class="m m-Double">1.0</span>
+<span class="c">; excerpt-nrnz-end</span>
+
+<span class="c">; 设置黏结强度</span>
+<span class="nb">contact property</span><span class="n"> pb_ten </span><span class="m m-Double">10.0e6</span><span class="n"> pb_coh </span><span class="m m-Double">50.0e6</span><span class="n"> pb_fa </span><span class="m m-Double">0.0</span>
+
+<span class="c">; 在接触处设置一定阻尼</span>
+<span class="nb">contact property</span><span class="n"> dp_nratio </span><span class="m m-Double">0.5</span>
+
+<span class="c">; 将球-球摩擦设为非零值</span>
+<span class="nb">contact property</span><span class="n"> fric </span><span class="m m-Double">0.577</span><span class="n"> range contact type </span><span class="s">'ball-ball'</span>
+
+<span class="c">; 重置球位移</span>
+<span class="nb">ball attribute</span><span class="n"> displacement multiply </span><span class="m m-Double">0.0</span>
+
+<span class="c">; excerpt-eire-start</span>
+<span class="c">; 将线性力设为 0.0，并强制重置线性接触力。</span>
+<span class="nb">contact property</span><span class="n"> lin_force </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> lin_mode </span><span class="m m-Double">1</span>
+<span class="nb">ball attribute</span><span class="n"> force</span><span class="o">-</span><span class="n">contact multiply </span><span class="m m-Double">0.0</span><span class="n"> moment</span><span class="o">-</span><span class="n">contact multiply </span><span class="m m-Double">0.0</span>
+<span class="c">; excerpt-eire-end</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'parallel_bonded'</span>
+
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：parallel_bonded.p2dat</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="exap-rocktest-ucsp2dat">ucs.dat（二维）</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="c">; 文件名：ucs.pdat</span>
+<span class="c">;</span>
+<span class="c">;  对黏结试样进行无侧限抗压强度试验</span>
+<span class="c">;=========================================================================</span>
+<span class="nb">program echo</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'ss_wall.fis'</span><span class="n"> </span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'fracture.p2fis'</span><span class="n"> </span>
+<span class="nb">program echo</span><span class="n"> </span><span class="sx">on</span>
+
+<span class="c">; 设置用于应力和应变测量的全局参数</span>
+<span class="ni">[setup_wall]</span>
+
+<span class="c">; 通过移动顶部与底部墙施加载荷</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">0.1</span><span class="n"> range id </span><span class="m m-Double">1</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y  </span><span class="m m-Double">0.1</span><span class="n">  range id </span><span class="m m-Double">2</span>
+
+<span class="c">; 施加少量阻尼</span>
+<span class="nb">ball attribute</span><span class="n"> damp </span><span class="m m-Double">0.1</span>
+
+<span class="c">; 记录历程</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'1'</span><span class="n"> axial_stress_wall</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'2'</span><span class="n"> axial_strain_wall</span>
+
+<span class="c">; 记录裂隙</span>
+<span class="ni">[track_init]</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'3'</span><span class="n"> crack_num</span>
+
+<span class="c">; 运行若干步以越过初始振动</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span>
+
+<span class="c">; 运行试验直至应力降至峰值的 70% 以下</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> peak_fraction </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.7</span><span class="ni">]</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fish</span><span class="o">-</span><span class="n">halt loadhalt_wall</span>
+<span class="nb">fish list</span><span class="n"> </span><span class="ni">[peak_stress]</span>
+
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：ucs.pdat</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="exap-rocktest-tensionp2dat">tension.dat（二维）</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="c">; 文件名：tension.dat</span>
+<span class="c">;</span>
+<span class="c">;  对黏结试样进行直接拉伸试验</span>
+<span class="c">;=========================================================================</span>
+
+<span class="nb">program echo</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'ss_gage.fis'</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'fracture.p2fis'</span>
+<span class="nb">program echo</span><span class="n"> </span><span class="sx">on</span>
+
+<span class="c">; 设置用于应变测量的全局参数</span>
+<span class="ni">[setup_gage]</span>
+
+<span class="c">; 删除墙</span>
+<span class="nb">wall delete</span>
+
+<span class="c">; 识别球以构成顶部与底部夹具</span>
+<span class="nb">ball group</span><span class="n"> </span><span class="s">'top_grip'</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0.049</span><span class="n"> </span><span class="m m-Double">0.05</span>
+<span class="nb">ball group</span><span class="n"> </span><span class="s">'bottom_grip'</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">0.049</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.05</span>
+
+<span class="c">; 通过移动顶部与底部压板施加载荷</span>
+<span class="nb">ball fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y range group </span><span class="s">'top_grip'</span>
+<span class="nb">ball attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0.01</span><span class="n"> range group </span><span class="s">'top_grip'</span>
+<span class="nb">ball fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y range group </span><span class="s">'bottom_grip'</span>
+<span class="nb">ball attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">0.01</span><span class="n"> range group </span><span class="s">'bottom_grip'</span>
+
+<span class="c">; 施加少量阻尼</span>
+<span class="nb">ball attribute</span><span class="n"> damp </span><span class="m m-Double">0.1</span>
+
+<span class="c">; 添加量测圆以记录应力</span>
+<span class="c">; 位置默认为 0,0</span>
+<span class="nb">measure create</span><span class="n"> rad </span><span class="m m-Double">0.02</span>
+
+<span class="c">; 记录历程</span>
+<span class="nb">measure history</span><span class="n"> name </span><span class="s">'1'</span><span class="n"> stress</span><span class="o">-</span><span class="n">yy id </span><span class="m m-Double">1</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'2'</span><span class="n"> axial_strain_gage</span>
+
+<span class="c">; 记录裂隙</span>
+<span class="ni">[track_init]</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'3'</span><span class="n"> crack_num</span>
+
+<span class="c">; 运行试验直至应力降至峰值的 70% 以下</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> peak_fraction </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.7</span><span class="ni">]</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span><span class="n"> </span><span class="c">; 必需，否则初始加载会过早结束 - DJB 5/19</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fish</span><span class="o">-</span><span class="n">halt loadhalt_meas</span>
+<span class="nb">fish list</span><span class="n"> </span><span class="ni">[peak_stress]</span>
+
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：tension.dat</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="exap-rocktest-flat-jointp2dat">flat_joint.dat（二维）</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：flat_joint.p2dat</span>
+<span class="c">;</span>
+<span class="c">;  创建含 flatjoint 接触的试样</span>
+<span class="c">;=============================================================================</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'unbonded'</span>
+
+<span class="c">; 这里希望现有全部接触都采用 flat_joint 参数</span>
+<span class="nb">contact model</span><span class="n"> flatjoint </span>
+<span class="nb">contact property</span><span class="n"> fj_track </span><span class="sx">on</span>
+
+<span class="c">; 对球-球接触进行黏结</span>
+<span class="nb">contact method</span><span class="n"> bond gap </span><span class="m m-Double">0.5e-4</span><span class="n"> range contact type </span><span class="s">'ball-ball'</span>
+
+<span class="c">; 设置线性刚度</span>
+<span class="nb">contact method</span><span class="n"> deform emod </span><span class="m m-Double">1.0e9</span><span class="n"> krat </span><span class="m m-Double">1.0</span>
+
+<span class="c">; 设置黏结强度</span>
+<span class="nb">contact property</span><span class="n"> fj_ten </span><span class="m m-Double">10.0e6</span><span class="n"> fj_coh </span><span class="m m-Double">50.0e6</span><span class="n"> fj_fa </span><span class="m m-Double">0.0</span>
+
+<span class="c">; 将球-球摩擦设为非零值</span>
+<span class="nb">contact property</span><span class="n"> fj_fric </span><span class="m m-Double">0.577</span><span class="n"> range contact type </span><span class="s">'ball-ball'</span>
+
+<span class="c">; 将新接触设置为 flatjoint 接触 (未黏结)</span>
+<span class="nb">contact cmat</span><span class="n"> default model flatjoint </span><span class="sx">...</span>
+<span class="n">    property fj_n </span><span class="m m-Double">4</span><span class="n"> fj_track </span><span class="sx">on</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">    method deformability emod </span><span class="m m-Double">1.0e9</span><span class="n"> krat </span><span class="m m-Double">1.0</span>
+
+<span class="c">; 重置球位移 </span>
+<span class="nb">ball attribute</span><span class="n"> displacement multiply </span><span class="m m-Double">0.0</span>
+
+<span class="c">; 将线性力设为 0.0，并强制重置线性接触力。 </span>
+<span class="nb">contact property</span><span class="n"> lin_force </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> lin_mode </span><span class="m m-Double">1</span>
+<span class="nb">ball attribute</span><span class="n"> force</span><span class="o">-</span><span class="n">contact multiply </span><span class="m m-Double">0.0</span><span class="n"> moment</span><span class="o">-</span><span class="n">contact multiply </span><span class="m m-Double">0.0</span><span class="n"> </span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'flatjoint'</span>
+
+<span class="c">;=============================================================================</span>
+<span class="c">; 文件结束：flat_joint.p2dat</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="exap-rocktest-fracturep2fis">fracture.p2fis</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：fracture.p2fis</span>
+<span class="c">;</span>
+<span class="c">; 用于追踪 BPM 中破碎过程的简单环境。</span>
+<span class="c">; 跟踪 LinearPBond 模型的 "bond_change" 事件，并将其转换为裂隙。</span>
+<span class="c">; 使用 Fragment 逻辑与 Ball Result 逻辑记录碎片 ID</span>
+<span class="c">;</span>
+<span class="c">;=============================================================================</span>
+
+<span class="nb">fish define</span><span class="ni"> add_crack</span><span class="p">(</span><span class="ni">entries</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> crack_num</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> frag_time</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> xmin</span><span class="p">,</span><span class="ni">xmax</span><span class="p">,</span><span class="ni">ymin</span><span class="p">,</span><span class="ni">ymax</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> contact    </span><span class="p">=</span><span class="ni"> entries</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> mode       </span><span class="p">=</span><span class="ni"> entries</span><span class="p">(</span><span class="m m-Double">3</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> frac_pos   </span><span class="p">=</span><span class="ni"> </span><span class="k">contact.pos</span><span class="p">(</span><span class="ni">contact</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> norm       </span><span class="p">=</span><span class="ni"> </span><span class="k">contact.normal</span><span class="p">(</span><span class="ni">contact</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> dfn_label  </span><span class="p">=</span><span class="ni"> </span><span class="s">'crack'</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> frac_size</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> bp1 </span><span class="p">=</span><span class="ni"> </span><span class="k">contact.end1</span><span class="p">(</span><span class="ni">contact</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> bp2 </span><span class="p">=</span><span class="ni"> </span><span class="k">contact.end2</span><span class="p">(</span><span class="ni">contact</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> ret </span><span class="p">=</span><span class="ni"> </span><span class="k">math.min</span><span class="p">(</span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">bp1</span><span class="p">),</span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">bp2</span><span class="p">))</span><span class="ni"> </span>
+<span class="ni">              </span><span class="c">; ( contact.method(contact,'pb_radius') )</span>
+<span class="ni">    frac_size </span><span class="p">=</span><span class="ni"> ret</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> inDir </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="o">-</span><span class="k">comp.y</span><span class="p">(</span><span class="ni">norm</span><span class="p">),</span><span class="k">comp.x</span><span class="p">(</span><span class="ni">norm</span><span class="p">))</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> vert1 </span><span class="p">=</span><span class="ni"> frac_pos </span><span class="o">+</span><span class="ni"> inDir </span><span class="o">*</span><span class="ni"> frac_size</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> vert2 </span><span class="p">=</span><span class="ni"> frac_pos </span><span class="o">-</span><span class="ni"> inDir </span><span class="o">*</span><span class="ni"> frac_size</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> arg </span><span class="p">=</span><span class="ni"> </span><span class="k">array.create</span><span class="p">(</span><span class="m m-Double">4</span><span class="p">)</span>
+<span class="ni">    arg</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'vertices'</span>
+<span class="ni">    arg</span><span class="p">(</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2</span>
+<span class="ni">    arg</span><span class="p">(</span><span class="m m-Double">3</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> vert1</span>
+<span class="ni">    arg</span><span class="p">(</span><span class="m m-Double">4</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> vert2</span>
+<span class="ni">    crack_num </span><span class="p">=</span><span class="ni"> crack_num </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">1</span>
+
+<span class="ni">    </span><span class="k">if</span><span class="ni"> mode </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">        </span><span class="c">; 拉伸破坏</span>
+<span class="ni">        dfn_label </span><span class="p">=</span><span class="ni"> dfn_label </span><span class="o">+</span><span class="ni"> </span><span class="s">'_tension'</span>
+<span class="ni">    </span><span class="k">else</span><span class="ni"> </span><span class="k">if</span><span class="ni"> mode </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">        </span><span class="c">; 剪切破坏</span>
+<span class="ni">        dfn_label </span><span class="p">=</span><span class="ni"> dfn_label </span><span class="o">+</span><span class="ni"> </span><span class="s">'_shear'</span>
+<span class="ni">    </span><span class="k">endif</span>
+
+<span class="ni">    </span><span class="k">global</span><span class="ni"> dfn </span><span class="p">=</span><span class="ni"> </span><span class="k">dfn.find</span><span class="p">(</span><span class="ni">dfn_label</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> dfn </span><span class="p">=</span><span class="ni"> </span><span class="k">null</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">        dfn </span><span class="p">=</span><span class="ni"> </span><span class="k">dfn.create</span><span class="p">(</span><span class="ni">dfn_label</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> fnew </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.create</span><span class="p">(</span><span class="ni">dfn</span><span class="p">,</span><span class="ni">arg</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">fracture.prop</span><span class="p">(</span><span class="ni">fnew</span><span class="p">,</span><span class="s">'age'</span><span class="p">)</span><span class="ni">  </span><span class="p">=</span><span class="ni"> </span><span class="k">mech.time.total</span>
+<span class="ni">    </span><span class="k">fracture.extra</span><span class="p">(</span><span class="ni">fnew</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> bp1</span>
+<span class="ni">    </span><span class="k">fracture.extra</span><span class="p">(</span><span class="ni">fnew</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> bp2</span>
+<span class="ni">    crack_accum </span><span class="o">+=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> crack_accum </span><span class="o">&gt;</span><span class="ni"> </span><span class="m m-Double">50</span>
+<span class="ni">        </span><span class="k">if</span><span class="ni"> frag_time </span><span class="o">&lt;</span><span class="ni"> </span><span class="k">mech.time.total</span>
+<span class="ni">            frag_time </span><span class="p">=</span><span class="ni"> </span><span class="k">mech.time.total</span>
+<span class="ni">            crack_accum </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="k">            command</span>
+<span class="nb">                fragment compute</span>
+<span class="k">            endcommand</span>
+<span class="ni">            </span><span class="c">; 遍历并更新裂隙位置</span>
+<span class="ni">            </span><span class="k">loop</span><span class="ni"> </span><span class="k">for</span><span class="ni"> </span><span class="p">(</span><span class="k">local</span><span class="ni"> i </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="ni"> i </span><span class="o">&lt;</span><span class="ni"> </span><span class="m m-Double">2</span><span class="p">,</span><span class="ni"> i </span><span class="p">=</span><span class="ni"> i </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">                </span><span class="k">local</span><span class="ni"> name </span><span class="p">=</span><span class="ni"> </span><span class="s">'crack_tension'</span>
+<span class="ni">                </span><span class="k">if</span><span class="ni"> i </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">                    name </span><span class="p">=</span><span class="ni"> </span><span class="s">'crack_shear'</span>
+<span class="ni">                </span><span class="k">endif</span>
+<span class="ni">                dfn </span><span class="p">=</span><span class="ni"> </span><span class="k">dfn.find</span><span class="p">(</span><span class="ni">name</span><span class="p">)</span>
+<span class="ni">                </span><span class="k">if</span><span class="ni"> dfn # </span><span class="k">null</span>
+<span class="ni">                    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> frac </span><span class="k">dfn.fracturelist</span><span class="p">(</span><span class="ni">dfn</span><span class="p">)</span>
+<span class="ni">                        </span><span class="k">local</span><span class="ni"> ball1 </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.extra</span><span class="p">(</span><span class="ni">frac</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">                        </span><span class="k">local</span><span class="ni"> ball2 </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.extra</span><span class="p">(</span><span class="ni">frac</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span>
+<span class="ni">                        </span><span class="k">if</span><span class="ni"> ball1 # </span><span class="k">null</span>
+<span class="ni">                            </span><span class="k">if</span><span class="ni"> ball2 # </span><span class="k">null</span>
+<span class="ni">                                </span><span class="k">local</span><span class="ni"> len </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.len</span><span class="p">(</span><span class="ni">frac</span><span class="p">)</span><span class="o">/</span><span class="m m-Double">2.0</span>
+<span class="ni">                                </span><span class="k">local</span><span class="ni"> pos </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">ball1</span><span class="p">)</span><span class="ni"> </span><span class="o">+</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">                                             </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">ball2</span><span class="p">))</span><span class="o">/</span><span class="m m-Double">2.0</span>
+<span class="ni">                                </span><span class="k">if</span><span class="ni"> </span><span class="k">comp.x</span><span class="p">(</span><span class="ni">pos</span><span class="p">)</span><span class="o">-</span><span class="ni">len </span><span class="o">&gt;</span><span class="ni"> xmin</span>
+<span class="ni">                                    </span><span class="k">if</span><span class="ni"> </span><span class="k">comp.x</span><span class="p">(</span><span class="ni">pos</span><span class="p">)</span><span class="o">+</span><span class="ni">len </span><span class="o">&lt;</span><span class="ni"> xmax</span>
+<span class="ni">                                        </span><span class="k">if</span><span class="ni"> </span><span class="k">comp.y</span><span class="p">(</span><span class="ni">pos</span><span class="p">)</span><span class="o">-</span><span class="ni">len </span><span class="o">&gt;</span><span class="ni"> ymin</span>
+<span class="ni">                                            </span><span class="k">if</span><span class="ni"> </span><span class="k">comp.y</span><span class="p">(</span><span class="ni">pos</span><span class="p">)</span><span class="o">+</span><span class="ni">len </span><span class="o">&lt;</span><span class="ni"> ymax</span>
+<span class="ni">                                                </span><span class="k">fracture.pos</span><span class="p">(</span><span class="ni">frac</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> pos</span>
+<span class="ni">                                            </span><span class="k">endif</span>
+<span class="ni">                                        </span><span class="k">endif</span>
+<span class="ni">                                    </span><span class="k">endif</span>
+<span class="ni">                                </span><span class="k">endif</span>
+<span class="ni">                            </span><span class="k">endif</span>
+<span class="ni">                        </span><span class="k">endif</span>
+<span class="ni">                    </span><span class="k">endloop</span>
+<span class="ni">                </span><span class="k">endif</span>
+<span class="ni">            </span><span class="k">endloop</span>
+<span class="ni">        </span><span class="k">endif</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> track_init</span>
+<span class="k">    command</span>
+<span class="nb">        fracture delete</span>
+<span class="nb">        fragment clear</span>
+<span class="nb">        fragment register</span><span class="n"> ball</span><span class="o">-</span><span class="n">ball</span>
+<span class="k">    endcommand</span>
+<span class="ni">  </span><span class="c">; 激活 fishcalls</span>
+<span class="k">    command</span>
+<span class="nb">        fish callback</span><span class="n"> remove add_crack</span>
+<span class="nb">        fish callback</span><span class="n"> add add_crack event bond_break</span>
+<span class="k">    endcommand</span>
+<span class="ni">    </span><span class="c">; 重置全局变量</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> crack_accum </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> crack_num </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> track_time0 </span><span class="p">=</span><span class="ni"> </span><span class="k">mech.time.total</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> frag_time </span><span class="p">=</span><span class="ni"> </span><span class="k">mech.time.total</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> xmin </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.min.x</span><span class="p">()</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> ymin </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.min.y</span><span class="p">()</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> xmax </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.x</span><span class="p">()</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> ymax </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.y</span><span class="p">()</span>
+
+<span class="nb">end</span>
+
+<span class="c">;=============================================================================</span>
+<span class="c">; 文件结束：fracture.p2fis</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="exap-rocktest-make-samplep3dat">make_sample.dat（三维）</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：make_sample.dat</span>
+<span class="c">;</span>
+<span class="c">;  创建无黏结试样</span>
+<span class="c">;=============================================================================</span>
+<span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'Testing Bonded Particle Model'</span>
+
+<span class="c">; 设置模型域范围</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">0.05</span><span class="n"> </span><span class="m m-Double">0.05</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.05</span><span class="n"> </span><span class="m m-Double">0.05</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.1</span><span class="n"> </span><span class="m m-Double">0.1</span><span class="n"> condition destroy</span>
+
+<span class="nb">contact cmat</span><span class="n"> default model linear method deformability emod </span><span class="m m-Double">1.0e9</span><span class="n"> kratio </span><span class="m m-Double">0.0</span>
+<span class="nb">contact cmat</span><span class="n"> default property dp_nratio </span><span class="m m-Double">0.5</span>
+
+<span class="c">; 创建延伸至试样边缘之外的墙</span>
+<span class="nb">wall generate</span><span class="n"> id </span><span class="m m-Double">1</span><span class="n"> plane dip </span><span class="m m-Double">0</span><span class="n">  dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">0</span><span class="n">   position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0.04</span>
+<span class="nb">wall generate</span><span class="n"> id </span><span class="m m-Double">2</span><span class="n"> plane dip </span><span class="m m-Double">0</span><span class="n">  dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">0</span><span class="n">   position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.04</span>
+<span class="nb">wall generate</span><span class="n"> id </span><span class="m m-Double">3</span><span class="n"> plane dip </span><span class="m m-Double">90</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">90</span><span class="n"> position </span><span class="o">-</span><span class="m m-Double">0.025</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">wall generate</span><span class="n"> id </span><span class="m m-Double">4</span><span class="n"> plane dip </span><span class="m m-Double">90</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">90</span><span class="n"> position </span><span class="m m-Double">0.025</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">wall generate</span><span class="n"> id </span><span class="m m-Double">5</span><span class="n"> plane dip </span><span class="m m-Double">90</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">0</span><span class="n">  position </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.025</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">wall generate</span><span class="n"> id </span><span class="m m-Double">6</span><span class="n"> plane dip </span><span class="m m-Double">90</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">0</span><span class="n">  position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0.025</span><span class="n"> </span><span class="m m-Double">0</span>
+
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10002</span>
+<span class="nb">ball distribute</span><span class="n"> porosity </span><span class="m m-Double">0.2</span><span class="n"> radius </span><span class="m m-Double">1.0e-3</span><span class="n"> </span><span class="m m-Double">1.5e-3</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                box </span><span class="o">-</span><span class="m m-Double">0.025</span><span class="n"> </span><span class="m m-Double">0.025</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.025</span><span class="n"> </span><span class="m m-Double">0.025</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.04</span><span class="n"> </span><span class="m m-Double">0.04</span>
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="m m-Double">2500</span><span class="n"> damp </span><span class="m m-Double">0.7</span>
+
+<span class="c">; 使系统平静</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span><span class="n"> calm </span><span class="m m-Double">10</span>
+<span class="c">; 求解系统至目标限值 (此处为平均力比)</span>
+<span class="c">; 使用密度缩放快速达到平衡</span>
+<span class="nb">model mechanical</span><span class="n"> timestep scale</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-4</span>
+<span class="nb">model mechanical</span><span class="n"> timestep auto</span>
+<span class="nb">model calm</span>
+
+<span class="c">; 删除侧墙</span>
+<span class="c">; 注意必须包含关键字 'walls'，否则面片将被删除</span>
+<span class="nb">wall delete</span><span class="n"> walls range id </span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">6</span>
+
+<span class="c">; 生成圆柱体</span>
+<span class="nb">ball delete</span><span class="n"> range cylinder end</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.04</span><span class="n"> end</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0.04</span><span class="n"> rad </span><span class="m m-Double">0.02</span><span class="n"> not</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'unbonded'</span>
+<span class="c">;=============================================================================</span>
+<span class="c">; 文件结束：make_sample.p3dat</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="exap-rocktest-parallel-bondedp3dat">parallel_bonded.dat（三维）</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：parallel_bonded.dat</span>
+<span class="c">;</span>
+<span class="c">;  创建平行黏结试样</span>
+<span class="c">;=============================================================================</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'unbonded'</span>
+
+<span class="nb">contact model</span><span class="n"> linearpbond range contact type </span><span class="s">'ball-ball'</span>
+<span class="nb">contact method</span><span class="n"> bond gap </span><span class="m m-Double">2.0e-4</span>
+
+<span class="c">; 使用 method 设置线性刚度</span>
+<span class="nb">contact method</span><span class="n"> deform emod </span><span class="m m-Double">1.0e9</span><span class="n"> krat </span><span class="m m-Double">1.0</span>
+
+<span class="c">; 使用 method 设置黏结刚度</span>
+<span class="nb">contact method</span><span class="n"> pb_deform emod </span><span class="m m-Double">1.0e9</span><span class="n"> krat </span><span class="m m-Double">1.0</span>
+
+<span class="c">; 设置黏结强度</span>
+<span class="nb">contact property</span><span class="n"> pb_ten </span><span class="m m-Double">10.0e6</span><span class="n"> pb_coh </span><span class="m m-Double">50.0e6</span><span class="n"> pb_fa </span><span class="m m-Double">0.0</span>
+
+<span class="c">; 在接触处设置一定阻尼</span>
+<span class="nb">contact property</span><span class="n"> dp_nratio </span><span class="m m-Double">0.5</span>
+
+<span class="c">; 将球-球摩擦设为非零值</span>
+<span class="nb">contact property</span><span class="n"> fric </span><span class="m m-Double">0.577</span><span class="n"> range contact type </span><span class="s">'ball-ball'</span>
+
+<span class="c">; 重置球位移 </span>
+<span class="nb">ball attribute</span><span class="n"> displacement multiply </span><span class="m m-Double">0.0</span>
+
+<span class="c">; 将线性力设为 0.0，并强制重置线性接触力。 </span>
+<span class="nb">contact property</span><span class="n"> lin_force </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> lin_mode </span><span class="m m-Double">1</span>
+<span class="nb">ball attribute</span><span class="n"> force</span><span class="o">-</span><span class="n">contact multiply </span><span class="m m-Double">0.0</span><span class="n"> moment</span><span class="o">-</span><span class="n">contact multiply </span><span class="m m-Double">0.0</span><span class="n"> </span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'parallel_bonded'</span>
+
+<span class="c">;=============================================================================</span>
+<span class="c">; 文件结束：parallel_bonded.dat</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="exap-rocktest-ucsp3dat">ucs.dat（三维）</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="c">; 文件名：ucs.dat</span>
+<span class="c">;</span>
+<span class="c">;  对黏结试样进行无侧限抗压强度试验</span>
+<span class="c">;=============================================================================</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'ss_wall.fis'</span><span class="n"> suppress</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'fracture.fis'</span><span class="n"> suppress</span>
+
+<span class="c">; 设置用于应力和应变测量的全局参数</span>
+<span class="ni">[setup_wall]</span>
+
+<span class="c">; 通过移动顶部与底部墙施加载荷</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">0.15</span><span class="n"> range id </span><span class="m m-Double">1</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z  </span><span class="m m-Double">0.15</span><span class="n"> range id </span><span class="m m-Double">2</span>
+
+<span class="c">; 施加少量阻尼</span>
+<span class="nb">ball attribute</span><span class="n"> damp </span><span class="m m-Double">0.1</span>
+
+<span class="c">; 记录历程</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'1'</span><span class="n"> axial_stress_wall</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'2'</span><span class="n"> axial_strain_wall</span>
+
+<span class="c">; 记录裂隙</span>
+<span class="ni">[track_init]</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'3'</span><span class="n"> crack_num</span>
+
+<span class="c">; 循环若干步以越过初始振动</span>
+<span class="nb">model </span><span class="ss">cyc</span><span class="n"> </span><span class="m m-Double">1000</span>
+
+<span class="c">; 运行试验直至应力降至峰值的 70% 以下</span>
+<span class="ni">[peak_fraction </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.7</span><span class="ni">]</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fish</span><span class="o">-</span><span class="n">halt loadhalt_wall</span>
+<span class="nb">fish list</span><span class="n"> </span><span class="ni">[peak_stress]</span>
+
+<span class="c">;=============================================================================</span>
+<span class="c">; 文件结束：ucs.dat</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="exap-rocktest-tensionp3dat">tension.dat（三维）</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="c">; 文件名：tension.dat</span>
+<span class="c">;</span>
+<span class="c">;  对黏结试样进行直接拉伸试验</span>
+<span class="c">;=============================================================================</span>
+
+<span class="nb">program call</span><span class="n"> </span><span class="s">'ss_gage.fis'</span><span class="n"> suppress</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'fracture.fis'</span><span class="n"> suppress</span>
+
+<span class="c">; 设置用于应变测量的全局参数</span>
+<span class="ni">[setup_gage]</span>
+
+<span class="c">; 删除墙</span>
+<span class="nb">wall delete</span>
+
+<span class="c">; 识别球以构成顶部与底部夹具</span>
+<span class="nb">ball group</span><span class="n"> </span><span class="s">'top_grip'</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.035</span><span class="n"> </span><span class="m m-Double">0.04</span>
+<span class="nb">ball group</span><span class="n"> </span><span class="s">'bottom_grip'</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">0.035</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.04</span>
+
+<span class="c">; 通过移动顶部与底部压板施加载荷</span>
+<span class="nb">ball fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z range group </span><span class="s">'top_grip'</span>
+<span class="nb">ball attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.03</span><span class="n"> range group </span><span class="s">'top_grip'</span>
+<span class="nb">ball fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z range group </span><span class="s">'bottom_grip'</span>
+<span class="nb">ball attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">0.03</span><span class="n"> range group </span><span class="s">'bottom_grip'</span>
+
+<span class="c">; 施加少量阻尼</span>
+<span class="nb">ball attribute</span><span class="n"> damp </span><span class="m m-Double">0.1</span>
+
+<span class="c">; 添加量测圆以记录应力</span>
+<span class="c">; 位置默认为 0,0</span>
+<span class="nb">measure create</span><span class="n"> radius </span><span class="m m-Double">0.02</span>
+
+<span class="c">; 记录历程</span>
+<span class="nb">measure history</span><span class="n"> name </span><span class="s">'1'</span><span class="n"> stress</span><span class="o">-</span><span class="n">zz id </span><span class="m m-Double">1</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'2'</span><span class="n"> axial_strain_gage</span>
+
+<span class="c">; 记录裂隙</span>
+<span class="ni">[track_init]</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'3'</span><span class="n"> crack_num</span>
+
+<span class="c">; 运行试验直至应力降至峰值的 70% 以下</span>
+<span class="ni">[peak_fraction </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.7</span><span class="ni">]</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fish</span><span class="o">-</span><span class="n">halt loadhalt_meas</span>
+<span class="nb">fish list</span><span class="n"> </span><span class="ni">[peak_stress]</span>
+
+<span class="c">;=============================================================================</span>
+<span class="c">; 文件结束：tension.dat</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="exap-rocktest-flat-jointp3dat">flat_joint.dat（三维）</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：flat_joint.p3dat</span>
+<span class="c">;</span>
+<span class="c">;  创建含 flatjoint 接触的试样</span>
+<span class="c">;=============================================================================</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'unbonded'</span>
+
+<span class="c">; 这里希望现有全部接触都采用 flat_joint 参数</span>
+<span class="nb">contact model</span><span class="n"> flatjoint </span>
+<span class="nb">contact property</span><span class="n"> fj_track </span><span class="sx">on</span>
+
+<span class="c">; 对球-球接触进行黏结</span>
+<span class="nb">contact method</span><span class="n"> bond gap </span><span class="m m-Double">2.0e-4</span><span class="n"> range contact type </span><span class="s">'ball-ball'</span>
+
+<span class="c">; 使用 method 设置黏结刚度</span>
+<span class="nb">contact method</span><span class="n"> deform emod </span><span class="m m-Double">1.0e9</span><span class="n"> krat </span><span class="m m-Double">1.0</span>
+
+<span class="c">; 设置黏结强度</span>
+<span class="nb">contact property</span><span class="n"> fj_ten </span><span class="m m-Double">10.0e6</span><span class="n"> fj_coh </span><span class="m m-Double">50.0e6</span><span class="n"> fj_fa </span><span class="m m-Double">0.0</span>
+
+<span class="c">; 将球-球摩擦设为非零值</span>
+<span class="nb">contact property</span><span class="n"> fj_fric </span><span class="m m-Double">0.577</span><span class="n"> range contact type </span><span class="s">'ball-ball'</span>
+
+<span class="c">; 将新的球-球接触设置为 flatjoint 接触 (未黏结)</span>
+<span class="nb">contact cmat</span><span class="n"> default model flatjoint </span><span class="sx">...</span>
+<span class="n">    property fj_track </span><span class="sx">on</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">    method deform emod </span><span class="m m-Double">1.0e9</span><span class="n"> krat </span><span class="m m-Double">1.0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">    type </span><span class="s">'ball-ball'</span>
+
+<span class="c">; 重置球位移 </span>
+<span class="nb">ball attribute</span><span class="n"> displacement multiply </span><span class="m m-Double">0.0</span>
+<span class="c">; 将线性力设为 0.0，并强制重置线性接触力。 </span>
+<span class="nb">contact property</span><span class="n"> lin_force </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> lin_mode </span><span class="m m-Double">1</span>
+<span class="nb">ball attribute</span><span class="n"> force</span><span class="o">-</span><span class="n">contact multiply </span><span class="m m-Double">0.0</span><span class="n"> moment</span><span class="o">-</span><span class="n">contact multiply </span><span class="m m-Double">0.0</span><span class="n"> </span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'flatjoint'</span>
+
+<span class="c">;=============================================================================</span>
+<span class="c">; 文件结束：flat_joint.p3dat</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="exap-rocktest-doall-parallelp3dat">doall_parallel.dat（三维）</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：doall_parallel.p3dat</span>
+<span class="c">;</span>
+<span class="c">;  创建并测试平行黏结材料</span>
+<span class="c">;==============================================================================</span>
+
+<span class="c">; 恢复无黏结试样并对其进行黏结</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'parallel_bonded'</span>
+
+<span class="nb">program log</span><span class="o">-</span><span class="n">file </span><span class="s">'parallel3d.log'</span>
+<span class="nb">program log</span><span class="n"> </span><span class="sx">on</span>
+
+<span class="c">; 运行 ucs 试验</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'ucs'</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'parallel_ucs'</span>
+
+<span class="c">; 运行拉伸试验</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'parallel_bonded'</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'tension'</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'parallel_tension'</span>
+
+<span class="nb">program log</span><span class="n"> </span><span class="sx">off</span>
+
+<span class="c">;==============================================================================</span>
+<span class="c">; 文件结束：doall_parallel.p3dat</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="exap-rocktest-doall-fjp3dat">doall_fj.dat（三维）</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：doall_fj.p3dat</span>
+<span class="c">;</span>
+<span class="c">;  创建并测试平节理材料</span>
+<span class="c">;==============================================================================</span>
+
+<span class="c">; 恢复无黏结试样并安装 flatjoint 模型</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'flat_joint'</span>
+
+<span class="nb">program log</span><span class="o">-</span><span class="n">file </span><span class="s">'fj3d.log'</span>
+<span class="nb">program log</span><span class="n"> </span><span class="sx">on</span>
+
+<span class="c">; 运行 ucs 试验</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'ucs'</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'fj_ucs'</span>
+
+<span class="c">; 运行拉伸试验</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'flatjoint'</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'tension'</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'fj_tension'</span>
+
+<span class="nb">program log</span><span class="n"> </span><span class="sx">off</span>
+
+<span class="c">;==============================================================================</span>
+<span class="c">; 文件结束：doall_fj.p3dat</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="exap-rocktest-fracturep3fis">fracture.fis（三维）</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：fracture.fis</span>
+<span class="c">;</span>
+<span class="c">; 用于追踪 BPM 中破碎过程的简单环境。</span>
+<span class="c">; 跟踪 LinearPBond 模型的 "bond_change" 事件，并将其转换为裂隙。</span>
+<span class="c">; 使用 Fragment 逻辑与 Ball Result 逻辑记录碎片 ID </span>
+<span class="c">;</span>
+<span class="c">; ============================================================================</span>
+
+<span class="nb">fish define</span><span class="ni"> add_crack</span><span class="p">(</span><span class="ni">entries</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> contact    </span><span class="p">=</span><span class="ni"> entries</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> mode       </span><span class="p">=</span><span class="ni"> entries</span><span class="p">(</span><span class="m m-Double">3</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni">  frac_pos   </span><span class="p">=</span><span class="ni"> </span><span class="k">contact.pos</span><span class="p">(</span><span class="ni">contact</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> norm       </span><span class="p">=</span><span class="ni"> </span><span class="k">contact.normal</span><span class="p">(</span><span class="ni">contact</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> dfn_label  </span><span class="p">=</span><span class="ni"> </span><span class="s">'crack'</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni">  frac_size</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni">  bp1 </span><span class="p">=</span><span class="ni"> </span><span class="k">contact.end1</span><span class="p">(</span><span class="ni">contact</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni">  bp2 </span><span class="p">=</span><span class="ni"> </span><span class="k">contact.end2</span><span class="p">(</span><span class="ni">contact</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni">  ret </span><span class="p">=</span><span class="ni"> </span><span class="k">math.min</span><span class="p">(</span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">bp1</span><span class="p">),</span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">bp2</span><span class="p">))</span>
+<span class="ni">                 </span><span class="c">; (  contact.method(contact,'pb_radius')  )</span>
+<span class="ni">    frac_size </span><span class="p">=</span><span class="ni"> ret</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> arg </span><span class="p">=</span><span class="ni"> </span><span class="k">array.create</span><span class="p">(</span><span class="m m-Double">5</span><span class="p">)</span>
+<span class="ni">    arg</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'disk'</span>
+<span class="ni">    arg</span><span class="p">(</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> frac_pos</span>
+<span class="ni">    arg</span><span class="p">(</span><span class="m m-Double">3</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> frac_size</span>
+<span class="ni">    arg</span><span class="p">(</span><span class="m m-Double">4</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="k">math.dip.from.normal</span><span class="p">(</span><span class="ni">norm</span><span class="p">)</span><span class="o">/</span><span class="k">math.degrad</span>
+<span class="ni">    arg</span><span class="p">(</span><span class="m m-Double">5</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="k">math.ddir.from.normal</span><span class="p">(</span><span class="ni">norm</span><span class="p">)</span><span class="o">/</span><span class="k">math.degrad</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> arg</span><span class="p">(</span><span class="m m-Double">5</span><span class="p">)</span><span class="ni"> </span><span class="o">&lt;</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">      arg</span><span class="p">(</span><span class="m m-Double">5</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">360.0</span><span class="o">+</span><span class="ni">arg</span><span class="p">(</span><span class="m m-Double">5</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">end_if</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> crack_num</span>
+<span class="ni">    crack_num </span><span class="p">=</span><span class="ni"> crack_num </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">    </span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> mode </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span><span class="ni"> </span><span class="k">then</span><span class="ni"> </span>
+<span class="ni">        </span><span class="c">; 拉伸破坏</span>
+<span class="ni">        dfn_label </span><span class="p">=</span><span class="ni"> dfn_label </span><span class="o">+</span><span class="ni"> </span><span class="s">'_tension'</span>
+<span class="ni">    </span><span class="k">else</span><span class="ni"> </span><span class="k">if</span><span class="ni"> mode </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">        </span><span class="c">; 剪切破坏</span>
+<span class="ni">        dfn_label </span><span class="p">=</span><span class="ni"> dfn_label </span><span class="o">+</span><span class="ni"> </span><span class="s">'_shear'</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="ni">        </span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> dfn </span><span class="p">=</span><span class="ni"> </span><span class="k">dfn.find</span><span class="p">(</span><span class="ni">dfn_label</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> dfn </span><span class="p">=</span><span class="ni"> </span><span class="k">null</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">        dfn </span><span class="p">=</span><span class="ni"> </span><span class="k">dfn.create</span><span class="p">(</span><span class="ni">dfn_label</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> fnew </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.create</span><span class="p">(</span><span class="ni">dfn</span><span class="p">,</span><span class="ni">arg</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">fracture.prop</span><span class="p">(</span><span class="ni">fnew</span><span class="p">,</span><span class="s">'age'</span><span class="p">)</span><span class="ni">  </span><span class="p">=</span><span class="ni"> </span><span class="k">mech.time.total</span>
+<span class="ni">    </span><span class="k">fracture.extra</span><span class="p">(</span><span class="ni">fnew</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> bp1</span>
+<span class="ni">    </span><span class="k">fracture.extra</span><span class="p">(</span><span class="ni">fnew</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> bp2</span>
+<span class="ni">    crack_accum </span><span class="o">+=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> frag_time</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> xmin</span><span class="p">,</span><span class="ni">xmax</span><span class="p">,</span><span class="ni">ymin</span><span class="p">,</span><span class="ni">ymax</span><span class="p">,</span><span class="ni">zmin</span><span class="p">,</span><span class="ni">zmax</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> crack_accum </span><span class="o">&gt;</span><span class="ni"> </span><span class="m m-Double">50</span>
+<span class="ni">        </span><span class="k">if</span><span class="ni"> frag_time </span><span class="o">&lt;</span><span class="ni"> </span><span class="k">mech.time.total</span>
+<span class="ni">            frag_time </span><span class="p">=</span><span class="ni"> </span><span class="k">mech.time.total</span>
+<span class="ni">            crack_accum </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="k">            command</span><span class="n"> </span>
+<span class="nb">                fragment compute</span>
+<span class="k">            endcommand</span>
+<span class="ni">            </span><span class="c">; 遍历并更新裂隙位置</span>
+<span class="ni">            </span><span class="k">loop</span><span class="ni"> </span><span class="k">for</span><span class="ni"> </span><span class="p">(</span><span class="k">local</span><span class="ni"> i </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="ni"> i </span><span class="o">&lt;</span><span class="ni"> </span><span class="m m-Double">2</span><span class="p">,</span><span class="ni"> i </span><span class="p">=</span><span class="ni"> i </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">                </span><span class="k">local</span><span class="ni"> name </span><span class="p">=</span><span class="ni"> </span><span class="s">'crack_tension'</span>
+<span class="ni">                </span><span class="k">if</span><span class="ni"> i </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">                    name </span><span class="p">=</span><span class="ni"> </span><span class="s">'crack_shear'</span>
+<span class="ni">                </span><span class="k">endif</span>
+<span class="ni">                dfn </span><span class="p">=</span><span class="ni"> </span><span class="k">dfn.find</span><span class="p">(</span><span class="ni">name</span><span class="p">)</span>
+<span class="ni">                </span><span class="k">if</span><span class="ni"> dfn # </span><span class="k">null</span>
+<span class="ni">                    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> frac </span><span class="k">dfn.fracturelist</span><span class="p">(</span><span class="ni">dfn</span><span class="p">)</span>
+<span class="ni">                        </span><span class="k">local</span><span class="ni"> ball1 </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.extra</span><span class="p">(</span><span class="ni">frac</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">                        </span><span class="k">local</span><span class="ni"> ball2 </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.extra</span><span class="p">(</span><span class="ni">frac</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span>
+<span class="ni">                        </span><span class="k">if</span><span class="ni"> ball1 # </span><span class="k">null</span>
+<span class="ni">                            </span><span class="k">if</span><span class="ni"> ball2 # </span><span class="k">null</span>
+<span class="ni">                                </span><span class="k">local</span><span class="ni"> len </span><span class="p">=</span><span class="ni"> </span><span class="k">fracture.diameter</span><span class="p">(</span><span class="ni">frac</span><span class="p">)</span><span class="o">/</span><span class="m m-Double">2.0</span>
+<span class="ni">                                </span><span class="k">local</span><span class="ni"> pos </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">ball1</span><span class="p">)</span><span class="o">+</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">                                             </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">ball2</span><span class="p">))</span><span class="o">/</span><span class="m m-Double">2.0</span>
+<span class="ni">                                </span><span class="k">if</span><span class="ni"> </span><span class="k">comp.x</span><span class="p">(</span><span class="ni">pos</span><span class="p">)</span><span class="o">-</span><span class="ni">len </span><span class="o">&gt;</span><span class="ni"> xmin</span>
+<span class="ni">                                    </span><span class="k">if</span><span class="ni"> </span><span class="k">comp.x</span><span class="p">(</span><span class="ni">pos</span><span class="p">)</span><span class="o">+</span><span class="ni">len </span><span class="o">&lt;</span><span class="ni"> xmax</span>
+<span class="ni">                                        </span><span class="k">if</span><span class="ni"> </span><span class="k">comp.y</span><span class="p">(</span><span class="ni">pos</span><span class="p">)</span><span class="o">-</span><span class="ni">len </span><span class="o">&gt;</span><span class="ni"> ymin</span>
+<span class="ni">                                            </span><span class="k">if</span><span class="ni"> </span><span class="k">comp.y</span><span class="p">(</span><span class="ni">pos</span><span class="p">)</span><span class="o">+</span><span class="ni">len </span><span class="o">&lt;</span><span class="ni"> ymax</span>
+<span class="ni">                                                </span><span class="k">if</span><span class="ni"> </span><span class="k">comp.z</span><span class="p">(</span><span class="ni">pos</span><span class="p">)</span><span class="o">-</span><span class="ni">len </span><span class="o">&gt;</span><span class="ni"> zmin</span>
+<span class="ni">                                                    </span><span class="k">if</span><span class="ni"> </span><span class="k">comp.z</span><span class="p">(</span><span class="ni">pos</span><span class="p">)</span><span class="o">+</span><span class="ni">len </span><span class="o">&lt;</span><span class="ni"> zmax</span>
+<span class="ni">                                                       </span><span class="k">fracture.pos</span><span class="p">(</span><span class="ni">frac</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> pos</span>
+<span class="ni">                                                    </span><span class="k">end_if</span>
+<span class="ni">                                                </span><span class="k">end_if</span>
+<span class="ni">                                            </span><span class="k">endif</span>
+<span class="ni">                                        </span><span class="k">endif</span>
+<span class="ni">                                    </span><span class="k">endif</span>
+<span class="ni">                                </span><span class="k">endif</span>
+<span class="ni">                            </span><span class="k">endif</span>
+<span class="ni">                        </span><span class="k">endif</span>
+<span class="ni">                    </span><span class="k">endloop</span>
+<span class="ni">                </span><span class="k">endif</span>
+<span class="ni">            </span><span class="k">endloop</span>
+<span class="ni">        </span><span class="k">endif</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> track_init</span>
+<span class="k">    command</span>
+<span class="nb">        fracture delete</span>
+<span class="nb">        model results</span><span class="n"> clear</span><span class="o">-</span><span class="n">map</span>
+<span class="nb">        fragment clear</span>
+<span class="nb">        fragment register</span><span class="n"> ball</span><span class="o">-</span><span class="n">ball</span>
+<span class="k">    endcommand</span>
+<span class="ni">  </span><span class="c">; 激活 fishcalls</span>
+<span class="k">    command</span>
+<span class="nb">        fish callback</span><span class="n"> remove add_crack event bond_break</span>
+<span class="nb">        fish callback</span><span class="n"> add add_crack event bond_break</span>
+<span class="k">    endcommand</span>
+<span class="ni">    </span><span class="c">; 重置全局变量</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> crack_accum </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> crack_num </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> track_time0 </span><span class="p">=</span><span class="ni"> </span><span class="k">mech.time.total</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> frag_time </span><span class="p">=</span><span class="ni"> </span><span class="k">mech.time.total</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> xmin </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.min.x</span><span class="p">()</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> ymin </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.min.y</span><span class="p">()</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> xmax </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.x</span><span class="p">()</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> ymax </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.y</span><span class="p">()</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> zmin </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.min.z</span><span class="p">()</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> zmin </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.min.z</span><span class="p">()</span>
+
+<span class="nb">end</span>
+
+<span class="c">; ============================================================================</span>
+<span class="c">; 文件结束：fracture.fis</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="exap-rocktest-sswallfis">ss_wall.fis</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：ss_wall.fis</span>
+<span class="c">;</span>
+<span class="c">;  用于记录墙加载岩芯试样中应力与应变的 FISH 函数</span>
+<span class="c">;========================================================================</span>
+<span class="nb">fish define</span><span class="ni"> setup_wall</span>
+<span class="c">;</span>
+<span class="c">; 查找各墙并获取试样初始尺寸</span>
+<span class="c">;</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> wp_top </span><span class="p">=</span><span class="ni"> </span><span class="k">wall.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni"> </span><span class="c">; 假定墙 1 为顶部墙</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> wp_bottom </span><span class="p">=</span><span class="ni"> </span><span class="k">wall.find</span><span class="p">(</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni"> </span><span class="c">; 假定墙 2 为底部墙</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> vertical_direction </span><span class="p">=</span><span class="ni"> </span><span class="k">global.dim</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> sample_height </span><span class="p">=</span><span class="ni"> </span><span class="k">wall.pos</span><span class="p">(</span><span class="ni">wp_top</span><span class="p">,</span><span class="ni">vertical_direction</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">                         </span><span class="k">wall.pos</span><span class="p">(</span><span class="ni">wp_bottom</span><span class="p">,</span><span class="ni">vertical_direction</span><span class="p">)</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="c">; 假定在三维情况下 x 与 y 大致相同</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> xmin </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0e12</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> xmax </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">1.0e12</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> bp </span><span class="k">ball.list</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> ball_xmin </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.x</span><span class="p">(</span><span class="ni">bp</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">bp</span><span class="p">)</span>
+<span class="ni">    xmin </span><span class="p">=</span><span class="ni"> </span><span class="k">math.min</span><span class="p">(</span><span class="ni">xmin</span><span class="p">,</span><span class="ni">ball_xmin</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> ball_xmax </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.x</span><span class="p">(</span><span class="ni">bp</span><span class="p">)</span><span class="ni"> </span><span class="o">+</span><span class="ni"> </span><span class="k">ball.radius</span><span class="p">(</span><span class="ni">bp</span><span class="p">)</span>
+<span class="ni">    xmax </span><span class="p">=</span><span class="ni"> </span><span class="k">math.max</span><span class="p">(</span><span class="ni">xmax</span><span class="p">,</span><span class="ni">ball_xmax</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">end_loop</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> diameter_ </span><span class="p">=</span><span class="ni"> xmax </span><span class="o">-</span><span class="ni"> xmin</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> </span><span class="k">global.dim</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> cross_sectional_area </span><span class="p">=</span><span class="ni"> diameter_</span>
+<span class="ni">  </span><span class="k">else</span>
+<span class="ni">    </span><span class="c">; 假定在三维情况下试样为圆柱形</span>
+<span class="ni">    cross_sectional_area </span><span class="p">=</span><span class="ni"> </span><span class="k">math.pi</span><span class="o">*</span><span class="m m-Double">0.25</span><span class="o">*</span><span class="ni">diameter_</span><span class="o">*</span><span class="ni">diameter_</span>
+<span class="ni">  </span><span class="k">end_if</span>
+<span class="ni">  </span>
+<span class="nb">end</span>
+<span class="p">========================================================</span>
+<span class="nb">fish define</span><span class="ni"> axial_stress_wall</span>
+<span class="c">;</span>
+<span class="c">; 利用墙计算轴向应力 (拉为正)</span>
+<span class="c">;</span>
+<span class="c">; 假定已设置全局变量 sample_height 与 sample_width</span>
+<span class="c">;</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> force1 </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="k">wall.force.contact</span><span class="p">(</span><span class="ni">wp_top</span><span class="p">,</span><span class="ni">vertical_direction</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> force2 </span><span class="p">=</span><span class="ni"> </span><span class="k">wall.force.contact</span><span class="p">(</span><span class="ni">wp_bottom</span><span class="p">,</span><span class="ni">vertical_direction</span><span class="p">)</span>
+<span class="ni">  axial_stress_wall </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="p">(</span><span class="ni">force1</span><span class="o">+</span><span class="ni">force2</span><span class="p">)</span><span class="o">/</span><span class="ni">cross_sectional_area</span>
+<span class="nb">end</span>
+<span class="p">========================================================</span>
+<span class="nb">fish define</span><span class="ni"> axial_strain_wall</span>
+<span class="c">;</span>
+<span class="c">; 利用墙计算轴向应变 (拉为正)</span>
+<span class="c">;</span>
+<span class="c">; 假定已设置全局变量 sample_width</span>
+<span class="c">;</span>
+<span class="ni">  axial_strain_wall </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2.0</span><span class="o">*</span><span class="k">wall.disp</span><span class="p">(</span><span class="ni">wp_top</span><span class="p">,</span><span class="ni">vertical_direction</span><span class="p">)</span><span class="o">/</span><span class="ni">sample_height</span>
+<span class="nb">end</span>
+<span class="p">==========================================================</span>
+<span class="nb">fish define</span><span class="ni"> loadhalt_wall</span>
+<span class="c">;</span>
+<span class="c">; 用于在轴向应力降至某个 </span>
+<span class="c">; 峰值比例时终止试验的函数</span>
+<span class="c">; 假定 axial_stress_wall 是一个返回轴向应力的函数</span>
+<span class="c">; </span>
+<span class="c">; 输入：peak_fraction - 决定试验终止的 </span>
+<span class="c">;                        峰值应力比例    (全局浮点数)</span>
+<span class="c">;</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> peak_fraction</span>
+<span class="ni">    loadhalt_wall </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> abs_stress </span><span class="p">=</span><span class="ni"> </span><span class="k">math.abs</span><span class="p">(</span><span class="ni">axial_stress_wall</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> peak_stress </span><span class="p">=</span><span class="ni"> </span><span class="k">math.max</span><span class="p">(</span><span class="ni">abs_stress</span><span class="p">,</span><span class="ni">peak_stress</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> abs_stress </span><span class="o">&lt;</span><span class="ni"> peak_stress</span><span class="o">*</span><span class="ni">peak_fraction</span>
+<span class="ni">        loadhalt_wall </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">    </span><span class="k">end_if</span>
+<span class="nb">end</span>
+<span class="c">;=============================================================================</span>
+<span class="c">; 文件结束：ss_wall.fis</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="exap-rocktest-ssgagefis">ss_gage.fis</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：ss_gage.fis</span>
+<span class="c">;</span>
+<span class="c">;  使用量测球记录应变的 FISH 函数</span>
+<span class="p">========================================================</span>
+<span class="nb">fish define</span><span class="ni"> setup_gage</span>
+<span class="c">; </span>
+<span class="c">; 在没有墙的情况下查找用于记录轴向应变的量测球</span>
+<span class="c">; 并设置试样初始高度</span>
+<span class="c">;</span>
+
+<span class="ni">  </span><span class="k">global</span><span class="ni"> vertical_direction </span><span class="p">=</span><span class="ni"> </span><span class="k">global.dim</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="c">; 假定在三维情况下 x 与 y 大致相同</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> bottom_ </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0e12</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> top_ </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">1.0e12</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> bp </span><span class="k">ball.list</span>
+<span class="ni">    top_ </span><span class="p">=</span><span class="ni"> </span><span class="k">math.max</span><span class="p">(</span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">bp</span><span class="p">,</span><span class="ni">vertical_direction</span><span class="p">),</span><span class="ni">top_</span><span class="p">)</span>
+<span class="ni">    bottom_ </span><span class="p">=</span><span class="ni"> </span><span class="k">math.min</span><span class="p">(</span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">bp</span><span class="p">,</span><span class="ni">vertical_direction</span><span class="p">),</span><span class="ni">bottom_</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">end_loop</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> </span><span class="k">global.dim</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> top_loc </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="ni">top_</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> bottom_loc </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="ni">bottom_</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">else</span>
+<span class="ni">    top_loc </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="ni">top_</span><span class="p">)</span>
+<span class="ni">    bottom_loc </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="ni">bottom_</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">end_if</span>
+<span class="ni">  </span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> gage_top </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="ni">top_loc</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> gage_bottom </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.near</span><span class="p">(</span><span class="ni">bottom_loc</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">global</span><span class="ni"> sample_height </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">gage_top</span><span class="p">,</span><span class="ni">vertical_direction</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">                         </span><span class="k">ball.pos</span><span class="p">(</span><span class="ni">gage_bottom</span><span class="p">,</span><span class="ni">vertical_direction</span><span class="p">)</span>
+<span class="nb">end</span>
+<span class="p">========================================================</span>
+<span class="nb">fish define</span><span class="ni"> axial_strain_gage</span>
+<span class="c">;</span>
+<span class="c">; 使用量测球计算轴向应变 (拉为正)</span>
+<span class="c">;</span>
+<span class="c">; 假定已设置全局变量 gage_top、gage_bottom 与 sample_height</span>
+<span class="c">;</span>
+<span class="ni">  axial_strain_gage </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="k">ball.disp</span><span class="p">(</span><span class="ni">gage_top</span><span class="p">,</span><span class="ni">vertical_direction</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">                       </span><span class="k">ball.disp</span><span class="p">(</span><span class="ni">gage_bottom</span><span class="p">,</span><span class="ni">vertical_direction</span><span class="p">))</span><span class="o">/</span><span class="ni">sample_height</span>
+<span class="nb">end</span>
+<span class="p">==========================================================</span>
+<span class="nb">fish define</span><span class="ni"> loadhalt_meas</span>
+<span class="c">;</span>
+<span class="c">; 用于在轴向应力降至某个</span>
+<span class="c">; 峰值比例时终止试验的函数</span>
+<span class="c">; 假定已安装量测圆 1</span>
+<span class="c">; </span>
+<span class="c">; 输入：peak_fraction - 决定试验终止的 ...</span>
+<span class="c">;                        峰值应力比例   (全局浮点数)</span>
+<span class="c">;</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> peak_fraction</span>
+<span class="ni">    loadhalt_meas </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> mp </span><span class="p">=</span><span class="ni"> </span><span class="k">measure.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> abs_stress </span><span class="p">=</span><span class="ni"> </span><span class="k">math.abs</span><span class="p">(</span><span class="ni">meas</span><span class="p">.</span><span class="ni">stress</span><span class="p">(</span><span class="ni">mp</span><span class="p">,</span><span class="k">global.dim</span><span class="p">,</span><span class="k">global.dim</span><span class="p">))</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> peak_stress </span><span class="p">=</span><span class="ni"> </span><span class="k">math.max</span><span class="p">(</span><span class="ni">abs_stress</span><span class="p">,</span><span class="ni">peak_stress</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> abs_stress </span><span class="o">&lt;</span><span class="ni"> peak_stress</span><span class="o">*</span><span class="ni">peak_fraction</span>
+<span class="ni">        loadhalt_meas </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">    </span><span class="k">end_if</span>
+<span class="nb">end</span>
+<span class="c">;=============================================================================</span>
+<span class="c">; 文件结束：ss_gage.fis</span>
+</pre></div>
+</div>
+<p class="endnotesection rubric">尾注</p>
+<table class="docutils footnote" frame="void" id="id5" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><p class="first">要在 <span class="codename">PFC</span> 中查看本项目，请使用程序菜单。</p>
+<p><span class="menuselection">帮助 ▼ 算例…</span></p>
+<p class="last">  ⮡    PFC <br/>
+    ⮡    示例 <br/>
+      ⮡    rocktest <br/>
+        ⮡    rock_testing.prj</p>
+</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../pfc_model_components/pfc_examples.html">Examples</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../examples.html">Example Applications</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../dfn/dfn.html" title="previous chapter"> DFN Generation, Analysis, and Simplification</a> |    
+       <a href="../buttress/buttress.html" title="next chapter">Rigid Block Model of Flying Buttresses</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Rock Testing" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

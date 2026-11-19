@@ -1,0 +1,404 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>线性接触模型：标定法向临界阻尼比 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../../search.html" rel="search" title="Search"/>
+<link href="../hertz_contact_model/cmhertz_single.html" rel="next" title="Hertz Contact Model: Complex Loading Paths"/>
+<link href="../Cantilever/CantileverBeam.html" rel="prev" title="Tip-Loaded Cantilever Beam"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="linear-contact-model-calibrating-the-normal-critical-damping-ratio">
+<span id="ver-cmlr"></span><span id="cmlinear-verif-restitution"></span><h1>线性接触模型：标定法向临界阻尼比</h1>
+<p class="h2 rubric">问题描述</p>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">本算例的项目文件可在 <span class="codename">PFC</span> 中查看或运行。<a class="footnote-reference" href="#id3" id="id1">[1]</a>所用的<a class="reference internal" href="#ver-cmlr-datafiles"><span class="std std-ref">数据文件</span>（data files）</a>列于本算例末尾。</p>
+</div>
+<p>在采用线性接触模型的 <span class="codename">PFC</span> 模型中使用黏性阻尼时，应指定合适的阻尼常数，以便模拟能够再现真实响应。一种做法是利用阻尼常数与恢复系数之间的关系来标定阻尼。<a class="reference internal" href="#kawaguchi1992" id="id2">[Kawaguchi1992]</a> 通过求解带黏性阻尼的自由振动运动方程推导出了该关系。下面给出该推导过程。此外，还将使用 <span class="codename">PFC3D</span> 进行的跌落试验结果与解析解进行了对比。</p>
+<p>线性接触模型及其参数在“<a class="reference internal" href="../../../../../../../common/contactmodel/linear/doc/manual/cmlinear.html#cmlinear"><span class="std std-ref">线性模型</span>（Linear Model）</a>”一节中介绍。</p>
+<p>带黏性阻尼的自由振动运动方程由式 <a class="reference internal" href="#equation-ver-cmlr-restitution-eqmot">(1)</a> 给出：</p>
+<div class="math" id="equation-ver-cmlr-restitution-eqmot">
+<span class="eqno">(1)</span>\[m \ddot{x} + c\dot{x} + k x = 0\]</div>
+<p>其中 <span class="math">\(m\)</span> 为质量，<span class="math">\(c\)</span> 为阻尼常数（黏性阻尼系数），<span class="math">\(k\)</span> 为刚度。</p>
+<p>式 <a class="reference internal" href="#equation-ver-cmlr-restitution-eqmot">(1)</a> 的解由式 <a class="reference internal" href="#equation-ver-cmlr-restitution-eqmot2">(2)</a> 给出：</p>
+<div class="math" id="equation-ver-cmlr-restitution-eqmot2">
+<span class="eqno">(2)</span>\[x(t) = C_1 e^{(-\zeta+\sqrt{\zeta^2-1})^{\omega_n t}} + C_2 e^{(-\zeta-\sqrt{\zeta^2-1})^{\omega_n t}}\]</div>
+<p>其中 <span class="math">\(C_1\)</span> 和 <span class="math">\(C_2\)</span> 为由初始条件确定的任意常数。此外，<span class="math">\(\zeta\)</span> 定义为阻尼常数与临界阻尼常数之比，如式 <a class="reference internal" href="#equation-ver-cmlr-restitution-zeta1">(3)</a> 所示：</p>
+<div class="math" id="equation-ver-cmlr-restitution-zeta1">
+<span class="eqno">(3)</span>\[\zeta = c / c_c\]</div>
+<p>其中 <span class="math">\(c_c\)</span> 为临界阻尼常数（式 <a class="reference internal" href="#equation-ver-cmlr-restitution-cc">(4)</a>）：</p>
+<div class="math" id="equation-ver-cmlr-restitution-cc">
+<span class="eqno">(4)</span>\[c_c = 2m\sqrt{\frac{k}{m}}=2 \sqrt{km} = 2 m \omega_n\]</div>
+<p>其中 <span class="math">\(\omega_n\)</span> 为系统的固有频率。</p>
+<p>这种情况对应于欠阻尼系统，两个相互碰撞物体的回弹即表明了这一点。</p>
+<p>对于初始条件 <span class="math">\(x=x_0,\dot{x}(t=0)=\dot{x}_0\)</span>，式 <a class="reference internal" href="#equation-ver-cmlr-restitution-eqmot">(1)</a> 的解由式 <a class="reference internal" href="#equation-ver-cmlr-restitution-eqmot3">(5)</a> 给出：</p>
+<div class="math" id="equation-ver-cmlr-restitution-eqmot3">
+<span class="eqno">(5)</span>\[x(t) = e^{-\zeta \omega_n t} \Big( x_0 \cos{\omega_d t} + \frac{\dot{x}_0 + \zeta \omega_n x_0}{\omega_d}\sin{\omega_d t} \Big)\]</div>
+<p>其中 <span class="math">\(\omega_d\)</span> 为阻尼振动的频率，由下式给出</p>
+<div class="math" id="equation-ver-cmlr-restitution-eqwd">
+<span class="eqno">(6)</span>\[\omega_d = \sqrt{1-\zeta^2 \omega_n}\]</div>
+<p>将 <span class="math">\(x-0\)</span> = 0 代入式 <a class="reference internal" href="#equation-ver-cmlr-restitution-eqmot3">(5)</a>：</p>
+<div class="math" id="equation-ver-cmlr-restitution-eqmot4a">
+<span class="eqno">(7)</span>\[x(t) = e^{-\zeta \omega_n t} \Big( \frac{\dot{x}_0}{\omega_d}\sin{\omega_d t} \Big)\]</div>
+<div class="math" id="equation-ver-cmlr-restitution-eqmot4b">
+<span class="eqno">(8)</span>\[\dot{x}(t) = -\zeta \omega_n e^{-\zeta \omega_n t} \Big( \frac{\dot{x}_0}{\omega_d}\sin{\omega_d t} \Big) + e^{-\zeta \omega_n t} \dot{x}_0 \cos{\omega_d t}\]</div>
+<p>经过半个时间周期 <span class="math">\(\pi/\omega_d\)</span>（振动周期）后，系统恢复到 <span class="math">\(x\)</span> = 0 的位置。系统的速度由式 <a class="reference internal" href="#equation-ver-cmlr-restitution-eqmot5">(9)</a> 给出：</p>
+<div class="math" id="equation-ver-cmlr-restitution-eqmot5">
+<span class="eqno">(9)</span>\[\dot{x}(t=\frac{\pi}{\omega_d}) = - e^{-\zeta \omega_n \frac{\pi}{\omega_d}} \dot{x}_0\]</div>
+<p>因此，恢复系数 <span class="math">\(\alpha\)</span> 由下式给出</p>
+<div class="math" id="equation-ver-cmlr-restitution-alpha">
+<span class="eqno">(10)</span>\[\alpha = - \frac{\dot{x}(t=\frac{\pi}{\omega_d})}{\dot{x}_0} =  e^{-\zeta \omega_n \pi / \omega_d} = e^{-\frac{\zeta \pi}{\sqrt{1-\zeta^2}}}\]</div>
+<p>此外，阻尼常数与临界阻尼常数之比 <span class="math">\(\zeta\)</span> 以及阻尼常数 <span class="math">\(c\)</span> 分别由式 <a class="reference internal" href="#equation-ver-cmlr-restitution-zeta2">(11)</a> 和式 <a class="reference internal" href="#equation-ver-cmlr-restitution-c">(12)</a> 给出：</p>
+<div class="math" id="equation-ver-cmlr-restitution-zeta2">
+<span class="eqno">(11)</span>\[\zeta = \frac{\ln(\alpha)}{\sqrt{\ln^2(\alpha)+\pi^2}}\]</div>
+<div class="math" id="equation-ver-cmlr-restitution-c">
+<span class="eqno">(12)</span>\[c = \frac{2\sqrt{km}\ln(\alpha)}{\sqrt{\ln^2(\alpha)+\pi^2}}\]</div>
+<p class="h2 rubric"><span class="codename">PFC3D</span> 模型</p>
+<p>开展了一项跌落试验，两排各 16 个球颗粒在重力作用下从墙面上方 1 m 的高度处落下。试验采用 <a class="reference internal" href="../../../../../../../common/contactmodel/linear/doc/manual/cmlinear.html#cmlinear"><span class="std std-ref">线性接触模型</span>（linear contact model）</a>，接触法向刚度为 <span class="math">\(k_n\)</span> = 5.0 × 10<sup>4</sup>，阻尼常数与临界阻尼常数之比（<span class="math">\(\beta_n\)</span>）从 0.0 变化到 1.0。此外，阻尼模式设为 <span class="math">\(M_d\)</span> = 0 和 <span class="math">\(M_d\)</span> = 1。当 <span class="math">\(M_d\)</span> = 1 时，物体之间不存在接触拉力，为获得相同的恢复系数，需要高估临界阻尼比。</p>
+<p>本次模拟使用数据文件“<a class="reference internal" href="#ver-cmlr-datafile3d"><span class="std std-ref">restitution.dat (3D)</span></a>”，模拟参数汇总于下表：</p>
+<table border="1" class="colwidths-given blank col2right docutils" id="id4">
+<caption><span class="caption-text">表 1：模拟参数</span></caption>
+<colgroup>
+<col width="75%"/>
+<col width="25%"/>
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>下落高度</td>
+<td>1 m</td>
+</tr>
+<tr class="row-even"><td>球颗粒直径</td>
+<td>50 mm</td>
+</tr>
+<tr class="row-odd"><td>球颗粒密度</td>
+<td>2650 kg/m<sup>3</sup></td>
+</tr>
+<tr class="row-even"><td>接触法向刚度（<span class="math">\(k_n\)</span>）</td>
+<td>5 × 10<sup>4</sup> N/m</td>
+</tr>
+<tr class="row-odd"><td>接触剪切刚度（<span class="math">\(k_s\)</span>）</td>
+<td>0</td>
+</tr>
+<tr class="row-even"><td>摩擦系数（<span class="math">\(\mu\)</span>）</td>
+<td>0</td>
+</tr>
+<tr class="row-odd"><td>法向临界阻尼比（<span class="math">\(\beta_n\)</span>）</td>
+<td>0.0 至 1.0</td>
+</tr>
+<tr class="row-even"><td>阻尼模式（<span class="math">\(M_d\)</span>）</td>
+<td>0 和 1</td>
+</tr>
+</tbody>
+</table>
+<p>求解 1 s 力学时间后系统的状态如 <a href="#ver-cmlr-restitution-system">图 1（Fig.  1）</a> 所示。球颗粒按其速度大小着色。随着 <span class="math">\(x\)</span> 增大，临界阻尼比从 0.0 变化到 1.0，因此 <span class="math">\(x\)</span> 接近 0.0 的球颗粒回弹高度最大，此时碰撞为弹性碰撞。位于 <span class="math">\(y\)</span> = 0.0 的那一排球颗粒，其接触设置为 <span class="math">\(M_d\)</span> = 0，而第二排则采用 <span class="math">\(M_d\)</span> = 1。</p>
+<div class="figure" id="ver-cmlr-restitution-system">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d_restitution_system.png"><img alt="../../../../../../../_images/p3d_restitution_system.png" src="../../../../../../../_images/p3d_restitution_system.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 1：模拟 1 s 后系统的状态。</span></p>
+</div>
+<p><a href="#ver-cmlr-restitution-hist-dpmode0">图 2（Figures  2）</a> 与 <a href="#ver-cmlr-restitution-hist-dpmode1">图 3</a> 分别绘出模拟过程中监测到的球颗粒 <em>z</em> 坐标位置，二者分别对应 <span class="math">\(M_d\)</span> = 0 与 <span class="math">\(M_d\)</span> = 1 的情况，并说明回弹高度与频率如何随 <span class="math">\(\beta_n\)</span> 与 <span class="math">\(M_d\)</span> 变化。</p>
+<div class="figure" id="ver-cmlr-restitution-hist-dpmode0">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d_restitution_hist_dpmode0.png"><img alt="../../../../../../../_images/p3d_restitution_hist_dpmode0.png" src="../../../../../../../_images/p3d_restitution_hist_dpmode0.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：球颗粒 z 坐标位置历程，<span class="math">\(M_d\)</span> = 0。</span></p>
+</div>
+<div class="figure" id="ver-cmlr-restitution-hist-dpmode1">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d_restitution_hist_dpmode1.png"><img alt="../../../../../../../_images/p3d_restitution_hist_dpmode1.png" src="../../../../../../../_images/p3d_restitution_hist_dpmode1.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 3：球颗粒 z 坐标位置历程，<span class="math">\(M_d\)</span> = 1。</span></p>
+</div>
+<p>恢复系数由球颗粒的最大回弹高度计算得到；对于 <span class="math">\(M_d\)</span> = 0（红色标记）与 <span class="math">\(M_d\)</span> = 1（绿色标记与虚线）两种情况，其结果以临界阻尼比为横轴绘制于 <a href="#ver-cmlr-restitution-tables">图 4（Fig.  4）</a> 中，图中还同时给出了由公式 <a class="reference internal" href="#equation-ver-cmlr-restitution-alpha">(10)</a> 表示的解析解（黑色虚线）。数值解与解析解之间的最大差异小于 3%。请注意，数值模型的精度取决于时间积分的粒度：这一方面是因为接触模型的实现依赖于该粒度，另一方面也是因为本算例中用于评估恢复系数的方法（测量回弹高度）依赖于该粒度。以上给出的结果是在采用 <span class="codename">PFC</span> 自动计算的时步的情况下得到的。将时步固定为更小的值（1 × 10<sup>-5</sup>）后重复进行模拟：所得结果（见 <a href="#ver-cmlr-restitution-tables-dtfix">图 5（Fig.  5）</a>）与解析解的吻合程度更高（最大差异小于 1%）。</p>
+<div class="figure" id="ver-cmlr-restitution-tables">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d_restitution_tables.png"><img alt="../../../../../../../_images/p3d_restitution_tables.png" src="../../../../../../../_images/p3d_restitution_tables.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 4：恢复系数与临界阻尼比之间的关系。</span></p>
+</div>
+<div class="figure" id="ver-cmlr-restitution-tables-dtfix">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d_restitution_tables_dtfix.png"><img alt="../../../../../../../_images/p3d_restitution_tables_dtfix.png" src="../../../../../../../_images/p3d_restitution_tables_dtfix.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 5：恢复系数与临界阻尼比之间的关系。模拟时步固定为 1 × 10<sup>-5</sup>。</span></p>
+</div>
+<p class="h2 rubric">参考文献</p>
+<table class="docutils citation" frame="void" id="kawaguchi1992" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[Kawaguchi1992]</a></td><td>Kawaguchi, T. “Numerical Simulation of Fluidized Bed Using the Discrete Element Method (the Case of Spouting Bed),” 载于 JSME (B)，第 58 卷，第 551 期，第 79-85 页（1992）。</td></tr>
+</tbody>
+</table>
+<p class="h2 rubric" id="ver-cmlr-datafiles">数据文件</p>
+<p class="h3 rubric" id="ver-cmlr-datafile3d">restitution.dat (3D)</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：restitution.p3dat</span>
+<span class="c">;</span>
+<span class="c">; 重力落球试验：测试线性接触模型在法向 </span>
+<span class="c">; 取不同法向临界阻尼比与不同阻尼模式</span>
+<span class="c">; 时的响应。</span>
+<span class="c">; 注意本算例使用接触模型分配表，按空间 </span>
+<span class="c">; 范围为本模型中的每个接触指定不同的 </span>
+<span class="c">; 接触模型参数。</span>
+<span class="c">;</span>
+<span class="c">;=========================================================================</span>
+<span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> t1 </span><span class="p">=</span><span class="ni"> </span><span class="s">'Linear Contact Model: '</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> t2 </span><span class="p">=</span><span class="ni"> </span><span class="s">'Calibrating the Normal Critical Damping Ratio'</span><span class="ni">]</span>
+<span class="nb">model title</span><span class="n"> </span><span class="ni">[t1 </span><span class="o">+</span><span class="ni"> t2]</span>
+
+<span class="c">;-------------------------------------------------------------------------</span>
+<span class="c">; --------------------- 自定义工具函数 -------------------------</span>
+<span class="c">;-------------------------------------------------------------------------</span>
+
+<span class="nb">fish define</span><span class="ni"> make_system</span><span class="p">(</span><span class="ni">rad</span><span class="p">,</span><span class="ni">height</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> dia </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2.0</span><span class="o">*</span><span class="ni">rad</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> _lx </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2</span><span class="o">*</span><span class="ni">dia</span><span class="o">*</span><span class="m m-Double">16</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> _ly </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2</span><span class="o">*</span><span class="ni">dia</span><span class="o">*</span><span class="m m-Double">2</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> _lz_inf </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">dia</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> _lz_sup </span><span class="p">=</span><span class="ni"> height </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">2.0</span><span class="o">*</span><span class="ni">dia</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> _rad </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">dia</span>
+<span class="k">  command</span>
+<span class="nb">    model domain</span><span class="n"> extent </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[_lx]</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[_ly]</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[_lz_inf]</span><span class="p">,</span><span class="ni">[_lz_sup]</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">           condition reflect reflect reflect</span>
+<span class="nb">    wall generate</span><span class="n"> id </span><span class="m m-Double">1</span><span class="n"> polygon  </span><span class="m m-Double">0</span><span class="n">    </span><span class="m m-Double">0</span><span class="n">      </span><span class="m m-Double">0</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">                                </span><span class="ni">[_lx]</span><span class="n"> </span><span class="m m-Double">0</span><span class="n">      </span><span class="m m-Double">0</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">                                </span><span class="m m-Double">0</span><span class="n">    </span><span class="ni">[_ly]</span><span class="n">   </span><span class="m m-Double">0</span><span class="n">    </span><span class="sx">...</span><span class="n">   </span>
+<span class="n">                                </span><span class="ni">[_lx]</span><span class="n"> </span><span class="ni">[_ly]</span><span class="n">   </span><span class="m m-Double">0</span><span class="n"> </span>
+<span class="nb">    model history</span><span class="n"> name </span><span class="s">'100'</span><span class="n"> mechanical time</span><span class="o">-</span><span class="n">total  </span>
+<span class="nb">    history interval</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="k">  end_command</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> _count </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> _zpos </span><span class="p">=</span><span class="ni"> height</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> test </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">local</span><span class="ni"> j</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> _ypos </span><span class="p">=</span><span class="ni"> dia </span><span class="o">*</span><span class="p">(</span><span class="m m-Double">2</span><span class="o">*</span><span class="ni">j</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> _ymin </span><span class="p">=</span><span class="ni"> _ypos </span><span class="o">-</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">dia</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> _ymax </span><span class="p">=</span><span class="ni"> _ypos </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">dia</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">local</span><span class="ni"> i</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">16</span><span class="p">)</span>
+<span class="ni">      </span><span class="k">local</span><span class="ni"> _xpos </span><span class="p">=</span><span class="ni"> dia </span><span class="o">*</span><span class="p">(</span><span class="m m-Double">2</span><span class="o">*</span><span class="ni">i</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">      </span><span class="k">local</span><span class="ni"> _xmin </span><span class="p">=</span><span class="ni"> _xpos </span><span class="o">-</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">dia</span>
+<span class="ni">      </span><span class="k">local</span><span class="ni"> _xmax </span><span class="p">=</span><span class="ni"> _xpos </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">dia</span>
+<span class="ni">      _count </span><span class="p">=</span><span class="ni"> _count</span><span class="o">+</span><span class="m m-Double">1</span>
+<span class="k">      command</span>
+<span class="nb">        ball create</span><span class="n"> id </span><span class="ni">[_count]</span><span class="n"> rad </span><span class="ni">[rad]</span><span class="n"> pos </span><span class="ni">[</span><span class="p">(</span><span class="ni">_xpos</span><span class="p">,</span><span class="ni">_ypos</span><span class="p">,</span><span class="ni">_zpos</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">        ball history</span><span class="n"> name </span><span class="ni">[string</span><span class="p">(</span><span class="ni">_count</span><span class="p">)</span><span class="ni">]</span><span class="n"> position</span><span class="o">-</span><span class="n">z id </span><span class="ni">[_count]</span>
+<span class="k">      end_command</span>
+<span class="ni">    </span><span class="k">end_loop</span>
+<span class="ni">  </span><span class="k">end_loop</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> fill_cmat</span><span class="p">(</span><span class="ni">rad</span><span class="p">,</span><span class="ni">kn</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> _cn</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> _dpmode </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">local</span><span class="ni"> j</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> j </span><span class="o">&gt;</span><span class="ni"> </span><span class="m m-Double">1</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">      _dpmode </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> _ypos </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2.0</span><span class="o">*</span><span class="ni">rad </span><span class="o">*</span><span class="p">(</span><span class="m m-Double">2</span><span class="o">*</span><span class="ni">j</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> _ymin </span><span class="p">=</span><span class="ni"> _ypos </span><span class="o">-</span><span class="ni"> rad</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> _ymax </span><span class="p">=</span><span class="ni"> _ypos </span><span class="o">+</span><span class="ni"> rad</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">local</span><span class="ni"> i</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">16</span><span class="p">)</span>
+<span class="ni">      </span><span class="k">local</span><span class="ni"> _xpos </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2.0</span><span class="o">*</span><span class="ni">rad </span><span class="o">*</span><span class="p">(</span><span class="m m-Double">2</span><span class="o">*</span><span class="ni">i</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">      </span><span class="k">local</span><span class="ni"> _xmin </span><span class="p">=</span><span class="ni"> _xpos </span><span class="o">-</span><span class="ni"> rad</span>
+<span class="ni">      </span><span class="k">local</span><span class="ni"> _xmax </span><span class="p">=</span><span class="ni"> _xpos </span><span class="o">+</span><span class="ni"> rad</span>
+<span class="ni">      </span><span class="k">if</span><span class="ni"> i </span><span class="o">&lt;</span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">6</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">        _cn </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni"> </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="ni">i</span><span class="o">-</span><span class="m m-Double">1.0</span><span class="p">)</span><span class="o">*</span><span class="m m-Double">0.01</span>
+<span class="ni">      </span><span class="k">else</span>
+<span class="ni">        _cn </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni"> </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="ni">i</span><span class="o">-</span><span class="m m-Double">6</span><span class="p">)</span><span class="o">*</span><span class="m m-Double">0.1</span>
+<span class="ni">      </span><span class="k">endif</span>
+<span class="k">      command</span>
+<span class="nb">        contact cmat</span><span class="n"> add model linear </span><span class="sx">...</span>
+<span class="n">              property kn </span><span class="ni">[kn]</span><span class="n"> dp_nratio </span><span class="ni">[_cn]</span><span class="n"> dp_mode </span><span class="ni">[_dpmode]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">              range position</span><span class="o">-</span><span class="n">x </span><span class="ni">[_xmin]</span><span class="n"> </span><span class="ni">[_xmax]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">              position</span><span class="o">-</span><span class="n">y </span><span class="ni">[_ymin]</span><span class="n"> </span><span class="ni">[_ymax]</span>
+<span class="k">      end_command</span>
+<span class="ni">    </span><span class="k">end_loop</span>
+<span class="ni">  </span><span class="k">endloop</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> make_tables</span><span class="p">(</span><span class="ni">rad</span><span class="p">,</span><span class="ni">height</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> get_hist_max</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> tab_ana </span><span class="p">=</span><span class="ni"> </span><span class="k">table.create</span><span class="p">(</span><span class="s">'analytical'</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> tab_dp0 </span><span class="p">=</span><span class="ni"> </span><span class="k">table.create</span><span class="p">(</span><span class="s">'dp_mode 0'</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> tab_dp1 </span><span class="p">=</span><span class="ni"> </span><span class="k">table.create</span><span class="p">(</span><span class="s">'dp_mode 1'</span><span class="p">)</span>
+<span class="ni">    tab_dp </span><span class="p">=</span><span class="ni"> tab_dp0</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">local</span><span class="ni"> j</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span>
+<span class="ni">        </span><span class="k">local</span><span class="ni"> histfirst </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span><span class="ni"> </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">16</span><span class="o">*</span><span class="p">(</span><span class="ni">j</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">        </span><span class="k">loop</span><span class="ni"> </span><span class="k">local</span><span class="ni"> i</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">16</span><span class="p">)</span>
+<span class="ni">            </span><span class="k">local</span><span class="ni"> _cn</span>
+<span class="ni">            </span><span class="k">if</span><span class="ni"> i </span><span class="o">&lt;</span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">6</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">                _cn </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni"> </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="ni">i</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="o">*</span><span class="m m-Double">0.01</span>
+<span class="ni">            </span><span class="k">else</span>
+<span class="ni">                _cn </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni"> </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="ni">i</span><span class="o">-</span><span class="m m-Double">6</span><span class="p">)</span><span class="o">*</span><span class="m m-Double">0.1</span>
+<span class="ni">            </span><span class="k">endif</span><span class="ni">    </span>
+<span class="ni">            </span><span class="k">if</span><span class="ni"> j </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">                </span><span class="k">local</span><span class="ni"> rth</span>
+<span class="ni">                </span><span class="k">if</span><span class="ni"> _cn # </span><span class="m m-Double">1.0</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">                    rth </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">1.0</span><span class="ni"> </span><span class="o">*</span><span class="ni">_cn </span><span class="o">*</span><span class="ni"> </span><span class="k">math.pi</span><span class="ni"> </span><span class="o">/</span><span class="ni"> </span><span class="k">math.sqrt</span><span class="p">(</span><span class="m m-Double">1.0</span><span class="o">-</span><span class="ni">_cn</span><span class="o">*</span><span class="ni">_cn</span><span class="p">)</span>
+<span class="ni">                    rth </span><span class="p">=</span><span class="ni"> </span><span class="k">math.exp</span><span class="p">(</span><span class="ni">rth</span><span class="p">)</span>
+<span class="ni">                </span><span class="k">else</span>
+<span class="ni">                    rth </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">                </span><span class="k">endif</span>
+<span class="ni">                </span><span class="k">table.value</span><span class="p">(</span><span class="ni">tab_ana</span><span class="p">,</span><span class="ni">i</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="ni">_cn</span><span class="p">,</span><span class="ni">rth</span><span class="p">)</span>
+<span class="ni">            </span><span class="k">endif</span>
+<span class="ni">            </span><span class="k">local</span><span class="ni"> hid </span><span class="p">=</span><span class="ni"> histfirst </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="ni">i</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">            </span><span class="k">local</span><span class="ni"> reb_h </span><span class="p">=</span><span class="ni"> get_hist_max</span><span class="p">(</span><span class="ni">hid</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> rad </span>
+<span class="ni">            reb_h </span><span class="p">=</span><span class="ni"> </span><span class="k">math.max</span><span class="p">(</span><span class="ni">reb_h</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span>
+<span class="ni">            </span><span class="k">local</span><span class="ni"> repu </span><span class="p">=</span><span class="ni"> </span><span class="k">math.sqrt</span><span class="p">(</span><span class="ni">reb_h </span><span class="o">/</span><span class="p">(</span><span class="ni">height</span><span class="o">-</span><span class="ni">rad</span><span class="p">))</span>
+<span class="ni">            </span><span class="k">table.value</span><span class="p">(</span><span class="ni">tab_dp</span><span class="p">,</span><span class="ni">i</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> vector</span><span class="p">(</span><span class="ni">_cn</span><span class="p">,</span><span class="ni">repu</span><span class="p">)</span>
+<span class="ni">        </span><span class="k">endloop</span>
+<span class="ni">        tab_dp </span><span class="p">=</span><span class="ni"> tab_dp1</span>
+<span class="ni">    </span><span class="k">endloop</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> err </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> i </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">16</span><span class="p">)</span>
+<span class="ni">        err </span><span class="p">=</span><span class="ni"> </span><span class="k">math.max</span><span class="p">(</span><span class="ni">err</span><span class="p">,</span><span class="k">math.abs</span><span class="p">(</span><span class="k">table.y</span><span class="p">(</span><span class="ni">tab_dp0</span><span class="p">,</span><span class="ni">i</span><span class="p">)</span><span class="o">-</span><span class="k">table.y</span><span class="p">(</span><span class="ni">tab_ana</span><span class="p">,</span><span class="ni">i</span><span class="p">)))</span>
+<span class="ni">    </span><span class="k">endloop</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> get_hist_max</span><span class="p">(</span><span class="ni">hid</span><span class="p">)</span>
+<span class="ni">  </span><span class="c">; 求某条历程的第一个最大值 </span>
+<span class="ni">  tab_tmp </span><span class="p">=</span><span class="ni"> </span><span class="k">table.create</span><span class="p">(</span><span class="s">'dummy'</span><span class="p">)</span>
+<span class="k">  command</span>
+<span class="nb">    history export</span><span class="n"> </span><span class="ni">[string</span><span class="p">(</span><span class="ni">hid</span><span class="p">)</span><span class="ni">]</span><span class="n"> table </span><span class="s">'dummy'</span>
+<span class="k">  endcommand</span>
+<span class="ni">  </span><span class="c">; 先经过第一个最小值，再求第一个最大值（回弹高度）</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> tsize </span><span class="p">=</span><span class="ni"> </span><span class="k">table.size</span><span class="p">(</span><span class="ni">tab_tmp</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> minpassed </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> max_h </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">1e20</span>
+<span class="ni">  </span><span class="k">section</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">local</span><span class="ni"> it</span><span class="p">(</span><span class="m m-Double">2</span><span class="p">,</span><span class="ni">tsize</span><span class="p">)</span>
+<span class="ni">      </span><span class="k">local</span><span class="ni"> _y1 </span><span class="p">=</span><span class="ni"> </span><span class="k">table.y</span><span class="p">(</span><span class="ni">tab_tmp</span><span class="p">,</span><span class="ni">it</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">      </span><span class="k">local</span><span class="ni"> _y2 </span><span class="p">=</span><span class="ni"> </span><span class="k">table.y</span><span class="p">(</span><span class="ni">tab_tmp</span><span class="p">,</span><span class="ni">it</span><span class="p">)</span>
+<span class="ni">      </span><span class="k">if</span><span class="ni"> minpassed </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">        </span><span class="k">if</span><span class="ni"> _y2 </span><span class="o">&gt;</span><span class="ni"> _y1 </span><span class="k">then</span>
+<span class="ni">          minpassed </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">        </span><span class="k">endif</span>
+<span class="ni">      </span><span class="k">else</span>
+<span class="ni">        max_h </span><span class="p">=</span><span class="ni"> </span><span class="k">math.max</span><span class="p">(</span><span class="ni">max_h</span><span class="p">,</span><span class="ni">_y2</span><span class="p">)</span>
+<span class="ni">        </span><span class="k">if</span><span class="ni"> _y2 </span><span class="o">&lt;</span><span class="ni"> max_h </span><span class="k">then</span>
+<span class="ni">          </span><span class="k">exit section</span>
+<span class="ni">        </span><span class="k">endif</span>
+<span class="ni">      </span><span class="k">endif</span><span class="ni">  </span>
+<span class="ni">    </span><span class="k">endloop</span>
+<span class="ni">  </span><span class="k">end_section</span>
+<span class="ni">  </span><span class="k">table.delete</span><span class="p">(</span><span class="ni">tab_tmp</span><span class="p">)</span>
+<span class="ni">  get_hist_max </span><span class="p">=</span><span class="ni"> max_h</span>
+<span class="nb">end</span>
+
+<span class="c">;-------------------------------------------------------------------------</span>
+<span class="c">; ---------------------------- 模拟 --------------------------------</span>
+<span class="c">;-------------------------------------------------------------------------</span>
+
+<span class="ni">[</span><span class="k">global</span><span class="ni"> ball_radius</span><span class="p">=</span><span class="m m-Double">0.025</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> drop_height</span><span class="p">=</span><span class="m m-Double">1.0</span><span class="ni">]</span>
+
+<span class="ni">[make_system</span><span class="p">(</span><span class="ni">ball_radius</span><span class="p">,</span><span class="ni">drop_height</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[fill_cmat</span><span class="p">(</span><span class="ni">ball_radius</span><span class="p">,</span><span class="m m-Double">5.0e4</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">ball attribute</span><span class="n"> dens </span><span class="m m-Double">2650</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">10.0</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'ini'</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> age </span><span class="m m-Double">1.0</span>
+<span class="c">;</span>
+<span class="ni">[make_tables</span><span class="p">(</span><span class="ni">ball_radius</span><span class="p">,</span><span class="ni">drop_height</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'final'</span>
+
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'ini'</span>
+<span class="nb">model mechanical</span><span class="n"> timestep fix </span><span class="m m-Double">1e-5</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> age </span><span class="m m-Double">1.0</span>
+<span class="c">;</span>
+<span class="ni">[make_tables</span><span class="p">(</span><span class="ni">ball_radius</span><span class="p">,</span><span class="ni">drop_height</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'final-dtfix'</span>
+
+<span class="nb">program </span><span class="se">return</span><span class="n"> </span>
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：restitution.p3dat</span>
+</pre></div>
+</div>
+<p class="endnotesection rubric">尾注</p>
+<table class="docutils footnote" frame="void" id="id3" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><p class="first">要在 <span class="codename">PFC</span> 中查看本项目，请使用程序菜单。</p>
+<p><span class="menuselection">帮助 ▼ 算例…</span></p>
+<p class="last">  ⮡    PFC <br/>
+    ⮡    验证 <br/>
+      ⮡     <br/>
+        ⮡    LinearContactModel.prj</p>
+</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../pfc_model_components/pfc_examples.html">Examples</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../verification.html">Verification Problems</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../Cantilever/CantileverBeam.html" title="previous chapter"> Tip-Loaded Cantilever Beam</a> |    
+       <a href="../hertz_contact_model/cmhertz_single.html" title="next chapter">Hertz Contact Model: Complex Loading Paths</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Linear Contact Model: Calibrating the Normal Critical Damping Ratio" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

@@ -1,0 +1,395 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>合成岩体（SRM）试样的创建 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../../search.html" rel="search" title="Search"/>
+<link href="../../verification/verification.html" rel="next" title="Verification Problems"/>
+<link href="../joint_slip/jointslip.html" rel="prev" title="Slip on a Fault"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="creation-of-a-synthetic-rock-mass-srm-specimen">
+<span id="tut-frock"></span><span id="fractured-rock"></span><span id="index-0"></span><h1>合成岩体（SRM）试样的创建</h1>
+<p class="h2 rubric">引言</p>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">本算例的项目文件可在 <span class="codename">PFC</span> 中查看或运行。<a class="footnote-reference" href="#id4" id="id1">[1]</a>所用的<a class="reference internal" href="#tut-frock-datafiles"><span class="std std-ref">数据文件</span>（data files）</a>列于本算例末尾。</p>
+</div>
+<p>岩体是由岩基质组成的复杂系统，其材料性质可能非均质，且往往遍布不连续面（例如裂隙、节理、断层等）。这类系统中的破坏可能发生在岩基质中，也可能沿不连续面发生，或同时发生在两处。<span class="codename">PFC</span> 已被成功用于研究此类系统的力学行为，这得益于 <a class="reference internal" href="../../../../../../../common/contactmodel/smoothjoint/doc/manual/cmsmoothjoint.html#cmsmoothjoint"><span class="std std-ref">光滑节理接触模型</span>（smoothjoint contact model）</a>（<a class="reference internal" href="#pierce2012a" id="id2">[Pierce2012a]</a>）的发展。该建模方法是将裂隙信息（即裂隙的几何形状与性质）叠加到黏结颗粒模型（BPM，<a class="reference internal" href="#potyondy2015d" id="id3">[Potyondy2015d]</a>）上。BPM 用于模拟完整岩石，而裂隙的力学行为则通过修改与裂隙相交的接触处的接触模型来引入。由于 <span class="codename">PFC</span> 模型本质上是离散的，破坏既可发生在完整的 BPM 区域，也可沿裂隙面发生。由这种配置确定岩体性质的方法被称为合成岩体（SRM）方法。</p>
+<p>随着 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn.html#dfn-manual"><span class="std std-ref">离散裂隙网络逻辑</span>（discrete fracture network logic）</a> 的加入，开展此类研究所需的建模步骤在 <span class="codename">PFC 6.0</span> 中被大大简化，本教程即演示了这一点。</p>
+<p>完整的 BPM 模型使用 <a class="reference internal" href="../../../../../../../common/contactmodel/linearpbond/doc/manual/cmlinearpbond.html#cmlinearpbond"><span class="std std-ref">线性平行黏结接触模型</span>（linear parallel bond contact model）</a> 创建。为高效地建立足尺模型，采用了 <a class="reference internal" href="../../../general_components/brick/brick.html#brick-manual"><span class="std std-ref">brick 逻辑</span>（brick logic）</a>，即先在周期性空间中创建一个小模型，随后再将其组装为足尺模型。最后生成 DFN，并将其用于为与裂隙相交的接触赋予 <a class="reference internal" href="../../../../../../../common/contactmodel/smoothjoint/doc/manual/cmsmoothjoint.html#cmsmoothjoint"><span class="std std-ref">光滑节理接触模型</span>（smoothjoint contact models）</a>。创建黏结颗粒模型的支持由 <a class="reference internal" href="../../../numerical_simulations_with_pfc/material_modeling_support_for_pfc.html#material-modeling-support-for-pfc">材料建模支持（<span class="std std-ref">material-modeling support</span>）</a> 包提供，但本文未使用该包，因为它目前尚不支持在周期性空间中创建材料。</p>
+<p class="h2 rubric"><span class="codename">PFC2D</span> 模型</p>
+<p>文件“<a class="reference internal" href="#tut-frock-doall-datafile2d"><span class="std std-ref">doall.p2dvr</span></a>”依次调用其他数据文件，以执行建模过程的各个步骤。采用这种策略可以有效地管理多步骤模拟。</p>
+<p class="h3 rubric">构建完整岩石</p>
+<p>完整试样的创建分两步完成。首先在周期性空间中将一个小系统求解至平衡。然后将该系统作为一个砖块，通过组装来创建更大的足尺模型。</p>
+<p>文件 <a class="reference internal" href="#tut-frock-make-brick-datafile2d">make_brick.dat（二维）（<span class="std std-ref">make_brick.dat (2D)</span>）</a> 用于创建基本砖块。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：make_brick.dat (2D)</span>
+<span class="c">;</span>
+<span class="c">; 在周期性空间中创建一个基块 </span>
+<span class="c">;=========================================================================</span>
+<span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">2.0</span><span class="n"> </span><span class="m m-Double">2.0</span><span class="n"> condition periodic</span>
+<span class="nb">contact cmat</span><span class="n"> default model linear property kn </span><span class="m m-Double">1e5</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+<span class="nb">ball distribute</span><span class="n"> porosity </span><span class="m m-Double">0.08</span><span class="n"> radius </span><span class="m m-Double">1.0</span><span class="n"> </span><span class="m m-Double">1.6</span><span class="n"> res </span><span class="m m-Double">0.025</span>
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="m m-Double">2500.0</span><span class="n"> damp </span><span class="m m-Double">0.7</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span><span class="n"> calm </span><span class="m m-Double">10</span>
+<span class="nb">model mechanical</span><span class="n"> timestep scale</span>
+<span class="nb">model </span><span class="ss">solve</span>
+<span class="nb">model calm</span>
+<span class="nb">brick make</span><span class="n"> id </span><span class="m m-Double">1</span>
+<span class="nb">brick export</span><span class="n"> id </span><span class="m m-Double">1</span><span class="n"> skip</span><span class="o">-</span><span class="n">errors</span>
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：make_brick.dat (2D)</span>
+</pre></div>
+</div>
+<p>本阶段的目标是构建一个密实且连接良好的集合体。<a class="reference internal" href="../../../pfc_model_components/contacts/cmat_description.html#cmat">接触模型分配表（<span class="std std-ref">CMAT</span>）</a> 的默认槽位中填充的是具有指定法向刚度的 <a class="reference internal" href="../../../../../../../common/contactmodel/linear/doc/manual/cmlinear.html#cmlinear"><span class="std std-ref">线性接触模型</span>（linear contact model）</a>。使用 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.distribute.html#command:ball.distribute" title="Distribute balls with overlaps..."><code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">distribute</span></code></a> 命令创建球颗粒以匹配目标孔隙率，并设置密度和局部阻尼属性。随后将系统求解至平衡（先使用带 <span class="cmdkey">calm</span> 关键字的 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.cycle.html#command:model.cycle" title="Execute timesteps. The synonym  model.step  may also be used.  This is
+the equivalent of calling  model.solve  with the  cycles  keyword
+set to  i ...">执行计算时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">cycle</span></code>）</a> 命令，再使用 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令）。<a href="#tut-frock-p2d-tuto-srm-brick">图 1（Figure  1）</a> 展示了导出为二进制文件（参见 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/brick_manual/brick_commands/cmd_brick_export.html#command:brick.export" title="Export a brick as a binary file...">导出砖块（<code class="xref fish fish-cmd docutils literal"><span class="pre">brick</span> <span class="pre">export</span></code>）</a> 命令）以备后续使用的砖块。</p>
+<div class="figure" id="tut-frock-p2d-tuto-srm-brick">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d-tuto-srm-brick.png"><img alt="../../../../../../../_images/p2d-tuto-srm-brick.png" src="../../../../../../../_images/p2d-tuto-srm-brick.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 1：基本砖块。</span></p>
+</div>
+<p>使用“<a class="reference internal" href="#tut-frock-make-intact-datafile2d">make_intact.dat（二维）（<span class="std std-ref">make_intact.dat (2D)</span>）</a>”中的命令来组装砖块。在本例中，砖块在水平方向上复制两次、在竖直方向上复制四次，最终模型尺寸为 8.0 × 16.0 个长度单位，包含约 35,000 个球颗粒。请注意，导入砖块不会修改 <a class="reference internal" href="../../../pfc_model_components/contacts/cmat_description.html#cmat">接触模型分配表（<span class="std std-ref">CMAT</span>）</a> 的默认槽位。因此，需要通过赋予 <a class="reference internal" href="../../../../../../../common/contactmodel/linearpbond/doc/manual/cmlinearpbond.html#cmlinearpbond"><span class="std std-ref">线性平行黏结接触模型</span>（linear parallel bond contact model）</a> 并将 <span class="cmdkey">lin_mode</span> = 1 来修改这些槽位。该属性将线性分量的法向力计算模式设为增量式而非绝对式。使用 <span class="cmdkey">deformability</span> 方法设置微观属性，以满足接触模型线性部分的目标杨氏模量。应用 CMAT，使所有接触都被赋予更新后的接触模型，并将接触力/力矩清零。将接触力/力矩清零并把法向力计算改为增量模式可消除内建应力，在某些情况下可能是需要的。最后，使用 <a class="reference internal" href="../../../../../../../common/contact/doc/contact_manual/contact_commands/cmd_contact.method.html#command:contact.method" title="Call a contact method. The method, along with its specific list of pairs of
+argument names and values, is invoked..."><code class="xref fish fish-cmd docutils literal"><span class="pre">contact</span> <span class="pre">method</span></code></a> 命令将所有相互重叠的球颗粒之间的接触黏结起来，并相应设置平行黏结属性。通常不宜在 CMAT 中指定 <span class="cmdkey">bond</span> 方法，因为这将导致尝试对所有后续创建的接触进行黏结。<a href="#tut-frock-p2d-tuto-srm-intact">图 2（Figure  2）</a> 展示了完整试样。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：make_intact.dat (2D)</span>
+<span class="c">;</span>
+<span class="c">; 在足尺模型中组装基块并安装线性平行黏结模型 </span>
+<span class="c">;=========================================================================</span>
+<span class="nb">model new</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">4.0</span><span class="n"> </span><span class="m m-Double">4.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">8.0</span><span class="n"> </span><span class="m m-Double">8.0</span>
+<span class="nb">brick import</span><span class="n"> id </span><span class="m m-Double">1</span><span class="n"> </span>
+<span class="nb">brick assemble</span><span class="n"> id </span><span class="m m-Double">1</span><span class="n"> origin </span><span class="o">-</span><span class="m m-Double">4.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">8.0</span><span class="n"> size </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">4</span>
+<span class="nb">contact cmat</span><span class="n"> default model linearpbond method deformability </span><span class="sx">...</span>
+<span class="n">                     emod </span><span class="m m-Double">60e9</span><span class="n"> kratio </span><span class="m m-Double">2.5</span><span class="n"> property fric </span><span class="m m-Double">0.5</span><span class="n"> lin_mode </span><span class="m m-Double">1</span><span class="n"> </span>
+<span class="nb">contact cmat</span><span class="n"> apply</span>
+<span class="nb">ball attribute</span><span class="n"> force</span><span class="o">-</span><span class="n">contact multiply </span><span class="m m-Double">0.0</span><span class="n"> moment</span><span class="o">-</span><span class="n">contact multiply </span><span class="m m-Double">0.0</span>
+<span class="nb">contact method</span><span class="n"> bond gap </span><span class="m m-Double">0.0</span><span class="n"> pb_deformability emod </span><span class="m m-Double">60e9</span><span class="n"> kratio </span><span class="m m-Double">2.5</span>
+<span class="nb">contact property</span><span class="n"> pb_ten </span><span class="m m-Double">1e8</span><span class="n"> pb_coh </span><span class="m m-Double">5e7</span><span class="n"> pb_fa </span><span class="m m-Double">20.0</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'intact'</span>
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：make_intact.dat (2D)</span>
+</pre></div>
+</div>
+<div class="figure" id="tut-frock-p2d-tuto-srm-intact">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d-tuto-srm-intact.png"><img alt="../../../../../../../_images/p2d-tuto-srm-intact.png" src="../../../../../../../_images/p2d-tuto-srm-intact.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：完整试样。</span></p>
+</div>
+<p class="h3 rubric">叠加裂隙</p>
+<p>文件“<a class="reference internal" href="#tut-frock-make-fractured-datafile2d">make_fractured.dat（二维）（<span class="std std-ref">make_fractured.dat (2D)</span>）</a>”用于将裂隙叠加到完整的 BPM 上。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：make_fractured.dat (2D)</span>
+<span class="c">;</span>
+<span class="c">; 恢复完整黏结颗粒模型 - 生成离散裂隙网络并将光滑节理接触</span>
+<span class="c">; 模型安装到被裂隙切穿的接触上 </span>
+<span class="c">;=========================================================================</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'intact'</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+<span class="nb">fracture template</span><span class="n"> create </span><span class="s">'test'</span><span class="n"> size power</span><span class="o">-</span><span class="n">law </span><span class="m m-Double">3</span><span class="n"> size</span><span class="o">-</span><span class="n">limits </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">100</span>
+<span class="nb">fracture generate</span><span class="n"> dfn </span><span class="s">'fractures'</span><span class="n"> template </span><span class="s">'test'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  generation</span><span class="o">-</span><span class="n">box </span><span class="o">-</span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">8</span><span class="n"> </span><span class="m m-Double">8</span><span class="n"> p10 </span><span class="m m-Double">1.5</span><span class="n"> begin </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">8</span><span class="p">)</span><span class="n"> end </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">8</span><span class="p">)</span>
+<span class="nb">fracture combine</span><span class="n"> angle </span><span class="m m-Double">30.0</span><span class="n"> distance </span><span class="m m-Double">1.0</span><span class="n"> merge</span>
+<span class="nb">fracture combine</span><span class="n"> angle </span><span class="m m-Double">40.0</span><span class="n"> distance </span><span class="m m-Double">1.0</span><span class="n"> merge</span>
+<span class="nb">fracture contact-model</span><span class="n"> model </span><span class="s">'smoothjoint'</span><span class="n"> install </span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'fractured'</span>
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：make_fractured.dat (2D)</span>
+</pre></div>
+</div>
+<p>使用 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_template.create.html#command:fracture.template.create" title="Create a fracture generation template. The name of the template is  s .
+A fracture generation...">创建裂隙模板命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fracture</span> <span class="pre">template</span> <span class="pre">create</span></code>）</a> 命令定义统计 DFN 模型。在本例中，裂隙遵循幂律尺寸分布，指数为 -3，长度范围为 1 至 100 个单位。DFN 是以 DFN 模板作为统计模型进行的一次实现。生成一个 DFN（参见 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_generate.html#command:fracture.generate" title="Generate fractures from a statistical description. A model domain must be specified
+prior to...">生成裂隙命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fracture</span> <span class="pre">generate</span></code>）</a> 命令），其停止准则基于沿一条竖直线的裂隙频率，即 P10。使用 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_combine.html#command:fracture.combine" title="Simplify fractures. Fractures are sorted by decreasing size and, starting with
+the...">合并裂隙命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fracture</span> <span class="pre">combine</span></code>）</a> 命令对该 DFN 进行变换，以合并方位相似且在空间上彼此接近的裂隙。这一操作可能是有益的，因为合并之前的裂隙数量可能不必要地偏多。最后，使用 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn_commands/cmd_fracture_contact-model.html#kwd:fracture.contact-model.model" title="Name the contact model to be used (e.g., linear, smoothjoint, etc.)...">裂隙接触模型模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">fracture</span> <span class="pre">contact-model</span> <span class="pre">model</span></code>）</a> 命令在与裂隙相交的接触中安装 <a class="reference internal" href="../../../../../../../common/contactmodel/smoothjoint/doc/manual/cmsmoothjoint.html#cmsmoothjoint"><span class="std std-ref">光滑节理接触模型</span>（smoothjoint contact model）</a>。请注意，也可以使用任何其他接触模型。<a href="#tut-frock-p2d-tuto-srm-all">图 3（Figure  3）</a> 展示了最终系统，<a href="#tut-frock-p2d-tuto-srm-detail">图 4（Figure  4）</a> 展示了该系统的细部。</p>
+<div class="figure" id="tut-frock-p2d-tuto-srm-all">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d-tuto-srm-all.png"><img alt="../../../../../../../_images/p2d-tuto-srm-all.png" src="../../../../../../../_images/p2d-tuto-srm-all.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 3：含裂隙试样。</span></p>
+</div>
+<div class="figure" id="tut-frock-p2d-tuto-srm-detail">
+<a class="reference internal image-reference" href="../../../../../../../_images/p2d-tuto-srm-detail.png"><img alt="../../../../../../../_images/p2d-tuto-srm-detail.png" src="../../../../../../../_images/p2d-tuto-srm-detail.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 4：细部视图——光滑节理接触用光滑节理法向表示。</span></p>
+</div>
+<p class="h2 rubric"><span class="codename">PFC3D</span> 模型</p>
+<p>还提供了使用 <span class="codename">PFC3D</span> 构建类似模型的数据文件：</p>
+<ul class="simple">
+<li><a class="reference internal" href="#tut-frock-doall-datafile3d"><span class="std std-ref">doall.p3dvr</span></a></li>
+<li><a class="reference internal" href="#tut-frock-make-brick-datafile3d">make_brick.dat（三维）（<span class="std std-ref">make_brick.dat (3D)</span>）</a></li>
+<li><a class="reference internal" href="#tut-frock-make-intact-datafile3d">make_intact.dat（三维）（<span class="std std-ref">make_intact .dat (3D)</span>）</a></li>
+<li><a class="reference internal" href="#tut-frock-make-fractured-datafile3d">make_fractured.dat（三维）（<span class="std std-ref">make_fractured.dat (3D)</span>）</a></li>
+</ul>
+<p>这些步骤与 <span class="codename">PFC2D</span> 模型中的步骤相同，此处不再讨论。<a href="#tut-frock-p3d-tuto-srm-all">图 5（Figure  5）</a> 展示了最终的 3D 系统，其中包含球颗粒（左）、平行黏结和光滑节理接触（中）以及 DFN（右）。</p>
+<div class="figure" id="tut-frock-p3d-tuto-srm-all">
+<a class="reference internal image-reference" href="pfc/pfcmodule/test3d/tutorial_problems/fractured_rock/p3d-tuto-srm-all.png"><img alt="pfc/pfcmodule/test3d/tutorial_problems/fractured_rock/p3d-tuto-srm-all.png" src="pfc/pfcmodule/test3d/tutorial_problems/fractured_rock/p3d-tuto-srm-all.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 5：三维含裂隙试样：球颗粒（左）、平行黏结和光滑节理接触（中）以及 DFN（右）。</span></p>
+</div>
+<p class="h2 rubric">讨论</p>
+<p>本教程演示了如何使用 <a class="reference internal" href="../../../general_components/brick/brick.html#brick-manual"><span class="std std-ref">brick 逻辑</span>（brick logic）</a> 高效地创建大尺度 BPM。此外，还给出了生成并简化 <a class="reference internal" href="../../../../../../../common/dfn/doc/dfn_manual/dfn.html#dfn-manual"><span class="std std-ref">DFN</span></a> 的步骤。与裂隙相交的接触被赋予 <a class="reference internal" href="../../../../../../../common/contactmodel/smoothjoint/doc/manual/cmsmoothjoint.html#cmsmoothjoint"><span class="std std-ref">光滑节理接触模型</span>（smoothjoint contact model）</a>，并设置其属性。所得的 SRM 试样已处于可进行进一步测试以确定其强度特性的状态。</p>
+<p class="h3 rubric">参考文献</p>
+<table class="docutils citation" frame="void" id="pierce2012a" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[Pierce2012a]</a></td><td>Pierce, M.E., and C. Fairhurst，“合成岩体在大型采矿中的应用”（Synthetic Rock Mass Applications in Mass Mining），载于 <span class="bi">Harmonising Rock Engineering and the Environment（第 12 届 ISRM 国际大会论文集，中国北京，2011 年 10 月）</span>，第 109-114 页，Q. Qian and Y. Zhou 编，ISBN 978-0-415-80444-8，伦敦：Taylor &amp; Francis Group（2012）。</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="potyondy2015d" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[Potyondy2015d]</a></td><td>Potyondy, D. O.，“黏结颗粒模型作为岩石力学研究与应用的工具：当前趋势与未来方向”（The Bonded-Particle Model as a Tool for Rock Mechanics Research and Application: Current Trends and Future Directions），Geosystem Engineering，18(1)，第 1–28 页（2015），DOI:10.1080/12269328.2014.998346。</td></tr>
+</tbody>
+</table>
+<p class="h2 rubric" id="tut-frock-datafiles">数据文件</p>
+<p class="h3 rubric" id="tut-frock-doall-datafile3d">doall.p3dvr</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：doall.p3dvr</span>
+<span class="c">;</span>
+<span class="c">; 依次调用用于创建裂隙岩体模型的数据文件</span>
+<span class="c">;===========================================================================</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'Fractured Rock'</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'make_brick'</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'make_intact'</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'make_fractured'</span>
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">;===========================================================================</span>
+<span class="c">; 文件结束：doall.p3dvr</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="tut-frock-make-brick-datafile3d">make_brick.dat（三维）</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：make_brick.dat (3D)</span>
+<span class="c">;</span>
+<span class="c">; 在周期性空间中创建一个基块 </span>
+<span class="c">;=========================================================================</span>
+<span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">2.0</span><span class="n"> </span><span class="m m-Double">2.0</span><span class="n"> condition periodic</span>
+<span class="nb">contact cmat</span><span class="n"> default model linear property kn </span><span class="m m-Double">1e5</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+<span class="nb">ball distribute</span><span class="n"> porosity </span><span class="m m-Double">0.30</span><span class="n"> radius </span><span class="m m-Double">1.0</span><span class="n"> </span><span class="m m-Double">1.6</span><span class="n"> res </span><span class="m m-Double">0.1</span>
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="m m-Double">2500.0</span><span class="n"> damp </span><span class="m m-Double">0.7</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span><span class="n"> calm </span><span class="m m-Double">10</span>
+<span class="nb">model mechanical</span><span class="n"> timestep scale</span>
+<span class="nb">model </span><span class="ss">solve</span>
+<span class="nb">model calm</span>
+<span class="nb">brick make</span><span class="n"> id </span><span class="m m-Double">1</span>
+<span class="nb">brick export</span><span class="n"> id </span><span class="m m-Double">1</span><span class="n"> skip</span><span class="o">-</span><span class="n">errors</span>
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：make_brick.dat (3D)</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="tut-frock-make-intact-datafile3d">make_intact.dat（三维）</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：make_intact.dat (3D)</span>
+<span class="c">;</span>
+<span class="c">; 在足尺模型中组装基块并安装线性平行黏结模型 </span>
+<span class="c">;========================================================================</span>
+<span class="nb">model new</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">4.0</span><span class="n"> </span><span class="m m-Double">4.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4.0</span><span class="n"> </span><span class="m m-Double">4.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">8.0</span><span class="n"> </span><span class="m m-Double">8.0</span>
+<span class="nb">brick import</span><span class="n"> id </span><span class="m m-Double">1</span><span class="n"> </span>
+<span class="nb">brick assemble</span><span class="n"> id </span><span class="m m-Double">1</span><span class="n"> origin </span><span class="o">-</span><span class="m m-Double">4.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">8.0</span><span class="n"> size </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">4</span>
+<span class="nb">contact cmat</span><span class="n"> default model linearpbond method deformability emod </span><span class="m m-Double">60e9</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                     kratio </span><span class="m m-Double">2.5</span><span class="n"> property fric </span><span class="m m-Double">0.5</span><span class="n"> lin_mode </span><span class="m m-Double">1</span>
+<span class="nb">contact cmat</span><span class="n"> apply</span>
+<span class="nb">ball attribute</span><span class="n"> force</span><span class="o">-</span><span class="n">contact multiply </span><span class="m m-Double">0.0</span><span class="n"> moment</span><span class="o">-</span><span class="n">contact multiply </span><span class="m m-Double">0.0</span><span class="n"> </span>
+<span class="nb">contact method</span><span class="n"> bond gap </span><span class="m m-Double">0.0</span><span class="n"> pb_deformability emod </span><span class="m m-Double">60e9</span><span class="n"> kratio </span><span class="m m-Double">2.5</span>
+<span class="nb">contact property</span><span class="n"> pb_ten </span><span class="m m-Double">1e8</span><span class="n"> pb_coh </span><span class="m m-Double">5e7</span><span class="n"> pb_fa </span><span class="m m-Double">20.0</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'intact'</span>
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：make_intact.dat (3D)</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="tut-frock-make-fractured-datafile3d">make_fractured.dat（三维）</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：make_fractured.dat (3D)</span>
+<span class="c">;</span>
+<span class="c">; 恢复完整黏结颗粒模型 - 生成离散裂隙网络并将光滑节理接触</span>
+<span class="c">; 模型安装到被裂隙切穿的接触上 </span>
+<span class="c">;=========================================================================</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'intact'</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+<span class="nb">fracture template</span><span class="n"> create </span><span class="s">'1'</span><span class="n"> size power</span><span class="o">-</span><span class="n">law </span><span class="m m-Double">3</span><span class="n"> size</span><span class="o">-</span><span class="n">limit </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">100</span>
+<span class="nb">fracture generate</span><span class="n"> dfn </span><span class="s">'fractures'</span><span class="n"> template </span><span class="s">'1'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                       generation</span><span class="o">-</span><span class="n">box </span><span class="o">-</span><span class="m m-Double">4.0</span><span class="n"> </span><span class="m m-Double">4.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4.0</span><span class="n"> </span><span class="m m-Double">4.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">8.0</span><span class="n"> </span><span class="m m-Double">8.0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                       p10 </span><span class="m m-Double">1.5</span><span class="n"> begin </span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">8.0</span><span class="p">)</span><span class="n"> end </span><span class="p">(</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">8.0</span><span class="p">)</span>
+<span class="nb">fracture combine</span><span class="n"> angle </span><span class="m m-Double">30.0</span><span class="n"> distance </span><span class="m m-Double">1.0</span><span class="n"> merge</span>
+<span class="nb">fracture combine</span><span class="n"> angle </span><span class="m m-Double">40.0</span><span class="n"> distance </span><span class="m m-Double">1.0</span><span class="n"> merge</span>
+<span class="nb">fracture contact-model</span><span class="n"> model </span><span class="s">'smoothjoint'</span><span class="n"> install </span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'fractured'</span>
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：make_fractured.dat (3D)</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="tut-frock-doall-datafile2d">doall.p2dvr</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：doall.p2dvr</span>
+<span class="c">;</span>
+<span class="c">; 依次调用用于创建裂隙岩体模型的数据文件</span>
+<span class="c">;=========================================================================</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'make_brick'</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'make_intact'</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'make_fractured'</span>
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：doall.p2dvr</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="tut-frock-make-brick-datafile2d">make_brick.dat（二维）</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：make_brick.dat (2D)</span>
+<span class="c">;</span>
+<span class="c">; 在周期性空间中创建一个基块 </span>
+<span class="c">;=========================================================================</span>
+<span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">2.0</span><span class="n"> </span><span class="m m-Double">2.0</span><span class="n"> condition periodic</span>
+<span class="nb">contact cmat</span><span class="n"> default model linear property kn </span><span class="m m-Double">1e5</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+<span class="nb">ball distribute</span><span class="n"> porosity </span><span class="m m-Double">0.08</span><span class="n"> radius </span><span class="m m-Double">1.0</span><span class="n"> </span><span class="m m-Double">1.6</span><span class="n"> res </span><span class="m m-Double">0.025</span>
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="m m-Double">2500.0</span><span class="n"> damp </span><span class="m m-Double">0.7</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span><span class="n"> calm </span><span class="m m-Double">10</span>
+<span class="nb">model mechanical</span><span class="n"> timestep scale</span>
+<span class="nb">model </span><span class="ss">solve</span>
+<span class="nb">model calm</span>
+<span class="nb">brick make</span><span class="n"> id </span><span class="m m-Double">1</span>
+<span class="nb">brick export</span><span class="n"> id </span><span class="m m-Double">1</span><span class="n"> skip</span><span class="o">-</span><span class="n">errors</span>
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：make_brick.dat (2D)</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="tut-frock-make-intact-datafile2d">make_intact.dat（二维）</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：make_intact.dat (2D)</span>
+<span class="c">;</span>
+<span class="c">; 在足尺模型中组装基块并安装线性平行黏结模型 </span>
+<span class="c">;=========================================================================</span>
+<span class="nb">model new</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">4.0</span><span class="n"> </span><span class="m m-Double">4.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">8.0</span><span class="n"> </span><span class="m m-Double">8.0</span>
+<span class="nb">brick import</span><span class="n"> id </span><span class="m m-Double">1</span><span class="n"> </span>
+<span class="nb">brick assemble</span><span class="n"> id </span><span class="m m-Double">1</span><span class="n"> origin </span><span class="o">-</span><span class="m m-Double">4.0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">8.0</span><span class="n"> size </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">4</span>
+<span class="nb">contact cmat</span><span class="n"> default model linearpbond method deformability </span><span class="sx">...</span>
+<span class="n">                     emod </span><span class="m m-Double">60e9</span><span class="n"> kratio </span><span class="m m-Double">2.5</span><span class="n"> property fric </span><span class="m m-Double">0.5</span><span class="n"> lin_mode </span><span class="m m-Double">1</span><span class="n"> </span>
+<span class="nb">contact cmat</span><span class="n"> apply</span>
+<span class="nb">ball attribute</span><span class="n"> force</span><span class="o">-</span><span class="n">contact multiply </span><span class="m m-Double">0.0</span><span class="n"> moment</span><span class="o">-</span><span class="n">contact multiply </span><span class="m m-Double">0.0</span>
+<span class="nb">contact method</span><span class="n"> bond gap </span><span class="m m-Double">0.0</span><span class="n"> pb_deformability emod </span><span class="m m-Double">60e9</span><span class="n"> kratio </span><span class="m m-Double">2.5</span>
+<span class="nb">contact property</span><span class="n"> pb_ten </span><span class="m m-Double">1e8</span><span class="n"> pb_coh </span><span class="m m-Double">5e7</span><span class="n"> pb_fa </span><span class="m m-Double">20.0</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'intact'</span>
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：make_intact.dat (2D)</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="tut-frock-make-fractured-datafile2d">make_fractured.dat（二维）</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：make_fractured.dat (2D)</span>
+<span class="c">;</span>
+<span class="c">; 恢复完整黏结颗粒模型 - 生成离散裂隙网络并将光滑节理接触</span>
+<span class="c">; 模型安装到被裂隙切穿的接触上 </span>
+<span class="c">;=========================================================================</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'intact'</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+<span class="nb">fracture template</span><span class="n"> create </span><span class="s">'test'</span><span class="n"> size power</span><span class="o">-</span><span class="n">law </span><span class="m m-Double">3</span><span class="n"> size</span><span class="o">-</span><span class="n">limits </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">100</span>
+<span class="nb">fracture generate</span><span class="n"> dfn </span><span class="s">'fractures'</span><span class="n"> template </span><span class="s">'test'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  generation</span><span class="o">-</span><span class="n">box </span><span class="o">-</span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">8</span><span class="n"> </span><span class="m m-Double">8</span><span class="n"> p10 </span><span class="m m-Double">1.5</span><span class="n"> begin </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">8</span><span class="p">)</span><span class="n"> end </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">8</span><span class="p">)</span>
+<span class="nb">fracture combine</span><span class="n"> angle </span><span class="m m-Double">30.0</span><span class="n"> distance </span><span class="m m-Double">1.0</span><span class="n"> merge</span>
+<span class="nb">fracture combine</span><span class="n"> angle </span><span class="m m-Double">40.0</span><span class="n"> distance </span><span class="m m-Double">1.0</span><span class="n"> merge</span>
+<span class="nb">fracture contact-model</span><span class="n"> model </span><span class="s">'smoothjoint'</span><span class="n"> install </span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'fractured'</span>
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">;=========================================================================</span>
+<span class="c">; 文件结束：make_fractured.dat (2D)</span>
+</pre></div>
+</div>
+<p class="endnotesection rubric">尾注</p>
+<table class="docutils footnote" frame="void" id="id4" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><p class="first">要在 <span class="codename">PFC</span> 中查看本项目，请使用程序菜单。</p>
+<p><span class="menuselection">帮助 ▼ 算例…</span></p>
+<p class="last">  ⮡    PFC <br/>
+    ⮡    教程 <br/>
+      ⮡    FracturedRock <br/>
+        ⮡    FracturedRock.prj</p>
+</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../pfc_model_components/pfc_examples.html">Examples</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../tutorials.html">Tutorials</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../joint_slip/jointslip.html" title="previous chapter"> Slip on a Fault</a> |    
+       <a href="../../verification/verification.html" title="next chapter">Verification Problems</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Creation of a Synthetic Rock Mass (SRM) Specimen" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

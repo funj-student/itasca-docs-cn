@@ -1,0 +1,740 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>黏附滚动阻力线性接触模型：休止角 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../../../search.html" rel="search" title="Search"/>
+<link href="../../burger_contact_model/stress_relaxation/cmburger_stressrelaxation.html" rel="next" title="Burger’s Contact Model: Stress Relaxation"/>
+<link href="../../rrlinear_contact_model/repose_angle/cmrrlinear_reposeangle.html" rel="prev" title="Rolling Resistance Linear Contact Model: Repose Angle"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="adhesive-rolling-resistance-linear-contact-model-repose-angle">
+<span id="ver-cmarr"></span><span id="cmarrlinear-verif-reposeangle"></span><h1>黏附滚动阻力线性接触模型：休止角</h1>
+<p class="h2 rubric">引言</p>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">本算例的项目文件可在 <span class="codename">PFC</span> 中查看或运行。<a class="footnote-reference" href="#id2" id="id1">[1]</a>所用的<a class="reference internal" href="#ver-cmarr-datafiles"><span class="std std-ref">数据文件</span>（data files）</a>列于本算例末尾。</p>
+</div>
+<p>在本例中，通过向上提升一个初始装满在重力作用下静止的球颗粒的容器来形成颗粒堆积体。计算中采用 <a class="reference internal" href="../../../../../../../../common/contactmodel/arrlinear/doc/manual/cmarrlinear.html#cmarrlinear"><span class="std std-ref">黏附滚动阻力线性接触模型</span>（adhesive rolling resistance linear contact model）</a>，并以不同的最大吸引力 <span class="math">\((F_0)\)</span> 取值多次进行模拟，以研究其对堆积体最终形状的影响。结果表明，如预期一样，增大 <span class="math">\(F_0\)</span> 会使堆积体的坡角增大。黏附滚动阻力线性模型具有吸引力作用范围 <span class="math">\((D_0)\)</span>，它定义了球颗粒之间吸引力开始不为零的距离。在模拟过程中改变 <span class="math">\(D_0\)</span> 的取值时，需要使用接触模型分配表（CMAT）来确保表面间隙小于吸引力作用范围的球颗粒之间会自动创建接触，文中还演示了实现该行为所需的步骤。本例在 <span class="codename">PFC2D</span> 和 <span class="codename">PFC3D</span> 中均有介绍。</p>
+<p class="h2 rubric"><span class="codename">PFC2D</span> 模型</p>
+<p class="h3 rubric">初始状态</p>
+<p>初始模型状态由容器中在重力作用下静止的颗粒柱组成，如 <a href="#ver-cmarr-state-ini">图 1（Figure  1）</a> 所示。该模型使用数据文件 <a class="reference internal" href="#ver-cmarr-make-system-datafile2d"><span class="std std-ref">make_system.dat (2D)</span></a> 创建。下面讨论该文件中的部分代码行。</p>
+<div class="figure" id="ver-cmarr-state-ini">
+<a class="reference internal image-reference" href="pfc/pfcmodule/test2d/verification_problems/adhesive_rolling_resistance/repose_angle/p2d-cmarrlinear-reposeangle-state-ini.png"><img alt="pfc/pfcmodule/test2d/verification_problems/adhesive_rolling_resistance/repose_angle/p2d-cmarrlinear-reposeangle-state-ini.png" src="pfc/pfcmodule/test2d/verification_problems/adhesive_rolling_resistance/repose_angle/p2d-cmarrlinear-reposeangle-state-ini.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 1：初始模型状态。</span></p>
+</div>
+<p>为方便起见，输入参数使用内联 <span class="codename">FISH</span> 定义为全局 <span class="codename">FISH</span> 变量（参见 <a class="reference internal" href="../../../../../../../../common/docproject/source/manual/scripting/fish_scripting/fish_inline.html#fish-inline"><span class="std std-ref">执行 FISH：内联 FISH 或 FISH 片段</span>（Executing FISH:  Inline FISH or FISH Fragments）</a> 主题），具体代码如下：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="ni">[cyl_rad    </span><span class="p">=</span><span class="ni">   </span><span class="m m-Double">50.0e-3</span><span class="ni">]</span><span class="n"> </span><span class="c">; 容器半宽 [m]</span>
+<span class="ni">[cyl_height </span><span class="p">=</span><span class="ni">  </span><span class="m m-Double">100.0e-3</span><span class="ni">]</span><span class="n"> </span><span class="c">; 容器高度 [m]</span>
+<span class="ni">[ravg       </span><span class="p">=</span><span class="ni">   </span><span class="m m-Double">1.5e-3</span><span class="ni"> ]</span><span class="n"> </span><span class="c">; 球平均半径 [m]</span>
+<span class="ni">[rdev       </span><span class="p">=</span><span class="ni">   </span><span class="m m-Double">0.5</span><span class="ni">    ]</span><span class="n"> </span><span class="c">; 球半径相对偏差 [-]</span>
+<span class="ni">[dens       </span><span class="p">=</span><span class="ni">   </span><span class="m m-Double">2.0e3</span><span class="ni">  ]</span><span class="n"> </span><span class="c">; 球密度 [kg/m3]</span>
+<span class="ni">[poros      </span><span class="p">=</span><span class="ni">   </span><span class="m m-Double">0.3</span><span class="ni">    ]</span><span class="n"> </span><span class="c">; 初始孔隙率 [-]</span>
+
+<span class="n"> </span><span class="c">;  接触模型参数</span>
+<span class="ni">[emod   </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0e6</span><span class="ni">]</span><span class="n">  </span><span class="c">; 杨氏模量（deformability 方法）[Pa]</span>
+<span class="ni">[kratio </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2.0</span><span class="ni">  ]</span><span class="n">  </span><span class="c">; 刚度比（deformability 方法）[-]</span>
+<span class="ni">[fric   </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.01</span><span class="ni"> ]</span><span class="n">  </span><span class="c">; 摩擦系数 [-]</span>
+<span class="ni">[dpnr   </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.2</span><span class="ni">  ]</span><span class="n">  </span><span class="c">; 法向临界阻尼比 [-]</span>
+<span class="ni">[dpsr   </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.2</span><span class="ni">  ]</span><span class="n">  </span><span class="c">; 切向临界阻尼比 [-]</span>
+<span class="ni">[dpm    </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">3</span><span class="ni">    ]</span><span class="n">  </span><span class="c">; 阻尼器模式 [-]</span>
+<span class="ni">[rfric  </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">  ]</span><span class="n">  </span><span class="c">; 滚动阻力系数 [-]</span>
+<span class="ni">[F0     </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">  ]</span><span class="n">  </span><span class="c">; 最大吸引力 [N]</span>
+<span class="ni">[D0     </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">  ]</span><span class="n">  </span><span class="c">; 吸引范围 [m]</span>
+</pre></div>
+</div>
+<p>第一组参数定义容器尺寸，以及所生成球颗粒云的粒径分布、密度和孔隙率。容器设置为 100 mm × 100 mm 的正方形，球颗粒半径围绕 1.5 mm 的均值具有 0.5 的相对偏差，密度为 2000 kg/m<sup>3</sup>。几何体由两个独立的墙体构成：一个横跨整个计算域的水平底面，以及一个由 3 个面片组成的容器。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">wall generate</span><span class="n"> id </span><span class="m m-Double">1</span><span class="n">               </span><span class="sx">...</span>
+<span class="n">              name </span><span class="s">'base_plane'</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">              plane</span>
+
+<span class="nb">wall create</span><span class="n"> id </span><span class="m m-Double">100</span><span class="n">                                                 </span><span class="sx">...</span>
+<span class="n">            name </span><span class="s">'container'</span><span class="n">                                       </span><span class="sx">...</span>
+<span class="n">     vertices </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">cyl_rad]</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">cyl_rad]</span><span class="n"> </span><span class="ni">[cyl_height]</span><span class="n">        </span><span class="sx">...</span>
+<span class="n">              </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">cyl_rad]</span><span class="n"> </span><span class="ni">[cyl_height]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">cyl_rad]</span><span class="n"> </span><span class="ni">[cyl_height]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">              </span><span class="ni">[</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">cyl_rad]</span><span class="n"> </span><span class="ni">[cyl_height]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">cyl_rad]</span><span class="n"> </span><span class="m m-Double">0.0</span>
+</pre></div>
+</div>
+<p>初始球颗粒云使用 <a class="reference internal" href="../../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.distribute.html#command:ball.distribute" title="Distribute balls with overlaps..."><code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">distribute</span></code></a> 命令创建：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">ball distribute</span><span class="n"> porosity </span><span class="ni">[poros]</span><span class="n">                      </span><span class="sx">...</span>
+<span class="n">                resolution </span><span class="ni">[ravg]</span><span class="n">                     </span><span class="sx">...</span>
+<span class="n">                radius </span><span class="ni">[</span><span class="m m-Double">1.0</span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">rdev]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">1.0</span><span class="o">+</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">rdev]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                box </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">cyl_rad]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">cyl_rad]</span><span class="n">     </span><span class="sx">...</span>
+<span class="n">                               </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="ni">[cyl_height]</span>
+</pre></div>
+</div>
+<p>第二组参数定义系统中将使用的接触模型属性。<a class="reference internal" href="../../../../../../../../common/contactmodel/arrlinear/doc/manual/cmarrlinear.html#cmarrlinear"><span class="std std-ref">黏附滚动阻力线性接触模型</span>（adhesive rolling resistance linear contact model）</a> 被分配给球-球接触，<a class="reference internal" href="../../../../../../../../common/contactmodel/rrlinear/doc/manual/cmrrlinear.html#cmrrlinear"><span class="std std-ref">滚动阻力线性接触模型</span>（rolling resistance linear contact model）</a> 被分配给球-墙接触。球-墙接触处不会产生吸引力，因此球颗粒不会黏附在墙面上。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">ball model arrlinear </span><span class="sx">...</span>
+<span class="n">                            method deformability       </span><span class="sx">...</span>
+<span class="n">                                     emod      </span><span class="ni">[emod]</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">                                     kratio    </span><span class="ni">[kratio]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            property fric      </span><span class="ni">[fric]</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">                                     dp_nratio </span><span class="ni">[dpnr]</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">                                     dp_sratio </span><span class="ni">[dpsr]</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">                                     dp_mode   </span><span class="ni">[dpm]</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">                                     rr_fric   </span><span class="ni">[rfric]</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">                                     adh_f0    </span><span class="ni">[F0]</span><span class="n">     </span><span class="sx">...</span>
+<span class="n">                                     adh_d0    </span><span class="ni">[D0]</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">facet model rrlinear </span><span class="sx">...</span>
+<span class="n">                            method deformability       </span><span class="sx">...</span>
+<span class="n">                                     emod      </span><span class="ni">[emod]</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">                                     kratio    </span><span class="ni">[kratio]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            property fric      </span><span class="ni">[fric]</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">                                     dp_nratio </span><span class="ni">[dpnr]</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">                                     dp_sratio </span><span class="ni">[dpsr]</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">                                     dp_mode   </span><span class="ni">[dpm]</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">                                     rr_fric   </span><span class="ni">[rfric]</span>
+</pre></div>
+</div>
+<p>这些属性的详细说明请参见 <a class="reference internal" href="../../../../../../../../common/contactmodel/arrlinear/doc/manual/cmarrlinear.html#cmarrlinear"><span class="std std-ref">黏附滚动阻力线性接触模型一节</span>（adhesive rolling resistance linear contact model section）</a>。在当前阶段，摩擦系数取很小的值，滚动阻力系数设为零，且不存在吸引力。采用这些取值是为了获得相对密实的初始状态。接触有效模量设为 1 MPa（使用接触模型的 <a class="reference internal" href="../../../../../../../../common/contactmodel/rrlinear/doc/manual/cmrrlinear.html#cmrrlinear-methtable">变形性（<span class="std std-ref">deformability</span>）</a> 方法）。该取值足以保证系统处于刚性颗粒极限范围内（即接触有效模量与颗粒柱底部最大应力的比值足够大，或者反过来说，重叠量与相接触的球颗粒直径相比很小，从而进一步增大接触刚度也不会影响计算结果），同时又优化了估算时步。</p>
+<p>最后，设置重力以及球颗粒密度和局部阻尼系数属性；然后使用以下命令将系统求解至平衡：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">ball attribute</span><span class="n"> density </span><span class="ni">[dens]</span><span class="n"> damp </span><span class="m m-Double">0.7</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span><span class="n"> </span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span><span class="n"> calm </span><span class="m m-Double">10</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">9.81</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+<span class="nb">ball attribute</span><span class="n"> damp </span><span class="m m-Double">0.0</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'init.p2sav'</span>
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+<p>请注意，将 <em>calm</em> 关键字与 <a class="reference internal" href="../../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.cycle.html#command:model.cycle" title="Execute timesteps. The synonym  model.step  may also be used.  This is
+the equivalent of calling  model.solve  with the  cycles  keyword
+set to  i ...">执行计算时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">cycle</span></code>）</a> 命令配合使用，可有效消除因使用 <a class="reference internal" href="../../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.distribute.html#command:ball.distribute" title="Distribute balls with overlaps..."><code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">distribute</span></code></a> 命令而固有的大初始重叠所产生的能量。在此阶段将局部阻尼设为 0.7 这一较大值，因为我们只关心最终的平衡状态，而不关心系统所经历的路径。在进入堆积体形成阶段之前，局部阻尼被重新设为零。</p>
+<p class="h3 rubric">堆积体形成</p>
+<p>通过将容器墙体向上提升来形成堆积体。这由以下一组命令完成（位于文件 <a class="reference internal" href="#ver-cmarr-move-container-datafile2d"><span class="std std-ref">move_container.dat (2D)</span></a> 中）：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="ni">[cyl_vel </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">5.0e-2</span><span class="ni">]</span><span class="n">  </span><span class="c">; 向上的速度 [m/s] </span>
+<span class="nb">model mechanical</span><span class="n"> time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">0.0</span>
+
+<span class="n"> </span><span class="c">;  *** 修改材料参数</span>
+<span class="n"> </span><span class="c">;  修改现有球-球与球-面片接触的参数。</span>
+<span class="nb">contact property</span><span class="n"> fric </span><span class="ni">[fric]</span><span class="n"> rr_fric </span><span class="ni">[rfric]</span><span class="n"> adh_f0 </span><span class="ni">[F0]</span><span class="n"> adh_d0 </span><span class="ni">[D0]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> range contact type </span><span class="s">'ball-ball'</span>
+<span class="nb">contact property</span><span class="n"> fric </span><span class="ni">[fric]</span><span class="n"> rr_fric </span><span class="ni">[rfric]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> range contact type </span><span class="s">'ball-facet'</span>
+<span class="n"> </span><span class="c">;  修改未来球-球接触的参数。</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">ball model arrlinear </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> method deformability </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> emod </span><span class="ni">[emod]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> kratio </span><span class="ni">[kratio]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> property fric </span><span class="ni">[fric]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> dp_nratio </span><span class="ni">[dpnr]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> dp_sratio </span><span class="ni">[dpsr]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> dp_mode </span><span class="ni">[dpm]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> rr_fric </span><span class="ni">[rfric]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> adh_f0 </span><span class="ni">[F0]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> adh_d0 </span><span class="ni">[D0]</span>
+<span class="n"> </span><span class="c">;  修改未来球-面片接触的参数。</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">facet </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> property fric </span><span class="ni">[fric]</span><span class="n"> rr_fric </span><span class="ni">[rfric]</span>
+<span class="n"> </span><span class="c">;  对 a_d0 的修改已自动改变邻近距离。</span>
+<span class="n"> </span><span class="c">;  通过重新映射网格空间强制生成新接触。</span>
+<span class="nb">model clean</span>
+
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="ni">[cyl_vel]</span><span class="n"> range id </span><span class="m m-Double">100</span><span class="n"> by wall</span>
+<span class="nb">ball attribute</span><span class="n"> displacement multiply </span><span class="m m-Double">0.0</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time </span><span class="ni">[</span><span class="m m-Double">0.75</span><span class="o">*</span><span class="ni">cyl_height</span><span class="o">/</span><span class="ni">cyl_vel]</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0.0</span><span class="n"> range id </span><span class="m m-Double">100</span><span class="n"> by wall</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+<span class="nb">model save</span><span class="n"> </span><span class="sx">...</span>
+<span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'final-fric_%1_rfric_%2_F0_%3_D0_%4.p2sav'</span><span class="p">,</span><span class="ni">fric</span><span class="p">,</span><span class="ni">rfric</span><span class="p">,</span><span class="ni">F0</span><span class="p">,</span><span class="ni">D0</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+<p>该文件并非用于直接执行，而是由 Python 脚本按顺序调用，以完成一系列具有不同属性集的模拟。共有四个属性：摩擦系数（<a class="reference internal" href="../../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">摩擦（<span class="varfishsym"><span class="null">fric</span></span>）</a>）、滚动阻力系数（<a class="reference internal" href="../../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">滚动摩擦（<span class="varfishsym"><span class="null">rfric</span></span>）</a>）、最大吸引力（<a class="reference internal" href="../../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function..."><span class="varfishsym"><span class="null">F0</span></span></a>）和吸引力作用范围（<a class="reference internal" href="../../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function..."><span class="varfishsym"><span class="null">D0</span></span></a>）。这些属性被赋给现有的接触，以及后续循环中可能形成的接触。<a class="reference internal" href="../../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">摩擦（<span class="varfishsym"><span class="null">fric</span></span>）</a> 和 <a class="reference internal" href="../../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">滚动摩擦（<span class="varfishsym"><span class="null">rfric</span></span>）</a> 的取值赋给所有接触，而 <a class="reference internal" href="../../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function..."><span class="varfishsym"><span class="null">F0</span></span></a> 和 <a class="reference internal" href="../../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function..."><span class="varfishsym"><span class="null">D0</span></span></a> 的取值只赋给球-球接触。这给出了一个使用 CMAT 创建 arrlinear 材料的示例，相关讨论详见 <a class="reference internal" href="../../../../../../../../common/contactmodel/arrlinear/doc/manual/cmarrlinear.html#cmarrlinear-activity-deletion-criteria"><span class="std std-ref">此链接</span>（this link）</a>。</p>
+<p>这四个属性在 Python 脚本中被赋值（位于文件 <a class="reference internal" href="#ver-cmarr-do-analysis-datafile2d"><span class="std std-ref">do_analysis.py</span></a> 中）：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="n">import itasca</span>
+<span class="n">itasca</span><span class="p">.</span><span class="n">command</span><span class="p">(</span><span class="s">"python-reset-state off"</span><span class="p">)</span>
+
+<span class="n">fric_list  </span><span class="p">=</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="ni">]</span>
+<span class="n">rfric_list </span><span class="p">=</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.1</span><span class="ni">]</span>
+<span class="n"># F0_list is </span><span class="p">{</span><span class="m m-Double">0</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">1</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">5</span><span class="p">}</span><span class="n"> times weight of single particle </span><span class="ni">[N]</span>
+<span class="n"># D0_list is </span><span class="m m-Double">100</span><span class="n">% of avg</span><span class="p">.</span><span class="n"> particle radius </span><span class="ni">[m]</span>
+<span class="n">F0_list </span><span class="p">=</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.14</span><span class="p">,</span><span class="m m-Double">0.7</span><span class="ni">]</span>
+<span class="n">D0_list </span><span class="p">=</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">1.5e-3</span><span class="ni">]</span>
+
+<span class="n">for f in fric_list</span><span class="p">:</span>
+<span class="n">  for rf in rfric_list</span><span class="p">:</span>
+<span class="n">    for myF0 in F0_list</span><span class="p">:</span>
+<span class="n">      for myD0 in D0_list</span><span class="p">:</span>
+<span class="n">        itasca</span><span class="p">.</span><span class="n">command</span><span class="p">(</span><span class="s">"""</span>
+<span class="s">                         model restore \'init\'</span>
+<span class="s">                         [fric  = {0}]</span>
+<span class="s">                         [rfric = {1}]</span>
+<span class="s">                         [F0    = {2}]</span>
+<span class="s">                         [D0    = {3}]</span>
+<span class="s">                         program call \'move_container.dat\'</span>
+<span class="s">                       """</span><span class="p">.</span><span class="n">format</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="n">rf</span><span class="p">,</span><span class="n">myF0</span><span class="p">,</span><span class="n">myD0</span><span class="p">)</span>
+<span class="n">        </span><span class="p">)</span>
+</pre></div>
+</div>
+<p>脚本中定义了四个列表，并使用嵌套循环为单次模型运行赋予特定的属性组合。每次运行时，先恢复初始状态，再将这些属性赋予四个 <span class="codename">FISH</span> 变量，随后调用 move_container.dat 数据文件。模型运行采用以下属性值。摩擦系数和滚动摩擦系数分别固定为 0.5 和 0.1。最大吸引力分别设为单个颗粒平均重量的零倍、一倍和五倍（<span class="math">\(W = \rho V g = \rho (\pi R^2 t) g \approx 0.14\)</span> N），吸引范围固定为平均颗粒半径的 100%。</p>
+<p>最大吸引力 <span class="math">\((F_0)\)</span> 取三种不同取值时的最终状态如图 <a href="#ver-cmarr-state-final-a">2</a> 至 <a href="#ver-cmarr-state-final-c">4</a> 所示。当不存在吸引力时，形成<a href="#ver-cmarr-state-final-a">图 2（Figure  2）</a> 所示的堆积体。当 <span class="math">\(F_0\)</span> 设为颗粒平均重量时，堆积体变得更密实，休止角更大，因为吸引力使颗粒相互拉近，如<a href="#ver-cmarr-state-final-b">图 3（Figure  3）</a> 所示。当 <span class="math">\(F_0\)</span> 增大到颗粒平均重量的五倍时，吸引力变得过大，无法形成堆积体；颗粒转而保持容器形状，如<a href="#ver-cmarr-state-final-c">图 4（Figure  4）</a> 所示。如果此时通过执行以下命令（在文件 <a class="reference internal" href="#ver-cmarr-zero-f0-datafile2d"><span class="std std-ref">zero_F0.dat (2D)</span></a> 中）将吸引力设为零：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model restore</span><span class="n"> </span><span class="s">'final-fric_0.5_rfric_0.1_F0_0.7_D0_0.0015.p2sav'</span>
+
+<span class="nb">contact property</span><span class="n"> adh_f0 </span><span class="m m-Double">0.0</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">ball </span><span class="sx">...</span>
+<span class="n">             property adh_f0 </span><span class="m m-Double">0.0</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'zero_F0.p2sav'</span>
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+<p>那么颗粒将无法再保持容器形状，集合体随之坍塌，形成<a href="#ver-cmarr-state-final-d">图 5（Figure  5）</a> 所示的散落堆积体。</p>
+<div class="figure" id="ver-cmarr-state-final-a">
+<a class="reference internal image-reference" href="pfc/pfcmodule/test2d/verification_problems/adhesive_rolling_resistance/repose_angle/p2d-cmarrlinear-reposeangle-state-final-a.png"><img alt="pfc/pfcmodule/test2d/verification_problems/adhesive_rolling_resistance/repose_angle/p2d-cmarrlinear-reposeangle-state-final-a.png" src="pfc/pfcmodule/test2d/verification_problems/adhesive_rolling_resistance/repose_angle/p2d-cmarrlinear-reposeangle-state-final-a.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：最大吸引力为零时的最终模型状态。</span></p>
+</div>
+<div class="figure" id="ver-cmarr-state-final-b">
+<a class="reference internal image-reference" href="pfc/pfcmodule/test2d/verification_problems/adhesive_rolling_resistance/repose_angle/p2d-cmarrlinear-reposeangle-state-final-b.png"><img alt="pfc/pfcmodule/test2d/verification_problems/adhesive_rolling_resistance/repose_angle/p2d-cmarrlinear-reposeangle-state-final-b.png" src="pfc/pfcmodule/test2d/verification_problems/adhesive_rolling_resistance/repose_angle/p2d-cmarrlinear-reposeangle-state-final-b.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 3：最大吸引力为颗粒平均重量的一倍时的最终模型状态。</span></p>
+</div>
+<div class="figure" id="ver-cmarr-state-final-c">
+<a class="reference internal image-reference" href="pfc/pfcmodule/test2d/verification_problems/adhesive_rolling_resistance/repose_angle/p2d-cmarrlinear-reposeangle-state-final-c.png"><img alt="pfc/pfcmodule/test2d/verification_problems/adhesive_rolling_resistance/repose_angle/p2d-cmarrlinear-reposeangle-state-final-c.png" src="pfc/pfcmodule/test2d/verification_problems/adhesive_rolling_resistance/repose_angle/p2d-cmarrlinear-reposeangle-state-final-c.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 4：最大吸引力为颗粒平均重量的五倍时的最终模型状态。</span></p>
+</div>
+<div class="figure" id="ver-cmarr-state-final-d">
+<a class="reference internal image-reference" href="pfc/pfcmodule/test2d/verification_problems/adhesive_rolling_resistance/repose_angle/p2d-cmarrlinear-reposeangle-state-final-d.png"><img alt="pfc/pfcmodule/test2d/verification_problems/adhesive_rolling_resistance/repose_angle/p2d-cmarrlinear-reposeangle-state-final-d.png" src="pfc/pfcmodule/test2d/verification_problems/adhesive_rolling_resistance/repose_angle/p2d-cmarrlinear-reposeangle-state-final-d.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 5：将<a href="#ver-cmarr-state-final-c">图 4（Figure  4）</a> 所示系统中的最大吸引力设为零后的最终模型状态。</span></p>
+</div>
+<p class="h2 rubric"><span class="codename">PFC3D</span> 模型</p>
+<p><span class="codename">PFC3D</span> 模型与上述 <span class="codename">PFC2D</span> 模型类似，不同之处在于容器为圆柱体（高度和直径均为 100 mm），球颗粒的平均半径为 3.0 mm，相对偏差为 0.25，以限制模型规模。初始系统见<a href="#ver-cmarr-state-ini-3">图 6（Figure  6）</a>。该模型使用文件 <a class="reference internal" href="#ver-cmarr-make-system-datafile3d"><span class="std std-ref">make_system.dat (3D)</span></a> 构建，堆积体的形成过程使用文件 <a class="reference internal" href="#ver-cmarr-do-analysis-datafile3d"><span class="std std-ref">do_analysis.py</span></a> 模拟，该文件依次调用 <a class="reference internal" href="#ver-cmarr-move-container-datafile3d"><span class="std std-ref">move_container.dat (3D)</span></a>，以不同的最大吸引力取值执行多次运行。</p>
+<div class="figure" id="ver-cmarr-state-ini-3">
+<a class="reference internal image-reference" href="../../../../../../../../_images/p3d-cmarrlinear-reposeangle-state-ini.png"><img alt="../../../../../../../../_images/p3d-cmarrlinear-reposeangle-state-ini.png" src="../../../../../../../../_images/p3d-cmarrlinear-reposeangle-state-ini.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 6：初始模型状态。</span></p>
+</div>
+<p>模型运行采用以下属性值。摩擦系数和滚动摩擦系数分别固定为 0.5 和 0.1。最大吸引力分别设为单个颗粒平均重量的零倍、一倍和五倍（<span class="math">\(W = \rho V g = \rho ({4\over3} \pi R^3) g \approx 2.2 \times 10^{-3}\)</span> N），吸引范围固定为平均颗粒半径的 5%。</p>
+<p>最大吸引力 <span class="math">\((F_0)\)</span> 取三种不同取值时的最终状态如图 <a href="#ver-cmarr-state-final-a-3">7</a> 至 <a href="#ver-cmarr-state-final-c-3">9</a> 所示。当不存在吸引力时，形成<a href="#ver-cmarr-state-final-a-3">图 7（Figure  7）</a> 所示的堆积体。当 <span class="math">\(F_0\)</span> 设为颗粒平均重量时，堆积体变得更密实，休止角更大，因为吸引力使颗粒相互拉近，如<a href="#ver-cmarr-state-final-b-3">图 8（Figure  8）</a> 所示。当 <span class="math">\(F_0\)</span> 增大到颗粒平均重量的五倍时，吸引力变得过大，无法形成堆积体；颗粒转而保持容器形状，如<a href="#ver-cmarr-state-final-c-3">图 9（Figure  9）</a> 所示。如果此时通过执行以下命令（在文件 <a class="reference internal" href="#ver-cmarr-zero-f0-datafile3d"><span class="std std-ref">zero_F0.dat (3D)</span></a> 中）将吸引力设为零：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model restore</span><span class="n"> </span><span class="s">'final-fric_0.5_rfric_0.1_F0_0.011_D0_0.00015.sav'</span>
+
+<span class="nb">contact property</span><span class="n"> adh_f0 </span><span class="m m-Double">0.0</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">ball </span><span class="sx">...</span><span class="n"> </span>
+<span class="n">           property adh_f0 </span><span class="m m-Double">0.0</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'zero_F0.sav'</span>
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+<p>那么颗粒将无法再保持容器形状，集合体随之坍塌，形成<a href="#ver-cmarr-state-final-d-3">图 10（Figure  10）</a> 所示的散落堆积体。</p>
+<div class="figure" id="ver-cmarr-state-final-a-3">
+<a class="reference internal image-reference" href="../../../../../../../../_images/p3d-cmarrlinear-reposeangle-state-final-a.png"><img alt="../../../../../../../../_images/p3d-cmarrlinear-reposeangle-state-final-a.png" src="../../../../../../../../_images/p3d-cmarrlinear-reposeangle-state-final-a.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 7：最大吸引力为零时的最终模型状态。</span></p>
+</div>
+<div class="figure" id="ver-cmarr-state-final-b-3">
+<a class="reference internal image-reference" href="../../../../../../../../_images/p3d-cmarrlinear-reposeangle-state-final-b.png"><img alt="../../../../../../../../_images/p3d-cmarrlinear-reposeangle-state-final-b.png" src="../../../../../../../../_images/p3d-cmarrlinear-reposeangle-state-final-b.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 8：最大吸引力为颗粒平均重量的一倍时的最终模型状态。</span></p>
+</div>
+<div class="figure" id="ver-cmarr-state-final-c-3">
+<a class="reference internal image-reference" href="../../../../../../../../_images/p3d-cmarrlinear-reposeangle-state-final-c.png"><img alt="../../../../../../../../_images/p3d-cmarrlinear-reposeangle-state-final-c.png" src="../../../../../../../../_images/p3d-cmarrlinear-reposeangle-state-final-c.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 9：最大吸引力为颗粒平均重量的五倍时的最终模型状态。</span></p>
+</div>
+<div class="figure" id="ver-cmarr-state-final-d-3">
+<a class="reference internal image-reference" href="../../../../../../../../_images/p3d-cmarrlinear-reposeangle-state-final-d.png"><img alt="../../../../../../../../_images/p3d-cmarrlinear-reposeangle-state-final-d.png" src="../../../../../../../../_images/p3d-cmarrlinear-reposeangle-state-final-d.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 10：将<a href="#ver-cmarr-state-final-c">图 4（Figure  4）</a> 所示系统中的最大吸引力设为零后的最终模型状态。</span></p>
+</div>
+<p class="h2 rubric">讨论</p>
+<p>本算例在 <span class="codename">PFC2D</span> 和 <span class="codename">PFC3D</span> 中检验 <a class="reference internal" href="../../../../../../../../common/contactmodel/arrlinear/doc/manual/cmarrlinear.html#cmarrlinear"><span class="std std-ref">黏结滚动阻力线性接触模型</span>（adhesive rolling resistance linear contact model）</a>，其情形为：将初始装满球颗粒、在重力作用下静止的容器向上移动，从而形成堆积体。研究了堆积体形状随最大吸引力 <span class="math">\((F_0)\)</span> 增大而发生的演化，并表明其符合预期行为。增大 <span class="math">\(F_0\)</span> 会使堆积体的坡角增大；当 <span class="math">\(F_0\)</span> 增大到足够程度时，球颗粒集合体不再形成堆积体，而是保持容器形状。本算例给出的定性结果与预期行为一致。</p>
+<p class="h2 rubric" id="ver-cmarr-datafiles">数据文件</p>
+<p class="h3 rubric" id="ver-cmarr-make-system-datafile2d">make_system.dat (2D)</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; ===========================================================================</span>
+<span class="c">; 文件名：make_system.dat（2D）</span>
+<span class="c">; ===========================================================================</span>
+<span class="nb">model new</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'Adhesive Rolling Resistance Linear Contact Model: Repose Angle'</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+
+<span class="c">; 容器与球的属性</span>
+<span class="c">; excerpt-klfp-start</span>
+<span class="ni">[cyl_rad    </span><span class="p">=</span><span class="ni">   </span><span class="m m-Double">50.0e-3</span><span class="ni">]</span><span class="n"> </span><span class="c">; 容器半宽 [m]</span>
+<span class="ni">[cyl_height </span><span class="p">=</span><span class="ni">  </span><span class="m m-Double">100.0e-3</span><span class="ni">]</span><span class="n"> </span><span class="c">; 容器高度 [m]</span>
+<span class="ni">[ravg       </span><span class="p">=</span><span class="ni">   </span><span class="m m-Double">1.5e-3</span><span class="ni"> ]</span><span class="n"> </span><span class="c">; 球平均半径 [m]</span>
+<span class="ni">[rdev       </span><span class="p">=</span><span class="ni">   </span><span class="m m-Double">0.5</span><span class="ni">    ]</span><span class="n"> </span><span class="c">; 球半径相对偏差 [-]</span>
+<span class="ni">[dens       </span><span class="p">=</span><span class="ni">   </span><span class="m m-Double">2.0e3</span><span class="ni">  ]</span><span class="n"> </span><span class="c">; 球密度 [kg/m3]</span>
+<span class="ni">[poros      </span><span class="p">=</span><span class="ni">   </span><span class="m m-Double">0.3</span><span class="ni">    ]</span><span class="n"> </span><span class="c">; 初始孔隙率 [-]</span>
+
+<span class="n"> </span><span class="c">;  接触模型参数</span>
+<span class="ni">[emod   </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0e6</span><span class="ni">]</span><span class="n">  </span><span class="c">; 杨氏模量（deformability 方法）[Pa]</span>
+<span class="ni">[kratio </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2.0</span><span class="ni">  ]</span><span class="n">  </span><span class="c">; 刚度比（deformability 方法）[-]</span>
+<span class="ni">[fric   </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.01</span><span class="ni"> ]</span><span class="n">  </span><span class="c">; 摩擦系数 [-]</span>
+<span class="ni">[dpnr   </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.2</span><span class="ni">  ]</span><span class="n">  </span><span class="c">; 法向临界阻尼比 [-]</span>
+<span class="ni">[dpsr   </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.2</span><span class="ni">  ]</span><span class="n">  </span><span class="c">; 切向临界阻尼比 [-]</span>
+<span class="ni">[dpm    </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">3</span><span class="ni">    ]</span><span class="n">  </span><span class="c">; 阻尼器模式 [-]</span>
+<span class="ni">[rfric  </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">  ]</span><span class="n">  </span><span class="c">; 滚动阻力系数 [-]</span>
+<span class="ni">[F0     </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">  ]</span><span class="n">  </span><span class="c">; 最大吸引力 [N]</span>
+<span class="ni">[D0     </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">  ]</span><span class="n">  </span><span class="c">; 吸引范围 [m]</span>
+<span class="c">; excerpt-klfp-end</span>
+
+<span class="n"> </span><span class="c">;  设置计算域范围与边界条件。</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">4.0</span><span class="o">*</span><span class="ni">cyl_rad]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">4.0</span><span class="o">*</span><span class="ni">cyl_rad]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">4.0</span><span class="o">*</span><span class="ni">ravg]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">2.0</span><span class="o">*</span><span class="ni">cyl_height]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> condition destroy</span>
+
+<span class="c">; 设置 CMAT，使 arrlinear 模型作用于球-球接触，</span>
+<span class="c">; 并使 rrlinear 模型作用于球-面片接触。颗粒</span>
+<span class="c">; 不会黏附到墙上。</span>
+<span class="c">; excerpt-aump-start</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">ball model arrlinear </span><span class="sx">...</span>
+<span class="n">                            method deformability       </span><span class="sx">...</span>
+<span class="n">                                     emod      </span><span class="ni">[emod]</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">                                     kratio    </span><span class="ni">[kratio]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            property fric      </span><span class="ni">[fric]</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">                                     dp_nratio </span><span class="ni">[dpnr]</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">                                     dp_sratio </span><span class="ni">[dpsr]</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">                                     dp_mode   </span><span class="ni">[dpm]</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">                                     rr_fric   </span><span class="ni">[rfric]</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">                                     adh_f0    </span><span class="ni">[F0]</span><span class="n">     </span><span class="sx">...</span>
+<span class="n">                                     adh_d0    </span><span class="ni">[D0]</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">facet model rrlinear </span><span class="sx">...</span>
+<span class="n">                            method deformability       </span><span class="sx">...</span>
+<span class="n">                                     emod      </span><span class="ni">[emod]</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">                                     kratio    </span><span class="ni">[kratio]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            property fric      </span><span class="ni">[fric]</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">                                     dp_nratio </span><span class="ni">[dpnr]</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">                                     dp_sratio </span><span class="ni">[dpsr]</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">                                     dp_mode   </span><span class="ni">[dpm]</span><span class="n">    </span><span class="sx">...</span>
+<span class="n">                                     rr_fric   </span><span class="ni">[rfric]</span>
+<span class="c">; excerpt-aump-end</span>
+
+<span class="c">; 生成底面与容器。</span>
+<span class="c">; excerpt-bkmq-start</span>
+<span class="nb">wall generate</span><span class="n"> id </span><span class="m m-Double">1</span><span class="n">               </span><span class="sx">...</span>
+<span class="n">              name </span><span class="s">'base_plane'</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">              plane</span>
+
+<span class="nb">wall create</span><span class="n"> id </span><span class="m m-Double">100</span><span class="n">                                                 </span><span class="sx">...</span>
+<span class="n">            name </span><span class="s">'container'</span><span class="n">                                       </span><span class="sx">...</span>
+<span class="n">     vertices </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">cyl_rad]</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">cyl_rad]</span><span class="n"> </span><span class="ni">[cyl_height]</span><span class="n">        </span><span class="sx">...</span>
+<span class="n">              </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">cyl_rad]</span><span class="n"> </span><span class="ni">[cyl_height]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">cyl_rad]</span><span class="n"> </span><span class="ni">[cyl_height]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">              </span><span class="ni">[</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">cyl_rad]</span><span class="n"> </span><span class="ni">[cyl_height]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">cyl_rad]</span><span class="n"> </span><span class="m m-Double">0.0</span>
+<span class="c">; excerpt-bkmq-end</span>
+
+<span class="c">; 在容器内分布球体。</span>
+<span class="c">; excerpt-sjzs-start</span>
+<span class="nb">ball distribute</span><span class="n"> porosity </span><span class="ni">[poros]</span><span class="n">                      </span><span class="sx">...</span>
+<span class="n">                resolution </span><span class="ni">[ravg]</span><span class="n">                     </span><span class="sx">...</span>
+<span class="n">                radius </span><span class="ni">[</span><span class="m m-Double">1.0</span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">rdev]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">1.0</span><span class="o">+</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">rdev]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                box </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">cyl_rad]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">cyl_rad]</span><span class="n">     </span><span class="sx">...</span>
+<span class="n">                               </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="ni">[cyl_height]</span>
+<span class="c">; excerpt-sjzs-end</span>
+
+<span class="c">; 在重力作用下使体系静止。</span>
+<span class="c">; excerpt-zkbk-start</span>
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="ni">[dens]</span><span class="n"> damp </span><span class="m m-Double">0.7</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span><span class="n"> </span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span><span class="n"> calm </span><span class="m m-Double">10</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">9.81</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+<span class="nb">ball attribute</span><span class="n"> damp </span><span class="m m-Double">0.0</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'init.p2sav'</span>
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">; excerpt-zkbk-end</span>
+<span class="c">; ===========================================================================</span>
+<span class="c">; 文件结束：make_system.dat（2D）</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="ver-cmarr-move-container-datafile2d">move_container.dat (2D)</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; =========================================================================</span>
+<span class="c">; 文件名：move_container.dat（2D）</span>
+
+<span class="c">;  输入：fric, rfric, F0, D0</span>
+<span class="c">; =========================================================================</span>
+<span class="c">; excerpt-irgs-start</span>
+<span class="ni">[cyl_vel </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">5.0e-2</span><span class="ni">]</span><span class="n">  </span><span class="c">; 向上的速度 [m/s] </span>
+<span class="nb">model mechanical</span><span class="n"> time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">0.0</span>
+
+<span class="n"> </span><span class="c">;  *** 修改材料参数</span>
+<span class="n"> </span><span class="c">;  修改现有球-球与球-面片接触的参数。</span>
+<span class="nb">contact property</span><span class="n"> fric </span><span class="ni">[fric]</span><span class="n"> rr_fric </span><span class="ni">[rfric]</span><span class="n"> adh_f0 </span><span class="ni">[F0]</span><span class="n"> adh_d0 </span><span class="ni">[D0]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> range contact type </span><span class="s">'ball-ball'</span>
+<span class="nb">contact property</span><span class="n"> fric </span><span class="ni">[fric]</span><span class="n"> rr_fric </span><span class="ni">[rfric]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> range contact type </span><span class="s">'ball-facet'</span>
+<span class="n"> </span><span class="c">;  修改未来球-球接触的参数。</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">ball model arrlinear </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> method deformability </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> emod </span><span class="ni">[emod]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> kratio </span><span class="ni">[kratio]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> property fric </span><span class="ni">[fric]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> dp_nratio </span><span class="ni">[dpnr]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> dp_sratio </span><span class="ni">[dpsr]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> dp_mode </span><span class="ni">[dpm]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> rr_fric </span><span class="ni">[rfric]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> adh_f0 </span><span class="ni">[F0]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> adh_d0 </span><span class="ni">[D0]</span>
+<span class="n"> </span><span class="c">;  修改未来球-面片接触的参数。</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">facet </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> property fric </span><span class="ni">[fric]</span><span class="n"> rr_fric </span><span class="ni">[rfric]</span>
+<span class="n"> </span><span class="c">;  对 a_d0 的修改已自动改变邻近距离。</span>
+<span class="n"> </span><span class="c">;  通过重新映射网格空间强制生成新接触。</span>
+<span class="nb">model clean</span>
+
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="ni">[cyl_vel]</span><span class="n"> range id </span><span class="m m-Double">100</span><span class="n"> by wall</span>
+<span class="nb">ball attribute</span><span class="n"> displacement multiply </span><span class="m m-Double">0.0</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time </span><span class="ni">[</span><span class="m m-Double">0.75</span><span class="o">*</span><span class="ni">cyl_height</span><span class="o">/</span><span class="ni">cyl_vel]</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0.0</span><span class="n"> range id </span><span class="m m-Double">100</span><span class="n"> by wall</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+<span class="nb">model save</span><span class="n"> </span><span class="sx">...</span>
+<span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'final-fric_%1_rfric_%2_F0_%3_D0_%4.p2sav'</span><span class="p">,</span><span class="ni">fric</span><span class="p">,</span><span class="ni">rfric</span><span class="p">,</span><span class="ni">F0</span><span class="p">,</span><span class="ni">D0</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">; excerpt-irgs-end</span>
+<span class="c">; =========================================================================</span>
+<span class="c">; 文件结束：move_container.dat（2D）</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="ver-cmarr-do-analysis-datafile2d">do_analysis.py</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="n">#</span><span class="p">=============================================================================</span>
+<span class="n"># do_analysis</span><span class="p">.</span><span class="n">py</span>
+<span class="n">#</span><span class="p">=============================================================================</span>
+<span class="n"># excerpt</span><span class="o">-</span><span class="n">xfee</span><span class="o">-</span><span class="n">start</span>
+<span class="n">import itasca</span>
+<span class="n">itasca</span><span class="p">.</span><span class="n">command</span><span class="p">(</span><span class="s">"python-reset-state off"</span><span class="p">)</span>
+
+<span class="n">fric_list  </span><span class="p">=</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="ni">]</span>
+<span class="n">rfric_list </span><span class="p">=</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.1</span><span class="ni">]</span>
+<span class="n"># F0_list is </span><span class="p">{</span><span class="m m-Double">0</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">1</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">5</span><span class="p">}</span><span class="n"> times weight of single particle </span><span class="ni">[N]</span>
+<span class="n"># D0_list is </span><span class="m m-Double">100</span><span class="n">% of avg</span><span class="p">.</span><span class="n"> particle radius </span><span class="ni">[m]</span>
+<span class="n">F0_list </span><span class="p">=</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.14</span><span class="p">,</span><span class="m m-Double">0.7</span><span class="ni">]</span>
+<span class="n">D0_list </span><span class="p">=</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">1.5e-3</span><span class="ni">]</span>
+
+<span class="n">for f in fric_list</span><span class="p">:</span>
+<span class="n">  for rf in rfric_list</span><span class="p">:</span>
+<span class="n">    for myF0 in F0_list</span><span class="p">:</span>
+<span class="n">      for myD0 in D0_list</span><span class="p">:</span>
+<span class="n">        itasca</span><span class="p">.</span><span class="n">command</span><span class="p">(</span><span class="s">"""</span>
+<span class="s">                         model restore \'init\'</span>
+<span class="s">                         [fric  = {0}]</span>
+<span class="s">                         [rfric = {1}]</span>
+<span class="s">                         [F0    = {2}]</span>
+<span class="s">                         [D0    = {3}]</span>
+<span class="s">                         program call \'move_container.dat\'</span>
+<span class="s">                       """</span><span class="p">.</span><span class="n">format</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="n">rf</span><span class="p">,</span><span class="n">myF0</span><span class="p">,</span><span class="n">myD0</span><span class="p">)</span>
+<span class="n">        </span><span class="p">)</span>
+<span class="n"># excerpt</span><span class="o">-</span><span class="n">xfee</span><span class="o">-</span><span class="n">end</span>
+
+<span class="n">#</span><span class="p">=============================================================================</span>
+<span class="n"># eof</span><span class="p">:</span><span class="n"> do_analysis</span><span class="p">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="ver-cmarr-zero-f0-datafile2d">zero_F0.dat (2D)</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;=============================================================================</span>
+<span class="c">; 文件名：zero_F0.dat（2D）</span>
+<span class="c">;</span>
+<span class="c">;=============================================================================</span>
+<span class="c">; 将现有与未来接触的 F0 置零，并求解。</span>
+<span class="c">; excerpt-qktp-start</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'final-fric_0.5_rfric_0.1_F0_0.7_D0_0.0015.p2sav'</span>
+
+<span class="nb">contact property</span><span class="n"> adh_f0 </span><span class="m m-Double">0.0</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">ball </span><span class="sx">...</span>
+<span class="n">             property adh_f0 </span><span class="m m-Double">0.0</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'zero_F0.p2sav'</span>
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">; excerpt-qktp-end</span>
+<span class="c">;=============================================================================</span>
+<span class="c">; 文件结束：zero_F0.dat（2D）</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="ver-cmarr-make-system-datafile3d">make_system.dat (3D)</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; ============================================================================</span>
+<span class="c">;  文件名：make_system.dat</span>
+<span class="c">; ============================================================================</span>
+
+<span class="nb">model new</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'Adhesive Rolling Resistance Linear Contact Model: Repose Angle'</span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+
+<span class="c">;  容器与球的属性</span>
+<span class="ni">[cyl_rad    </span><span class="p">=</span><span class="ni">   </span><span class="m m-Double">50.0e-3</span><span class="ni">]</span><span class="n">  </span><span class="c">; 容器半径 [m]</span>
+<span class="ni">[cyl_height </span><span class="p">=</span><span class="ni">  </span><span class="m m-Double">100.0e-3</span><span class="ni">]</span><span class="n">  </span><span class="c">; 容器高度 [m]</span>
+<span class="ni">[ravg       </span><span class="p">=</span><span class="ni">   </span><span class="m m-Double">3.0e-3</span><span class="ni"> ]</span><span class="n">  </span><span class="c">; 球平均半径 [m]</span>
+<span class="ni">[rdev       </span><span class="p">=</span><span class="ni">   </span><span class="m m-Double">0.25</span><span class="ni">   ]</span><span class="n">  </span><span class="c">; 球半径相对偏差 [-]</span>
+<span class="ni">[dens       </span><span class="p">=</span><span class="ni">   </span><span class="m m-Double">2.0e3</span><span class="ni">  ]</span><span class="n">  </span><span class="c">; 球密度 [kg/m3]</span>
+<span class="ni">[poros      </span><span class="p">=</span><span class="ni">   </span><span class="m m-Double">0.45</span><span class="ni">   ]</span><span class="n">  </span><span class="c">; 初始孔隙率 [-]</span>
+
+<span class="c">;  接触模型参数</span>
+<span class="ni">[emod   </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0e6</span><span class="ni">]</span><span class="n">  </span><span class="c">; 杨氏模量（deformability 方法）[Pa]</span>
+<span class="ni">[kratio </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2.0</span><span class="ni">  ]</span><span class="n">  </span><span class="c">; 刚度比（deformability 方法）[-]</span>
+<span class="ni">[fric   </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.05</span><span class="ni"> ]</span><span class="n">  </span><span class="c">; 摩擦系数 [-]</span>
+<span class="ni">[dpnr   </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.2</span><span class="ni">  ]</span><span class="n">  </span><span class="c">; 法向临界阻尼比 [-]</span>
+<span class="ni">[dpsr   </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.2</span><span class="ni">  ]</span><span class="n">  </span><span class="c">; 切向临界阻尼比 [-]</span>
+<span class="ni">[dpm    </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">3</span><span class="ni">    ]</span><span class="n">  </span><span class="c">; 阻尼器模式 [-]</span>
+<span class="ni">[rfric  </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">  ]</span><span class="n">  </span><span class="c">; 滚动阻力系数 [-]</span>
+<span class="ni">[F0     </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">  ]</span><span class="n">  </span><span class="c">; 最大吸引力 [N]</span>
+<span class="ni">[D0     </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">  ]</span><span class="n">  </span><span class="c">; 吸引范围 [m]</span>
+
+<span class="c">;  设置计算域范围与边界条件。</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">4.0</span><span class="o">*</span><span class="ni">cyl_rad]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">4.0</span><span class="o">*</span><span class="ni">cyl_rad]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">4.0</span><span class="o">*</span><span class="ni">cyl_rad]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">4.0</span><span class="o">*</span><span class="ni">cyl_rad]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">4.0</span><span class="o">*</span><span class="ni">ravg]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">2.0</span><span class="o">*</span><span class="ni">cyl_height]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> condition destroy</span>
+
+<span class="c">;  设置 CMAT，使 arrlinear 模型作用于球-球接触，并</span>
+<span class="c">;  使 rrlinear 模型作用于球-面片接触。颗粒不会</span>
+<span class="c">;  黏附到墙上。</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">ball model arrlinear </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> method deformability </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> emod </span><span class="ni">[emod]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> kratio </span><span class="ni">[kratio]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> property fric </span><span class="ni">[fric]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> dp_nratio </span><span class="ni">[dpnr]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> dp_sratio </span><span class="ni">[dpsr]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> dp_mode </span><span class="ni">[dpm]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> rr_fric </span><span class="ni">[rfric]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> adh_f0 </span><span class="ni">[F0]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> adh_d0 </span><span class="ni">[D0]</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">facet model rrlinear </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> method deformability </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> emod </span><span class="ni">[emod]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> kratio </span><span class="ni">[kratio]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> property fric </span><span class="ni">[fric]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> dp_nratio </span><span class="ni">[dpnr]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> dp_sratio </span><span class="ni">[dpsr]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> dp_mode </span><span class="ni">[dpm]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> rr_fric </span><span class="ni">[rfric</span>
+
+<span class="c">;  生成底面与容器。</span>
+<span class="ni">wall generate id </span><span class="m m-Double">1</span><span class="ni"> </span><span class="sx">...</span><span class="ni"> </span>
+<span class="ni"> name </span><span class="s">'base_plane'</span><span class="ni"> </span><span class="sx">...</span><span class="ni"> </span>
+<span class="ni"> plane</span>
+
+<span class="ni">wall generate id </span><span class="m m-Double">100</span><span class="ni"> </span><span class="sx">...</span><span class="ni"> </span>
+<span class="ni"> name </span><span class="s">'container'</span><span class="ni"> </span><span class="sx">...</span><span class="ni"> </span>
+<span class="ni"> cylinder </span><span class="sx">...</span><span class="ni"> </span>
+<span class="ni"> base </span><span class="m m-Double">0.0</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni"> </span><span class="sx">...</span><span class="ni"> </span>
+<span class="ni"> axis </span><span class="m m-Double">0.0</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni"> </span><span class="m m-Double">0.1</span><span class="ni"> </span><span class="sx">...</span><span class="ni"> </span>
+<span class="ni"> height [cyl_height]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> radius </span><span class="ni">[cyl_rad]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> cap </span><span class="sx">false</span><span class="n"> </span><span class="sx">true</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> one</span><span class="o">-</span><span class="n">wall</span>
+
+<span class="c">;  在容器内分布球体。</span>
+<span class="nb">ball distribute</span><span class="n"> porosity </span><span class="ni">[poros]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> resolution </span><span class="ni">[ravg]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> radius </span><span class="ni">[</span><span class="m m-Double">1.0</span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">rdev]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">1.0</span><span class="o">+</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">rdev]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> box </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">cyl_rad]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">cyl_rad]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">cyl_rad]</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">1.0</span><span class="o">*</span><span class="ni">cyl_rad]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="ni">[cyl_height]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> range cylinder end</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> end</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="ni">[cyl_height]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> radius </span><span class="ni">[cyl_rad]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> extent</span>
+
+<span class="n"> </span><span class="c">;  在重力作用下使体系静止。</span>
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="ni">[dens]</span><span class="n"> damp </span><span class="m m-Double">0.7</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span><span class="n"> calm </span><span class="m m-Double">10</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">9.81</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+<span class="nb">ball attribute</span><span class="n"> damp </span><span class="m m-Double">0.0</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'init.sav'</span>
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">; ============================================================================</span>
+<span class="c">;  文件结束：make_system.dat</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="ver-cmarr-move-container-datafile3d">move_container.dat (3D)</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; ============================================================================</span>
+<span class="c">;  文件名：move_container.dat</span>
+
+<span class="c">;  输入：fric, rfric, F0, D0</span>
+<span class="c">; ============================================================================</span>
+<span class="ni">[cyl_vel </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">5.0e-2</span><span class="ni">]</span>
+<span class="nb">model mechanical</span><span class="n"> time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">0.0</span>
+
+<span class="c">;  *** 修改材料参数。</span>
+<span class="c">;  修改现有球-球与球-面片接触的参数。</span>
+<span class="nb">contact property</span><span class="n"> fric </span><span class="ni">[fric]</span><span class="n"> rr_fric </span><span class="ni">[rfric]</span><span class="n"> adh_f0 </span><span class="ni">[F0]</span><span class="n"> adh_d0 </span><span class="ni">[D0]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> range contact type </span><span class="s">'ball-ball'</span>
+<span class="nb">contact property</span><span class="n"> fric </span><span class="ni">[fric]</span><span class="n"> rr_fric </span><span class="ni">[rfric]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> range contact type </span><span class="s">'ball-facet'</span>
+<span class="n"> </span><span class="c">;  修改未来球-球接触的参数。</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">ball model arrlinear </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> method deformability </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> emod </span><span class="ni">[emod]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> kratio </span><span class="ni">[kratio]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> property fric </span><span class="ni">[fric]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> dp_nratio </span><span class="ni">[dpnr]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> dp_sratio </span><span class="ni">[dpsr]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> dp_mode </span><span class="ni">[dpm]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> rr_fric </span><span class="ni">[rfric]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> adh_f0 </span><span class="ni">[F0]</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> adh_d0 </span><span class="ni">[D0]</span>
+<span class="c">;  修改未来球-面片接触的参数。</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">facet </span><span class="sx">...</span><span class="n"> </span>
+<span class="n"> property fric </span><span class="ni">[fric]</span><span class="n"> rr_fric </span><span class="ni">[rfric</span>
+<span class="c">;  对 a_d0 的修改已自动改变邻近距离。</span>
+<span class="c">;  通过重新映射网格空间强制生成新接触。</span>
+<span class="ni">model clean</span>
+
+<span class="ni">wall attribute velocity</span><span class="o">-</span><span class="ni">z [cyl_vel]</span><span class="n"> range id </span><span class="m m-Double">100</span><span class="n"> by wall</span>
+<span class="nb">ball attribute</span><span class="n"> displacement multiply </span><span class="m m-Double">0.0</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time </span><span class="ni">[</span><span class="m m-Double">0.75</span><span class="o">*</span><span class="ni">cyl_height</span><span class="o">/</span><span class="ni">cyl_vel]</span>
+<span class="nb">wall attribute</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.0</span><span class="n"> range id </span><span class="m m-Double">100</span><span class="n"> by wall</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+<span class="nb">model save</span><span class="n"> </span><span class="sx">...</span>
+<span class="n"> </span><span class="ni">[</span><span class="k">string.build</span><span class="p">(</span><span class="s">'final-fric_%1_rfric_%2_F0_%3_D0_%4.sav'</span><span class="p">,</span><span class="ni">fric</span><span class="p">,</span><span class="ni">rfric</span><span class="p">,</span><span class="ni">F0</span><span class="p">,</span><span class="ni">D0</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">program </span><span class="se">return</span>
+<span class="n"> </span><span class="c">; ===========================================================================</span>
+<span class="n"> </span><span class="c">;  文件结束：move_container.dat</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="ver-cmarr-do-analysis-datafile3d">do_analysis.py</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="n">#</span><span class="p">=========================================================================</span>
+<span class="n"># do_analysis</span><span class="p">.</span><span class="n">py</span>
+<span class="n">#</span><span class="p">=========================================================================</span>
+<span class="n">import itasca</span>
+<span class="n">itasca</span><span class="p">.</span><span class="n">command</span><span class="p">(</span><span class="s">"python-reset-state off"</span><span class="p">)</span>
+<span class="n">fric_list  </span><span class="p">=</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="ni">]</span>
+<span class="n">rfric_list </span><span class="p">=</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.1</span><span class="ni">]</span>
+<span class="n"># F0 is </span><span class="p">{</span><span class="m m-Double">0</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">1</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">5</span><span class="p">}</span><span class="n"> times weight of single particle </span><span class="ni">[N]</span>
+<span class="n"># D0 is </span><span class="m m-Double">5</span><span class="n">% of avg</span><span class="p">.</span><span class="n"> particle radius </span><span class="ni">[m]</span>
+<span class="n">F0_list </span><span class="p">=</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="ni"> </span><span class="m m-Double">2.2e-3</span><span class="p">,</span><span class="ni"> </span><span class="m m-Double">1.1e-2</span><span class="ni">]</span>
+<span class="n">D0_list </span><span class="p">=</span><span class="n"> </span><span class="ni">[</span><span class="m m-Double">1.5e-4</span><span class="ni">]</span>
+
+<span class="n">for f in fric_list</span><span class="p">:</span>
+<span class="n">  for rf in rfric_list</span><span class="p">:</span>
+<span class="n">    for myF0 in F0_list</span><span class="p">:</span>
+<span class="n">      for myD0 in D0_list</span><span class="p">:</span>
+<span class="n">        itasca</span><span class="p">.</span><span class="n">command</span><span class="p">(</span><span class="s">"""</span>
+<span class="s">                         model restore 'init'</span>
+<span class="s">                         [fric  = {0}]</span>
+<span class="s">                         [rfric = {1}]</span>
+<span class="s">                         [F0    = {2}]</span>
+<span class="s">                         [D0    = {3}]</span>
+<span class="s">                         program call 'move_container.dat'</span>
+<span class="s">                       """</span><span class="p">.</span><span class="n">format</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="n">rf</span><span class="p">,</span><span class="n">myF0</span><span class="p">,</span><span class="n">myD0</span><span class="p">)</span>
+<span class="n">        </span><span class="p">)</span>
+
+<span class="n">#</span><span class="p">=========================================================================</span>
+<span class="n"># eof</span><span class="p">:</span><span class="n"> do_analysis</span><span class="p">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="ver-cmarr-zero-f0-datafile3d">zero_F0.dat (3D)</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; ===========================================================================</span>
+<span class="c">;  文件名：zero_F0.dat</span>
+
+<span class="c">; ===========================================================================</span>
+<span class="c">;  将现有与未来接触的 F0 置零，并求解。</span>
+<span class="c">; excerpt-dfgd-start</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'final-fric_0.5_rfric_0.1_F0_0.011_D0_0.00015.sav'</span>
+
+<span class="nb">contact property</span><span class="n"> adh_f0 </span><span class="m m-Double">0.0</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">ball </span><span class="sx">...</span><span class="n"> </span>
+<span class="n">           property adh_f0 </span><span class="m m-Double">0.0</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-5</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'zero_F0.sav'</span>
+<span class="nb">program </span><span class="se">return</span>
+<span class="c">; excerpt-dfgd-end</span>
+<span class="c">; ===========================================================================</span>
+<span class="c">;  文件结束：zero_F0.dat</span>
+</pre></div>
+</div>
+<p class="endnotesection rubric">尾注</p>
+<table class="docutils footnote" frame="void" id="id2" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><p class="first">要在 <span class="codename">PFC</span> 中查看本项目，请使用程序菜单。</p>
+<p><span class="menuselection">帮助 ▼ 算例…</span></p>
+<p class="last">  ⮡   PFC <br/>
+    ⮡   验证 <br/>
+      ⮡   RollingResistance <br/>
+        ⮡   ReposeAngle <br/>
+          ⮡   ReposeAngle.prj</p>
+</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../../pfc_model_components/pfc_examples.html">Examples</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../../verification.html">Verification Problems</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../../rrlinear_contact_model/repose_angle/cmrrlinear_reposeangle.html" title="previous chapter"> Rolling Resistance Linear Contact Model: Repose Angle</a> |    
+       <a href="../../burger_contact_model/stress_relaxation/cmburger_stressrelaxation.html" title="next chapter">Burger’s Contact Model: Stress Relaxation</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Adhesive Rolling Resistance Linear Contact Model: Repose Angle" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

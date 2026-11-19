@@ -1,0 +1,448 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>料斗流动 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../../search.html" rel="search" title="Search"/>
+<link href="../granular/granular.html" rel="next" title="Probing a Granular Specimen"/>
+<link href="../examples.html" rel="prev" title="Example Applications"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="hopper-flow">
+<span id="exap-hopper"></span><span id="hopperdynamic"></span><h1>料斗流动</h1>
+<p class="h2 rubric">引言</p>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">本算例的项目文件可在 <span class="codename">PFC</span> 中查看或运行。<a class="footnote-reference" href="#id6" id="id1">[1]</a>所用的<a class="reference internal" href="#exap-hopper-datafiles"><span class="std std-ref">数据文件</span>（data files）</a>列于本算例末尾。</p>
+</div>
+<p>本例演示如何使用 <span class="codename">PFC</span> 模拟球形颗粒从料斗中卸出的过程。一个简单的料斗卸料模型在 <a class="reference internal" href="../../tutorials/hopper/hopper.html#hopper"><span class="std std-ref">料斗教程</span>（hopper tutorial）</a> 中给出。在该情形中，采用的是圆柱形料斗。在本例中，使用周期性边界来减小料斗几何形状的影响。通过参数化研究考察了摩擦和填充高度的影响；结果表明二者对料斗卸料速率和流动形态有显著影响。本例基于 <a class="reference internal" href="#anand2008" id="id2">[Anand2008]</a> 和 <a class="reference internal" href="#ketterhagen2009" id="id3">[Ketterhagen2009]</a> 的工作。</p>
+<p class="h2 rubric">数值模型</p>
+<p>料斗由 <span class="codename">FISH</span> 函数 <span class="fishname">build_hopper</span> 创建并填充，该函数定义于“<a class="reference internal" href="#exap-hopper-hopperutilitiesdat"><span class="std std-ref">hopper_utilities.dat</span></a>”中。为高效地建立初始系统，使用了 <a class="reference internal" href="../../../general_components/brick/brick.html#brick-manual">砖块（<span class="std std-ref">brick</span>）</a> 逻辑。砖块是在周期性空间中构建的球颗粒和/或刚性团簇试样。砖块中不能存在墙体。因此，可以将砖块彼此相邻放置，使它们完美拼接而不会因重叠引入作用力。</p>
+<p>料斗几何形状如 <a href="#exap-hopper-hopperfullexample">图 1（Figure  1）</a> 所示。模型在周期性方向上的深度设为平均颗粒直径的五倍。料斗在 <em>x</em> 方向和 <em>z</em> 方向上的尺寸也设为平均颗粒直径的整数倍。</p>
+<p>使用 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/wall_manual/wall_commands/cmd_wall_generate.html#kwd:wall.generate.polygon" title="Generate a planar, polygonal wall in 3D...">墙体生成多边形（<code class="xref fish fish-cmd docutils literal"><span class="pre">wall</span> <span class="pre">generate</span> <span class="pre">polygon</span></code>）</a> 命令生成料斗几何形状。当模型组成部分在周期性方向上贯穿整个计算域时，必须特别小心。在这种情况下，大尺寸物体与周期性摆放的物体之间可能不会形成接触。因此，在周期性方向上必须将墙体分解为多个面片，以避免出现此类情况。</p>
+<div class="figure align-center" id="exap-hopper-hopperfullexample">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d-hopper-highfric-ini.png"><img alt="filled hopper" src="../../../../../../../_images/p3d-hopper-highfric-ini.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 1：填充后的料斗，其中通过指定分组来描绘水平层。</span></p>
+</div>
+<p class="h2 rubric">料斗卸料模拟</p>
+<p>使用 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">动作（<span class="varfishsym"><span class="null">Action</span></span>）</a> <span class="codename">FISH</span> 函数开展卸料试验。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish define</span><span class="ni"> Action</span><span class="p">(</span><span class="ni">fill_level</span><span class="p">,</span><span class="ni">key</span><span class="p">)</span>
+<span class="ni">  z_min </span><span class="p">=</span><span class="ni"> fill_level</span><span class="o">*</span><span class="ni">H </span><span class="o">/</span><span class="ni"> </span><span class="m m-Double">100.0</span>
+<span class="ni">  z_max </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2</span><span class="o">*</span><span class="ni">H</span>
+<span class="k">  command</span>
+<span class="nb">    ball delete</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="ni">[z_min]</span><span class="n"> </span><span class="ni">[z_max]</span>
+<span class="k">  endcommand</span>
+<span class="ni">  discharged_mass </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">  filename </span><span class="p">=</span><span class="ni"> </span><span class="s">'fill_'</span><span class="o">+</span><span class="ni">string</span><span class="p">(</span><span class="ni">int</span><span class="p">(</span><span class="ni">fill_level</span><span class="p">))</span><span class="o">+</span><span class="s">'_'</span><span class="o">+</span><span class="ni">key</span>
+<span class="k">  command</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">5000</span><span class="n"> calm </span><span class="m m-Double">50</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-3</span>
+<span class="nb">    ball attribute</span><span class="n"> damp </span><span class="m m-Double">0.0</span>
+<span class="nb">    wall delete</span><span class="n"> range set id </span><span class="m m-Double">1001</span><span class="n"> </span><span class="m m-Double">1002</span>
+<span class="nb">    model mechanical</span><span class="n"> time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">0.0</span>
+<span class="nb">    model mechanical</span><span class="n"> timestep auto</span>
+<span class="nb">    model results</span><span class="n"> interval mechanical </span><span class="m m-Double">0.1</span><span class="n"> prefix </span><span class="ni">[key]</span>
+<span class="nb">    wall results</span><span class="n"> active </span><span class="sx">true</span><span class="n"> </span>
+<span class="nb">    ball results</span><span class="n"> add</span><span class="o">-</span><span class="n">attribute velocity active </span><span class="sx">true</span>
+<span class="nb">    fish callback</span><span class="n"> add MeasureDischargedMass event ball_delete</span>
+<span class="nb">    program echo</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fish</span><span class="o">-</span><span class="n">halt HaltControl</span>
+<span class="nb">    program echo</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">    fish callback</span><span class="n"> remove MeasureDischargedMass event ball_delete</span>
+<span class="nb">    model save</span><span class="n"> </span><span class="ni">[filename]</span>
+<span class="k">  endcommand</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+<p>通过 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">充填高度（<span class="varfishsym"><span class="null">fill_level</span></span>）</a> 参数可将料斗填充至不同高度。高于目标 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">充填高度（<span class="varfishsym"><span class="null">fill_level</span></span>）</a> 的球颗粒将被删除，随后系统达到平衡。之后针对模拟的卸料阶段将局部阻尼设置为零（参见 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.attribute.html#command:ball.attribute" title="Set the value of ball attributes. This command is a synonym for the  ball.initialize 
+command. Individual attributes can be listed with the  ball.list  command
+and all attributes can be visualized..."><code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">attribute</span></code></a> 命令），移除底部盖板，并将力学时间归零（参见 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.mechanical.html#kwd:model.mechanical.time-total" title="f  is the accumulated mechanical time for the model.  This can be reset
+to any value, and will continue to be accumulated during cycling after that...">模型力学总时间命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">mechanical</span> <span class="pre">time-total</span></code>）</a> 命令）。在开始卸料之前，使用 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.result.html#command:ball.results" title="Modify the usage of the ball results logic. This logic allows for a reduced
+version of the...">设置球体结果输出（<code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">results</span></code>）</a> 命令定期记录模型状态的精简版本。在本算例中，记录的内容包括球颗粒的分组标识符和速度，以及球颗粒的位置和半径。</p>
+<p>模拟过程中，通过为某个回调事件注册 <span class="codename">FISH</span> 函数来测量卸出的质量（参见 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/fish/commands/cmd_fish.callback.html#command:fish.callback" title="Add/remove functions to be executed in response to callback events...">设置FISH回调命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fish</span> <span class="pre">callback</span></code>）</a> 命令）。当球颗粒到达 <em>z</em> 方向的负向域边界时，将根据 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.domain.html#command:model.domain" title="Specify the domain boundaries and conditions.  DFN fractures only exist within
+the domain extent...">设置模型域命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">domain</span></code>）</a> 命令设置的条件将其删除。<span class="codename">FISH</span> 函数 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">测量排出质量（<span class="varfishsym"><span class="null">MeasureDischargedMass</span></span>）</a> 注册在 <em>ball_delete</em> 事件上。每当有球颗粒被删除，该 <span class="codename">FISH</span> 函数便会以传入的球颗粒指针为参数执行。通过这种方式可累加每个被删除球颗粒的质量。同时填充一个表格，记录卸出质量随力学时间的变化。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish define</span><span class="ni"> MeasureDischargedMass</span><span class="p">(</span><span class="ni">bp</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> discharged_mass</span>
+<span class="ni">    discharged_mass </span><span class="p">=</span><span class="ni"> discharged_mass </span><span class="o">+</span><span class="ni"> </span><span class="k">ball.mass.real</span><span class="p">(</span><span class="ni">bp</span><span class="p">)</span>
+<span class="k">    command</span>
+<span class="n">        table </span><span class="ni">[filename]</span><span class="n"> insert </span><span class="ni">[</span><span class="k">mech.time.total</span><span class="ni">]</span><span class="n"> </span><span class="ni">[discharged_mass]</span>
+<span class="k">    endcommand</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+<p>当剩余球颗粒很少时，模拟通过 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#kwd:model.solve.fish-halt" title="The |FISH| function  s  is called during every cycle to determine whether
+cycling should continue. If  s  returns  false , cycling continues;
+otherwise, cycling terminates...">模型求解 FISH 停止命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span> <span class="pre">fish-halt</span></code>）</a> 命令停止。这样可将 <span class="codename">FISH</span> 函数与求解逻辑关联起来，使循环持续进行，直至满足指定条件为止。为使循环终止，该 <span class="codename">FISH</span> 函数必须返回非零值。当为 <span class="codename">FISH</span> 函数名赋值时，<span class="codename">FISH</span> 函数便返回一个值。例如，语句 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">停止控制（<span class="varfishsym"><span class="null">HaltControl</span></span>）</a> = <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">局部变量 temp（<span class="varfishsym"><span class="null">temp</span></span>）</a> 即赋予该返回值。一旦达到求解限制，记录卸出质量随时间变化的表格便会导出为 <em>.tab</em> 文件以供进一步分析（参见 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/table_manual/table_commands/cmd_table.export.html#command:table.export" title='The contents of the specified table are output to file  sfile , with default
+file extension ".tab"...'>导出表格命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">table</span> <span class="pre">export</span></code>）</a> 命令）。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish define</span><span class="ni"> HaltControl</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> temp </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> </span><span class="k">ball.num</span><span class="ni"> </span><span class="o">&lt;</span><span class="ni"> </span><span class="m m-Double">5</span>
+<span class="k">    command</span>
+<span class="n">      table </span><span class="ni">[filename]</span><span class="n"> export </span><span class="ni">[filename]</span>
+<span class="k">    endcommand</span>
+<span class="ni">    temp </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  HaltControl </span><span class="p">=</span><span class="ni"> temp</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+<p class="h2 rubric">重复模拟</p>
+<p>“<a class="reference internal" href="#exap-hopper-hopperdoalldat"><span class="std std-ref">hopper_doall.dat</span></a>”数据文件使用不同的关注参数执行料斗卸料模拟。更准确地说，在改变摩擦系数（下文将相应工况称为 <em>高摩擦</em> 与 <em>低摩擦</em>）以及料斗填充高度的同时，重复进行料斗卸料。借此可考察这些参数对颗粒流动类型（例如整体流与漏斗流）以及对质量卸出速率的影响。</p>
+<p><a href="#exap-hopper-lowfrictionflow">图 2（Figures  2）</a> 和 <a href="#exap-hopper-highfrictionflow">3</a> 分别给出了低摩擦与高摩擦工况下卸料过程中的流动形态。这两种流动形态在性质上有所不同，随着摩擦增大，流动由整体流转变为漏斗流。</p>
+<div class="figure align-center" id="exap-hopper-lowfrictionflow">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d-hopper-lowfric-flow.png"><img alt="../../../../../../../_images/p3d-hopper-lowfric-flow.png" src="../../../../../../../_images/p3d-hopper-lowfric-flow.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：低摩擦条件下形成的均匀整体流形态。</span></p>
+</div>
+<div class="figure align-center" id="exap-hopper-highfrictionflow">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d-hopper-highfric-flow.png"><img alt="../../../../../../../_images/p3d-hopper-highfric-flow.png" src="../../../../../../../_images/p3d-hopper-highfric-flow.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 3：高摩擦条件下形成的漏斗流形态。</span></p>
+</div>
+<p><a href="#exap-hopper-lowfrictionmass">图 4（Figures  4）</a> 和 <a href="#exap-hopper-highfrictionmass">5</a> 分别给出了低摩擦与高摩擦工况下两种填充高度时卸料速率的变化过程。蓝色线条表示完全充满的料斗；绿色线条对应料斗填充至总高度一半的情况。对于低摩擦工况，卸料速率随填充高度增大而增大。当摩擦系数较大时，卸料速率与填充高度基本无关。这些结果与 <a class="reference internal" href="#anand2008" id="id4">[Anand2008]</a> 和 <a class="reference internal" href="#ketterhagen2009" id="id5">[Ketterhagen2009]</a> 的结论一致。</p>
+<div class="figure align-center" id="exap-hopper-lowfrictionmass">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d-hopper-lowfric-dis.png"><img alt="../../../../../../../_images/p3d-hopper-lowfric-dis.png" src="../../../../../../../_images/p3d-hopper-lowfric-dis.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 4：低摩擦系数工况下料斗卸出质量随时间的变化。质量卸出
+速率的大小与料斗的填充高度（蓝线——完全充满，绿线——填充一半）
+密切相关。</span></p>
+</div>
+<div class="figure align-center" id="exap-hopper-highfrictionmass">
+<a class="reference internal image-reference" href="../../../../../../../_images/p3d-hopper-highfric-dis.png"><img alt="../../../../../../../_images/p3d-hopper-highfric-dis.png" src="../../../../../../../_images/p3d-hopper-highfric-dis.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 5：高摩擦系数工况下料斗卸出质量随时间的变化。填充高度
+（蓝线——完全充满，绿线——填充一半）对质量卸出速率的影响很小。</span></p>
+</div>
+<p class="h2 rubric">制作模拟动画</p>
+<p>如上所述，已利用 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.result.html#command:ball.results" title="Modify the usage of the ball results logic. This logic allows for a reduced
+version of the...">设置球体结果输出（<code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">results</span></code>）</a> 命令定期保存模型的精简状态。这些结果文件可有效地用于模拟的后处理，从而能够可视化系统的演化过程。此外，由于球颗粒可以被重建，因此可使用与模拟过程中所用类似的 <span class="codename">FISH</span> 函数重新运行分析。也可以创建一系列图像。函数 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">生成影片（<span class="varfishsym"><span class="null">makeMovie</span></span>）</a> 定义在“<a class="reference internal" href="#exap-hopper-hopperutilitiesdat"><span class="std std-ref">hopper_utilities.dat</span></a>”中，说明了如何实现这一点。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish define</span><span class="ni"> makeMovie</span><span class="p">(</span><span class="ni">fname</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> rmap</span>
+<span class="k">    command</span>
+<span class="n">        model result map rmap</span>
+<span class="k">    endcommand</span>
+<span class="ni">    cnt </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> res rmap</span>
+<span class="ni">        </span><span class="k">local</span><span class="ni"> str </span><span class="p">=</span><span class="ni"> </span><span class="k">string.build</span><span class="p">(</span><span class="s">"%1%2.png"</span><span class="p">,</span><span class="ni">fname</span><span class="p">,</span><span class="ni">cnt</span><span class="p">)</span>
+<span class="ni">        cnt </span><span class="p">=</span><span class="ni"> cnt </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="k">        command</span>
+<span class="n">            model result import </span><span class="ni">[res]</span><span class="n"> skip</span><span class="o">-</span><span class="n">fish</span>
+<span class="nb">            plot export</span><span class="n"> bitmap filename </span><span class="ni">[str]</span><span class="n"> </span>
+<span class="k">        endcommand</span>
+<span class="ni">    </span><span class="k">endloop</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+<p>随后可使用第三方工具将这些图像合成为动画。</p>
+<p class="h2 rubric">讨论</p>
+<p>本算例说明了使用 <span class="codename">PFC</span> 开展参数化研究的几个重要方面。自定义的求解限制以及因回调事件发生而触发的 <span class="codename">FISH</span> 函数执行，可用于管理模拟并收集相关数据。若没有这类工具，开展此类研究将非常困难。</p>
+<p class="h2 rubric">参考文献</p>
+<table class="docutils citation" frame="void" id="anand2008" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Anand2008]</td><td><em>(<a class="fn-backref" href="#id2">1</a>, <a class="fn-backref" href="#id4">2</a>)</em> Anand A.、Curtis J.S.、Wassgren C.R.、Hancock B.C.、Ketterhagen W.R.，“采用离散元方法（DEM）预测矩形料斗的卸料动力学”（Predicting discharge dynamics from a rectangular hopper using the discrete element method (DEM)），载于 Chemical Engineering Science，第 63 卷，第 5821-5830 页，2008 年。</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="ketterhagen2009" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Ketterhagen2009]</td><td><em>(<a class="fn-backref" href="#id3">1</a>, <a class="fn-backref" href="#id5">2</a>)</em> Ketterhagen W.R., Curtis J.S., Wassgren C.R., Hancock B.C.，“用离散元方法预测料斗中的流动模式”（Predicting the flow mode from hoppers using the discrete element method），载于 Powder Technology，第 195 卷，第 1-10 页，2009 年。</td></tr>
+</tbody>
+</table>
+<p class="h2 rubric" id="exap-hopper-datafiles">数据文件</p>
+<p class="h2 rubric" id="exap-hopper-hopperdoalldat">hopper_doall.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：Hopper_doall.p3dat</span>
+<span class="c">;</span>
+<span class="c">; 矩形料斗中的颗粒流动。 </span>
+<span class="c">; 研究料斗摩擦与颗粒摩擦的影响， </span>
+<span class="c">; 并表明二者对料斗卸料行为有显著影响</span>
+<span class="c">;============================================================================</span>
+
+<span class="nb">model new</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'Hopper_utilities'</span><span class="n"> suppress</span>
+
+<span class="c">;------------ 低摩擦工况</span>
+<span class="ni">[build_hopper</span><span class="p">(</span><span class="m m-Double">0.05</span><span class="p">,</span><span class="m m-Double">0.01</span><span class="p">,</span><span class="m m-Double">30.0</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'hopper_ini'</span>
+<span class="ni">[Action</span><span class="p">(</span><span class="m m-Double">50</span><span class="p">,</span><span class="s">'LowFriction1'</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'hopper_ini'</span>
+<span class="ni">[Action</span><span class="p">(</span><span class="m m-Double">100</span><span class="p">,</span><span class="s">'LowFriction2'</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'LowFrictionHopper'</span>
+
+<span class="c">;------------高摩擦工况</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'hopper_ini'</span>
+<span class="nb">ball property</span><span class="n"> </span><span class="s">'fric'</span><span class="n"> </span><span class="m m-Double">0.8</span>
+<span class="nb">wall property</span><span class="n"> </span><span class="s">'fric'</span><span class="n"> </span><span class="m m-Double">0.8</span>
+<span class="ni">[Action</span><span class="p">(</span><span class="m m-Double">50</span><span class="p">,</span><span class="s">'HighFriction1'</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'hopper_ini'</span>
+<span class="nb">ball property</span><span class="n"> </span><span class="s">'fric'</span><span class="n"> </span><span class="m m-Double">0.8</span>
+<span class="nb">wall property</span><span class="n"> </span><span class="s">'fric'</span><span class="n"> </span><span class="m m-Double">0.8</span>
+<span class="ni">[Action</span><span class="p">(</span><span class="m m-Double">100</span><span class="p">,</span><span class="s">'HighFriction2'</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'HighFrictionHopper'</span>
+
+<span class="c">;==============================================================================</span>
+<span class="c">; 文件结束：Hopper_doall.p3dat</span>
+</pre></div>
+</div>
+<p class="h2 rubric" id="exap-hopper-hopperutilitiesdat">hopper_utilities.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="c">; 文件名：Hopper_utilities.p3dat</span>
+<span class="c">;</span>
+<span class="c">; 料斗模拟工具函数</span>
+<span class="c">; ============================================================================</span>
+
+<span class="nb">fish define</span><span class="ni"> build_hopper</span><span class="p">(</span><span class="ni">fric</span><span class="p">,</span><span class="ni">brad</span><span class="p">,</span><span class="ni">theta</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> cfric </span><span class="p">=</span><span class="ni"> fric</span>
+<span class="ni">  </span><span class="c">;</span>
+<span class="ni">  ballRadius </span><span class="p">=</span><span class="ni"> brad</span>
+<span class="ni">  W0 </span><span class="p">=</span><span class="ni"> ballRadius</span><span class="o">*</span><span class="m m-Double">10</span>
+<span class="ni">  W </span><span class="p">=</span><span class="ni"> W0</span><span class="o">*</span><span class="m m-Double">5.0</span>
+<span class="ni">  H </span><span class="p">=</span><span class="ni"> W</span><span class="o">*</span><span class="m m-Double">1.50</span>
+<span class="ni">  d </span><span class="p">=</span><span class="ni"> ballRadius</span><span class="o">*</span><span class="m m-Double">5.0</span>
+<span class="ni">  B </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">W</span><span class="o">-</span><span class="ni">W0</span><span class="p">)</span><span class="o">*</span><span class="m m-Double">0.5</span>
+<span class="ni">  theta </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">30</span><span class="o">*</span><span class="k">math.pi</span><span class="o">/</span><span class="m m-Double">180</span>
+<span class="ni">  A </span><span class="p">=</span><span class="ni"> B</span><span class="o">*</span><span class="k">math.tan</span><span class="p">(</span><span class="ni">Theta</span><span class="p">)</span><span class="ni">  </span>
+<span class="k">  command</span>
+<span class="n">    </span><span class="c">; 构建砖块</span>
+<span class="nb">    model domain</span><span class="n"> condition periodic</span>
+<span class="nb">    model domain</span><span class="n"> extent </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">W</span><span class="o">/</span><span class="m m-Double">4</span><span class="ni">]</span><span class="p">,</span><span class="ni">[W</span><span class="o">/</span><span class="m m-Double">4</span><span class="ni">]</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">d]</span><span class="p">,</span><span class="n"> </span><span class="ni">[d]</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[W</span><span class="o">/</span><span class="m m-Double">4</span><span class="ni">]</span><span class="p">)</span>
+<span class="nb">    contact cmat</span><span class="n"> default model linear </span><span class="sx">...</span>
+<span class="n">                 property kn </span><span class="m m-Double">1e4</span><span class="n"> ks </span><span class="m m-Double">5e3</span><span class="n"> fric </span><span class="ni">[cfric]</span><span class="n"> dp_nratio </span><span class="m m-Double">0.2</span>
+<span class="nb">    contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">facet model linear </span><span class="sx">...</span>
+<span class="n">        property kn </span><span class="m m-Double">1.5e4</span><span class="n"> ks </span><span class="m m-Double">7.5e3</span><span class="n"> fric </span><span class="ni">[cfric]</span><span class="n"> dp_nratio </span><span class="m m-Double">0.2</span>
+<span class="n">        </span>
+<span class="nb">    ball distribute</span><span class="n"> bin </span><span class="m m-Double">1</span><span class="n"> radius </span><span class="ni">[ballRadius]</span>
+<span class="nb">    ball attribute</span><span class="n"> density </span><span class="m m-Double">2500</span><span class="n"> damp </span><span class="m m-Double">0.7</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span><span class="n"> calm </span><span class="m m-Double">10</span>
+<span class="nb">    model mechanical</span><span class="n"> timestep scale</span>
+<span class="nb">model </span><span class="ss">solve</span>
+<span class="nb">    brick make</span><span class="n"> id </span><span class="m m-Double">1</span>
+<span class="n">    </span><span class="c">; 删除已有球，构建料斗并组装砖块 </span>
+<span class="nb">    ball delete</span>
+<span class="nb">    model domain</span><span class="n"> condition destroy periodic destroy</span>
+<span class="nb">    model domain</span><span class="n"> extent </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">W</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="ni">[W</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">d]</span><span class="p">,</span><span class="ni">[d]</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">d]</span><span class="p">,</span><span class="ni">[H</span><span class="o">*</span><span class="m m-Double">2.0</span><span class="ni">]</span><span class="p">)</span>
+<span class="n">    </span>
+<span class="nb">    wall generate</span><span class="n"> group </span><span class="s">'leftlateral_1'</span><span class="n">  polygon </span><span class="sx">...</span><span class="n"> </span>
+<span class="n">         </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">W</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">d]</span><span class="p">,</span><span class="ni">[A]</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">W</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="ni">[A]</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">W</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">d]</span><span class="p">,</span><span class="ni">[H]</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">W</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="ni">[H]</span><span class="p">)</span>
+<span class="nb">    wall generate</span><span class="n"> group </span><span class="s">'leftlateral_2'</span><span class="n">  polygon </span><span class="sx">...</span><span class="n"> </span>
+<span class="n">         </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">W</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="ni">[A]</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">W</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="ni">[d]</span><span class="p">,</span><span class="ni">[A]</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">W</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="ni">[H]</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">W</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="ni">[d]</span><span class="p">,</span><span class="ni">[H]</span><span class="p">)</span>
+<span class="nb">    wall generate</span><span class="n"> group </span><span class="s">'rightlateral_1'</span><span class="n"> polygon </span><span class="sx">...</span><span class="n"> </span>
+<span class="n">         </span><span class="p">(</span><span class="ni">[W</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">d]</span><span class="p">,</span><span class="ni">[A]</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[W</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="ni">[A]</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[W</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">d]</span><span class="p">,</span><span class="ni">[H]</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[W</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="ni">[H]</span><span class="p">)</span>
+<span class="nb">    wall generate</span><span class="n"> group </span><span class="s">'rightlateral_2'</span><span class="n"> polygon </span><span class="sx">...</span><span class="n"> </span>
+<span class="n">         </span><span class="p">(</span><span class="ni">[W</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="ni">[A]</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[W</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="ni">[d]</span><span class="p">,</span><span class="ni">[A]</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[W</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="ni">[H]</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[W</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="ni">[d]</span><span class="p">,</span><span class="ni">[H]</span><span class="p">)</span>
+<span class="nb">    wall generate</span><span class="n"> group </span><span class="s">'leftbottom_1'</span><span class="n">   polygon </span><span class="sx">...</span><span class="n"> </span>
+<span class="n">         </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">W0</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">d]</span><span class="p">,</span><span class="m m-Double">0.</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">W0</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">W</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">d]</span><span class="p">,</span><span class="ni">[A]</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">W</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="ni">[A]</span><span class="p">)</span>
+<span class="nb">    wall generate</span><span class="n"> group </span><span class="s">'leftbottom_2'</span><span class="n">   polygon </span><span class="sx">...</span><span class="n"> </span>
+<span class="n">         </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">W0</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">W0</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="ni">[d]</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">W</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="ni">[A]</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">W</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="ni">[d]</span><span class="p">,</span><span class="ni">[A]</span><span class="p">)</span>
+<span class="nb">    wall generate</span><span class="n"> group </span><span class="s">'rightbottom_1'</span><span class="n">  polygon </span><span class="sx">...</span><span class="n"> </span>
+<span class="n">         </span><span class="p">(</span><span class="ni">[W0</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">d]</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[W0</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[W</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">d]</span><span class="p">,</span><span class="ni">[A]</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[W</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="ni">[A]</span><span class="p">)</span>
+<span class="nb">    wall generate</span><span class="n"> group </span><span class="s">'rightbottom_2'</span><span class="n">  polygon </span><span class="sx">...</span><span class="n"> </span>
+<span class="n">         </span><span class="p">(</span><span class="ni">[W0</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[W0</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="ni">[d]</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[W</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="ni">[A]</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[W</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="ni">[d]</span><span class="p">,</span><span class="ni">[A]</span><span class="p">)</span>
+<span class="n">    </span>
+<span class="nb">    wall generate</span><span class="n"> id </span><span class="m m-Double">1001</span><span class="n"> group </span><span class="s">'cap'</span><span class="n"> polygon </span><span class="sx">...</span>
+<span class="n">         </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">W0</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">d]</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[W0</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">d]</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">W0</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[W0</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span>
+<span class="nb">    wall generate</span><span class="n"> id </span><span class="m m-Double">1002</span><span class="n"> group </span><span class="s">'cap'</span><span class="n"> polygon </span><span class="sx">...</span>
+<span class="n">        </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">W0</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[W0</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">W0</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="ni">[d]</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="ni">[W0</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="ni">[d]</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span>
+<span class="n">    </span>
+<span class="nb">    brick assemble</span><span class="n"> id </span><span class="m m-Double">1</span><span class="n"> origin </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">W</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="ni">[</span><span class="o">-</span><span class="ni">d]</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="n"> size </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">6</span><span class="n"> </span>
+<span class="nb">    ball delete</span><span class="n"> range plane origin </span><span class="p">(</span><span class="ni">[</span><span class="o">-</span><span class="ni">W0</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">         dip  </span><span class="m m-Double">30.0</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">90.0</span><span class="n"> below</span>
+<span class="nb">    ball delete</span><span class="n"> range plane origin </span><span class="p">(</span><span class="ni">[ W0</span><span class="o">/</span><span class="m m-Double">2</span><span class="ni">]</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">         dip </span><span class="o">-</span><span class="m m-Double">30.0</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">90.0</span><span class="n"> below</span>
+<span class="nb">    ball attribute</span><span class="n"> density </span><span class="m m-Double">2500</span><span class="n"> damp </span><span class="m m-Double">0.7</span>
+<span class="nb">    model clean</span>
+<span class="n">    </span><span class="ni">[trim]</span>
+<span class="nb">    model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">9.81</span>
+<span class="nb">    model history</span><span class="n"> name </span><span class="s">'1'</span><span class="n"> mech ratio</span><span class="o">-</span><span class="n">average</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span><span class="n"> calm </span><span class="m m-Double">100</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-3</span>
+<span class="nb">    ball group</span><span class="n"> </span><span class="s">'LevelOne'</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="ni">[H</span><span class="o">/</span><span class="m m-Double">6</span><span class="ni">]</span>
+<span class="nb">    ball group</span><span class="n"> </span><span class="s">'LevelTwo'</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="ni">[H</span><span class="o">/</span><span class="m m-Double">6</span><span class="ni">][</span><span class="m m-Double">2</span><span class="o">*</span><span class="ni">H</span><span class="o">/</span><span class="m m-Double">6</span><span class="ni">]</span>
+<span class="nb">    ball group</span><span class="n"> </span><span class="s">'LevelThree'</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="ni">[</span><span class="m m-Double">2</span><span class="o">*</span><span class="ni">H</span><span class="o">/</span><span class="m m-Double">6</span><span class="ni">][</span><span class="m m-Double">3</span><span class="o">*</span><span class="ni">H</span><span class="o">/</span><span class="m m-Double">6</span><span class="ni">]</span>
+<span class="nb">    ball group</span><span class="n"> </span><span class="s">'LevelFour'</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="ni">[</span><span class="m m-Double">3</span><span class="o">*</span><span class="ni">H</span><span class="o">/</span><span class="m m-Double">6</span><span class="ni">][</span><span class="m m-Double">4</span><span class="o">*</span><span class="ni">H</span><span class="o">/</span><span class="m m-Double">6</span><span class="ni">]</span>
+<span class="nb">    ball group</span><span class="n"> </span><span class="s">'LevelFive'</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="ni">[</span><span class="m m-Double">4</span><span class="o">*</span><span class="ni">H</span><span class="o">/</span><span class="m m-Double">6</span><span class="ni">][</span><span class="m m-Double">5</span><span class="o">*</span><span class="ni">H</span><span class="o">/</span><span class="m m-Double">6</span><span class="ni">]</span>
+<span class="nb">    ball group</span><span class="n"> </span><span class="s">'LevelSix'</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="ni">[</span><span class="m m-Double">5</span><span class="o">*</span><span class="ni">H</span><span class="o">/</span><span class="m m-Double">6</span><span class="ni">][</span><span class="m m-Double">2</span><span class="o">*</span><span class="ni">H]</span>
+<span class="k">  endcommand</span>
+<span class="nb">end</span>
+
+<span class="nb">fish define</span><span class="ni"> trim</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> c </span><span class="k">contact.list</span><span class="p">(</span><span class="s">'ball-facet'</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> bp </span><span class="p">=</span><span class="ni"> </span><span class="k">contact.end1</span><span class="p">(</span><span class="ni">c</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">ball.delete</span><span class="p">(</span><span class="k">contact.end1</span><span class="p">(</span><span class="ni">c</span><span class="p">))</span>
+<span class="ni">  </span><span class="k">endloop</span>
+<span class="nb">end</span>
+
+<span class="c">; excerpt-wnro-start</span>
+<span class="nb">fish define</span><span class="ni"> MeasureDischargedMass</span><span class="p">(</span><span class="ni">bp</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> discharged_mass</span>
+<span class="ni">    discharged_mass </span><span class="p">=</span><span class="ni"> discharged_mass </span><span class="o">+</span><span class="ni"> </span><span class="k">ball.mass.real</span><span class="p">(</span><span class="ni">bp</span><span class="p">)</span>
+<span class="k">    command</span>
+<span class="n">        table </span><span class="ni">[filename]</span><span class="n"> insert </span><span class="ni">[</span><span class="k">mech.time.total</span><span class="ni">]</span><span class="n"> </span><span class="ni">[discharged_mass]</span>
+<span class="k">    endcommand</span>
+<span class="nb">end</span>
+<span class="c">; excerpt-wnro-end</span>
+
+
+<span class="c">; excerpt-prpp-start</span>
+<span class="nb">fish define</span><span class="ni"> HaltControl</span>
+<span class="ni">  </span><span class="k">local</span><span class="ni"> temp </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> </span><span class="k">ball.num</span><span class="ni"> </span><span class="o">&lt;</span><span class="ni"> </span><span class="m m-Double">5</span>
+<span class="k">    command</span>
+<span class="n">      table </span><span class="ni">[filename]</span><span class="n"> export </span><span class="ni">[filename]</span>
+<span class="k">    endcommand</span>
+<span class="ni">    temp </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  HaltControl </span><span class="p">=</span><span class="ni"> temp</span>
+<span class="nb">end</span>
+<span class="c">; excerpt-prpp-end</span>
+
+<span class="c">; excerpt-yurt-start</span>
+<span class="nb">fish define</span><span class="ni"> Action</span><span class="p">(</span><span class="ni">fill_level</span><span class="p">,</span><span class="ni">key</span><span class="p">)</span>
+<span class="ni">  z_min </span><span class="p">=</span><span class="ni"> fill_level</span><span class="o">*</span><span class="ni">H </span><span class="o">/</span><span class="ni"> </span><span class="m m-Double">100.0</span>
+<span class="ni">  z_max </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2</span><span class="o">*</span><span class="ni">H</span>
+<span class="k">  command</span>
+<span class="nb">    ball delete</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="ni">[z_min]</span><span class="n"> </span><span class="ni">[z_max]</span>
+<span class="k">  endcommand</span>
+<span class="ni">  discharged_mass </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">  filename </span><span class="p">=</span><span class="ni"> </span><span class="s">'fill_'</span><span class="o">+</span><span class="ni">string</span><span class="p">(</span><span class="ni">int</span><span class="p">(</span><span class="ni">fill_level</span><span class="p">))</span><span class="o">+</span><span class="s">'_'</span><span class="o">+</span><span class="ni">key</span>
+<span class="k">  command</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">5000</span><span class="n"> calm </span><span class="m m-Double">50</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1e-3</span>
+<span class="nb">    ball attribute</span><span class="n"> damp </span><span class="m m-Double">0.0</span>
+<span class="nb">    wall delete</span><span class="n"> range set id </span><span class="m m-Double">1001</span><span class="n"> </span><span class="m m-Double">1002</span>
+<span class="nb">    model mechanical</span><span class="n"> time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">0.0</span>
+<span class="nb">    model mechanical</span><span class="n"> timestep auto</span>
+<span class="nb">    model results</span><span class="n"> interval mechanical </span><span class="m m-Double">0.1</span><span class="n"> prefix </span><span class="ni">[key]</span>
+<span class="nb">    wall results</span><span class="n"> active </span><span class="sx">true</span><span class="n"> </span>
+<span class="nb">    ball results</span><span class="n"> add</span><span class="o">-</span><span class="n">attribute velocity active </span><span class="sx">true</span>
+<span class="nb">    fish callback</span><span class="n"> add MeasureDischargedMass event ball_delete</span>
+<span class="nb">    program echo</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fish</span><span class="o">-</span><span class="n">halt HaltControl</span>
+<span class="nb">    program echo</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">    fish callback</span><span class="n"> remove MeasureDischargedMass event ball_delete</span>
+<span class="nb">    model save</span><span class="n"> </span><span class="ni">[filename]</span>
+<span class="k">  endcommand</span>
+<span class="nb">end</span>
+<span class="c">; excerpt-yurt-end</span>
+
+<span class="c">; excerpt-qonr-start</span>
+<span class="nb">fish define</span><span class="ni"> makeMovie</span><span class="p">(</span><span class="ni">fname</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> rmap</span>
+<span class="k">    command</span>
+<span class="n">        model result map rmap</span>
+<span class="k">    endcommand</span>
+<span class="ni">    cnt </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> res rmap</span>
+<span class="ni">        </span><span class="k">local</span><span class="ni"> str </span><span class="p">=</span><span class="ni"> </span><span class="k">string.build</span><span class="p">(</span><span class="s">"%1%2.png"</span><span class="p">,</span><span class="ni">fname</span><span class="p">,</span><span class="ni">cnt</span><span class="p">)</span>
+<span class="ni">        cnt </span><span class="p">=</span><span class="ni"> cnt </span><span class="o">+</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="k">        command</span>
+<span class="n">            model result import </span><span class="ni">[res]</span><span class="n"> skip</span><span class="o">-</span><span class="n">fish</span>
+<span class="nb">            plot export</span><span class="n"> bitmap filename </span><span class="ni">[str]</span><span class="n"> </span>
+<span class="k">        endcommand</span>
+<span class="ni">    </span><span class="k">endloop</span>
+<span class="nb">end</span>
+<span class="c">; excerpt-qonr-end</span>
+
+<span class="c">;==============================================================</span>
+<span class="c">; 文件结束：Hopper_utilities.p3dat</span>
+</pre></div>
+</div>
+<p class="endnotesection rubric">尾注</p>
+<table class="docutils footnote" frame="void" id="id6" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><p class="first">要在 <span class="codename">PFC</span> 中查看本项目，请使用程序菜单。</p>
+<p><span class="menuselection">帮助 ▼ 算例…</span></p>
+<p class="last">  ⮡    PFC <br/>
+    ⮡    算例 <br/>
+      ⮡    HopperDyanmic <br/>
+        ⮡    PeriodicHopper.prj</p>
+</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../pfc_model_components/pfc_examples.html">Examples</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../examples.html">Example Applications</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../examples.html" title="previous chapter"> Example Applications</a> |    
+       <a href="../granular/granular.html" title="next chapter">Probing a Granular Specimen</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Hopper Flow" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

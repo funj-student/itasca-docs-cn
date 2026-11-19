@@ -1,0 +1,487 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>乒乓球 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../../search.html" rel="search" title="Search"/>
+<link href="../shallow_foundation/shallow_foundation.html" rel="next" title="Shallow Foundation"/>
+<link href="../callbacks/callbacks.html" rel="prev" title="Using FISH Callbacks"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="table-tennis">
+<span id="tut-pong"></span><span id="tenntable"></span><span id="index-0"></span><h1>乒乓球</h1>
+<p class="h2 rubric">引言</p>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">本算例的项目文件可在 <span class="codename">PFC</span> 中查看或运行。<a class="footnote-reference" href="#id2" id="id1">[1]</a>所用的<a class="reference internal" href="#tut-pong-datafiles"><span class="std std-ref">数据文件</span>（data files）</a>列于本算例末尾。</p>
+</div>
+<p>此示例模拟一场乒乓球比赛。</p>
+<p>这里展示了 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/wall_manual/wall_commands/cmd_wall_generate.html#command:wall.generate" title="Generate walls with specified shapes. The wall shapes include: {box, circle,
+and point in 2D; box, cone, cylinder, disk, line, plane, point, polygon, and
+sphere in 3D}..."><code class="xref fish fish-cmd docutils literal"><span class="pre">wall</span> <span class="pre">generate</span></code></a> 命令的基本用法。使用 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/fish/commands/cmd_fish.callback.html#command:fish.callback" title="Add/remove functions to be executed in response to callback events...">设置FISH回调命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fish</span> <span class="pre">callback</span></code>）</a> 命令，以便在球颗粒撞击球台或球网时执行特定操作。在比赛过程中使用 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.trace.html#command:ball.trace" title="|..."><code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">trace</span></code></a> 命令追踪球颗粒的轨迹。</p>
+<p class="h2 rubric">数值模型</p>
+<p>“<a class="reference internal" href="#tut-pong-createtable-datafile3d"><span class="std std-ref">CreateTable.dat (3D)</span></a>” 数据文件创建球台和球拍。首先，根据计算域尺寸计算球台尺寸。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish define</span><span class="ni"> dim_table</span>
+<span class="ni">  xTable</span><span class="p">=</span><span class="k">array.create</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span>
+<span class="ni">  yTable</span><span class="p">=</span><span class="k">array.create</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span>
+<span class="ni">  xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.min.x</span><span class="o">*</span><span class="m m-Double">0.95</span>
+<span class="ni">  xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.x</span><span class="o">*</span><span class="m m-Double">0.95</span>
+<span class="ni">  Lx </span><span class="p">=</span><span class="ni"> </span><span class="k">math.abs</span><span class="p">(</span><span class="ni">xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">))</span><span class="o">+</span><span class="k">math.abs</span><span class="p">(</span><span class="ni">xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">))</span>
+<span class="ni">  Ly </span><span class="p">=</span><span class="ni"> Lx</span><span class="o">*</span><span class="m m-Double">0.6</span>
+<span class="ni">  yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.min.y</span><span class="o">*</span><span class="m m-Double">0.95</span>
+<span class="ni">  yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="o">+</span><span class="ni">Ly</span>
+<span class="ni">  zTable </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="k">domain.min.z</span><span class="o">+</span><span class="k">domain.max.z</span><span class="p">)</span><span class="o">*</span><span class="m m-Double">0.5</span>
+<span class="nb">end</span>
+<span class="ni">[dim_table]</span>
+</pre></div>
+</div>
+<p>随后使用 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/wall_manual/wall_commands/cmd_wall_generate.html#command:wall.generate" title="Generate walls with specified shapes. The wall shapes include: {box, circle,
+and point in 2D; box, cone, cylinder, disk, line, plane, point, polygon, and
+sphere in 3D}..."><code class="xref fish fish-cmd docutils literal"><span class="pre">wall</span> <span class="pre">generate</span></code></a> 命令创建球台台面，以生成一个平面多边形墙体（<a class="reference internal" href="../../../../../../pfcmodule/doc/manual/wall_manual/wall_commands/cmd_wall_generate.html#kwd:wall.generate.polygon" title="Generate a planar, polygonal wall in 3D...">多边形（<code class="xref fish fish-kwd docutils literal"><span class="pre">polygon</span></code>）</a> 关键字）。球台的桌腿也通过使用 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/wall_manual/wall_commands/cmd_wall_generate.html#kwd:wall.generate.cylinder" title="Generate a cylinder in 3D. If the  name  keyword has not been specified,
+then  s  =  cylinderWall . By default, the cylinder is closed and
+each side of the cylinder is a separate wall. In this case, the wall name is
+concatenated with the wall side name (e.g., top, bottom, or side) and the wall
+ID. For instance, if  s  =  fred , the name of the top wall is  fredTopXX ,
+where  XX  is the wall ID...">圆柱（<code class="xref fish fish-kwd docutils literal"><span class="pre">cylinder</span></code>）</a> 关键字引入四个圆柱形墙体来创建。  对墙体进行分组和命名（下面给出的是四个墙体中的第一个），以便于后续操作。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 创建球桌</span>
+<span class="nb">wall generate</span><span class="n"> group </span><span class="s">'table'</span><span class="n"> polygon           </span><span class="sx">...</span>
+<span class="n">            </span><span class="ni">[xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[zTable]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">            </span><span class="ni">[xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[zTable]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">            </span><span class="ni">[xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[zTable]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">            </span><span class="ni">[xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[zTable]</span>
+
+<span class="c">; 插入桌腿</span>
+<span class="nb">wall generate</span><span class="n"> group </span><span class="s">'table'</span><span class="n"> cylinder        </span><span class="sx">...</span>
+<span class="n">     axis </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n">                            </span><span class="sx">...</span>
+<span class="n">     base </span><span class="ni">[xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[zTable]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     height </span><span class="ni">[Ly</span><span class="o">*</span><span class="m m-Double">0.5</span><span class="ni">]</span><span class="n">                        </span><span class="sx">...</span>
+<span class="n">     one</span><span class="o">-</span><span class="n">wall                               </span><span class="sx">...</span>
+<span class="n">     radius </span><span class="ni">[Lx</span><span class="o">*</span><span class="m m-Double">0.02</span><span class="ni">]</span>
+</pre></div>
+</div>
+<p>最后，将球网创建为一个新的多边形墙体。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 创建球网</span>
+<span class="nb">wall generate</span><span class="n"> group </span><span class="s">'net'</span><span class="n"> polygon                                   </span><span class="sx">...</span>
+<span class="n">     </span><span class="ni">[</span><span class="p">(</span><span class="ni">xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="o">+</span><span class="ni">xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">))</span><span class="o">*</span><span class="m m-Double">0.5</span><span class="ni">]</span><span class="n"> </span><span class="ni">[yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[zTable]</span><span class="n">           </span><span class="sx">...</span>
+<span class="n">     </span><span class="ni">[</span><span class="p">(</span><span class="ni">xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="o">+</span><span class="ni">xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">))</span><span class="o">*</span><span class="m m-Double">0.5</span><span class="ni">]</span><span class="n"> </span><span class="ni">[yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[zTable]</span><span class="n">           </span><span class="sx">...</span>
+<span class="n">     </span><span class="ni">[</span><span class="p">(</span><span class="ni">xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="o">+</span><span class="ni">xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">))</span><span class="o">*</span><span class="m m-Double">0.5</span><span class="ni">]</span><span class="n"> </span><span class="ni">[yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[zTable</span><span class="o">+</span><span class="ni">Lx</span><span class="o">*</span><span class="m m-Double">0.075</span><span class="ni">]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     </span><span class="ni">[</span><span class="p">(</span><span class="ni">xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="o">+</span><span class="ni">xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">))</span><span class="o">*</span><span class="m m-Double">0.5</span><span class="ni">]</span><span class="n"> </span><span class="ni">[yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[zTable</span><span class="o">+</span><span class="ni">Lx</span><span class="o">*</span><span class="m m-Double">0.075</span><span class="ni">]</span>
+</pre></div>
+</div>
+<p>然后创建球拍，并将其放置在球台两端。球拍使用 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/wall_manual/wall_commands/cmd_wall_generate.html#kwd:wall.generate.disk" title="Generate a disk in 3D. If the  name  keyword has not been specified, then
+ s  =  diskWall ...">圆盘（<code class="xref fish fish-kwd docutils literal"><span class="pre">disk</span></code>）</a> 关键字由两个圆盘形墙体表示。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 创建球拍</span>
+<span class="nb">wall generate</span><span class="n"> group </span><span class="s">'player1'</span><span class="n"> disk </span><span class="sx">...</span><span class="n"> </span><span class="c">;球拍 Player1</span>
+<span class="n">    dip </span><span class="m m-Double">90</span><span class="n">                </span><span class="sx">...</span>
+<span class="n">    dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">90</span><span class="n">      </span><span class="sx">...</span>
+<span class="n">    position </span><span class="ni">[xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[</span><span class="p">(</span><span class="ni">yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="o">+</span><span class="ni">yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">))</span><span class="o">*</span><span class="m m-Double">0.5</span><span class="ni">]</span><span class="n"> </span><span class="ni">[zTable</span><span class="o">+</span><span class="ni">Ly</span><span class="o">*</span><span class="m m-Double">0.3</span><span class="ni">]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">    rad </span><span class="ni">[Lx</span><span class="o">*</span><span class="m m-Double">0.05</span><span class="ni">]</span>
+
+<span class="nb">wall generate</span><span class="n"> group </span><span class="s">'player2'</span><span class="n"> disk </span><span class="sx">...</span><span class="n"> </span><span class="c">;球拍 Player2</span>
+<span class="n">    dip </span><span class="m m-Double">90</span><span class="n">                </span><span class="sx">...</span>
+<span class="n">    dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">90</span><span class="n">      </span><span class="sx">...</span>
+<span class="n">    position </span><span class="ni">[xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[</span><span class="p">(</span><span class="ni">yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="o">+</span><span class="ni">yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">))</span><span class="o">*</span><span class="m m-Double">0.5</span><span class="ni">]</span><span class="n"> </span><span class="ni">[zTable</span><span class="o">+</span><span class="ni">Ly</span><span class="o">*</span><span class="m m-Double">0.3</span><span class="ni">]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">    rad </span><span class="ni">[Lx</span><span class="o">*</span><span class="m m-Double">0.05</span><span class="ni">]</span>
+</pre></div>
+</div>
+<div class="figure" id="id3">
+<a class="reference internal image-reference" href="pfc/pfcmodule/test3d/tutorial_problems/PingPong/pingpong1.png"><img alt="pfc/pfcmodule/test3d/tutorial_problems/PingPong/pingpong1.png" src="pfc/pfcmodule/test3d/tutorial_problems/PingPong/pingpong1.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 1：球台、球网和球拍。</span></p>
+</div>
+<p>准备比赛的最后一步是创建球颗粒。其初始速度按分量分别设置。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;定义球的初始速度</span>
+<span class="ni">[XballInitialVelocity </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">3.0</span><span class="ni">]</span>
+<span class="ni">[ZballInitialVelocity </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2.0</span><span class="ni">]</span>
+</pre></div>
+</div>
+<p>比赛过程中使用 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.trace.html#command:ball.trace" title="|..."><code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">trace</span></code></a> 命令追踪球颗粒的轨迹。球颗粒的密度和初始速度使用 <a class="reference internal" href="../../../../../../pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.attribute.html#command:ball.attribute" title="Set the value of ball attributes. This command is a synonym for the  ball.initialize 
+command. Individual attributes can be listed with the  ball.list  command
+and all attributes can be visualized..."><code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">attribute</span></code></a> 命令设置。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;创建球</span>
+<span class="nb">ball create</span><span class="n"> id </span><span class="m m-Double">1</span><span class="n"> rad </span><span class="ni">[Lx</span><span class="o">*</span><span class="m m-Double">0.005</span><span class="ni">]</span><span class="n">                           </span><span class="sx">...</span>
+<span class="n">                 position </span><span class="ni">[xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="o">*</span><span class="m m-Double">0.98</span><span class="ni">]</span><span class="n">              </span><span class="sx">...</span>
+<span class="n">                          </span><span class="ni">[</span><span class="p">(</span><span class="ni">yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="o">+</span><span class="ni">yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">))</span><span class="o">*</span><span class="m m-Double">0.5</span><span class="ni">]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                          </span><span class="ni">[zTable</span><span class="o">+</span><span class="ni">Ly</span><span class="o">*</span><span class="m m-Double">0.3</span><span class="ni">]</span>
+<span class="nb">ball trace</span><span class="n"> id </span><span class="m m-Double">1</span>
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="m m-Double">10</span><span class="n">                       </span><span class="sx">...</span>
+<span class="n">               velocity</span><span class="o">-</span><span class="n">x </span><span class="ni">[XballInitialVelocity]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">               velocity</span><span class="o">-</span><span class="n">z </span><span class="ni">[ZballInitialVelocity]</span>
+</pre></div>
+</div>
+<p>每个 <span class="codename">PFC</span> 模型中都必须定义 <a class="reference internal" href="../../../pfc_model_components/contacts/cmat_description.html#cmat"><span class="std std-ref">接触模型分配表（CMAT）</span>（Contact Model Assignment Table (CMAT)）</a>。模型域中的每个接触都按这种方式分配接触本构模型。CMAT 的默认槽位针对球颗粒-面片接触定义。选择带有库仑准则、并与这些接触相关联的线性模型。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;球-面片接触的线性模型</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">facet model linear </span><span class="sx">...</span>
+<span class="n">        property kn </span><span class="m m-Double">1e6</span><span class="n"> ks </span><span class="m m-Double">1e6</span><span class="n"> fric </span><span class="m m-Double">0.009</span>
+</pre></div>
+</div>
+<p>为完成模型的准备工作，还需要一些函数来控制球拍的运动，并在出现失误时停止比赛。为此，创建两个 <span class="codename">FISH</span> 函数，并使用 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/fish/commands/cmd_fish.callback.html#command:fish.callback" title="Add/remove functions to be executed in response to callback events...">设置FISH回调命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fish</span> <span class="pre">callback</span></code>）</a> 命令将它们注册到回调事件。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;设置 FISH 回调以检查球是否触及球网</span>
+<span class="nb">fish callback</span><span class="n"> add checknet event contact_activated</span>
+<span class="c">;设置 FISH 回调以准备球拍位置</span>
+<span class="nb">fish callback</span><span class="n"> add tablecontact event contact_activated</span>
+</pre></div>
+</div>
+<p>使用 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/program/commands/cmd_program.list.html#kwd:program.list.cycle-sequence" title="List the doubles indicating the cycle point and names of the cycle entries in
+the cycle sequence...">列出循环序列（<code class="xref fish fish-cmd docutils literal"><span class="pre">program</span> <span class="pre">list</span> <span class="pre">cycle-sequence</span></code>）</a> 命令列出 <span class="codename">PFC</span> 循环期间的循环点，使用 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/fish/commands/cmd_fish.list.html#kwd:fish.list.callback-list" title="List the callback events that have been registered. For instance, the  solve_complete 
+event is a registered callback event.  [CS: is the base list of events
+shown anywhere??]...">FISH 列表回调列表（<code class="xref fish fish-cmd docutils literal"><span class="pre">fish</span> <span class="pre">list</span> <span class="pre">callback-list</span></code>）</a> 命令列出可用的回调事件。可以在循环序列中的预设循环点之间插入 <span class="codename">FISH</span> 函数。</p>
+<p>在本示例中，我们选择使用回调事件来管理球颗粒-球网和/或球颗粒-球台的相互作用。对于使用 <em>contact_activated</em> 事件的球颗粒-球网接触（参见“<a class="reference internal" href="../../../../../../../common/contactmodel/linear/doc/manual/cmlinear.html#cmlinear-cbtable"><span class="std std-ref">线性模型回调事件</span>（Linear Model Callback Events）</a>”），每次接触被激活时，函数 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">检查网络（<span class="varfishsym"><span class="null">checknet</span></span>）</a> 都会检查它是否为球颗粒-球网接触。若是，则发送 <em>Fault!</em> 消息。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 检查球与球网的接触</span>
+<span class="nb">fish define</span><span class="ni"> checknet</span><span class="p">(</span><span class="ni">arr</span><span class="p">)</span>
+<span class="ni">    ct</span><span class="p">=</span><span class="ni">arr</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">    </span><span class="c">; 对于球-面片接触，contact.end1 指球，</span>
+<span class="ni">    </span><span class="c">; contact.end2 指面片</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> </span><span class="k">wall.group</span><span class="p">(</span><span class="k">wall.facet.wall</span><span class="p">(</span><span class="k">contact.end2</span><span class="p">(</span><span class="ni">ct</span><span class="p">)))</span><span class="ni"> </span><span class="p">==</span><span class="ni"> </span><span class="s">"net"</span>
+<span class="ni">      </span><span class="k">io.out</span><span class="p">(</span><span class="s">"Net!!"</span><span class="p">)</span>
+<span class="ni">      bp </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">      </span><span class="k">ball.vel</span><span class="p">(</span><span class="ni">bp</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)=</span><span class="m m-Double">0</span>
+<span class="ni">      </span><span class="k">ball.vel</span><span class="p">(</span><span class="ni">bp</span><span class="p">,</span><span class="m m-Double">3</span><span class="p">)=</span><span class="m m-Double">0</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+<p>请注意，使用 <em>contact_create/delete</em> 和/或 <em>contact_activated</em> 事件有不同的方式：只要两个部件的单元范围接触或重叠，就可以创建接触（参见 <a class="reference internal" href="../../../numerical_simulations_with_pfc/pfc_formulation/update_contacts.html#update-contacts"><span class="std std-ref">35.0 - 创建/删除接触</span>（35.0 - Create/delete Contacts）</a> 参考页）。接触在创建时初始为非活动状态，需要执行接触解析才能确定其活动状态。球颗粒-球网接触可能被创建并保持非活动状态，此时比赛必须继续进行。</p>
+<p>对于球颗粒-球台接触，每次删除接触时，都会调用函数 <a class="reference internal" href="../../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">表格接触（<span class="varfishsym"><span class="null">tablecontact</span></span>）</a>。如果发现球颗粒已触及球台，则相应选手的球拍会移动到根据抛物线抛体理论预测的新位置。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 计算球拍的新位置并移动它！</span>
+<span class="nb">fish define</span><span class="ni"> moverackets</span>
+<span class="ni">  bp </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">  xvel </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.vel.x</span><span class="p">(</span><span class="ni">bp</span><span class="p">)</span>
+<span class="ni">  zvel </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.vel.z</span><span class="p">(</span><span class="ni">bp</span><span class="p">)</span>
+<span class="ni">  xpos </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.x</span><span class="p">(</span><span class="ni">bp</span><span class="p">)</span>
+<span class="ni">  zpos </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.z</span><span class="p">(</span><span class="ni">bp</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> xvel </span><span class="o">&lt;</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> xpos </span><span class="o">&gt;</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">      </span><span class="k">ball.vel</span><span class="p">(</span><span class="ni">bp</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)=</span><span class="m m-Double">0</span>
+<span class="ni">      </span><span class="k">ball.vel</span><span class="p">(</span><span class="ni">bp</span><span class="p">,</span><span class="m m-Double">3</span><span class="p">)=</span><span class="m m-Double">0</span>
+<span class="ni">      </span><span class="k">io.out</span><span class="p">(</span><span class="s">"Fault!!"</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="ni">    wp </span><span class="p">=</span><span class="ni"> </span><span class="k">wall.find</span><span class="p">(</span><span class="m m-Double">7</span><span class="p">)</span>
+<span class="ni">    L </span><span class="p">=</span><span class="ni"> xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> xpos</span>
+<span class="ni">  </span><span class="k">else</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> xpos </span><span class="o">&lt;</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">      </span><span class="k">ball.vel</span><span class="p">(</span><span class="ni">bp</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)=</span><span class="m m-Double">0</span>
+<span class="ni">      </span><span class="k">ball.vel</span><span class="p">(</span><span class="ni">bp</span><span class="p">,</span><span class="m m-Double">3</span><span class="p">)=</span><span class="m m-Double">0</span>
+<span class="ni">      </span><span class="k">io.out</span><span class="p">(</span><span class="s">"Fault!!"</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="ni">    wp </span><span class="p">=</span><span class="ni"> </span><span class="k">wall.find</span><span class="p">(</span><span class="m m-Double">8</span><span class="p">)</span>
+<span class="ni">    L </span><span class="p">=</span><span class="ni"> xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> xpos</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  zM </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">zvel</span><span class="o">/</span><span class="ni">xvel</span><span class="p">)</span><span class="o">*</span><span class="ni">L </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">9.81</span><span class="o">/</span><span class="m m-Double">2</span><span class="p">)</span><span class="o">*</span><span class="p">((</span><span class="ni">L</span><span class="o">/</span><span class="ni">xvel</span><span class="p">)</span><span class="o">^</span><span class="m m-Double">2</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> zM </span><span class="o">&gt;</span><span class="ni"> </span><span class="k">domain.min.z</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> zM </span><span class="o">&lt;</span><span class="ni"> </span><span class="k">domain.max.z</span>
+<span class="ni">      </span><span class="k">wall.pos.z</span><span class="p">(</span><span class="ni">wp</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> zM </span><span class="o">+</span><span class="ni"> zpos</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="nb">end</span>
+
+<span class="c">;检查球与球桌的接触！</span>
+<span class="nb">fish define</span><span class="ni"> tablecontact</span><span class="p">(</span><span class="ni">ct</span><span class="p">)</span>
+<span class="ni">    con </span><span class="p">=</span><span class="ni"> ct</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">    </span><span class="c">; 对于球-面片接触，contact.end1 指球，</span>
+<span class="ni">    </span><span class="c">; contact.end2 指面片</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> </span><span class="k">wall.group</span><span class="p">(</span><span class="k">wall.facet.wall</span><span class="p">(</span><span class="k">contact.end2</span><span class="p">(</span><span class="ni">con</span><span class="p">)))</span><span class="ni"> </span><span class="p">==</span><span class="ni"> </span><span class="s">"table"</span>
+<span class="ni">        moverackets</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+<p>一切准备就绪…… 尽情享受吧！</p>
+<div class="figure" id="id4">
+<a class="reference internal image-reference" href="pfc/pfcmodule/test3d/tutorial_problems/PingPong/pingpong2.png"><img alt="pfc/pfcmodule/test3d/tutorial_problems/PingPong/pingpong2.png" src="pfc/pfcmodule/test3d/tutorial_problems/PingPong/pingpong2.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：一场乒乓球比赛。</span></p>
+</div>
+<p class="h2 rubric">讨论</p>
+<p>本教程给出了一个将 <span class="codename">FISH</span> 函数注册到回调事件以产生自定义行为的示例（参见 <a class="reference internal" href="../../../../../../../common/kernel/doc/manual/fish/commands/cmd_fish.callback.html#command:fish.callback" title="Add/remove functions to be executed in response to callback events...">设置FISH回调命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fish</span> <span class="pre">callback</span></code>）</a> 命令）。这展示了 <span class="codename">PFC</span> 的核心特性之一：能够使用 <span class="codename">FISH</span> 对复杂现象进行建模。</p>
+<p class="h2 rubric" id="tut-pong-datafiles">数据文件</p>
+<p class="h3 rubric" id="tut-pong-createtable-datafile3d">CreateTable.dat (3D)</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; excerpt-lmiw-start</span>
+<span class="nb">fish define</span><span class="ni"> dim_table</span>
+<span class="ni">  xTable</span><span class="p">=</span><span class="k">array.create</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span>
+<span class="ni">  yTable</span><span class="p">=</span><span class="k">array.create</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span>
+<span class="ni">  xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.min.x</span><span class="o">*</span><span class="m m-Double">0.95</span>
+<span class="ni">  xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.max.x</span><span class="o">*</span><span class="m m-Double">0.95</span>
+<span class="ni">  Lx </span><span class="p">=</span><span class="ni"> </span><span class="k">math.abs</span><span class="p">(</span><span class="ni">xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">))</span><span class="o">+</span><span class="k">math.abs</span><span class="p">(</span><span class="ni">xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">))</span>
+<span class="ni">  Ly </span><span class="p">=</span><span class="ni"> Lx</span><span class="o">*</span><span class="m m-Double">0.6</span>
+<span class="ni">  yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="k">domain.min.y</span><span class="o">*</span><span class="m m-Double">0.95</span>
+<span class="ni">  yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="o">+</span><span class="ni">Ly</span>
+<span class="ni">  zTable </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="k">domain.min.z</span><span class="o">+</span><span class="k">domain.max.z</span><span class="p">)</span><span class="o">*</span><span class="m m-Double">0.5</span>
+<span class="nb">end</span>
+<span class="ni">[dim_table]</span>
+<span class="c">; excerpt-lmiw-end</span>
+
+<span class="c">; excerpt-hvqy-start</span>
+<span class="c">; 创建球桌</span>
+<span class="nb">wall generate</span><span class="n"> group </span><span class="s">'table'</span><span class="n"> polygon           </span><span class="sx">...</span>
+<span class="n">            </span><span class="ni">[xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[zTable]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">            </span><span class="ni">[xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[zTable]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">            </span><span class="ni">[xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[zTable]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">            </span><span class="ni">[xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[zTable]</span>
+
+<span class="c">; 插入桌腿</span>
+<span class="nb">wall generate</span><span class="n"> group </span><span class="s">'table'</span><span class="n"> cylinder        </span><span class="sx">...</span>
+<span class="n">     axis </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n">                            </span><span class="sx">...</span>
+<span class="n">     base </span><span class="ni">[xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[zTable]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     height </span><span class="ni">[Ly</span><span class="o">*</span><span class="m m-Double">0.5</span><span class="ni">]</span><span class="n">                        </span><span class="sx">...</span>
+<span class="n">     one</span><span class="o">-</span><span class="n">wall                               </span><span class="sx">...</span>
+<span class="n">     radius </span><span class="ni">[Lx</span><span class="o">*</span><span class="m m-Double">0.02</span><span class="ni">]</span>
+<span class="c">; excerpt-hvqy-end</span>
+
+<span class="nb">wall generate</span><span class="n"> group </span><span class="s">'table'</span><span class="n"> cylinder        </span><span class="sx">...</span>
+<span class="n">     axis </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n">                            </span><span class="sx">...</span>
+<span class="n">     base </span><span class="ni">[xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[zTable]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     height </span><span class="ni">[Ly</span><span class="o">*</span><span class="m m-Double">0.5</span><span class="ni">]</span><span class="n">                        </span><span class="sx">...</span>
+<span class="n">     one</span><span class="o">-</span><span class="n">wall                               </span><span class="sx">...</span>
+<span class="n">     radius </span><span class="ni">[Lx</span><span class="o">*</span><span class="m m-Double">0.02</span><span class="ni">]</span>
+
+<span class="nb">wall generate</span><span class="n"> group </span><span class="s">'table'</span><span class="n"> cylinder        </span><span class="sx">...</span>
+<span class="n">     axis </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n">                            </span><span class="sx">...</span>
+<span class="n">     base </span><span class="ni">[xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[zTable]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     height </span><span class="ni">[Ly</span><span class="o">*</span><span class="m m-Double">0.5</span><span class="ni">]</span><span class="n">                        </span><span class="sx">...</span>
+<span class="n">     one</span><span class="o">-</span><span class="n">wall                               </span><span class="sx">...</span>
+<span class="n">     radius </span><span class="ni">[Lx</span><span class="o">*</span><span class="m m-Double">0.02</span><span class="ni">]</span>
+
+<span class="nb">wall generate</span><span class="n"> group </span><span class="s">'table'</span><span class="n"> cylinder        </span><span class="sx">...</span>
+<span class="n">     axis </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n">                            </span><span class="sx">...</span>
+<span class="n">     base </span><span class="ni">[xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[zTable]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     height </span><span class="ni">[Ly</span><span class="o">*</span><span class="m m-Double">0.5</span><span class="ni">]</span><span class="n">                        </span><span class="sx">...</span>
+<span class="n">     one</span><span class="o">-</span><span class="n">wall                               </span><span class="sx">...</span>
+<span class="n">     radius </span><span class="ni">[Lx</span><span class="o">*</span><span class="m m-Double">0.02</span><span class="ni">]</span>
+
+<span class="c">; excerpt-edxd-start</span>
+<span class="c">; 创建球网</span>
+<span class="nb">wall generate</span><span class="n"> group </span><span class="s">'net'</span><span class="n"> polygon                                   </span><span class="sx">...</span>
+<span class="n">     </span><span class="ni">[</span><span class="p">(</span><span class="ni">xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="o">+</span><span class="ni">xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">))</span><span class="o">*</span><span class="m m-Double">0.5</span><span class="ni">]</span><span class="n"> </span><span class="ni">[yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[zTable]</span><span class="n">           </span><span class="sx">...</span>
+<span class="n">     </span><span class="ni">[</span><span class="p">(</span><span class="ni">xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="o">+</span><span class="ni">xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">))</span><span class="o">*</span><span class="m m-Double">0.5</span><span class="ni">]</span><span class="n"> </span><span class="ni">[yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[zTable]</span><span class="n">           </span><span class="sx">...</span>
+<span class="n">     </span><span class="ni">[</span><span class="p">(</span><span class="ni">xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="o">+</span><span class="ni">xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">))</span><span class="o">*</span><span class="m m-Double">0.5</span><span class="ni">]</span><span class="n"> </span><span class="ni">[yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[zTable</span><span class="o">+</span><span class="ni">Lx</span><span class="o">*</span><span class="m m-Double">0.075</span><span class="ni">]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     </span><span class="ni">[</span><span class="p">(</span><span class="ni">xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="o">+</span><span class="ni">xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">))</span><span class="o">*</span><span class="m m-Double">0.5</span><span class="ni">]</span><span class="n"> </span><span class="ni">[yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[zTable</span><span class="o">+</span><span class="ni">Lx</span><span class="o">*</span><span class="m m-Double">0.075</span><span class="ni">]</span>
+<span class="c">; excerpt-edxd-end</span>
+
+<span class="c">; excerpt-stlb-start</span>
+<span class="c">; 创建球拍</span>
+<span class="nb">wall generate</span><span class="n"> group </span><span class="s">'player1'</span><span class="n"> disk </span><span class="sx">...</span><span class="n"> </span><span class="c">;球拍 Player1</span>
+<span class="n">    dip </span><span class="m m-Double">90</span><span class="n">                </span><span class="sx">...</span>
+<span class="n">    dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">90</span><span class="n">      </span><span class="sx">...</span>
+<span class="n">    position </span><span class="ni">[xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[</span><span class="p">(</span><span class="ni">yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="o">+</span><span class="ni">yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">))</span><span class="o">*</span><span class="m m-Double">0.5</span><span class="ni">]</span><span class="n"> </span><span class="ni">[zTable</span><span class="o">+</span><span class="ni">Ly</span><span class="o">*</span><span class="m m-Double">0.3</span><span class="ni">]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">    rad </span><span class="ni">[Lx</span><span class="o">*</span><span class="m m-Double">0.05</span><span class="ni">]</span>
+
+<span class="nb">wall generate</span><span class="n"> group </span><span class="s">'player2'</span><span class="n"> disk </span><span class="sx">...</span><span class="n"> </span><span class="c">;球拍 Player2</span>
+<span class="n">    dip </span><span class="m m-Double">90</span><span class="n">                </span><span class="sx">...</span>
+<span class="n">    dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">90</span><span class="n">      </span><span class="sx">...</span>
+<span class="n">    position </span><span class="ni">[xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="ni">[</span><span class="p">(</span><span class="ni">yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="o">+</span><span class="ni">yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">))</span><span class="o">*</span><span class="m m-Double">0.5</span><span class="ni">]</span><span class="n"> </span><span class="ni">[zTable</span><span class="o">+</span><span class="ni">Ly</span><span class="o">*</span><span class="m m-Double">0.3</span><span class="ni">]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">    rad </span><span class="ni">[Lx</span><span class="o">*</span><span class="m m-Double">0.05</span><span class="ni">]</span>
+<span class="c">; excerpt-stlb-end</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'table'</span>
+</pre></div>
+</div>
+<p class="h3 rubric" id="tut-pong-tabletennis-datafile3d">TennisTable.dat (3D)</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 文件名：TableTennis.dat (3D)</span>
+<span class="c">; 本示例演示如何创建一个乒乓球游戏！</span>
+<span class="c">;</span>
+<span class="c">; ====================================================</span>
+<span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+
+<span class="c">; excerpt-wywo-start</span>
+<span class="c">;定义球的初始速度</span>
+<span class="ni">[XballInitialVelocity </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">3.0</span><span class="ni">]</span>
+<span class="ni">[ZballInitialVelocity </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2.0</span><span class="ni">]</span>
+<span class="c">; excerpt-wywo-end</span>
+
+<span class="c">; 定义计算域范围与边界条件</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">model domain</span><span class="n"> condition destroy</span>
+
+<span class="c">;创建球桌</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'CreateTable'</span>
+
+<span class="c">; excerpt-wywp-start</span>
+<span class="c">;创建球</span>
+<span class="nb">ball create</span><span class="n"> id </span><span class="m m-Double">1</span><span class="n"> rad </span><span class="ni">[Lx</span><span class="o">*</span><span class="m m-Double">0.005</span><span class="ni">]</span><span class="n">                           </span><span class="sx">...</span>
+<span class="n">                 position </span><span class="ni">[xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="o">*</span><span class="m m-Double">0.98</span><span class="ni">]</span><span class="n">              </span><span class="sx">...</span>
+<span class="n">                          </span><span class="ni">[</span><span class="p">(</span><span class="ni">yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="o">+</span><span class="ni">yTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">))</span><span class="o">*</span><span class="m m-Double">0.5</span><span class="ni">]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                          </span><span class="ni">[zTable</span><span class="o">+</span><span class="ni">Ly</span><span class="o">*</span><span class="m m-Double">0.3</span><span class="ni">]</span>
+<span class="nb">ball trace</span><span class="n"> id </span><span class="m m-Double">1</span>
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="m m-Double">10</span><span class="n">                       </span><span class="sx">...</span>
+<span class="n">               velocity</span><span class="o">-</span><span class="n">x </span><span class="ni">[XballInitialVelocity]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">               velocity</span><span class="o">-</span><span class="n">z </span><span class="ni">[ZballInitialVelocity]</span>
+<span class="c">; excerpt-wywp-end</span>
+
+<span class="c">; excerpt-bogg-start</span>
+<span class="c">;球-面片接触的线性模型</span>
+<span class="nb">contact cmat</span><span class="n"> default type ball</span><span class="o">-</span><span class="n">facet model linear </span><span class="sx">...</span>
+<span class="n">        property kn </span><span class="m m-Double">1e6</span><span class="n"> ks </span><span class="m m-Double">1e6</span><span class="n"> fric </span><span class="m m-Double">0.009</span>
+<span class="c">; excerpt-bogg-end</span>
+
+
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">9.81</span>
+
+<span class="c">; excerpt-rpge-start</span>
+<span class="c">; 检查球与球网的接触</span>
+<span class="nb">fish define</span><span class="ni"> checknet</span><span class="p">(</span><span class="ni">arr</span><span class="p">)</span>
+<span class="ni">    ct</span><span class="p">=</span><span class="ni">arr</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">    </span><span class="c">; 对于球-面片接触，contact.end1 指球，</span>
+<span class="ni">    </span><span class="c">; contact.end2 指面片</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> </span><span class="k">wall.group</span><span class="p">(</span><span class="k">wall.facet.wall</span><span class="p">(</span><span class="k">contact.end2</span><span class="p">(</span><span class="ni">ct</span><span class="p">)))</span><span class="ni"> </span><span class="p">==</span><span class="ni"> </span><span class="s">"net"</span>
+<span class="ni">      </span><span class="k">io.out</span><span class="p">(</span><span class="s">"Net!!"</span><span class="p">)</span>
+<span class="ni">      bp </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">      </span><span class="k">ball.vel</span><span class="p">(</span><span class="ni">bp</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)=</span><span class="m m-Double">0</span>
+<span class="ni">      </span><span class="k">ball.vel</span><span class="p">(</span><span class="ni">bp</span><span class="p">,</span><span class="m m-Double">3</span><span class="p">)=</span><span class="m m-Double">0</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="nb">end</span>
+<span class="c">; excerpt-rpge-end</span>
+
+<span class="c">; excerpt-ptva-start</span>
+<span class="c">; 计算球拍的新位置并移动它！</span>
+<span class="nb">fish define</span><span class="ni"> moverackets</span>
+<span class="ni">  bp </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.find</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">  xvel </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.vel.x</span><span class="p">(</span><span class="ni">bp</span><span class="p">)</span>
+<span class="ni">  zvel </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.vel.z</span><span class="p">(</span><span class="ni">bp</span><span class="p">)</span>
+<span class="ni">  xpos </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.x</span><span class="p">(</span><span class="ni">bp</span><span class="p">)</span>
+<span class="ni">  zpos </span><span class="p">=</span><span class="ni"> </span><span class="k">ball.pos.z</span><span class="p">(</span><span class="ni">bp</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> xvel </span><span class="o">&lt;</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> xpos </span><span class="o">&gt;</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">      </span><span class="k">ball.vel</span><span class="p">(</span><span class="ni">bp</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)=</span><span class="m m-Double">0</span>
+<span class="ni">      </span><span class="k">ball.vel</span><span class="p">(</span><span class="ni">bp</span><span class="p">,</span><span class="m m-Double">3</span><span class="p">)=</span><span class="m m-Double">0</span>
+<span class="ni">      </span><span class="k">io.out</span><span class="p">(</span><span class="s">"Fault!!"</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="ni">    wp </span><span class="p">=</span><span class="ni"> </span><span class="k">wall.find</span><span class="p">(</span><span class="m m-Double">7</span><span class="p">)</span>
+<span class="ni">    L </span><span class="p">=</span><span class="ni"> xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> xpos</span>
+<span class="ni">  </span><span class="k">else</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> xpos </span><span class="o">&lt;</span><span class="ni"> </span><span class="m m-Double">0</span>
+<span class="ni">      </span><span class="k">ball.vel</span><span class="p">(</span><span class="ni">bp</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)=</span><span class="m m-Double">0</span>
+<span class="ni">      </span><span class="k">ball.vel</span><span class="p">(</span><span class="ni">bp</span><span class="p">,</span><span class="m m-Double">3</span><span class="p">)=</span><span class="m m-Double">0</span>
+<span class="ni">      </span><span class="k">io.out</span><span class="p">(</span><span class="s">"Fault!!"</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="ni">    wp </span><span class="p">=</span><span class="ni"> </span><span class="k">wall.find</span><span class="p">(</span><span class="m m-Double">8</span><span class="p">)</span>
+<span class="ni">    L </span><span class="p">=</span><span class="ni"> xTable</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="ni"> </span><span class="o">-</span><span class="ni"> xpos</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="ni">  zM </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">zvel</span><span class="o">/</span><span class="ni">xvel</span><span class="p">)</span><span class="o">*</span><span class="ni">L </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">9.81</span><span class="o">/</span><span class="m m-Double">2</span><span class="p">)</span><span class="o">*</span><span class="p">((</span><span class="ni">L</span><span class="o">/</span><span class="ni">xvel</span><span class="p">)</span><span class="o">^</span><span class="m m-Double">2</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> zM </span><span class="o">&gt;</span><span class="ni"> </span><span class="k">domain.min.z</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> zM </span><span class="o">&lt;</span><span class="ni"> </span><span class="k">domain.max.z</span>
+<span class="ni">      </span><span class="k">wall.pos.z</span><span class="p">(</span><span class="ni">wp</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> zM </span><span class="o">+</span><span class="ni"> zpos</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="ni">  </span><span class="k">endif</span>
+<span class="nb">end</span>
+
+<span class="c">;检查球与球桌的接触！</span>
+<span class="nb">fish define</span><span class="ni"> tablecontact</span><span class="p">(</span><span class="ni">ct</span><span class="p">)</span>
+<span class="ni">    con </span><span class="p">=</span><span class="ni"> ct</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="ni">    </span><span class="c">; 对于球-面片接触，contact.end1 指球，</span>
+<span class="ni">    </span><span class="c">; contact.end2 指面片</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> </span><span class="k">wall.group</span><span class="p">(</span><span class="k">wall.facet.wall</span><span class="p">(</span><span class="k">contact.end2</span><span class="p">(</span><span class="ni">con</span><span class="p">)))</span><span class="ni"> </span><span class="p">==</span><span class="ni"> </span><span class="s">"table"</span>
+<span class="ni">        moverackets</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="nb">end</span>
+<span class="c">; excerpt-ptva-end</span>
+
+<span class="c">; excerpt-rymc-start</span>
+<span class="c">;设置 FISH 回调以检查球是否触及球网</span>
+<span class="nb">fish callback</span><span class="n"> add checknet event contact_activated</span>
+<span class="c">;设置 FISH 回调以准备球拍位置</span>
+<span class="nb">fish callback</span><span class="n"> add tablecontact event contact_activated</span>
+<span class="c">; excerpt-rymc-end</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time </span><span class="m m-Double">1.0</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'game'</span>
+<span class="c">;==============================================================</span>
+<span class="c">;文件结束：TableTennis.dat (3D)</span>
+</pre></div>
+</div>
+<p class="endnotesection rubric">尾注</p>
+<table class="docutils footnote" frame="void" id="id2" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><p class="first">要在 <span class="codename">PFC</span> 中查看本项目，请使用程序菜单。</p>
+<p><span class="menuselection">帮助 ▼ 算例…</span></p>
+<p class="last">  ⮡    PFC <br/>
+    ⮡    教程 <br/>
+      ⮡    TableTennis <br/>
+        ⮡    TableTennis.prj</p>
+</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../pfchome.html"><span class="codename">PFC</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../pfc_model_components/pfc_examples.html">Examples</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../tutorials.html">Tutorials</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../callbacks/callbacks.html" title="previous chapter"> Using <span class="codename">FISH</span> Callbacks</a> |    
+       <a href="../shallow_foundation/shallow_foundation.html" title="next chapter">Shallow Foundation</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Table Tennis" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>
