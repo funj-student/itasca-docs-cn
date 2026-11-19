@@ -92,9 +92,10 @@ function sizeMobileNav() {
         doc.body.dataset.mobileScrollFixed = '1';
       }
     } catch (e) {}
-    var contentHeight = doc.body ? doc.body.scrollHeight : 0;
-    var frameHeight = Math.max(contentHeight + 60, 100);
-    tocFrame.style.setProperty('height', frameHeight + 'px', 'important');
+    var minHeight = window.innerHeight <= 500
+      ? window.innerHeight
+      : Math.round(window.innerHeight * 0.8);
+    tocFrame.style.setProperty('height', minHeight + 'px', 'important');
     var side = document.getElementById('mySidenav');
     if (side) { side.style.height = ''; }
   } catch (e) {}
