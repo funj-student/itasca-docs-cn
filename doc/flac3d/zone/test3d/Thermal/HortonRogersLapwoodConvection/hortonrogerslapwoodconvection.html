@@ -1,0 +1,806 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>底部加热的饱和多孔介质中的稳态对流 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="../../../../docproject/source/options/thermalanalysis/thermal/references.html" rel="next" title="References"/>
+<link href="../NaturalAdvection/naturaladvection.html" rel="prev" title="Steady-State Convection in a Saturated Porous Medium Heated from Above"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="steady-state-convection-in-a-saturated-porous-medium-heated-from-below">
+<span id="hortonrogerslapwoodconvection"></span><h1>底部加热的饱和多孔介质中的稳态对流</h1>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">要在 <span class="codename">FLAC3D</span> 中查看此工程，请使用菜单命令 <span class="menuselection">帮助 ‣ 示例…</span>。选择“Thermal/ HortonRogers LapwoodConvection”，再选择“HortonRogers LapwoodConvection.f3dprj”即可加载。该工程的<a class="reference internal" href="#hortonrogerslapwoodconvectionmaindata"><span class="std std-ref">主数据文件</span>（main data files）</a>在本示例末尾给出。</p>
+</div>
+<p>多孔层底部加热时的稳态对流问题（<strong>Horton-Rogers-Lapwood 对流问题</strong>）是一个经典的对流应用。考虑一个厚度和横向范围均有限的饱和层。层的顶部和底部温度固定。边界对流体流动不透水，侧向边界绝热。问题的解取决于 Rayleigh 数 <span class="math">\(Ra\)</span> 的值，该数在本问题中定义为</p>
+<div class="math" id="equation-eqhrlconvectionra">
+<span class="eqno">(1)</span>\[Ra = {k \over k^T} (\rho_0 c_w) \cdot (\rho_0 g H) \beta_f (T_1 - T_0)\]</div>
+<p>其中 <span class="math">\(H\)</span> 为层的高度，<span class="math">\(T_1\)</span>、<span class="math">\(T_0\)</span> 分别为底部和顶部温度（例如见 Lapwood，1948）。当 Rayleigh 数低于最小临界值 <span class="math">\(4 \pi^2\)</span>（约 39.48）时，问题具有平凡稳态解，其对应于比流量为零（导热解）。当 Rayleigh 数高于 <span class="math">\(4 \pi^2\)</span> 时，还可能存在对流胞形式的非平凡解。物理上可实现多种不同的稳态对流模式；本节考虑不同的几何长宽比和 Rayleigh 数，并寻求其中一些解。</p>
+<p class="h2 rubric">饱和多孔立方体</p>
+<p>第一个示例涉及立方体中的二维对流。按模型采用的性质和尺寸，本问题的 Rayleigh 数约为 42。该值大于临界值 <span class="math">\(4 \pi^2\)</span>。因此可以预期存在非平凡解。我们将说明其中一种解：一个二维卷，并将其与由线性稳定性分析导出的解析解进行比较。首先，从计算方法的说明开始。本示例的数据文件为“<a class="reference internal" href="#hortonrogerslapwoodconvectionlowra"><span class="std std-ref">HRL-Convection-Cube-LowRa.dat</span></a>”。</p>
+<p>我们取导热解作为初始条件（见<a class="reference internal" href="../NaturalAdvection/naturaladvection.html#naturaladvection"><span class="std std-ref">自然对流</span>（natural convection）</a>中的方程 (1) 和 (3)）。在 <span class="codename">FLAC3D</span> 中，对流体求解瞬态方程，因此必须提供流体体积模量的值。在现有算法中，该值影响模拟所采用的稳定时步的大小。我们选取 2 × 10<sup>5</sup> Pa，这意味着，对于显式模拟中所采用的性质值和网格单元尺寸，流体时步比热时步小一个数量级。</p>
+<p>对于显式计算模式，我们将热时步固定为 5.5 × 10<sup>10</sup> 秒、流体时步固定为 5.5 × 10<sup>9</sup> 秒。随后用 <span class="codename">FISH</span> 语言设计一个“supersolve”命令，在计算中每个超级步执行一个热步和 10 个流体流动步。这样，执行每个超级步后，热时间与流体时间即同步。</p>
+<p>显式计算模式对本问题非常低效。另外，为减少计算时间，我们采用隐式计算模式，并将热模拟和流体模拟的时步均放大十倍。</p>
+<p>隐式计算的设置如下</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">zone fluid</span><span class="n"> implicit </span><span class="sx">on</span>
+<span class="nb">zone thermal</span><span class="n"> implicit </span><span class="sx">on</span>
+<span class="nb">model fluid</span><span class="n">   timestep fix </span><span class="m m-Double">5.5e10</span>
+<span class="nb">model thermal</span><span class="n"> timestep fix </span><span class="m m-Double">5.5e11</span>
+</pre></div>
+</div>
+<p>隐式模式的命令列于<a class="reference internal" href="#hortonrogerslapwoodconvectionlowra"><span class="std std-ref">下文</span>（below）</a>。</p>
+<p><span class="codename">FLAC3D</span> 网格及监测点位置见<a href="#hrl-convection-cube-lowra-grid">图 1（Figure  1）</a>。对应于密度随温度变化的流体的导热解的初始孔隙压力云图和温度云图绘于<a href="#hrl-convection-cube-lowra-temp-ini">图 2（Figure  2）</a> 和 <a href="#hrl-convection-cube-lowra-pp-ini">图 3（Figure  3）</a>。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id1">
+<span id="hrl-convection-cube-lowra-grid"></span><a class="reference internal image-reference" href="../../../../../_images/HRL-Convection-Cube-LowRa-grid.png"><img alt="../../../../../_images/HRL-Convection-Cube-LowRa-grid.png" src="../../../../../_images/HRL-Convection-Cube-LowRa-grid.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 1：<span class="codename">FLAC3D</span> 网格与监测点位置。</span></p>
+</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p>对于这类问题，可能存在多个解（一个导热解和一个或多个对流解，取决于 Rayleigh 数）。通常得到的是导热解，且往往需要一个小扰动才能使系统分岔到某个可能的对流解（例如性质的随机分布，或轻微倾斜重力）。在本示例中，我们通过在 <span class="math">\(x\)</span> 方向将重力角度倾斜 0.06° 获得了二维卷。该扰动施加有限个计算步后被移除。请注意，若在无任何扰动的情况下将同一示例运行足够长的时间，似乎存在足够的数值噪声使解发生分岔，但此时会形成三维对流胞。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id2">
+<span id="hrl-convection-cube-lowra-temp-ini"></span><a class="reference internal image-reference" href="../../../../../_images/HRL-Convection-Cube-LowRa-temp-ini.png"><img alt="../../../../../_images/HRL-Convection-Cube-LowRa-temp-ini.png" src="../../../../../_images/HRL-Convection-Cube-LowRa-temp-ini.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 2：初始温度云图——导热解。</span></p>
+</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id3">
+<span id="hrl-convection-cube-lowra-pp-ini"></span><a class="reference internal image-reference" href="../../../../../_images/HRL-Convection-Cube-LowRa-pp-ini.png"><img alt="../../../../../_images/HRL-Convection-Cube-LowRa-pp-ini.png" src="../../../../../_images/HRL-Convection-Cube-LowRa-pp-ini.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 3：初始孔隙压力云图——导热解。</span></p>
+</div>
+<p>从导热解出发，我们执行若干计算超级步。对于接近临界值的 Rayleigh 数（如本示例），在检测到明显变化之前所需的超级步数可能相当大。经过 100 个超级步后，模型中温度几乎看不到任何变化；但已开始形成对流胞。这可见于<a href="#hrl-convection-cube-lowra-temp-flow-1k">图 4（Figure  4）</a>，其中流矢量绘于温度云图背景之上。</p>
+<p>此时尚未达到稳态解。随着模拟推进，模型中温度开始演化，对流胞进一步发展成二维卷。经过 700 个超级步后，<a href="#hrl-convection-cube-lowra-temp-7k">图 5（Figure  5）</a> 和 <a href="#hrl-convection-cube-lowra-temphist-7k">图 6（Figure  6）</a> 给出了温度云图以及控制点处温度随时间的演化。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id4">
+<span id="hrl-convection-cube-lowra-temp-flow-1k"></span><a class="reference internal image-reference" href="../../../../../_images/HRL-Convection-Cube-LowRa-temp-flow-1k.png"><img alt="../../../../../_images/HRL-Convection-Cube-LowRa-temp-flow-1k.png" src="../../../../../_images/HRL-Convection-Cube-LowRa-temp-flow-1k.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 4：100 个超级步后（Ra = 42）的温度云图与流矢量。</span></p>
+</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id5">
+<span id="hrl-convection-cube-lowra-temp-7k"></span><a class="reference internal image-reference" href="../../../../../_images/HRL-Convection-Cube-LowRa-temp-7k.png"><img alt="../../../../../_images/HRL-Convection-Cube-LowRa-temp-7k.png" src="../../../../../_images/HRL-Convection-Cube-LowRa-temp-7k.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 5：700 个超级步后的温度云图。</span></p>
+</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id6">
+<span id="hrl-convection-cube-lowra-temphist-7k"></span><a class="reference internal image-reference" href="../../../../../_images/HRL-Convection-Cube-LowRa-temphist-7k.png"><img alt="../../../../../_images/HRL-Convection-Cube-LowRa-temphist-7k.png" src="../../../../../_images/HRL-Convection-Cube-LowRa-temphist-7k.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 6：700 个超级步后 5 个控制点处温度随时间的演化。</span></p>
+</div>
+<p>模拟继续进行另外 7000 个超级步。由温度演化（见<a href="#hrl-convection-cube-lowra-temphist-77k">图 7（Figure  7）</a>）看，系统似乎已达到稳态。模拟结束时的温度云图绘于<a href="#hrl-convection-cube-lowra-temp-77k">图 8（Figure  8）</a>。模拟结束时的孔隙压力云图绘于<a href="#hrl-convection-cube-lowra-pp-77k">图 9（Figure  9）</a>。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id7">
+<span id="hrl-convection-cube-lowra-temphist-77k"></span><a class="reference internal image-reference" href="../../../../../_images/HRL-Convection-Cube-LowRa-temphist-77k.png"><img alt="../../../../../_images/HRL-Convection-Cube-LowRa-temphist-77k.png" src="../../../../../_images/HRL-Convection-Cube-LowRa-temphist-77k.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 7：7700 个超级步后 5 个控制点处温度随时间的演化。</span></p>
+</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id8">
+<span id="hrl-convection-cube-lowra-temp-77k"></span><a class="reference internal image-reference" href="../../../../../_images/HRL-Convection-Cube-LowRa-temp-77k.png"><img alt="../../../../../_images/HRL-Convection-Cube-LowRa-temp-77k.png" src="../../../../../_images/HRL-Convection-Cube-LowRa-temp-77k.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 8：7700 个超级步后垂直于 x 轴的平面上的温度云图。</span></p>
+</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id9">
+<span id="hrl-convection-cube-lowra-pp-77k"></span><a class="reference internal image-reference" href="../../../../../_images/HRL-Convection-Cube-LowRa-pp-77k.png"><img alt="../../../../../_images/HRL-Convection-Cube-LowRa-pp-77k.png" src="../../../../../_images/HRL-Convection-Cube-LowRa-pp-77k.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 9：7700 个超级步后的孔隙压力云图与流矢量。</span></p>
+</div>
+<p><a href="#hrl-convection-cube-lowra-temp-77k">图 8（Figure  8）</a> 中所示的温度云图（接近临界 Rayleigh 数时立方体中的二维卷）可与由线性扰动理论导出的 1 阶模态二维解析温度等值线值（例如见 Zhao 等 1997）进行比较，后者绘于<a href="#hrl-convection-cube-lowra-temp-anasol">图 10（Figure  10）</a>。二维解析解的形式为</p>
+<div class="math" id="equation-eqhrlconvectionanalytical">
+<span class="eqno">(2)</span>\[{{T - T_0} \over {T_1 - T_0}} = C_1 {\rm cos} \bigl(\pi {x^{\ast} \over H} \bigr) {\rm sin} \bigl(\pi {y^{\ast} \over H} \bigr) + \bigl(1 - {z^{\ast} \over H} \bigr)\]</div>
+<p>其中 <span class="math">\(x^{\ast} = x + {H \over 2}\)</span>、<span class="math">\(y^{\ast} = y + {H \over 2}\)</span>、<span class="math">\(z^{\ast} = z + {H \over 2}\)</span>，而 <span class="math">\(C_1\)</span> 为常数，此处通过要求 <span class="math">\(x^{\ast}\)</span> = 0、<span class="math">\(z^{\ast} / H\)</span> = 0.5 处数值与解析温度值相等来确定。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id10">
+<span id="hrl-convection-cube-lowra-temp-anasol"></span><a class="reference internal image-reference" href="../../../../../_images/HRL-Convection-Cube-LowRa-temp-anasol.png"><img alt="../../../../../_images/HRL-Convection-Cube-LowRa-temp-anasol.png" src="../../../../../_images/HRL-Convection-Cube-LowRa-temp-anasol.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 10：温度云图，解析稳态解，Rayleigh 数 = <span class="math">\(4\pi^2\)</span>。</span></p>
+</div>
+<p class="h2 rubric">高 Rayleigh 数下的饱和多孔立方体</p>
+<p>对于本高 Rayleigh 数模拟，除流体热膨胀性质取更大值外，我们使用与“<a class="reference internal" href="#hortonrogerslapwoodconvectionlowra"><span class="std std-ref">HRL-Convection-Cube-LowRa.dat</span></a>”相似的数据。通过将重力矢量在 <span class="math">\(x\)</span> 方向略微倾斜施加一个小扰动，以触发对流胞的形成。</p>
+<p>该模型得到的 Rayleigh 数约为 381。稳态时获得的多个三维胞见<a href="#hrl-convection-cube-highra-temp">图 11（Figure  11）</a>。数据文件列于“<a class="reference internal" href="#hortonrogerslapwoodconvectionhighra"><span class="std std-ref">HRL-Convection-Cube-HighRa.dat</span></a>”。</p>
+<p>请注意，在该高 Rayleigh 数下采用显式计算模式。此情形下隐式计算并不更有优势。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id11">
+<span id="hrl-convection-cube-highra-temp"></span><a class="reference internal image-reference" href="../../../../../_images/HRL-Convection-Cube-HighRa-temp.png"><img alt="../../../../../_images/HRL-Convection-Cube-HighRa-temp.png" src="../../../../../_images/HRL-Convection-Cube-HighRa-temp.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 11：1 × 1 × 1 盒子、Ra = 381 时的稳态温度云图与流矢量。</span></p>
+</div>
+<p class="h2 rubric">长条饱和多孔盒</p>
+<p>重复前面的模拟，此次采用长宽比为 8 × 1 × 1 的盒子。对重力矢量沿盒子长边方向施加扰动。稳态时获得的胞形态见<a href="#hrl-convection-longbox-temp-longbox0">图 12（Figure  12）</a> 和 <a href="#hrl-convection-longbox-tempzoom-longbox0">图 13（Figure  13）</a>。该形态对应于一系列二维卷。数据文件列于“<a class="reference internal" href="#hortonrogerslapwoodconvectionlongbox"><span class="std std-ref">HRL-Convection-LongBox.dat</span></a>”。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id12">
+<span id="hrl-convection-longbox-temp-longbox0"></span><a class="reference internal image-reference" href="../../../../../_images/HRL-Convection-LongBox-temp-longbox0.png"><img alt="../../../../../_images/HRL-Convection-LongBox-temp-longbox0.png" src="../../../../../_images/HRL-Convection-LongBox-temp-longbox0.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 12：8 × 1 × 1 盒子、Ra = 42 时的稳态温度云图与流矢量。</span></p>
+</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id13">
+<span id="hrl-convection-longbox-tempzoom-longbox0"></span><a class="reference internal image-reference" href="../../../../../_images/HRL-Convection-LongBox-tempzoom-longbox0.png"><img alt="../../../../../_images/HRL-Convection-LongBox-tempzoom-longbox0.png" src="../../../../../_images/HRL-Convection-LongBox-tempzoom-longbox0.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 13：8 × 1 × 1 盒子、Ra = 42 时温度云图与流矢量的局部放大图。</span></p>
+</div>
+<p class="h2 rubric">网格敏感性分析</p>
+<p>为检验网格密度对稳态结果的影响，对长宽比为 4 × 1 × 1 的多孔盒、Rayleigh 数为 42 的对流模拟，采用三种不同的规则网格分辨率重复进行：粗网格（24 × 6 × 6 个网格单元）；中等网格（48 × 12 × 12 个网格单元）；细网格（96 × 24 × 24 个网格单元）。三种情形均采用相同的重力扰动（沿盒子长边方向）。三种网格分辨率均得到二维卷。粗、中、细分辨率下的温度云图与流矢量分别见<a href="#hrl-convection-longbox-coarse">图 14（Figure  14）</a> 至<a href="#hrl-convection-longbox-fine">图 16（Figure  16）</a>。用于模拟的数据文件从“<a class="reference internal" href="#hortonrogerslapwoodconvectionlongboxcoarse"><span class="std std-ref">HRL-Convection-LongBox-Coarse.dat</span></a>”到“<a class="reference internal" href="#hortonrogerslapwoodconvectionlongboxfine"><span class="std std-ref">HRL-Convection-LongBox-Fine.dat</span></a>”。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id14">
+<span id="hrl-convection-longbox-coarse"></span><a class="reference internal image-reference" href="../../../../../_images/HRL-Convection-LongBox-coarse.png"><img alt="../../../../../_images/HRL-Convection-LongBox-coarse.png" src="../../../../../_images/HRL-Convection-LongBox-coarse.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 14：稳态温度云图与流矢量——粗网格。</span></p>
+</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id15">
+<span id="hrl-convection-longbox-medium"></span><a class="reference internal image-reference" href="../../../../../_images/HRL-Convection-LongBox-medium.png"><img alt="../../../../../_images/HRL-Convection-LongBox-medium.png" src="../../../../../_images/HRL-Convection-LongBox-medium.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 15：稳态温度云图与流矢量——中等网格。</span></p>
+</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id16">
+<span id="hrl-convection-longbox-fine"></span><a class="reference internal image-reference" href="../../../../../_images/HRL-Convection-LongBox-fine.png"><img alt="../../../../../_images/HRL-Convection-LongBox-fine.png" src="../../../../../_images/HRL-Convection-LongBox-fine.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 16：稳态温度云图与流矢量——细网格。</span></p>
+</div>
+<p class="h2 rubric">参考文献</p>
+<p>Lapwood, E. R. “Convection of a Fluid in a Porous Medium,” <em>Proc. Cambridge Philos. Soc.</em>, <span class="bi">44</span>, 508-521 (1948).</p>
+<p>Zhao, C., H. B. Mühlhaus and B. E. Hobbs. “Finite Element Analysis of Steady-State Natural Convection Problems in Fluid-Saturated Porous Media Heated from below,” <em>Int. J. Num. &amp; Analy. Method. Geomech.</em>, <span class="bi">21</span>, 863-881 (1997).</p>
+<p class="h2 rubric" id="hortonrogerslapwoodconvectionmaindata">数据文件</p>
+<p id="hortonrogerslapwoodconvectionmain"><strong>HortonRogersLapwoodConvection.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">program call</span><span class="n"> </span><span class="s">'HRL-Convection-Cube-LowRa'</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'HRL-Convection-Cube-HighRa'</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'HRL-Convection-LongBox'</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'HRL-Convection-LongBox-Coarse'</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'HRL-Convection-LongBox-Medium'</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'HRL-Convection-LongBox-Fine'</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'check'</span>
+</pre></div>
+</div>
+<p id="hortonrogerslapwoodconvectionlowra"><strong>HRL-Convection-Cube-LowRa.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 多孔层中的三维对流</span>
+<span class="nb">model new</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'3D convection in a porous layer - Ra = 42'</span>
+<span class="nb">fish automatic-create</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">model config</span><span class="n"> fluid thermal</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'HRL-Convection-FISH'</span><span class="n"> suppress</span>
+<span class="ni">[setup]</span>
+<span class="c">; --- 几何形状 ---</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">12</span><span class="n"> </span><span class="m m-Double">12</span><span class="n"> </span><span class="m m-Double">12</span><span class="n"> point </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">5e3</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">5e3</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">5e3</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="n"> </span><span class="m m-Double">5e3</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">5e3</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">5e3</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">5e3</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">5e3</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">5e3</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">5e3</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">5e3</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">5e3</span><span class="p">)</span>
+<span class="nb">zone face skin</span>
+<span class="c">; --- 热学、流体和力学模型 ---</span>
+<span class="nb">zone thermal</span><span class="n"> cmodel assign advection</span><span class="o">-</span><span class="n">conduction</span>
+<span class="nb">zone fluid</span><span class="n"> cmodel assign isotropic</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
+<span class="c">; --- 参数 ---</span>
+<span class="c">;    （力学）</span>
+<span class="nb">zone property</span><span class="n"> density </span><span class="m m-Double">2000</span><span class="n"> bulk</span><span class="p">=</span><span class="ni">[_bulk]</span><span class="n"> shear</span><span class="p">=</span><span class="ni">[_shear]</span>
+<span class="c">;    （热学）</span>
+<span class="nb">zone thermal</span><span class="n"> property conductivity</span><span class="p">=</span><span class="ni">[_condu]</span><span class="n"> specific</span><span class="o">-</span><span class="n">heat</span><span class="p">=</span><span class="ni">[_mspec]</span>
+<span class="nb">zone thermal</span><span class="n"> property conductivity</span><span class="o">-</span><span class="n">fluid</span><span class="p">=</span><span class="ni">[_fcond]</span><span class="n"> specific</span><span class="o">-</span><span class="n">heat</span><span class="o">-</span><span class="n">fluid</span><span class="p">=</span><span class="ni">[_fspec]</span>
+<span class="nb">zone thermal</span><span class="n"> property expansion</span><span class="o">-</span><span class="n">fluid</span><span class="p">=</span><span class="ni">[_fthex]</span><span class="n"> expansion</span><span class="p">=</span><span class="ni">[_thexp]</span>
+<span class="nb">zone thermal</span><span class="n"> property temperature</span><span class="o">-</span><span class="n">reference</span><span class="p">=</span><span class="m m-Double">20.0</span>
+<span class="c">;    （流体）</span>
+<span class="nb">zone fluid</span><span class="n"> property porosity</span><span class="p">=</span><span class="ni">[_poros]</span><span class="n"> permeability</span><span class="p">=</span><span class="ni">[_mobil]</span>
+<span class="nb">zone fluid</span><span class="n"> property biot</span><span class="p">=</span><span class="m m-Double">1</span><span class="n"> undrained</span><span class="o">-</span><span class="n">thermal</span><span class="o">-</span><span class="n">coefficient</span><span class="p">=</span><span class="m m-Double">0</span>
+<span class="nb">zone fluid</span><span class="n"> biot </span><span class="sx">off</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> fluid</span><span class="o">-</span><span class="n">modulus</span><span class="p">=</span><span class="m m-Double">2e5</span><span class="n"> </span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> fluid</span><span class="o">-</span><span class="n">tension</span><span class="p">=</span><span class="o">-</span><span class="m m-Double">1e10</span>
+<span class="nb">zone initialize</span><span class="n"> fluid</span><span class="o">-</span><span class="n">density</span><span class="p">=</span><span class="ni">[_fdens]</span>
+<span class="c">; --- 初始条件 ---</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure </span><span class="m m-Double">0.5e8</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1e4</span>
+<span class="nb">zone initialize</span><span class="n"> stress</span><span class="o">-</span><span class="n">xx </span><span class="o">-</span><span class="m m-Double">1.05e8</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">2.1e4</span>
+<span class="nb">zone initialize</span><span class="n"> stress</span><span class="o">-</span><span class="n">yy </span><span class="o">-</span><span class="m m-Double">1.05e8</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">2.1e4</span>
+<span class="nb">zone initialize</span><span class="n"> stress</span><span class="o">-</span><span class="n">zz </span><span class="o">-</span><span class="m m-Double">1.05e8</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">2.1e4</span>
+<span class="c">; --- 边界条件 ---</span>
+<span class="nb">zone face apply</span><span class="n"> velocity </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n">  range group </span><span class="s">'Bottom'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n">      range group </span><span class="s">'West'</span><span class="n"> or </span><span class="s">'East'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n">      range group </span><span class="s">'North'</span><span class="n"> or </span><span class="s">'South'</span>
+<span class="nb">zone face apply</span><span class="n"> temperature </span><span class="ni">[_T1]</span><span class="n"> range group </span><span class="s">'Bottom'</span>
+<span class="nb">zone face apply</span><span class="n"> temperature </span><span class="ni">[_T0]</span><span class="n"> range group </span><span class="s">'Top'</span>
+<span class="c">; --- 设置 ---</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0.01</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="ni">_grav]</span>
+<span class="c">; --- 显式计算使用以下设置：</span>
+<span class="nb">model fluid</span><span class="n">   timestep fix </span><span class="m m-Double">5.5e9</span>
+<span class="nb">model thermal</span><span class="n"> timestep fix </span><span class="m m-Double">5.5e10</span>
+<span class="c">; --- 隐式计算使用以下设置：</span>
+<span class="c">;zone fluid implicit on</span>
+<span class="c">;zone thermal implicit on</span>
+<span class="c">;model fluid   timestep fix 5.5e10</span>
+<span class="c">;model thermal timestep fix 5.5e11</span>
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">off</span><span class="n"> thermal </span><span class="sx">on</span><span class="n"> mechanical </span><span class="sx">on</span>
+<span class="c">; --- 历程 ---</span>
+<span class="nb">history interval</span><span class="n"> </span><span class="m m-Double">5000</span>
+<span class="nb">model history</span><span class="n"> fluid time</span><span class="o">-</span><span class="n">total</span>
+<span class="nb">zone history</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure position </span><span class="o">-</span><span class="m m-Double">4e3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4e3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4e3</span>
+<span class="nb">zone history</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure position </span><span class="o">-</span><span class="m m-Double">2e3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2e3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2e3</span>
+<span class="nb">zone history</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">zone history</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure position </span><span class="m m-Double">2e3</span><span class="n"> </span><span class="m m-Double">2e3</span><span class="n"> </span><span class="m m-Double">2e3</span>
+<span class="nb">zone history</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure position </span><span class="m m-Double">4e3</span><span class="n"> </span><span class="m m-Double">4e3</span><span class="n"> </span><span class="m m-Double">4e3</span>
+<span class="nb">model history</span><span class="n"> thermal time</span><span class="o">-</span><span class="n">total</span>
+<span class="nb">zone history</span><span class="n"> temperature   position </span><span class="o">-</span><span class="m m-Double">4e3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4e3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4e3</span>
+<span class="nb">zone history</span><span class="n"> temperature   position </span><span class="o">-</span><span class="m m-Double">2e3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2e3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2e3</span>
+<span class="nb">zone history</span><span class="n"> temperature   position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">zone history</span><span class="n"> temperature   position </span><span class="m m-Double">2e3</span><span class="n"> </span><span class="m m-Double">2e3</span><span class="n"> </span><span class="m m-Double">2e3</span>
+<span class="nb">zone history</span><span class="n"> temperature   position </span><span class="m m-Double">4e3</span><span class="n"> </span><span class="m m-Double">4e3</span><span class="n"> </span><span class="m m-Double">4e3</span>
+<span class="c">; --- 试验 ---</span>
+<span class="nb">model mechanical</span><span class="n"> active </span><span class="sx">off</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span>
+<span class="c">; --- 热传导求解 ---</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> temperature </span><span class="m m-Double">120</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2e-2</span>
+<span class="ni">[ini_pp]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'cube-lowRa-cd'</span>
+<span class="c">; --- 对流 ---</span>
+<span class="c">; --- 注意：本次计算重置为竖直方向 ---</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">250</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'cube-lowRa-hf'</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="ni">_grav]</span><span class="n">       </span>
+<span class="nb">zone thermal</span><span class="n"> property specific</span><span class="o">-</span><span class="n">heat</span><span class="o">-</span><span class="n">fluid</span><span class="p">=</span><span class="ni">[_fspec]</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">250</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'cube-lowRa-he'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">250</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">250</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'cube-lowRa-h4'</span><span class="n">   </span><span class="c">; 1000 个超步，隐式计算：在此停止</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">2000</span><span class="p">)</span><span class="ni">]</span><span class="n">             </span>
+<span class="c">;model save 'cube-lowRa-h6'  ; 3000 个超步</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">2000</span><span class="p">)</span><span class="ni">]</span><span class="n">             </span>
+<span class="c">;model save 'cube-lowRa-h8'  ; 5000 个超步</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">2000</span><span class="p">)</span><span class="ni">]</span><span class="n">             </span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'cube-lowRa-h10'</span><span class="n">  </span><span class="c">; 7000 个超步</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">2000</span><span class="p">)</span><span class="ni">]</span><span class="n">             </span>
+<span class="c">;model save 'cube-lowRa-h12' ; 9000 个超步</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">2000</span><span class="p">)</span><span class="ni">]</span><span class="n">             </span>
+<span class="c">;model save 'cube-lowRa-h14' ; 11000 个超步</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">6000</span><span class="p">)</span><span class="ni">]</span><span class="n">             </span>
+<span class="c">;model save 'cube-lowRa-h20' ; 17000 个超步</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">10000</span><span class="p">)</span><span class="ni">]</span><span class="n">            </span>
+<span class="c">;model save 'cube-lowRa-h30' ; 27000 个超步</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">50000</span><span class="p">)</span><span class="ni">]</span><span class="n">            </span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'cube-lowRa-h40'</span><span class="n">  </span><span class="c">; 77000 个超步</span>
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+<p id="hortonrogerslapwoodconvectionhighra"><strong>HRL-Convection-Cube-HighRa.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'3D convection in a porous layer - Ra = 381'</span>
+<span class="nb">model config</span><span class="n"> fluid thermal</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'HRL-Convection-FISH'</span><span class="n"> suppress</span>
+<span class="ni">[setup]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> _fthex</span><span class="p">=</span><span class="m m-Double">1.4e-3</span><span class="ni">]</span><span class="n">  </span><span class="c">; 增大流体热膨胀系数</span>
+<span class="c">; --- 几何形状 ---</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">18</span><span class="n"> </span><span class="m m-Double">18</span><span class="n"> </span><span class="m m-Double">18</span><span class="n"> point </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">5e3</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">5e3</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">5e3</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="n"> </span><span class="m m-Double">5e3</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">5e3</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">5e3</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">5e3</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">5e3</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">5e3</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">5e3</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">5e3</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">5e3</span><span class="p">)</span>
+<span class="nb">zone face skin</span>
+<span class="c">; --- 热学、流体和力学模型 ---</span>
+<span class="nb">zone thermal</span><span class="n"> cmodel assign advection</span><span class="o">-</span><span class="n">conduction</span>
+<span class="nb">zone fluid</span><span class="n"> cmodel assign isotropic</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
+<span class="c">; --- 参数 ---</span>
+<span class="c">;    （力学）</span>
+<span class="nb">zone property</span><span class="n"> density </span><span class="m m-Double">2000</span><span class="n"> bulk</span><span class="p">=</span><span class="ni">[_bulk]</span><span class="n"> shear</span><span class="p">=</span><span class="ni">[_shear]</span>
+<span class="c">;    （热学）</span>
+<span class="nb">zone thermal</span><span class="n"> property conductivity</span><span class="p">=</span><span class="ni">[_condu]</span><span class="n"> specific</span><span class="o">-</span><span class="n">heat</span><span class="p">=</span><span class="ni">[_mspec]</span>
+<span class="nb">zone thermal</span><span class="n"> property conductivity</span><span class="o">-</span><span class="n">fluid</span><span class="p">=</span><span class="ni">[_fcond]</span><span class="n"> specific</span><span class="o">-</span><span class="n">heat</span><span class="o">-</span><span class="n">fluid</span><span class="p">=</span><span class="ni">[_fspec]</span>
+<span class="nb">zone thermal</span><span class="n"> property expansion</span><span class="o">-</span><span class="n">fluid</span><span class="p">=</span><span class="ni">[_fthex]</span><span class="n"> expansion</span><span class="p">=</span><span class="ni">[_thexp]</span>
+<span class="nb">zone thermal</span><span class="n"> property temperature</span><span class="o">-</span><span class="n">reference</span><span class="p">=</span><span class="m m-Double">20.0</span>
+<span class="c">;    （流体）</span>
+<span class="nb">zone fluid</span><span class="n"> property porosity</span><span class="p">=</span><span class="ni">[_poros]</span><span class="n"> permeability</span><span class="p">=</span><span class="ni">[_mobil]</span>
+<span class="nb">zone fluid</span><span class="n"> property biot</span><span class="p">=</span><span class="m m-Double">1</span><span class="n"> undrained</span><span class="o">-</span><span class="n">thermal</span><span class="o">-</span><span class="n">coefficient</span><span class="p">=</span><span class="m m-Double">0</span>
+<span class="nb">zone fluid</span><span class="n"> biot </span><span class="sx">off</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> fluid</span><span class="o">-</span><span class="n">modulus</span><span class="p">=</span><span class="m m-Double">2e5</span><span class="n"> </span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> fluid</span><span class="o">-</span><span class="n">tension</span><span class="p">=</span><span class="o">-</span><span class="m m-Double">1e10</span>
+<span class="nb">zone initialize</span><span class="n"> fluid</span><span class="o">-</span><span class="n">density</span><span class="p">=</span><span class="ni">[_fdens]</span>
+<span class="c">; --- 初始条件 ---</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure </span><span class="m m-Double">0.5e8</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1e4</span>
+<span class="nb">zone initialize</span><span class="n"> stress</span><span class="o">-</span><span class="n">xx </span><span class="o">-</span><span class="m m-Double">1.05e8</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">2.1e4</span>
+<span class="nb">zone initialize</span><span class="n"> stress</span><span class="o">-</span><span class="n">yy </span><span class="o">-</span><span class="m m-Double">1.05e8</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">2.1e4</span>
+<span class="nb">zone initialize</span><span class="n"> stress</span><span class="o">-</span><span class="n">zz </span><span class="o">-</span><span class="m m-Double">1.05e8</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">2.1e4</span>
+<span class="c">; --- 边界条件 ---</span>
+<span class="nb">zone face apply</span><span class="n"> velocity </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> range group </span><span class="s">'Bottom'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n">     range group </span><span class="s">'West'</span><span class="n"> or </span><span class="s">'East'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n">     range group </span><span class="s">'North'</span><span class="n"> or </span><span class="s">'South'</span>
+<span class="nb">zone face apply</span><span class="n"> temperature </span><span class="ni">[_T1]</span><span class="n"> range group </span><span class="s">'Bottom'</span>
+<span class="nb">zone face apply</span><span class="n"> temperature </span><span class="ni">[_T0]</span><span class="n"> range group </span><span class="s">'Top'</span>
+<span class="c">; --- 设置 ---</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0.01</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="ni">_grav]</span>
+<span class="c">; --- 显式计算使用以下设置：</span>
+<span class="nb">model fluid</span><span class="n">   timestep fix </span><span class="m m-Double">2.4e9</span>
+<span class="nb">model thermal</span><span class="n"> timestep fix </span><span class="m m-Double">2.4e10</span>
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">off</span><span class="n"> thermal </span><span class="sx">on</span><span class="n"> mechanical </span><span class="sx">on</span>
+<span class="c">; --- 试验 ---</span>
+<span class="nb">model mechanical</span><span class="n"> active </span><span class="sx">off</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span>
+<span class="c">; --- 热传导求解 ---</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> temperature </span><span class="m m-Double">120</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2e-2</span>
+<span class="ni">[ini_pp]</span>
+<span class="c">; --- 对流 ---</span>
+<span class="c">; 扰动</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0.01</span><span class="n"> </span><span class="m m-Double">0.</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="ni">_grav]</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">500</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'cube-highRa-hf'</span>
+<span class="c">; --- 将重力重置为竖直方向</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="ni">_grav]</span><span class="n"> </span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">500</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'cube-highRa-he'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">500</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">500</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'cube-highRa-h4'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">2000</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'cube-highRa-h6'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">2000</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'cube-highRa-h8'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">2000</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'cube-highRa-h10'</span>
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+<p id="hortonrogerslapwoodconvectionlongbox"><strong>HRL-Convection-LongBox.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'3D convection in a long porous box - Ra = 42 ? medium grid'</span>
+<span class="nb">fish automatic-create</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">model config</span><span class="n"> fluid thermal</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'HRL-Convection-FISH'</span><span class="n"> suppress</span>
+<span class="ni">[setup]</span>
+<span class="c">; --- 几何形状 ---</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">96</span><span class="n"> </span><span class="m m-Double">12</span><span class="n"> </span><span class="m m-Double">12</span><span class="n"> point </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4e4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5e3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5e3</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                point </span><span class="m m-Double">1</span><span class="n">  </span><span class="m m-Double">4e4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5e3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5e3</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                point </span><span class="m m-Double">2</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4e4</span><span class="n">  </span><span class="m m-Double">5e3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5e3</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                point </span><span class="m m-Double">3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4e4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5e3</span><span class="n">  </span><span class="m m-Double">5e3</span>
+<span class="nb">zone face skin</span><span class="n"> </span>
+<span class="c">; --- 热学、流体和力学模型 ---</span>
+<span class="nb">zone thermal</span><span class="n"> cmodel assign advection</span><span class="o">-</span><span class="n">conduction</span>
+<span class="nb">zone fluid</span><span class="n"> cmodel assign isotropic</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
+<span class="c">; --- 参数 ---</span>
+<span class="c">;    （力学）</span>
+<span class="nb">zone property</span><span class="n"> density </span><span class="m m-Double">2000</span><span class="n"> bulk</span><span class="p">=</span><span class="ni">[_bulk]</span><span class="n"> shear</span><span class="p">=</span><span class="ni">[_shear]</span>
+<span class="c">;    （热学）</span>
+<span class="nb">zone thermal</span><span class="n"> property conductivity</span><span class="p">=</span><span class="ni">[_condu]</span><span class="n"> specific</span><span class="o">-</span><span class="n">heat</span><span class="p">=</span><span class="ni">[_mspec]</span>
+<span class="nb">zone thermal</span><span class="n"> property conductivity</span><span class="o">-</span><span class="n">fluid</span><span class="p">=</span><span class="ni">[_fcond]</span><span class="n"> specific</span><span class="o">-</span><span class="n">heat</span><span class="o">-</span><span class="n">fluid</span><span class="p">=</span><span class="ni">[_fspec]</span>
+<span class="nb">zone thermal</span><span class="n"> property expansion</span><span class="o">-</span><span class="n">fluid</span><span class="p">=</span><span class="ni">[_fthex]</span><span class="n"> expansion</span><span class="p">=</span><span class="ni">[_thexp]</span>
+<span class="nb">zone thermal</span><span class="n"> property temperature</span><span class="o">-</span><span class="n">reference</span><span class="p">=</span><span class="m m-Double">20.0</span>
+<span class="c">;    （流体）</span>
+<span class="nb">zone fluid</span><span class="n"> property porosity</span><span class="p">=</span><span class="ni">[_poros]</span><span class="n"> permeability</span><span class="p">=</span><span class="ni">[_mobil]</span>
+<span class="nb">zone fluid</span><span class="n"> property biot</span><span class="p">=</span><span class="m m-Double">1</span><span class="n"> undrained</span><span class="o">-</span><span class="n">thermal</span><span class="o">-</span><span class="n">coefficient</span><span class="p">=</span><span class="m m-Double">0</span>
+<span class="nb">zone fluid</span><span class="n"> biot </span><span class="sx">off</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> fluid</span><span class="o">-</span><span class="n">modulus</span><span class="p">=</span><span class="m m-Double">2e5</span><span class="n"> </span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> fluid</span><span class="o">-</span><span class="n">tension</span><span class="p">=</span><span class="o">-</span><span class="m m-Double">1e10</span>
+<span class="nb">zone initialize</span><span class="n"> fluid</span><span class="o">-</span><span class="n">density</span><span class="p">=</span><span class="ni">[_fdens]</span>
+<span class="c">; --- 初始条件 ---</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure </span><span class="m m-Double">0.5e8</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1e4</span>
+<span class="nb">zone initialize</span><span class="n"> stress</span><span class="o">-</span><span class="n">xx </span><span class="o">-</span><span class="m m-Double">1.05e8</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">2.1e4</span>
+<span class="nb">zone initialize</span><span class="n"> stress</span><span class="o">-</span><span class="n">yy </span><span class="o">-</span><span class="m m-Double">1.05e8</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">2.1e4</span>
+<span class="nb">zone initialize</span><span class="n"> stress</span><span class="o">-</span><span class="n">zz </span><span class="o">-</span><span class="m m-Double">1.05e8</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">2.1e4</span>
+<span class="c">; --- 边界条件 ---</span>
+<span class="nb">zone face apply</span><span class="n"> velocity </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> range group </span><span class="s">'Bottom'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n">     range group </span><span class="s">'West'</span><span class="n"> or </span><span class="s">'East'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n">     range group </span><span class="s">'North'</span><span class="n"> or </span><span class="s">'South'</span>
+<span class="nb">zone face apply</span><span class="n"> temperature </span><span class="ni">[_T1]</span><span class="n"> range group </span><span class="s">'Bottom'</span>
+<span class="nb">zone face apply</span><span class="n"> temperature </span><span class="ni">[_T0]</span><span class="n"> range group </span><span class="s">'Top'</span>
+<span class="c">; --- 设置 ---</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="ni">_grav]</span><span class="n">           </span>
+<span class="c">;</span>
+<span class="nb">zone fluid</span><span class="n"> implicit </span><span class="sx">on</span>
+<span class="nb">zone thermal</span><span class="n"> implicit </span><span class="sx">on</span>
+<span class="nb">model fluid</span><span class="n"> timestep   fix </span><span class="m m-Double">5.5e10</span><span class="n"> </span>
+<span class="nb">model thermal</span><span class="n"> timestep fix </span><span class="m m-Double">5.5e11</span>
+<span class="c">; --- 历程 ---</span>
+<span class="nb">model history</span><span class="n"> fluid time</span><span class="o">-</span><span class="n">total</span>
+<span class="nb">history interval</span><span class="n"> </span><span class="m m-Double">20</span>
+<span class="nb">zone history</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure position </span><span class="o">-</span><span class="m m-Double">4e3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4e3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4e3</span>
+<span class="nb">zone history</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure position </span><span class="o">-</span><span class="m m-Double">2e3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2e3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2e3</span>
+<span class="nb">zone history</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">zone history</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure position </span><span class="m m-Double">2e3</span><span class="n"> </span><span class="m m-Double">2e3</span><span class="n"> </span><span class="m m-Double">2e3</span>
+<span class="nb">zone history</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure position </span><span class="m m-Double">4e3</span><span class="n"> </span><span class="m m-Double">4e3</span><span class="n"> </span><span class="m m-Double">4e3</span>
+<span class="nb">model history</span><span class="n"> thermal time</span><span class="o">-</span><span class="n">total</span>
+<span class="nb">zone history</span><span class="n"> temperature position </span><span class="o">-</span><span class="m m-Double">4e3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4e3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4e3</span>
+<span class="nb">zone history</span><span class="n"> temperature position </span><span class="o">-</span><span class="m m-Double">2e3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2e3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2e3</span>
+<span class="nb">zone history</span><span class="n"> temperature position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">zone history</span><span class="n"> temperature position </span><span class="m m-Double">2e3</span><span class="n"> </span><span class="m m-Double">2e3</span><span class="n"> </span><span class="m m-Double">2e3</span>
+<span class="nb">zone history</span><span class="n"> temperature position </span><span class="m m-Double">4e3</span><span class="n"> </span><span class="m m-Double">4e3</span><span class="n"> </span><span class="m m-Double">4e3</span>
+<span class="c">; --- 试验 ---</span>
+<span class="nb">model mechanical</span><span class="n"> active </span><span class="sx">off</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span>
+<span class="c">; --- 热传导求解 ---</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> temperature </span><span class="m m-Double">120</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2e-2</span>
+<span class="ni">[ini_pp]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'longBox0-cd'</span>
+<span class="c">; --- 对流 ---</span>
+<span class="c">; 扰动</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0.01</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="ni">_grav]</span>
+<span class="c">;</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">25</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'longBox0-hf'</span>
+<span class="c">; 将重力重置为竖直方向</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="ni">_grav]</span><span class="n">  </span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">25</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'longBox0-he'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">25</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">25</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox0-h4'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">200</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox0-h6'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">200</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox0-h8'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">200</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox0-h10'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">200</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox0-h12'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">200</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox0-h14'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">600</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox0-h20'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">1000</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox0-h30'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">1000</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'longBox0-h40'</span>
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+<p id="hortonrogerslapwoodconvectionlongboxcoarse"><strong>HRL-Convection-LongBox-Coarse.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'3D convection in a porous 4x1x1 box - Ra = 42 - coarse'</span>
+<span class="nb">fish automatic-create</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">model config</span><span class="n"> fluid thermal</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'HRL-Convection-FISH'</span><span class="n"> suppress</span>
+<span class="ni">[setup]</span>
+<span class="c">; --- 几何形状 ---</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">24</span><span class="n"> </span><span class="m m-Double">6</span><span class="n"> </span><span class="m m-Double">6</span><span class="n"> point </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2e4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5e3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5e3</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n">  </span><span class="m m-Double">2e4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5e3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5e3</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                              point </span><span class="m m-Double">2</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2e4</span><span class="n">  </span><span class="m m-Double">5e3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5e3</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2e4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5e3</span><span class="n">  </span><span class="m m-Double">5e3</span>
+<span class="nb">zone face skin</span><span class="n">                              </span>
+<span class="c">; --- 热学、流体和力学模型 ---</span>
+<span class="nb">zone thermal</span><span class="n"> cmodel assign advection</span><span class="o">-</span><span class="n">conduction</span>
+<span class="nb">zone fluid</span><span class="n"> cmodel assign isotropic</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
+<span class="c">; --- 参数 ---</span>
+<span class="c">;    （力学）</span>
+<span class="nb">zone property</span><span class="n"> bulk</span><span class="p">=</span><span class="ni">[_bulk]</span><span class="n"> shear</span><span class="p">=</span><span class="ni">[_shear]</span>
+<span class="nb">zone initialize</span><span class="n"> density </span><span class="m m-Double">2000</span><span class="n"> </span>
+<span class="c">;    （热学）</span>
+<span class="nb">zone thermal</span><span class="n"> property conductivity</span><span class="p">=</span><span class="ni">[_condu]</span><span class="n"> specific</span><span class="o">-</span><span class="n">heat</span><span class="p">=</span><span class="ni">[_mspec]</span>
+<span class="nb">zone thermal</span><span class="n"> property conductivity</span><span class="o">-</span><span class="n">fluid</span><span class="p">=</span><span class="ni">[_fcond]</span><span class="n"> specific</span><span class="o">-</span><span class="n">heat</span><span class="o">-</span><span class="n">fluid</span><span class="p">=</span><span class="ni">[_fspec]</span>
+<span class="nb">zone thermal</span><span class="n"> property expansion</span><span class="o">-</span><span class="n">fluid</span><span class="p">=</span><span class="ni">[_fthex]</span><span class="n"> expansion</span><span class="p">=</span><span class="ni">[_thexp]</span>
+<span class="nb">zone thermal</span><span class="n"> property temperature</span><span class="o">-</span><span class="n">reference</span><span class="p">=</span><span class="m m-Double">20.0</span>
+<span class="c">;    （流体）</span>
+<span class="nb">zone fluid</span><span class="n"> property porosity</span><span class="p">=</span><span class="ni">[_poros]</span><span class="n"> permeability</span><span class="p">=</span><span class="ni">[_mobil]</span>
+<span class="nb">zone fluid</span><span class="n"> property biot</span><span class="p">=</span><span class="m m-Double">1</span><span class="n"> undrained</span><span class="o">-</span><span class="n">thermal</span><span class="o">-</span><span class="n">coefficient</span><span class="p">=</span><span class="m m-Double">0</span>
+<span class="nb">zone fluid</span><span class="n"> biot </span><span class="sx">off</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> fluid</span><span class="o">-</span><span class="n">modulus</span><span class="p">=</span><span class="m m-Double">2e5</span><span class="n"> </span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> fluid</span><span class="o">-</span><span class="n">tension</span><span class="p">=</span><span class="o">-</span><span class="m m-Double">1e10</span>
+<span class="nb">zone initialize</span><span class="n"> fluid</span><span class="o">-</span><span class="n">density</span><span class="p">=</span><span class="ni">[_fdens]</span>
+<span class="c">; --- 初始条件 ---</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure </span><span class="m m-Double">0.5e8</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1e4</span>
+<span class="nb">zone initialize</span><span class="n"> stress</span><span class="o">-</span><span class="n">xx </span><span class="o">-</span><span class="m m-Double">1.05e8</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">2.1e4</span>
+<span class="nb">zone initialize</span><span class="n"> stress</span><span class="o">-</span><span class="n">yy </span><span class="o">-</span><span class="m m-Double">1.05e8</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">2.1e4</span>
+<span class="nb">zone initialize</span><span class="n"> stress</span><span class="o">-</span><span class="n">zz </span><span class="o">-</span><span class="m m-Double">1.05e8</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">2.1e4</span>
+<span class="c">; --- 边界条件 ---</span>
+<span class="nb">zone face apply</span><span class="n"> temperature </span><span class="ni">[_T1]</span><span class="n"> range group </span><span class="s">'Bottom'</span>
+<span class="nb">zone face apply</span><span class="n"> temperature </span><span class="ni">[_T0]</span><span class="n"> range group </span><span class="s">'Top'</span>
+<span class="c">; --- 设置 ---</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="ni">_grav]</span><span class="n">          </span>
+<span class="nb">zone fluid</span><span class="n"> implicit </span><span class="sx">on</span>
+<span class="nb">zone thermal</span><span class="n"> implicit </span><span class="sx">on</span>
+<span class="nb">model fluid</span><span class="n"> timestep   fix </span><span class="m m-Double">2.2e11</span><span class="n"> </span>
+<span class="nb">model thermal</span><span class="n"> timestep fix </span><span class="m m-Double">2.2e12</span>
+<span class="c">;</span>
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">off</span><span class="n"> thermal </span><span class="sx">on</span><span class="n"> mechanical </span><span class="sx">on</span>
+<span class="c">; --- 试验 ---</span>
+<span class="nb">model mechanical</span><span class="n"> active </span><span class="sx">off</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span>
+<span class="c">; --- 热传导求解 ---</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> temperature </span><span class="m m-Double">120</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2e-2</span>
+<span class="ni">[ini_pp]</span>
+<span class="c">; --- 对流 ---</span>
+<span class="c">; 扰动</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0.01</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="ni">_grav]</span><span class="n"> </span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">10</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'longBox-coarse-hf'</span>
+<span class="c">; 将重力重置为竖直方向</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="ni">_grav]</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">10</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'longBox-coarse-he'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">10</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">10</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox-coarse-h4'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">200</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox-coarse-h6'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">200</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox-coarse-h8'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">200</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox-coarse-h10'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">200</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox-coarse-h12'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">200</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox-coarse-h14'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">600</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox-coarse-h20'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">1000</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'longBox-coarse-h30'</span>
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+<p id="hortonrogerslapwoodconvectionlongboxmedium"><strong>HRL-Convection-LongBox-Medium.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'3D convection in a 4x1x1 porous box - Ra = 42 - medium'</span>
+<span class="nb">fish automatic-create</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">model config</span><span class="n"> fluid thermal</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'HRL-Convection-FISH'</span><span class="n"> suppress</span>
+<span class="ni">[setup]</span>
+<span class="c">; --- 几何形状 ---</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">48</span><span class="n"> </span><span class="m m-Double">12</span><span class="n"> </span><span class="m m-Double">12</span><span class="n"> point </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2e4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5e3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5e3</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                point </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">2e4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5e3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5e3</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">                                point </span><span class="m m-Double">2</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2e4</span><span class="n"> </span><span class="m m-Double">5e3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5e3</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">                                point </span><span class="m m-Double">3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2e4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5e3</span><span class="n"> </span><span class="m m-Double">5e3</span>
+<span class="nb">zone face skin</span>
+<span class="c">; --- 热学、流体和力学模型 ---</span>
+<span class="nb">zone thermal</span><span class="n"> cmodel assign advection</span><span class="o">-</span><span class="n">conduction</span>
+<span class="nb">zone fluid</span><span class="n"> cmodel assign isotropic</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
+<span class="c">; --- 参数 ---</span>
+<span class="c">;    （力学）</span>
+<span class="nb">zone property</span><span class="n"> bulk</span><span class="p">=</span><span class="ni">[_bulk]</span><span class="n"> shear</span><span class="p">=</span><span class="ni">[_shear]</span>
+<span class="nb">zone initialize</span><span class="n"> density </span><span class="m m-Double">2000</span><span class="n"> </span>
+<span class="c">;    （热学）</span>
+<span class="nb">zone thermal</span><span class="n"> property conductivity</span><span class="p">=</span><span class="ni">[_condu]</span><span class="n"> specific</span><span class="o">-</span><span class="n">heat</span><span class="p">=</span><span class="ni">[_mspec]</span>
+<span class="nb">zone thermal</span><span class="n"> property conductivity</span><span class="o">-</span><span class="n">fluid</span><span class="p">=</span><span class="ni">[_fcond]</span><span class="n"> specific</span><span class="o">-</span><span class="n">heat</span><span class="o">-</span><span class="n">fluid</span><span class="p">=</span><span class="ni">[_fspec]</span>
+<span class="nb">zone thermal</span><span class="n"> property expansion</span><span class="o">-</span><span class="n">fluid</span><span class="p">=</span><span class="ni">[_fthex]</span><span class="n"> expansion</span><span class="p">=</span><span class="ni">[_thexp]</span>
+<span class="nb">zone thermal</span><span class="n"> property temperature</span><span class="o">-</span><span class="n">reference</span><span class="p">=</span><span class="m m-Double">20.0</span>
+<span class="c">;    （流体）</span>
+<span class="nb">zone fluid</span><span class="n"> property porosity</span><span class="p">=</span><span class="ni">[_poros]</span><span class="n"> permeability</span><span class="p">=</span><span class="ni">[_mobil]</span>
+<span class="nb">zone fluid</span><span class="n"> property biot</span><span class="p">=</span><span class="m m-Double">1</span><span class="n"> undrained</span><span class="o">-</span><span class="n">thermal</span><span class="o">-</span><span class="n">coefficient</span><span class="p">=</span><span class="m m-Double">0</span>
+<span class="nb">zone fluid</span><span class="n"> biot </span><span class="sx">off</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> fluid</span><span class="o">-</span><span class="n">modulus</span><span class="p">=</span><span class="m m-Double">2e5</span><span class="n"> </span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> fluid</span><span class="o">-</span><span class="n">tension</span><span class="p">=</span><span class="o">-</span><span class="m m-Double">1e10</span>
+<span class="nb">zone initialize</span><span class="n"> fluid</span><span class="o">-</span><span class="n">density</span><span class="p">=</span><span class="ni">[_fdens]</span>
+<span class="c">; --- 初始条件 ---</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure </span><span class="m m-Double">0.5e8</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1e4</span>
+<span class="nb">zone initialize</span><span class="n"> stress</span><span class="o">-</span><span class="n">xx </span><span class="o">-</span><span class="m m-Double">1.05e8</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">2.1e4</span>
+<span class="nb">zone initialize</span><span class="n"> stress</span><span class="o">-</span><span class="n">yy </span><span class="o">-</span><span class="m m-Double">1.05e8</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">2.1e4</span>
+<span class="nb">zone initialize</span><span class="n"> stress</span><span class="o">-</span><span class="n">zz </span><span class="o">-</span><span class="m m-Double">1.05e8</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">2.1e4</span>
+<span class="c">; --- 边界条件 ---</span>
+<span class="nb">zone face apply</span><span class="n"> temperature </span><span class="ni">[_T1]</span><span class="n"> range group </span><span class="s">'Bottom'</span>
+<span class="nb">zone face apply</span><span class="n"> temperature </span><span class="ni">[_T0]</span><span class="n"> range group </span><span class="s">'Top'</span>
+<span class="c">; --- 设置 ---</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="ni">_grav]</span><span class="n">          </span>
+<span class="nb">zone fluid</span><span class="n"> implicit </span><span class="sx">on</span>
+<span class="nb">zone thermal</span><span class="n"> implicit </span><span class="sx">on</span>
+<span class="nb">model fluid</span><span class="n"> timestep   fix </span><span class="m m-Double">5.5e10</span><span class="n"> </span>
+<span class="nb">model thermal</span><span class="n"> timestep fix </span><span class="m m-Double">5.5e11</span>
+<span class="c">;</span>
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">off</span><span class="n"> thermal </span><span class="sx">on</span><span class="n"> mechanical </span><span class="sx">on</span>
+<span class="c">; --- 试验 ---</span>
+<span class="nb">model mechanical</span><span class="n"> active </span><span class="sx">off</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span>
+<span class="c">; --- 热传导求解 ---</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> temperature </span><span class="m m-Double">120</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2e-2</span>
+<span class="ni">[ini_pp]</span>
+<span class="c">; --- 对流 ---</span>
+<span class="c">; 扰动</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0.01</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="ni">_grav]</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">25</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'longBox-medium-hf'</span>
+<span class="c">; 将重力重置为竖直方向</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="ni">_grav]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'longBox-medium-he'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">25</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">25</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox-medium-h4'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">200</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox-medium-h6'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">200</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox-medium-h8'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">200</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox-medium-h10'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">200</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox-medium-h12'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">200</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox-medium-h14'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">600</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox-medium-h20'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">1000</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'longBox-medium-h30'</span>
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+<p id="hortonrogerslapwoodconvectionlongboxfine"><strong>HRL-Convection-LongBox-Fine.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'3D convection in a porous 4x1x1 box - Ra = 42 - fine'</span>
+<span class="nb">fish automatic-create</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">model config</span><span class="n"> fluid thermal</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'HRL-Convection-FISH'</span><span class="n"> suppress</span>
+<span class="ni">[setup]</span>
+<span class="c">; --- 几何形状 ---</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">96</span><span class="n"> </span><span class="m m-Double">24</span><span class="n"> </span><span class="m m-Double">24</span><span class="n"> point </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2e4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5e3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5e3</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                point </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">2e4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5e3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5e3</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">                                point </span><span class="m m-Double">2</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2e4</span><span class="n"> </span><span class="m m-Double">5e3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5e3</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">                                point </span><span class="m m-Double">3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2e4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">5e3</span><span class="n"> </span><span class="m m-Double">5e3</span>
+<span class="nb">zone face skin</span>
+<span class="c">; --- 热学、流体和力学模型 ---</span>
+<span class="nb">zone thermal</span><span class="n"> cmodel assign advection</span><span class="o">-</span><span class="n">conduction</span>
+<span class="nb">zone fluid</span><span class="n"> cmodel assign isotropic</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
+<span class="c">; --- 参数 ---</span>
+<span class="c">;    （力学）</span>
+<span class="nb">zone property</span><span class="n"> bulk</span><span class="p">=</span><span class="ni">[_bulk]</span><span class="n"> shear</span><span class="p">=</span><span class="ni">[_shear]</span>
+<span class="nb">zone initialize</span><span class="n"> density </span><span class="m m-Double">2000</span>
+<span class="c">;    （热学）</span>
+<span class="nb">zone thermal</span><span class="n"> property conductivity</span><span class="p">=</span><span class="ni">[_condu]</span><span class="n"> specific</span><span class="o">-</span><span class="n">heat</span><span class="p">=</span><span class="ni">[_mspec]</span>
+<span class="nb">zone thermal</span><span class="n"> property conductivity</span><span class="o">-</span><span class="n">fluid</span><span class="p">=</span><span class="ni">[_fcond]</span><span class="n"> specific</span><span class="o">-</span><span class="n">heat</span><span class="o">-</span><span class="n">fluid</span><span class="p">=</span><span class="ni">[_fspec]</span>
+<span class="nb">zone thermal</span><span class="n"> property expansion</span><span class="o">-</span><span class="n">fluid</span><span class="p">=</span><span class="ni">[_fthex]</span><span class="n"> expansion</span><span class="p">=</span><span class="ni">[_thexp]</span>
+<span class="nb">zone thermal</span><span class="n"> property temperature</span><span class="o">-</span><span class="n">reference</span><span class="p">=</span><span class="m m-Double">20.0</span>
+<span class="c">;    （流体）</span>
+<span class="nb">zone fluid</span><span class="n"> property porosity</span><span class="p">=</span><span class="ni">[_poros]</span><span class="n"> permeability</span><span class="p">=</span><span class="ni">[_mobil]</span>
+<span class="nb">zone fluid</span><span class="n"> property biot</span><span class="p">=</span><span class="m m-Double">1</span><span class="n"> undrained</span><span class="o">-</span><span class="n">thermal</span><span class="o">-</span><span class="n">coefficient</span><span class="p">=</span><span class="m m-Double">0</span>
+<span class="nb">zone fluid</span><span class="n"> biot </span><span class="sx">off</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> fluid</span><span class="o">-</span><span class="n">modulus</span><span class="p">=</span><span class="m m-Double">2e5</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> fluid</span><span class="o">-</span><span class="n">tension</span><span class="p">=</span><span class="o">-</span><span class="m m-Double">1e10</span>
+<span class="nb">zone initialize</span><span class="n"> fluid</span><span class="o">-</span><span class="n">density</span><span class="p">=</span><span class="ni">[_fdens]</span>
+<span class="c">; --- 初始条件 ---</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure </span><span class="m m-Double">0.5e8</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1e4</span>
+<span class="nb">zone initialize</span><span class="n"> stress</span><span class="o">-</span><span class="n">xx </span><span class="o">-</span><span class="m m-Double">1.05e8</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">2.1e4</span>
+<span class="nb">zone initialize</span><span class="n"> stress</span><span class="o">-</span><span class="n">yy </span><span class="o">-</span><span class="m m-Double">1.05e8</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">2.1e4</span>
+<span class="nb">zone initialize</span><span class="n"> stress</span><span class="o">-</span><span class="n">zz </span><span class="o">-</span><span class="m m-Double">1.05e8</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">2.1e4</span>
+<span class="c">; --- 边界条件 ---</span>
+<span class="nb">zone face apply</span><span class="n"> temperature </span><span class="ni">[_T1]</span><span class="n"> range group </span><span class="s">'Bottom'</span>
+<span class="nb">zone face apply</span><span class="n"> temperature </span><span class="ni">[_T0]</span><span class="n"> range group </span><span class="s">'Top'</span>
+<span class="c">; --- 设置 ---</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="ni">_grav]</span>
+<span class="nb">zone fluid</span><span class="n"> implicit </span><span class="sx">on</span>
+<span class="nb">zone thermal</span><span class="n"> implicit </span><span class="sx">on</span>
+<span class="nb">model fluid</span><span class="n"> timestep   fix </span><span class="m m-Double">1.3e10</span>
+<span class="nb">model thermal</span><span class="n"> timestep fix </span><span class="m m-Double">1.3e11</span>
+<span class="c">;</span>
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">off</span><span class="n"> thermal </span><span class="sx">on</span><span class="n"> mechanical </span><span class="sx">on</span>
+<span class="c">; --- 试验 ---</span>
+<span class="nb">model mechanical</span><span class="n"> active </span><span class="sx">off</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span>
+<span class="c">; --- 热传导求解 ---</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> temperature </span><span class="m m-Double">120</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2e-2</span>
+<span class="ni">[ini_pp]</span>
+<span class="c">; --- 对流 ---</span>
+<span class="c">; 扰动</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0.01</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="ni">_grav]</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">50</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'longBox-fine-hf'</span>
+<span class="c">; 将重力重置为竖直方向</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="ni">_grav]</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">50</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'longBox-fine-he'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">50</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">50</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox-fine-h4'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">200</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox-fine-h6'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">200</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox-fine-h8'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">200</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox-fine-h10'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">200</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox-fine-h12'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">200</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox-fine-h14'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">600</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox-fine-h20'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">400</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox-fine-h30'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">1000</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox-fine-h40'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">1000</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox-fine-h50'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">1000</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">;model save 'longBox-fine-h60'</span>
+<span class="ni">[supersolve</span><span class="p">(</span><span class="m m-Double">1000</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'longBox-fine-h70'</span>
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../../docproject/source/flac3dhome.html"><span class="codename">FLAC3D</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../../docproject/source/options/options.html">Options</a> »</li>
+<li class="nav-item nav-item-3"><a href="../../../../docproject/source/options/thermalanalysis/thermalanalysis.html">Thermal Analysis</a> »</li>
+<li class="nav-item nav-item-4"><a href="../../../../docproject/source/options/thermalanalysis/thermal/thermal.html">Thermal Analysis</a> »</li>
+<li class="nav-item nav-item-5"><a accesskey="U" href="../../../../docproject/source/options/thermalanalysis/thermal/verification.html">Verification and Example Problems</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../NaturalAdvection/naturaladvection.html" title="previous chapter"> Steady-State Convection in a Saturated Porous Medium Heated from Above</a> |    
+       <a href="../../../../docproject/source/options/thermalanalysis/thermal/references.html" title="next chapter">References</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Steady-State Convection in a Saturated Porous Medium Heated from Below" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

@@ -1,0 +1,206 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>采用 Finn 模型的振动台试验：土层液化的模拟 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="../CyclicUndrainedDirectSimpleShear/CyclicUndrainedDirectSimpleShear.html" rel="next" title="Cyclic Undrained DSS Tests with P2PSand Model"/>
+<link href="../../../../docproject/source/options/dynamic/models/review.html" rel="prev" title="Comprehensive Liquefaction Constitutive Models"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<span class="target" id="shakingtable"></span><div class="section" id="shaking-table-test-with-finn-model-simulation-of-the-liquefaction-of-a-layer">
+<h1>采用 Finn 模型的振动台试验：土层液化的模拟</h1>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">要在 <span class="codename">FLAC3D</span> 中查看此项目，请使用菜单命令 <span class="menuselection">帮助 ‣ 示例…</span>。选择“Dynamic/ShakingTableTest”并选择“ShakingTableTest.f3prj”以加载。
+所用主数据文件<a class="reference internal" href="#shakingtabledata"><span class="std std-ref">见本示例末尾</span>（main data files）</a>。其余数据文件可在项目中找到。</p>
+</div>
+<p>Finn 模型中控制孔隙压力累积的材料常数与
+排水试验中的体积响应有关。但是，如果有不排水试验的结果，
+则可以直接模拟该试验，并通过将数值结果与试验观测结果比较
+来推求材料常数。在找到匹配之前需要进行一些调整。</p>
+<p>在以下示例中，用 <span class="codename">FLAC3D</span> 模拟一个“振动台”。</p>
+<p>在这个简单示例中，用 <span class="codename">FLAC3D</span> 模拟一个“振动台”——它由一箱
+砂组成，其底部被施加周期运动。侧面的运动跟随
+底部的运动，只是幅值在顶部减小到零（即运动为
+简单剪切）。竖向荷载仅由重力提供。在土中施加平衡应力和孔隙
+压力，并在土中某网格单元内监测孔隙压力和有效应力（平均总
+应力减去孔隙压力）。由于这里对水平方向的变化没有特别兴趣，故只建模一个网格单元宽度的土柱。</p>
+<p>对 <a class="reference internal" href="../../../../../common/models/finn/doc/modelfinn.html#dynamic-finn-martin-eq"><span class="std std-ref">Martin 等（1975）公式</span>（Martin et al. (1975) formula）</a> 和
+<a class="reference internal" href="../../../../../common/models/finn/doc/modelfinn.html#dynamic-finn-byrne-eq"><span class="std std-ref">Byrne（1991）公式</span>（Byrne (1991) formula）</a> 都进行了该试验。Byrne 参数对应于
+<span class="math">\({(N_1)_{60}}\)</span> = 6，选取该值是为了使结果与基于给定 Martin 参数的结果相匹配。</p>
+<p>基于<a class="reference internal" href="../../../../../common/models/finn/doc/modelfinn.html#dynamic-finn-martin-eq"><span class="std std-ref">Martin 公式</span>（the Martin formula）</a>的结果示于
+<a href="#shakingtable-martin">图  1（Figure  1）</a>，基于
+<a class="reference internal" href="../../../../../common/models/finn/doc/modelfinn.html#dynamic-finn-byrne-eq"><span class="std std-ref">Byrne 公式</span>（the Byrne formula）</a>的结果示于
+<a href="#shakingtable-byrne">图  2（Figure  2）</a>。两图表明使用任一公式行为相似。两者都显示了 (25, 25, 2.5) 处的孔隙压力如何随时间
+累积。同一网格单元中有效应力的历史也一并给出。可以看出，在约 15 个振动循环（5 Hz 下 2 秒）后有效
+应力达到零。此时可以认为发生了液化。该试验在剪切方向上是应变控制的。对于
+应力控制试验，破坏会更早发生，因为应变循环的幅值将开始增大，从而产生更多孔隙压力。</p>
+<div class="figure align-center" id="id1">
+<span id="shakingtable-martin"></span><a class="reference internal image-reference" href="../../../../../_images/shakingtable-martin.png"><img alt="../../../../../_images/shakingtable-martin.png" src="../../../../../_images/shakingtable-martin.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 1：振动台的孔隙压力（上）和有效应力（下），采用<a class="reference internal" href="../../../../../common/models/finn/doc/modelfinn.html#dynamic-martin-eq">Martin（人名）（<span class="std std-ref">Martin</span>）</a>。</span></p>
+</div>
+<div class="figure align-center" id="id2">
+<span id="shakingtable-byrne"></span><a class="reference internal image-reference" href="../../../../../_images/shakingtable-byrne.png"><img alt="../../../../../_images/shakingtable-byrne.png" src="../../../../../_images/shakingtable-byrne.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 2：振动台的孔隙压力（上）和有效应力（下），采用<a class="reference internal" href="../../../../../common/models/finn/doc/modelfinn.html#dynamic-byrne-eq">Byrne（人名）（<span class="std std-ref">Byrne</span>）</a>。</span></p>
+</div>
+<p class="h2 rubric">参考文献</p>
+<p>Byrne, P. “A Cyclic Shear-Volume Coupling and Pore-Pressure Model for Sand,” in <span class="bi">Proceedings: Second International Conference on Recent Advances in Geotechnical Earthquake Engineering and Soil Dynamics (St. Louis, Missouri, March, 1991)</span>, Paper No. 1.24, 47-55 (1991).</p>
+<p>Martin, G. R., W. D. L. Finn and H. B. Seed. “Fundamentals of Liquefaction Under Cyclic Loading,” <em>J. Geotech., Div. ASCE</em>, <span class="bi">101</span>(GT5), 423-438 (1975).</p>
+<p class="h2 rubric" id="shakingtabledata">数据文件</p>
+<p><strong>ShakingTableTest.dat</strong></p>
+<blockquote>
+<div><div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;------------------------------------------------------------</span>
+<span class="c">;       动力问题所用脚本文件</span>
+<span class="c">;       振动台试验</span>
+<span class="c">;------------------------------------------------------------</span>
+<span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">fish automatic-create</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">"Dynamic analysis --- Shaking table test"</span>
+<span class="nb">model config</span><span class="n"> dynamic fluid</span>
+<span class="c">;</span>
+<span class="c">; 创建网格单元</span>
+<span class="c">;     Martin 网格</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">,</span><span class="m m-Double">1</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">50</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                             point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span><span class="n"> group </span><span class="s">'Martin'</span>
+<span class="c">;     Byrne 网格</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">,</span><span class="m m-Double">1</span><span class="n"> point </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">10</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">50</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">10</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                             point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">,</span><span class="m m-Double">10</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">15</span><span class="p">)</span><span class="n"> group </span><span class="s">'Byrne'</span>
+<span class="c">;                                  </span>
+<span class="c">; 指定材料模型和参数</span>
+<span class="nb">zone cmodel</span><span class="n"> finn</span>
+<span class="nb">zone fluid</span><span class="n"> cmodel assign isotropic</span>
+<span class="nb">zone property</span><span class="n"> density </span><span class="m m-Double">2000</span><span class="n"> shear </span><span class="m m-Double">2e8</span><span class="n"> bulk </span><span class="m m-Double">3e8</span><span class="n"> friction </span><span class="m m-Double">35</span><span class="n"> number</span><span class="o">-</span><span class="n">latency</span><span class="p">=</span><span class="m m-Double">50</span>
+<span class="c">;     Martin 公式的参数</span>
+<span class="nb">zone property</span><span class="n"> flag</span><span class="o">-</span><span class="n">switch</span><span class="p">=</span><span class="m m-Double">0</span><span class="n"> constant</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">=</span><span class="m m-Double">0.80</span><span class="n"> constant</span><span class="o">-</span><span class="m m-Double">2</span><span class="p">=</span><span class="m m-Double">0.795</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">              constant</span><span class="o">-</span><span class="m m-Double">3</span><span class="p">=</span><span class="m m-Double">0.45</span><span class="n"> constant</span><span class="o">-</span><span class="m m-Double">4</span><span class="p">=</span><span class="m m-Double">0.73</span><span class="n"> range group </span><span class="s">'Martin'</span>
+<span class="c">;     Byrne 公式的参数</span>
+<span class="nb">fish define</span><span class="ni"> c1</span><span class="p">(</span><span class="ni">n1_6</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="ni">    c1 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">8.7</span><span class="o">*</span><span class="k">math.exp</span><span class="p">(</span><span class="o">-</span><span class="m m-Double">1.25</span><span class="o">*</span><span class="k">math.ln</span><span class="p">(</span><span class="ni">n1_6</span><span class="m m-Double">0</span><span class="p">))</span>
+<span class="nb">end</span>
+<span class="nb">zone property</span><span class="n"> flag</span><span class="o">-</span><span class="n">switch</span><span class="p">=</span><span class="m m-Double">1</span><span class="n"> constant</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">=</span><span class="ni">[</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">c1</span><span class="p">(</span><span class="m m-Double">6</span><span class="p">)</span><span class="ni">]</span><span class="n"> constant</span><span class="o">-</span><span class="m m-Double">2</span><span class="p">=</span><span class="ni">[</span><span class="m m-Double">0.4</span><span class="o">/</span><span class="ni">c1</span><span class="p">(</span><span class="m m-Double">6</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">              constant</span><span class="o">-</span><span class="m m-Double">3</span><span class="p">=</span><span class="m m-Double">0.0</span><span class="n"> range group </span><span class="s">'Byrne'</span>
+<span class="nb">zone fluid</span><span class="n"> property porosity </span><span class="m m-Double">0.5</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> fluid</span><span class="o">-</span><span class="n">modulus </span><span class="m m-Double">2e9</span><span class="n"> </span>
+<span class="nb">zone initialize</span><span class="n"> fluid</span><span class="o">-</span><span class="n">density </span><span class="m m-Double">1000</span>
+<span class="c">; </span>
+<span class="c">; 边界条件</span>
+<span class="nb">fish define</span><span class="ni"> sineWave</span><span class="p">(</span><span class="ni">gp</span><span class="p">,</span><span class="ni">dum</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> v </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.005</span><span class="ni"> </span><span class="o">*</span><span class="ni"> </span><span class="k">math.sin</span><span class="p">(</span><span class="m m-Double">2</span><span class="ni"> </span><span class="o">*</span><span class="ni"> </span><span class="k">math.pi</span><span class="ni"> </span><span class="o">*</span><span class="ni"> </span><span class="m m-Double">5</span><span class="ni"> </span><span class="o">*</span><span class="ni"> </span><span class="k">zone.dynamic.time.total</span><span class="p">)</span>
+<span class="ni">    sineWave </span><span class="p">=</span><span class="ni"> v </span><span class="o">*</span><span class="ni"> </span><span class="p">(</span><span class="m m-Double">5</span><span class="ni"> </span><span class="o">-</span><span class="ni"> </span><span class="k">gp.pos.y</span><span class="p">(</span><span class="ni">gp</span><span class="p">))</span><span class="ni"> </span><span class="o">/</span><span class="ni"> </span><span class="m m-Double">5.0</span>
+<span class="nb">end</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">1</span><span class="n"> fish</span><span class="o">-</span><span class="n">local sineWave </span><span class="c">; 施加于所有面</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z</span>
+<span class="c">;</span>
+<span class="c">; 初始条件</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure </span><span class="m m-Double">5e4</span><span class="n"> gradient </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1e4</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="nb">zone initialize-stresses</span><span class="n"> ratio </span><span class="m m-Double">0.8</span><span class="n"> total</span>
+<span class="c">;</span>
+<span class="c">; 动力设置</span>
+<span class="nb">zone dynamic</span><span class="n"> damping rayleigh </span><span class="m m-Double">0.05</span><span class="n"> </span><span class="m m-Double">20.0</span>
+<span class="nb">model dynamic</span><span class="n"> timestep fix </span><span class="m m-Double">1e-4</span>
+<span class="c">;</span>
+<span class="c">; 历程</span>
+<span class="nb">history interval</span><span class="n"> </span><span class="m m-Double">20</span>
+<span class="nb">model history</span><span class="n"> name</span><span class="p">=</span><span class="s">'time'</span><span class="n"> dynamic time</span><span class="o">-</span><span class="n">total</span>
+<span class="nb">zone history</span><span class="n"> name</span><span class="p">=</span><span class="s">'ppm'</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure position </span><span class="p">(</span><span class="m m-Double">25</span><span class="p">,</span><span class="m m-Double">1.5</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">2.5</span><span class="p">)</span>
+<span class="nb">zone history</span><span class="n"> name</span><span class="p">=</span><span class="s">'ppb'</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure position </span><span class="p">(</span><span class="m m-Double">25</span><span class="p">,</span><span class="m m-Double">1.5</span><span class="p">,</span><span class="m m-Double">12.5</span><span class="p">)</span>
+<span class="nb">zone history</span><span class="n"> name</span><span class="p">=</span><span class="s">'esm'</span><span class="n"> stress</span><span class="o">-</span><span class="n">effective quantity mean position </span><span class="p">(</span><span class="m m-Double">25</span><span class="p">,</span><span class="m m-Double">1.5</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">2.5</span><span class="p">)</span>
+<span class="nb">zone history</span><span class="n"> name</span><span class="p">=</span><span class="s">'esb'</span><span class="n"> stress</span><span class="o">-</span><span class="n">effective quantity mean position </span><span class="p">(</span><span class="m m-Double">25</span><span class="p">,</span><span class="m m-Double">1.5</span><span class="p">,</span><span class="m m-Double">12.5</span><span class="p">)</span>
+<span class="nb">zone history</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x position </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'initial'</span>
+<span class="c">;</span>
+<span class="c">; 求解至时间 10 并保存</span>
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">off</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">10.0</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'ShakingTableTest'</span>
+</pre></div>
+</div>
+</div></blockquote>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../../docproject/source/flac3dhome.html"><span class="codename">FLAC3D</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../../docproject/source/options/options.html">Options</a> »</li>
+<li class="nav-item nav-item-3"><a href="../../../../docproject/source/options/dynamic/dynamic.html">Dynamic Analysis</a> »</li>
+<li class="nav-item nav-item-4"><a accesskey="U" href="../../../../docproject/source/options/dynamic/models/models.html">Liquefaction Modeling</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../../../../docproject/source/options/dynamic/models/review.html" title="previous chapter"> Comprehensive Liquefaction Constitutive Models</a> |    
+       <a href="../CyclicUndrainedDirectSimpleShear/CyclicUndrainedDirectSimpleShear.html" title="next chapter">Cyclic Undrained DSS Tests with P2PSand Model</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Shaking Table Test with Finn Model: Simulation of the Liquefaction of a Layer" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

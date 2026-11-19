@@ -1,0 +1,758 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>全长黏结岩石加固拉拔试验的模拟 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="../WheelLoadOverBuriedPipe/wheelloadburiedpipe.html" rel="next" title="Wheel Load over a Buried Pipe"/>
+<link href="../../../../zone/test3d/ExampleApplications/CavityExpansion/cavityexpansion.html" rel="prev" title="Undrained Cylindrical Cavity Expansion in a Cam-Clay Medium"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="hide sectionname docutils container">
+Examples • Example Applications</div>
+<div class="section" id="simulation-of-pull-tests-for-fully-bonded-rock-reinforcement">
+<span id="pulltestsrockreinforcement"></span><h1>全长黏结岩石加固拉拔试验的模拟</h1>
+<p class="h2 rubric">问题描述</p>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">本示例的项目文件可在 <span class="codename">FLAC3D</span> 中查看/运行。<a class="footnote-reference" href="#id3" id="id1">[1]</a>  该项目的主数据文件<a class="reference internal" href="#pulltestmaindata"><span class="std std-ref">见本示例末尾</span>（main data file）</a>。</p>
+</div>
+<p>确定全长黏结岩石加固（例如注浆锚索、树脂注浆钢筋或岩石锚杆）性质最常用的方法是在现场对注浆加固的小段进行拉拔试验。通常将长 50 cm 或更长的段注浆锚固在钻孔中。这些段的端部通过安装在隧道表面的千斤顶牵引，并用筒夹楔块式锚具与锚索连接。将施加到加固体上的力和加固体的变形绘制成轴力-挠度曲线。由该曲线确定注浆黏结的峰值抗剪强度。几种锚索的半米长段拉拔试验结果如<a href="#pulltest-fieldresults">图 1（Figure  1）</a> 所示。这些图以吨/米对以毫米计的变形表示。</p>
+<div class="figure" id="pulltest-fieldresults">
+<a class="reference internal image-reference" href="../../../../../_images/pulltest-fieldresults.png"><img alt="../../../../../_images/pulltest-fieldresults.png" src="../../../../../_images/pulltest-fieldresults.png" style="width: 95%;"/></a>
+<p class="caption"><span class="caption-text">图 1：黏结长度为 0.5 m、水灰比为 1/3 时各类锚索拉拔试验的现场结果。</span></p>
+</div>
+<p>在本示例应用中，使用 <span class="codename">FLAC3D</span> 模拟此类拉拔试验。使用 <span class="codename">FLAC3D</span> 中的结构单元模拟拉拔试验有两种不同方法：</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>锚索单元，其假定注浆体为弹塑性材料，具有围压相关性，但破坏后强度不丧失；以及</li>
+<li>改进的桩单元，其考虑了围压变化、注浆体的应变软化行为以及加固体的断裂。</li>
+</ol>
+</div></blockquote>
+<p>使用改进桩单元模拟加固体行为的另一个优点是可以考虑抗弯能力。当加固体受剪时需要这一行为，后文<a class="reference internal" href="#pulltest-tensile-rupture-section"><span class="std std-ref">带拉伸断裂的拉拔试验</span>（Pull-Test with Tensile Rupture）</a>和<a class="reference internal" href="#pulltest-shear-bolt-section"><span class="std std-ref">岩石锚杆剪切试验</span>（Shear Test on Rockbolts）</a>中对此有描述。</p>
+<p>以下示例的目的是演示这两种方法的使用及其能力。</p>
+<p class="h2 rubric">方法 1：使用锚索单元模拟岩石加固</p>
+<p>在以下各节中，使用锚索单元逻辑模拟拉拔试验。创建和查看锚索单元相关变量所需的命令见<a class="reference internal" href="../../../../../common/sel/doc/manual/sel_manual/cables/commands/cable_commands.html#sel-cable-commands"><span class="std std-ref">锚索命令</span>（Cable Commands）</a>。</p>
+<p class="h3 rubric" id="pulltest-cable1-section">无围压条件下的抗拔强度</p>
+<p>首先考虑可忽略围压对加固体黏结抗剪强度影响的情形。必须从现场拉拔试验曲线中提取 <span class="codename">FLAC3D</span> 锚索-锚杆模型所需的锚索性质。当现场试验数据以单位长度力对变形表示时（如<a href="#pulltest-fieldresults">图 1（Figure  1）</a> 所示），这很容易做到。假定锚索不发生屈服，则注浆体剪切刚度 <span class="cmdkey">grout-stiffness</span> 的值就是该曲线的斜率，而极限黏结强度 <span class="cmdkey">grout-cohesion</span> 则为单位长度上的峰值拉拔强度值。该假定可由以下事实证明：钢材通常在高于拉拔力所对应应力的应力下才屈服，如<a href="#pulltest-fieldresults">图 1（Figure  1）</a> 所示。例如，对于直径为 15 mm、长度为 0.5 m 的典型锚索以及 1200 MPa 的（允许）屈服强度（在后续各节的 <span class="codename">FLAC3D</span> 模型中假定），最大屈服力为 212 kN。该值比<a href="#pulltest-fieldresults">图 1（Figure  1）</a> 中注浆体破坏时的最高拉拔力 28 吨/米 × 0.5 = 140 kN 大约 50%。此外，在这些示例中，相对于注浆体的柔度，加固单元和岩石的柔度被忽略。</p>
+<p>例如，此处所示的所有拉拔试验结果具有大致相同的加载斜率，因此对所有情况选取 <span class="cmdkey">grout-stiffness</span> 的平均值：</p>
+<div class="math">
+\[{\hbox{grout\_stiffness}} \approx {{28\ {\hbox{tons/meter}}} \over {25 \times 10^{-3}{\hbox {meter}}}}
+= 1.12 \times 10^7\ {\hbox{N}\thinspace /\thinspace} {\hbox {m}}^2\]</div>
+<p>该 <span class="cmdkey">grout-stiffness</span> 值很低，表明该锚索的注浆质量相当差。典型的 <span class="cmdkey">grout-stiffness</span> 值大约比该值高一个数量级或更多。</p>
+<p>单根 15.2 mm 钢丝的 <span class="cmdkey">grout-cohesion</span> 值就是以吨/米计的峰值抗剪阻力。在此情形下，<span class="cmdkey">grout-cohesion</span> <span class="math">\(\approx\)</span> 17.5 吨/米，即 17.5 × 10<sup>4</sup> N/m。为检验该 <span class="cmdkey">grout-cohesion</span> 值是否合理，可以将其除以钢丝的近似表面积（假定黏结在注浆体/锚索界面处破坏）换算为注浆体抗剪强度。我们得到峰值抗剪强度为 3.66 MPa。该值应大致等于注浆体单轴抗压强度的二分之一，这表明要么注浆体质量很差，要么拉拔试验中允许锚索转动，从而导致注浆体抗剪强度值偏低。<a class="footnote-reference" href="#id4" id="id2">[2]</a></p>
+<p>数据文件“<a class="reference internal" href="#pulltest01data"><span class="std std-ref">Pull01.dat</span></a>”是使用 <span class="codename">FLAC3D</span> 进行拉拔试验的简单表示。锚索端节点以很小的恒定 <span class="math">\(y\)</span> 方向速度被牵引——见<a href="#pulltest-geometry">图 2（Figure  2）</a>。使用 <span class="codename">FISH</span> 函数对反力求和，并监测拉拔试验产生的节点位移，以便与现场试验结果进行比较。</p>
+<div class="figure align-center" id="pulltest-geometry">
+<img alt="../../../../../_images/pulltest-geometry.png" src="../../../../../_images/pulltest-geometry.png"/>
+<p class="caption"><span class="caption-text">图 2：拉拔试验 <span class="codename">FLAC3D</span> 模型的几何示意图。</span></p>
+</div>
+<p>单根 15.2 mm 锚索情形下拉拔力与锚索位移的关系图（分别为 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information...">力（<span class="varstring"><span class="null">force</span></span>）</a> 和 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information...">位移（<span class="varstring"><span class="null">disp</span></span>）</a> 历史）如<a href="#pulltest-cable1">图 3（Figure  3）</a> 所示。该图展示了<a href="#pulltest-fieldresults">图 1（Figure  1）</a> 中给出的总体力-位移行为。峰值力在约为 17 mm 的位移处达到。此后，锚索就像平面上的滑块一样被从钻孔中拔出。</p>
+<div class="figure align-center" id="pulltest-cable1">
+<a class="reference internal image-reference" href="../../../../../_images/pulltest-cable1.png"><img alt="../../../../../_images/pulltest-cable1.png" src="../../../../../_images/pulltest-cable1.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 3：单根 15.2 mm 注浆锚索情形下拉拔力（N/m）与锚索位移（m）的关系。</span></p>
+</div>
+<p><a href="#pulltest-force1">图 4（Figure  4）</a> 至<a href="#pulltest-force3">图 6</a> 分别显示了位移为 10 mm、16.5 mm 和 17.5 mm 时锚索上的轴力分布。请注意，在第一个锚索单元达到峰值强度后，锚索-黏结滑移迅速发展。叠加在轴力上的是注浆体黏结屈服的部位。在 10 mm 时（<a href="#pulltest-force1">图 4（Figure  4）</a>），注浆体黏结尚未破坏。在 16.5 mm 时（<a href="#pulltest-force2">图 5（Figure  5）</a>），黏结破坏开始并沿整个锚索长度迅速传播（<a href="#pulltest-force3">图 6（Figure  6）</a>）。在该阶段，锚索端部的力就是所有 <span class="math">\(n\)</span> 个滑移段的 <span class="cmdkey">grout_cohesion</span> × <span class="math">\(l_i\)</span>（其中 <span class="math">\(l_i\)</span> 为锚索段长度）之和。如果埋入长度足够长，锚索轴力最终将达到锚索自身的屈服力。此时当伸长应变等于锚索的极限断裂应变（通常约为 3%）时，锚索应当断裂。展示单元拉伸断裂的示例见<a class="reference internal" href="#pulltest-tensile-rupture-section"><span class="std std-ref">带拉伸断裂的拉拔试验</span>（Pull-Test with Tensile Rupture）</a>。</p>
+<div class="pagebreak docutils container">换页</div>
+<div class="figure align-center" id="pulltest-force1">
+<a class="reference internal image-reference" href="../../../../../_images/pulltest-force1.png"><img alt="../../../../../_images/pulltest-force1.png" src="../../../../../_images/pulltest-force1.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 4：变形 10 mm 时：15.2 mm 锚索拉拔试验模拟的轴力与锚索注浆体屈服点图。</span></p>
+</div>
+<div class="figure align-center" id="pulltest-force2">
+<a class="reference internal image-reference" href="../../../../../_images/pulltest-force2.png"><img alt="../../../../../_images/pulltest-force2.png" src="../../../../../_images/pulltest-force2.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 5：变形 16.5 mm 时：15.2 mm 锚索拉拔试验模拟的轴力与锚索注浆体屈服点图。</span></p>
+</div>
+<div class="figure align-center" id="pulltest-force3">
+<a class="reference internal image-reference" href="../../../../../_images/pulltest-force3.png"><img alt="../../../../../_images/pulltest-force3.png" src="../../../../../_images/pulltest-force3.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 6：变形 17.5 mm 时：15.2 mm 锚索拉拔试验模拟的轴力与锚索注浆体屈服点图。</span></p>
+</div>
+<p class="h3 rubric" id="pulltest-cable2-section">有围压条件下的抗拔强度</p>
+<p>一般而言，锚索黏结抗剪强度将随作用在锚索上的有效压力（<span class="math">\(p\)</span>‘）增大而增大。<span class="codename">FLAC3D</span> 中实现了一种线性规律，其中锚索黏结抗剪强度定义为常数（<span class="cmdkey">grout-cohesion</span>）加上锚索上的有效压力乘以锚索周长（<span class="cmdkey">grout-permeter</span>）再乘以摩擦角（<span class="cmdkey">grout-friction</span>）的正切。在 <span class="codename">FLAC3D</span> 中通过给定锚索性质 <span class="cmdkey">grout-permeter</span> 和 <span class="cmdkey">grout-friction</span> 会自动激活这种压力相关性。请注意，在这种情况下，<span class="cmdkey">grout-cohesion</span> 的输入数据必须对应于无围压条件下进行锚索拉拔试验时的黏结抗剪强度。摩擦角为 30°、初始围压为两个水平（即 <span class="math">\(p\)</span>‘ = 2 和 4 MN/m<sup>2</sup>）时 15.2 mm 锚索拉拔试验的数值结果如<a href="#pulltest-cable2">图 7（Figure  7）</a> 和<a href="#pulltest-cable3">图 8</a> 所示。请将这些图与<a href="#pulltest-cable1">图 3（Figure  3）</a> 进行比较。这些图表明破坏水平随初始围压增大而提高，说明锚索-岩石界面具有摩擦特性。15.2 mm 锚索有围压拉拔试验的结果是使用数据文件“<a class="reference internal" href="#pulltest02data"><span class="std std-ref">Pull02.dat</span></a>”和“<a class="reference internal" href="#pulltest03data"><span class="std std-ref">Pull03.dat</span></a>”得到的。</p>
+<div class="pagebreak docutils container">换页</div>
+<div class="figure align-center" id="pulltest-cable2">
+<a class="reference internal image-reference" href="../../../../../_images/pulltest-cable2.png"><img alt="../../../../../_images/pulltest-cable2.png" src="../../../../../_images/pulltest-cable2.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 7：15.2 mm 锚索拉拔试验，<span class="math">\(p\)</span>‘ = 2 MN/m<sup>2</sup>。</span></p>
+</div>
+<div class="figure align-center" id="pulltest-cable3">
+<a class="reference internal image-reference" href="../../../../../_images/pulltest-cable3.png"><img alt="../../../../../_images/pulltest-cable3.png" src="../../../../../_images/pulltest-cable3.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 8：15.2 mm 锚索拉拔试验，<span class="math">\(p\)</span>‘ = 4 MN/m<sup>2</sup>。</span></p>
+</div>
+<p class="h2 rubric">方法 2：使用改进桩单元模拟岩石加固</p>
+<p>在以下各节中，使用 <span class="codename">FLAC3D</span> 中的改进桩单元逻辑模拟岩石加固。以下示例的目的是演示使用改进桩单元的建模流程。除演示模拟拉拔试验的功能外，本节还给出了与岩石锚杆剪切试验模拟相关的示例（见<a class="reference internal" href="#pulltest-shear-bolt-section"><span class="std std-ref">岩石锚杆剪切试验</span>（Shear Test on Rockbolts）</a>和<a class="reference internal" href="#pulltest-shear-rupture-section"><span class="std std-ref">带断裂的岩石锚杆剪切试验</span>（Shear Test on Rockbolts with Rupture）</a>）。本节中的试验假定条件代表直径为 25 mm 的注浆锚杆，其注浆体性质与<a class="reference internal" href="#pulltest-cable1-section"><span class="std std-ref">无围压条件下的抗拔强度</span>（Pull-out Strength without Confinement）</a>中定义的性质相同。</p>
+<p>创建和查看改进单元相关变量所需的命令见<a class="reference internal" href="../../../../../common/sel/doc/manual/sel_manual/piles/commands/pile_commands.html#sel-pile-commands"><span class="std std-ref">桩命令</span>（Pile Commands）</a>。请注意，通过给定 <a class="reference internal" href="../../../../../common/sel/doc/manual/sel_manual/piles/commands/cmd_structure.pile.property.html#kwd:structure.pile.property.rockbolt-flag" title="flag to activate rockbolt logic (default:  off )...">设置桩单元锚杆标志属性命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">pile</span> <span class="pre">property</span> <span class="pre">rockbolt-flag</span></code>）</a> <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information...">开启（<span class="varstring"><span class="null">on</span></span>）</a> 命令可激活改进桩单元公式。</p>
+<p class="h3 rubric" id="pulltest-pile1-section">无围压条件下的抗拔强度</p>
+<p>数据文件“<a class="reference internal" href="#pulltest04data">Pulltest04.dat 数据文件（<span class="std std-ref">Pulltest04.dat</span>）</a>”创建无围压的拉拔试验。该问题与<a class="reference internal" href="#pulltest-cable1-section"><span class="std std-ref">无围压条件下的抗拔强度</span>（Pull-out Strength without Confinement）</a>中描述的问题等效。与文件“<a class="reference internal" href="#pulltest01data">Pulltest01.dat 数据文件（<span class="std std-ref">Pulltest01.dat</span>）</a>”中的模型相比，当前模型考虑了更大直径的锚杆以及从块体伸出的自由锚杆长度。与前文一样，通过在加固体端部施加恒定速度来加载。使用 <span class="codename">FISH</span> 函数 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">力（<span class="varfishsym"><span class="null">force</span></span>）</a> 对反力求和并监测拉拔试验产生的节点位移。</p>
+<p><a href="#pulltest-pile1">图 9（Figure  9）</a> 表示在总位移为 20 mm 时轴力（按锚索单位长度计）与锚杆端部位移之间的关系。该图表明最大抗拔荷载与方法 1 在<a class="reference internal" href="#pulltest-cable1-section"><span class="std std-ref">无围压条件下的抗拔强度</span>（Pull-out Strength without Confinement）</a>中得到的值相当（略微差异可归因于本模型中采用的锚杆直径不同以及包含自由锚杆长度）。<a href="#pulltest-pile1">图 9（Figure  9）</a> 还显示了超过最大黏聚力后注浆体的默认理想塑性行为。</p>
+<div class="figure align-center" id="pulltest-pile1">
+<a class="reference internal image-reference" href="../../../../../_images/pulltest-pile1.png"><img alt="../../../../../_images/pulltest-pile1.png" src="../../../../../_images/pulltest-pile1.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 9：单根 25 mm 注浆岩石锚杆情形下拉拔力（N/m）与锚索位移（m）的关系。</span></p>
+</div>
+<p class="h3 rubric" id="pulltest-pile2-section">带位移软化的拉拔试验</p>
+<p>数据文件“<a class="reference internal" href="#pulltest05data">Pulltest05.dat 数据文件（<span class="std std-ref">Pulltest05.dat</span>）</a>”定义了一个与上一节<a class="reference internal" href="#pulltest-pile1-section"><span class="std std-ref">无围压条件下的抗拔强度</span>（Pull-out Strength without Confinement）</a>中类似的拉拔试验，但包含峰值后黏结抗剪强度软化。注浆体黏结强度的软化使用关键字 <span class="cmdkey">coupling-cohesion-table</span> 定义，如<a class="reference internal" href="../../../../../common/sel/doc/manual/sel_manual/piles/piles.html#pile-rockbolt-behavior"><span class="std std-ref">岩石锚杆行为</span>（Rockbolt Behavior）</a>中所述。剪切位移与黏聚力软化之间的关系通过表格 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information...">循环压缩试验（<span class="varstring"><span class="null">cct</span></span>）</a> 指定（请注意，也可以使用关键字 <span class="cmdkey">coupling-friction-table</span> 定义注浆体摩擦的软化）。</p>
+<p><a href="#pulltest-pile2">图 10（Figure  10）</a> 表示在总位移为 40 mm 时轴力（按黏结加固体单位长度计）与加固体端部位移之间的关系。该图清楚地显示了达到最大抗拔荷载后黏聚力的软化。</p>
+<div class="figure align-center" id="pulltest-pile2">
+<a class="reference internal image-reference" href="../../../../../_images/pulltest-pile2.png"><img alt="../../../../../_images/pulltest-pile2.png" src="../../../../../_images/pulltest-pile2.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 10：单根 15.2 mm 注浆加固体情形下（带位移软化）拉拔力（N/m）与加固体位移（m）的关系。</span></p>
+</div>
+<p class="h3 rubric">有围压条件下的拉拔试验</p>
+<p>数据文件“<a class="reference internal" href="#pulltest06data">Pulltest06.dat 数据文件（<span class="std std-ref">Pulltest06.dat</span>）</a>”展示了如何使用改进桩逻辑模拟有围压的拉拔试验。该模型与<a class="reference internal" href="#pulltest-cable2-section"><span class="std std-ref">有围压条件下的抗拔强度</span>（Pull-out Strength with Confinement）</a>中讨论的模型等效，这次围压为 4 MN/m<sup>2</sup>。如<a class="reference internal" href="../../../../../common/sel/doc/manual/sel_manual/piles/piles.html#pile-shear-coupling-springs"><span class="std std-ref">剪切耦合弹簧的行为</span>（Behavior of Shear Coupling Springs）</a>中所述，改进桩逻辑中实现了一种线性规律，其中加固体抗剪强度定义为常数（<span class="cmdkey">coupling-cohesion-shear</span>）加上加固体上的有效压力乘以加固体周长（<span class="cmdkey">perimeter</span>）再乘以摩擦角（<span class="cmdkey">coupling-friction-shear</span>）。在 <span class="codename">FLAC3D</span> 中通过给定加固体性质（<span class="cmdkey">perimeter</span>）和（<span class="cmdkey">coupling-friction-shear</span>）会自动激活这种压力相关性。</p>
+<p><a href="#pulltest-pile3">图 11（Figure  11）</a> 表示在总位移为 40 mm 时轴力（按注浆加固体单位长度计）与加固体端部位移之间的关系。其结果与<a href="#pulltest-cable3">图 8（Figure  8）</a> 中所示结果相当。</p>
+<div class="figure align-center" id="pulltest-pile3">
+<a class="reference internal image-reference" href="../../../../../_images/pulltest-pile3.png"><img alt="../../../../../_images/pulltest-pile3.png" src="../../../../../_images/pulltest-pile3.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 11：单根 25 mm 注浆锚杆情形下拉拔力（N/m）与加固体轴向位移（m）的关系——均匀 4 MN/m<sup>2</sup> 围压。</span></p>
+</div>
+<p class="h3 rubric">有围压条件下的拉拔试验——用户定义行为</p>
+<p>本例演示使用 <span class="cmdkey">coupling-confining-table</span> 选项，为垂直于锚杆轴线的主应力 <span class="math">\(σ_x\)</span> 与 <span class="math">\(σ_y\)</span> 不相等的情况，定义锚杆上围压的“平均”值 <span class="math">\(σ_c\)</span>。</p>
+<p><a href="#pulltest-numericalexample">图 12（Figure  12）</a> 显示了直径为 25 mm 的岩石锚杆情形下围压与偏应力关系数值计算得到的结果。图中横轴表示<em>归一化偏应力</em>，定义为</p>
+<div class="math">
+\[{ \sigma_x - \sigma_y } \over { \sigma_x + \sigma_y }\]</div>
+<p>而纵轴表示<em>归一化围压</em>，</p>
+<div class="math">
+\[{ \sigma_c } \over { \sigma_x + \sigma_y }\]</div>
+<p>该关系由 <span class="codename">FLAC3D</span> 中的拉拔试验模型得到，其中考虑了垂直于锚杆轴线的平面内不同偏应力值。平均围压 <span class="math">\(\sigma_c\)</span> 通过测量将长度为 <span class="math">\(L\)</span>、周长为 <span class="math">\(p\)</span>、注浆摩擦角为 <span class="math">\(\phi\)</span> 的锚杆拔出所需的力 <span class="math">\(F_p\)</span> 并按以下表达式获得</p>
+<div class="math">
+\[\sigma_c = {{F_p} \over {p L \tan{\phi}}}\]</div>
+<p>数据文件“<a class="reference internal" href="#pulltest07data">Pulltest07.dat 数据文件（<span class="std std-ref">Pulltest07.dat</span>）</a>”创建的模型演示了 <span class="cmdkey">coupling-confining-table</span> 选项的使用以及<a href="#pulltest-numericalexample">图 12（Figure  12）</a> 所表示的关系。使用该数据文件获得的结果如<a href="#pulltest-pile4">图 13（Figure  13）</a> 所示。在本示例中，垂直于岩石锚杆轴线的平面上的一个主应力为零。请注意，由于侧向应力为零，<a href="#pulltest-pile4">图 13（Figure  13）</a> 中的抗拔阻力相比<a href="#pulltest-pile3">图 11（Figure  11）</a> 大幅降低。</p>
+<div class="figure align-center" id="pulltest-numericalexample">
+<img alt="../../../../../_images/pulltest-numericalexample.png" src="../../../../../_images/pulltest-numericalexample.png"/>
+<p class="caption"><span class="caption-text">图 12：25 mm 岩石锚杆数值计算得到的归一化围压与归一化偏应力关系示例。</span></p>
+</div>
+<div class="figure align-center" id="pulltest-pile4">
+<a class="reference internal image-reference" href="../../../../../_images/pulltest-Pile4.png"><img alt="../../../../../_images/pulltest-Pile4.png" src="../../../../../_images/pulltest-Pile4.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 13：单根 25 mm 注浆锚杆情形下岩石锚杆拉拔力（N/m）与岩石锚杆轴向位移（m）的关系——侧向围压由<a href="#pulltest-numericalexample">图 12（Figure  12）</a> 所表示的关系定义。</span></p>
+</div>
+<p class="h3 rubric" id="pulltest-tensile-rupture-section">带拉伸断裂的拉拔试验</p>
+<p>本示例展示了分别使用 <span class="cmdkey">tensile-yield</span> 和 <span class="cmdkey">tensile-failure-strain</span> 选项定义岩石锚杆的极限轴向屈服力和极限轴向应变。</p>
+<p>数据文件“<a class="reference internal" href="#pulltest08data">Pulltest08.dat 数据文件（<span class="std std-ref">Pulltest08.dat</span>）</a>”建立了一个考虑极限拉力为 1.5 × 10<sup>5</sup> N、极限轴向应变为 1 × 10<sup>-4</sup> 的模型。该模型的结果如<a href="#pulltest-pile5">图 14（Figure  14）</a> 所示。该图表明，在约 2.6 cm 的拔出位移后达到极限拉力。请注意，达到该极限力后，拔出迅速降至零，表明岩石锚杆断裂。</p>
+<div class="figure align-center" id="pulltest-pile5">
+<a class="reference internal image-reference" href="../../../../../_images/pulltest-pile5.png"><img alt="../../../../../_images/pulltest-pile5.png" src="../../../../../_images/pulltest-pile5.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 14：单根 25 mm 注浆锚杆情形下岩石锚杆拉拔力（N/m）与岩石锚杆轴向位移（m）的关系——带拉伸断裂。</span></p>
+</div>
+<p class="h3 rubric" id="pulltest-shear-bolt-section">岩石锚杆剪切试验</p>
+<p>本节和下一节给出两个剪切试验示例。这些试验与上述拉拔试验类似，区别在于对锚杆顶部施加作用在垂直于锚杆轴向的平面内的速度。</p>
+<p>数据文件“<a class="reference internal" href="#pulltestshear01data"><span class="std std-ref">Shear01.dat</span></a>”展示了模型的创建方式。请注意，在岩石锚杆剪切试验中，需要定义法向耦合弹簧的刚度和强度值（这些在拉拔试验中并不需要）。<a href="#pulltest-shear1">图 15（Figure  15）</a> 给出了剪力与剪切位移的关系图。我们选取刚度值 10<sup>10</sup> N/m/m 和黏聚强度 10<sup>8</sup> MPa/m，以在 6 mm 的剪切位移范围内展示剪切行为。这些数值并不代表特定材料，应根据试验数据加以调整。</p>
+<p>该图还包含试验后模型的视图。岩石锚杆在岩面附近的大位移是法向耦合弹簧屈服的结果，而法向耦合弹簧屈服模拟了岩石的压碎。</p>
+<div class="figure align-center" id="pulltest-shear1">
+<a class="reference internal image-reference" href="../../../../../_images/pulltest-shear1.png"><img alt="../../../../../_images/pulltest-shear1.png" src="../../../../../_images/pulltest-shear1.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 15：单根 25 mm 注浆锚杆情形下岩石锚杆剪力（N）与岩石锚杆剪切位移（m）的关系。</span></p>
+</div>
+<p class="h3 rubric" id="pulltest-shear-rupture-section">带断裂的岩石锚杆剪切试验</p>
+<p>数据文件“<a class="reference internal" href="#pulltestshear02data"><span class="std std-ref">Shear02.dat</span></a>”给出的模型与<a class="reference internal" href="#pulltest-shear-bolt-section"><span class="std std-ref">岩石锚杆剪切试验</span>（Shear Test on Rockbolts）</a>中描述的模型类似，但增加了弯曲断裂选项。破坏由指定的极限（屈服）弯矩和极限拉应变值控制（这些值使用关键字 <span class="cmdkey">plastic-moment</span> 和 <span class="cmdkey">tensile-failure-strain</span> 指定，如<a class="reference internal" href="../../../../../common/sel/doc/manual/sel_manual/piles/commands/pile_commands.html#sel-pile-commands"><span class="std std-ref">桩命令</span>（Pile Commands）</a>中所述）。</p>
+<p>使用数据文件“<a class="reference internal" href="#pulltestshear02data"><span class="std std-ref">Shear02.dat</span></a>”获得的结果如<a href="#pulltest-shear2">图 16（Figure  16）</a> 所示。请注意，施加力与侧向位移的关系在断裂后出现一些振荡。这种振荡是锚杆突然断裂后的正常响应。</p>
+<div class="figure align-center" id="pulltest-shear2">
+<a class="reference internal image-reference" href="../../../../../_images/pulltest-shear2.png"><img alt="../../../../../_images/pulltest-shear2.png" src="../../../../../_images/pulltest-shear2.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 16：单根 25 mm 注浆锚杆情形下岩石锚杆剪力（N）与岩石锚杆剪切位移（m）的关系——带拉伸断裂。</span></p>
+</div>
+<p class="h2 rubric">参考文献</p>
+<p>Hyett, A. J., W. F. Bawden and R. D. Reichert.《岩体约束对全长灌浆锚索黏结强度的影响》，<em>Int. J. Rock Mech. Min. Sci. &amp; Geomech. Abstr.</em>，<span class="bi">29</span>(5)，503-524（1992）。</p>
+<p class="h2 rubric" id="pulltestmaindata">数据文件</p>
+<p id="pulltest01data"><strong>Pull01.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; ==================================================================</span>
+<span class="c">;   注浆锚杆拉拔试验模拟</span>
+<span class="c">; ==================================================================</span>
+<span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">fish automatic-create</span><span class="n"> </span><span class="sx">off</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> t </span><span class="p">=</span><span class="ni">  </span><span class="s">'Pull Test for Grouted Cable Anchor '</span><span class="ni">]</span>
+<span class="ni">[t </span><span class="o">+=</span><span class="ni"> </span><span class="s">'(no external confinement, fric=0)'</span><span class="ni">]</span>
+<span class="nb">model title</span><span class="n"> </span><span class="ni">[t]</span>
+<span class="c">; 创建单个岩块并设置其材料参数。</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">7</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0.4</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0.7</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                             point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0.4</span><span class="p">)</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">zone property</span><span class="n"> bulk </span><span class="m m-Double">5e9</span><span class="n"> shear </span><span class="m m-Double">3e9</span>
+<span class="c">; 创建单根锚索并设置其相关参数</span>
+<span class="nb">struct cable create</span><span class="n"> by</span><span class="o">-</span><span class="n">line </span><span class="p">(</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.2</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.5</span><span class="p">,</span><span class="m m-Double">0.2</span><span class="p">)</span><span class="n"> segments </span><span class="m m-Double">10</span>
+<span class="nb">struct cable property</span><span class="n"> cross</span><span class="o">-</span><span class="n">sectional</span><span class="o">-</span><span class="n">area </span><span class="m m-Double">181e-6</span><span class="n"> young </span><span class="m m-Double">98.6e9</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                      yield</span><span class="o">-</span><span class="n">tension </span><span class="m m-Double">0.232e6</span><span class="n"> grout</span><span class="o">-</span><span class="n">stiffness </span><span class="m m-Double">1.12e7</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                      grout</span><span class="o">-</span><span class="n">cohesion </span><span class="m m-Double">1.75e5</span><span class="n"> grout</span><span class="o">-</span><span class="n">friction </span><span class="m m-Double">0.0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                      grout</span><span class="o">-</span><span class="n">perimeter </span><span class="m m-Double">7.85e-2</span>
+<span class="c">; 固定岩块自由端，并对锚索端部施加速度</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span>
+<span class="nb">struct node fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x                    range position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span>
+<span class="nb">struct node initialize</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">1e-6</span><span class="n"> local range position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span>
+<span class="c">; 用于计算网格单元上反作用力的 FISH 函数</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> gplist </span><span class="p">=</span><span class="ni"> </span><span class="k">gp.list</span><span class="p">(</span><span class="k">gp.pos.y</span><span class="p">(::</span><span class="k">gp.list</span><span class="p">)</span><span class="ni"> </span><span class="o">&lt;</span><span class="ni"> </span><span class="m m-Double">0.05</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">fish define</span><span class="ni"> force</span>
+<span class="ni">    return </span><span class="k">list.sum</span><span class="p">(</span><span class="k">gp.force.unbal.y</span><span class="p">(::</span><span class="ni">gplist</span><span class="p">))</span><span class="ni"> </span><span class="o">/</span><span class="ni"> </span><span class="m m-Double">0.5</span>
+<span class="nb">end</span>
+<span class="c">; 设置用于监测模型响应的历程</span>
+<span class="nb">history interval</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'force'</span><span class="n"> force</span>
+<span class="nb">struct node history</span><span class="n"> name </span><span class="s">'disp'</span><span class="n"> displacement</span><span class="o">-</span><span class="n">y component</span><span class="o">-</span><span class="n">id </span><span class="m m-Double">1</span>
+<span class="c">; 施加速度以实现 2.0 cm 的总位移</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">10000</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'pull-1-1'</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">6500</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'pull-1-2'</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'pull-1-3'</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">2500</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'pull-1-4'</span>
+</pre></div>
+</div>
+<p id="pulltest02data"><strong>Pull02.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; ==================================================================</span>
+<span class="c">;   注浆锚杆拉拔试验模拟</span>
+<span class="c">;     围压 2 MPa</span>
+<span class="c">; ==================================================================</span>
+<span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">fish automatic-create</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'Pull Test for Grouted Cable Anchor - Confinement 2 MPa, fric=30'</span>
+<span class="c">; 创建单个岩块并设置其材料参数。</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">7</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0.4</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0.7</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                             point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0.4</span><span class="p">)</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">zone property</span><span class="n"> bulk </span><span class="m m-Double">5e9</span><span class="n"> shear </span><span class="m m-Double">3e9</span>
+<span class="nb">zone initialize</span><span class="n"> stress xx </span><span class="o">-</span><span class="m m-Double">2e6</span><span class="n"> zz </span><span class="o">-</span><span class="m m-Double">2e6</span>
+<span class="nb">zone face apply</span><span class="n"> stress</span><span class="o">-</span><span class="n">normal </span><span class="o">-</span><span class="m m-Double">2e6</span><span class="n"> range union position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                         position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0.4</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                         position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.4</span>
+<span class="c">; 创建单根锚索并设置其相关参数</span>
+<span class="nb">struct cable create</span><span class="n"> by</span><span class="o">-</span><span class="n">line </span><span class="p">(</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.2</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.5</span><span class="p">,</span><span class="m m-Double">0.2</span><span class="p">)</span><span class="n"> segments </span><span class="m m-Double">10</span>
+<span class="nb">struct cable property</span><span class="n"> cross</span><span class="o">-</span><span class="n">sectional</span><span class="o">-</span><span class="n">area </span><span class="m m-Double">181e-6</span><span class="n"> young </span><span class="m m-Double">98.6e9</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                      yield</span><span class="o">-</span><span class="n">tension </span><span class="m m-Double">0.232e6</span><span class="n"> grout</span><span class="o">-</span><span class="n">stiffness </span><span class="m m-Double">1.12e7</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                      grout</span><span class="o">-</span><span class="n">cohesion </span><span class="m m-Double">1.75e5</span><span class="n"> grout</span><span class="o">-</span><span class="n">friction </span><span class="m m-Double">30.0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                      grout</span><span class="o">-</span><span class="n">perimeter </span><span class="m m-Double">7.85e-2</span>
+<span class="c">; 固定岩块自由端，并对锚索端部施加速度</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span>
+<span class="nb">struct node fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x range position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span>
+<span class="nb">struct node initialize</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">1e-6</span><span class="n"> local range position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span>
+<span class="c">; 用于计算网格单元上反作用力的 FISH 函数</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> gplist </span><span class="p">=</span><span class="ni"> </span><span class="k">gp.list</span><span class="p">(</span><span class="k">gp.pos.y</span><span class="p">(::</span><span class="k">gp.list</span><span class="p">)</span><span class="ni"> </span><span class="o">&lt;</span><span class="ni"> </span><span class="m m-Double">0.05</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">fish define</span><span class="ni"> force</span>
+<span class="ni">    return </span><span class="k">list.sum</span><span class="p">(</span><span class="k">gp.force.unbal.y</span><span class="p">(::</span><span class="ni">gplist</span><span class="p">))</span><span class="ni"> </span><span class="o">/</span><span class="ni"> </span><span class="m m-Double">0.5</span>
+<span class="nb">end</span>
+<span class="c">; 设置用于监测模型响应的历程</span>
+<span class="nb">history interval</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'force'</span><span class="n"> force</span>
+<span class="nb">struct node history</span><span class="n"> name </span><span class="s">'disp'</span><span class="n"> displacement</span><span class="o">-</span><span class="n">y component</span><span class="o">-</span><span class="n">id </span><span class="m m-Double">1</span>
+<span class="c">; 施加速度以实现 4.525 cm 的总位移</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">45000</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'pull-2'</span>
+</pre></div>
+</div>
+<p id="pulltest03data"><strong>Pull03.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; ==================================================================</span>
+<span class="c">;   注浆锚杆拉拔试验模拟</span>
+<span class="c">;     围压 4 MPa</span>
+<span class="c">; ==================================================================</span>
+<span class="nb">model new</span><span class="n"> </span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">fish automatic-create</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'Pull Test for Grouted Cable Anchor - Confinement 4 MPa, fric=30'</span>
+<span class="c">; 创建单个岩块并设置其材料参数。</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">7</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0.4</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0.7</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                             point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0.4</span><span class="p">)</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">zone property</span><span class="n"> bulk </span><span class="m m-Double">5e9</span><span class="n"> shear </span><span class="m m-Double">3e9</span>
+<span class="nb">zone initialize</span><span class="n"> stress xx </span><span class="o">-</span><span class="m m-Double">4e6</span><span class="n"> zz </span><span class="o">-</span><span class="m m-Double">4e6</span>
+<span class="nb">zone face apply</span><span class="n"> stress</span><span class="o">-</span><span class="n">normal </span><span class="o">-</span><span class="m m-Double">4e6</span><span class="n"> range union position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0.4</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                               position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.4</span>
+<span class="c">; 创建单根锚索并设置其相关参数</span>
+<span class="nb">struct cable create</span><span class="n"> by</span><span class="o">-</span><span class="n">line </span><span class="p">(</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">,</span><span class="m m-Double">0.2</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.5</span><span class="p">,</span><span class="m m-Double">0.2</span><span class="p">)</span><span class="n"> segments </span><span class="m m-Double">10</span>
+<span class="nb">struct cable property</span><span class="n"> cross</span><span class="o">-</span><span class="n">sectional</span><span class="o">-</span><span class="n">area </span><span class="m m-Double">181e-6</span><span class="n"> young </span><span class="m m-Double">98.6e9</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                      yield</span><span class="o">-</span><span class="n">tension </span><span class="m m-Double">0.232e6</span><span class="n"> grout</span><span class="o">-</span><span class="n">stiffness </span><span class="m m-Double">1.12e7</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                      grout</span><span class="o">-</span><span class="n">cohesion </span><span class="m m-Double">1.75e5</span><span class="n"> grout</span><span class="o">-</span><span class="n">friction </span><span class="m m-Double">30.0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                      grout</span><span class="o">-</span><span class="n">perimeter </span><span class="m m-Double">7.85e-2</span>
+<span class="c">; 固定岩块自由端，并对锚索端部施加速度</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span>
+<span class="nb">struct node fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x range position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span>
+<span class="nb">struct node initialize</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">1e-6</span><span class="n"> local range position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span>
+<span class="c">; 用于计算网格单元上反作用力的 FISH 函数</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> gplist </span><span class="p">=</span><span class="ni"> </span><span class="k">gp.list</span><span class="p">(</span><span class="k">gp.pos.y</span><span class="p">(::</span><span class="k">gp.list</span><span class="p">)</span><span class="ni"> </span><span class="o">&lt;</span><span class="ni"> </span><span class="m m-Double">0.05</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">fish define</span><span class="ni"> force</span>
+<span class="ni">    return </span><span class="k">list.sum</span><span class="p">(</span><span class="k">gp.force.unbal.y</span><span class="p">(::</span><span class="ni">gplist</span><span class="p">))</span><span class="ni"> </span><span class="o">/</span><span class="ni"> </span><span class="m m-Double">0.5</span>
+<span class="nb">end</span>
+<span class="c">; 设置用于监测模型响应的历程</span>
+<span class="nb">history interval</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'force'</span><span class="n"> force</span>
+<span class="nb">struct node history</span><span class="n"> name </span><span class="s">'disp'</span><span class="n"> displacement</span><span class="o">-</span><span class="n">y component</span><span class="o">-</span><span class="n">id </span><span class="m m-Double">1</span>
+<span class="c">; 施加速度以实现 4.525 cm 的总位移</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">45000</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'pull-3'</span>
+</pre></div>
+</div>
+<p id="pulltest04data"><strong>Pull04.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; ==================================================================</span>
+<span class="c">;   注浆锚杆拉拔试验模拟</span>
+<span class="c">;   采用修改的桩单元</span>
+<span class="c">; ==================================================================</span>
+<span class="nb">model new</span><span class="n"> </span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">fish automatic-create</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'Pull-test using modified pile elements'</span>
+<span class="c">; 创建单个岩块并设置其材料参数。</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">6</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0.4</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0.4</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                             point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0.6</span><span class="p">)</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">zone property</span><span class="n"> bulk </span><span class="m m-Double">5e9</span><span class="n"> shear </span><span class="m m-Double">3e9</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0.0</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.6</span>
+<span class="c">; 创建桩单元并指定参数</span>
+<span class="nb">struct pile create</span><span class="n"> by</span><span class="o">-</span><span class="n">line </span><span class="p">(</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.7</span><span class="p">)</span><span class="n"> segments </span><span class="m m-Double">12</span>
+<span class="nb">struct pile property</span><span class="n"> rockbolt</span><span class="o">-</span><span class="n">flag </span><span class="sx">on</span>
+<span class="nb">struct pile property</span><span class="n"> young </span><span class="m m-Double">200e9</span><span class="n"> poisson </span><span class="m m-Double">0.25</span><span class="n"> cross</span><span class="o">-</span><span class="n">sectional</span><span class="o">-</span><span class="n">area </span><span class="m m-Double">5e-4</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                     perimeter </span><span class="m m-Double">0.08</span>
+<span class="nb">struct pile property</span><span class="n"> yield</span><span class="o">-</span><span class="n">tension </span><span class="m m-Double">2.25e5</span><span class="n">  </span><span class="c">; 极限抗拉强度</span>
+<span class="nb">struct pile property</span><span class="n"> moi</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">2.0e-8</span><span class="n"> moi</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">2.0e-8</span><span class="n"> moi</span><span class="o">-</span><span class="n">polar </span><span class="m m-Double">4.0e-8</span><span class="n"> </span><span class="c">; 0.25*pi*r^4</span>
+<span class="nb">struct pile property</span><span class="n"> coupling</span><span class="o">-</span><span class="n">cohesion</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1.75e5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                     coupling</span><span class="o">-</span><span class="n">stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1.12e7</span>
+<span class="nb">struct pile property</span><span class="n"> coupling</span><span class="o">-</span><span class="n">cohesion</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1.75e5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                     coupling</span><span class="o">-</span><span class="n">stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1.12e7</span>
+<span class="c">; 设置拉拔试验</span>
+<span class="nb">struct node fix</span><span class="n">  velocity</span><span class="o">-</span><span class="n">x range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.7</span>
+<span class="n">struct node init velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">1e-6</span><span class="n"> local range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.7</span>
+<span class="c">; 用于计算网格单元上反作用力的 FISH 函数</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> gplist </span><span class="p">=</span><span class="ni"> </span><span class="k">gp.list</span><span class="p">(</span><span class="k">gp.pos.z</span><span class="p">(::</span><span class="k">gp.list</span><span class="p">)</span><span class="ni"> </span><span class="o">&gt;</span><span class="ni"> </span><span class="m m-Double">0.59</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">fish define</span><span class="ni"> force</span>
+<span class="ni">    return </span><span class="k">list.sum</span><span class="p">(</span><span class="k">gp.force.unbal.z</span><span class="p">(::</span><span class="ni">gplist</span><span class="p">))</span><span class="ni"> </span><span class="o">/</span><span class="ni"> </span><span class="m m-Double">0.5</span>
+<span class="nb">end</span>
+<span class="c">; 设置用于监测模型响应的历程</span>
+<span class="nb">history interval</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'force'</span><span class="n"> force</span>
+<span class="nb">struct node history</span><span class="n"> name </span><span class="s">'disp'</span><span class="n"> displacement</span><span class="o">-</span><span class="n">z position </span><span class="p">(</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.7</span><span class="p">)</span>
+<span class="c">; 实现 2.0 cm 的总位移</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">20000</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'pull-4'</span>
+</pre></div>
+</div>
+<p id="pulltest05data"><strong>Pull05.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; ==================================================================</span>
+<span class="c">;   注浆锚杆拉拔试验模拟</span>
+<span class="c">;   采用修改的桩单元 - 黏聚力软化</span>
+<span class="c">; ==================================================================</span>
+<span class="nb">model new</span><span class="n"> </span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">fish automatic-create</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'Pull-test using modified pile elements - cohesion softening'</span>
+<span class="c">; 创建单个岩块并设置其材料参数。</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">6</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0.4</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0.4</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                             point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0.6</span><span class="p">)</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">zone property</span><span class="n"> bulk </span><span class="m m-Double">5e9</span><span class="n"> shear </span><span class="m m-Double">3e9</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0.0</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.6</span>
+<span class="c">; 创建桩单元并指定参数</span>
+<span class="nb">struct pile create</span><span class="n"> by</span><span class="o">-</span><span class="n">line </span><span class="p">(</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.7</span><span class="p">)</span><span class="n"> segments </span><span class="m m-Double">12</span>
+<span class="nb">struct pile property</span><span class="n"> rockbolt</span><span class="o">-</span><span class="n">flag </span><span class="sx">on</span>
+<span class="nb">struct pile property</span><span class="n"> young </span><span class="m m-Double">200e9</span><span class="n"> poisson </span><span class="m m-Double">0.25</span><span class="n"> cross</span><span class="o">-</span><span class="n">sectional</span><span class="o">-</span><span class="n">area </span><span class="m m-Double">5e-4</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                     perimeter </span><span class="m m-Double">0.08</span>
+<span class="nb">struct pile property</span><span class="n"> yield</span><span class="o">-</span><span class="n">tension   </span><span class="m m-Double">2.25e5</span><span class="n">  </span><span class="c">; 极限抗拉强度</span>
+<span class="nb">struct pile property</span><span class="n"> moi</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">2.0e-8</span><span class="n"> moi</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">2.0e-8</span><span class="n"> moi</span><span class="o">-</span><span class="n">polar </span><span class="m m-Double">4.0e-8</span><span class="n"> </span><span class="c">; 0.25*pi*r^4</span>
+<span class="nb">struct pile property</span><span class="n"> coupling</span><span class="o">-</span><span class="n">cohesion</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1.75e5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                     coupling</span><span class="o">-</span><span class="n">stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1.12e7</span>
+<span class="nb">struct pile property</span><span class="n"> coupling</span><span class="o">-</span><span class="n">cohesion</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1.75e5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                     coupling</span><span class="o">-</span><span class="n">stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1.12e7</span>
+<span class="nb">struct pile property</span><span class="n"> coupling</span><span class="o">-</span><span class="n">cohesion</span><span class="o">-</span><span class="n">table </span><span class="s">'cct'</span>
+<span class="c">; 黏聚力随相对剪切位移的变化</span>
+<span class="nb">table</span><span class="n"> </span><span class="s">'cct'</span><span class="n"> add </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">1.75e5</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0.025</span><span class="p">,</span><span class="m m-Double">1.75e4</span><span class="p">)</span>
+<span class="c">; 设置拉拔试验</span>
+<span class="nb">struct node fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.7</span>
+<span class="nb">struct node initialize</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">1e-6</span><span class="n"> local range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.7</span>
+<span class="c">; 用于计算桩内力的 FISH 函数</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> gplist </span><span class="p">=</span><span class="ni"> </span><span class="k">gp.list</span><span class="p">(</span><span class="k">gp.pos.z</span><span class="p">(::</span><span class="k">gp.list</span><span class="p">)</span><span class="ni"> </span><span class="o">&gt;</span><span class="ni"> </span><span class="m m-Double">0.59</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">fish define</span><span class="ni"> force</span>
+<span class="ni">    return </span><span class="k">list.sum</span><span class="p">(</span><span class="k">gp.force.unbal.z</span><span class="p">(::</span><span class="ni">gplist</span><span class="p">))</span><span class="ni"> </span><span class="o">/</span><span class="ni"> </span><span class="m m-Double">0.5</span>
+<span class="nb">end</span>
+<span class="c">; 设置用于监测模型响应的历程</span>
+<span class="nb">history interval</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'force'</span><span class="n"> force</span>
+<span class="nb">struct node history</span><span class="n"> name </span><span class="s">'disp'</span><span class="n"> displacement</span><span class="o">-</span><span class="n">z position </span><span class="p">(</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.7</span><span class="p">)</span>
+<span class="c">; 实现 4.0 cm 的总位移</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">40000</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'pull-5'</span>
+</pre></div>
+</div>
+<p id="pulltest06data"><strong>Pull06.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; ==================================================================</span>
+<span class="c">;   注浆锚杆拉拔试验模拟</span>
+<span class="c">;   采用修改的桩单元 - 围压 4 MPa</span>
+<span class="c">; ==================================================================</span>
+<span class="nb">model new</span>
+<span class="nb">fish automatic-create</span><span class="n"> </span><span class="sx">off</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> t </span><span class="p">=</span><span class="ni">  </span><span class="s">'Pull-test using modified pile elements - '</span><span class="ni">]</span>
+<span class="ni">[t </span><span class="o">+=</span><span class="ni"> </span><span class="s">'Confinement 4 MPa, fric=30'</span><span class="ni">]</span>
+<span class="nb">model title</span><span class="n"> </span><span class="ni">[t]</span>
+<span class="c">; 创建单个岩块并设置其材料参数。</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">6</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0.4</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0.4</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                             point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0.6</span><span class="p">)</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">zone property</span><span class="n"> bulk </span><span class="m m-Double">5e9</span><span class="n"> shear </span><span class="m m-Double">3e9</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0.0</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.6</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="c">; 创建桩单元并指定参数</span>
+<span class="nb">struct pile create</span><span class="n"> by</span><span class="o">-</span><span class="n">line </span><span class="p">(</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.7</span><span class="p">)</span><span class="n"> segments </span><span class="m m-Double">12</span>
+<span class="nb">struct pile property</span><span class="n"> rockbolt</span><span class="o">-</span><span class="n">flag </span><span class="sx">on</span>
+<span class="nb">struct pile property</span><span class="n"> young </span><span class="m m-Double">200e9</span><span class="n"> poisson </span><span class="m m-Double">0.25</span><span class="n"> cross</span><span class="o">-</span><span class="n">sectional</span><span class="o">-</span><span class="n">area </span><span class="m m-Double">5e-4</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                     perimeter </span><span class="m m-Double">0.08</span>
+<span class="nb">struct pile property</span><span class="n"> yield</span><span class="o">-</span><span class="n">tension   </span><span class="m m-Double">2.25e5</span><span class="n">  </span><span class="c">; 极限抗拉强度</span>
+<span class="nb">struct pile property</span><span class="n"> moi</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">2.0e-8</span><span class="n"> moi</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">2.0e-8</span><span class="n"> moi</span><span class="o">-</span><span class="n">polar </span><span class="m m-Double">4.0e-8</span><span class="n"> </span><span class="c">; 0.25*pi*r^4</span>
+<span class="nb">struct pile property</span><span class="n"> coupling</span><span class="o">-</span><span class="n">cohesion</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1.75e5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                     coupling</span><span class="o">-</span><span class="n">stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1.12e7</span>
+<span class="nb">struct pile property</span><span class="n"> coupling</span><span class="o">-</span><span class="n">cohesion</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1.75e5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                     coupling</span><span class="o">-</span><span class="n">stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1.12e7</span>
+<span class="nb">struct pile property</span><span class="n"> coupling</span><span class="o">-</span><span class="n">friction</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">30.0</span>
+<span class="c">; 设置地应力</span>
+<span class="nb">zone initialize</span><span class="n"> stress xx </span><span class="o">-</span><span class="m m-Double">4e6</span><span class="n"> yy </span><span class="o">-</span><span class="m m-Double">4e6</span>
+<span class="nb">zone face apply</span><span class="n"> stress</span><span class="o">-</span><span class="n">normal </span><span class="o">-</span><span class="m m-Double">4e6</span><span class="n"> range union position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0.4</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                               position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0.4</span>
+<span class="c">; 设置拉拔试验</span>
+<span class="nb">struct node fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.7</span>
+<span class="n">struct node init velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">1e-6</span><span class="n"> local range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.7</span>
+<span class="c">; 用于计算桩内力的 FISH 函数</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> gplist </span><span class="p">=</span><span class="ni"> </span><span class="k">gp.list</span><span class="p">(</span><span class="k">gp.pos.z</span><span class="p">(::</span><span class="k">gp.list</span><span class="p">)</span><span class="ni"> </span><span class="o">&gt;</span><span class="ni"> </span><span class="m m-Double">0.59</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">fish define</span><span class="ni"> force</span>
+<span class="ni">    return </span><span class="k">list.sum</span><span class="p">(</span><span class="k">gp.force.unbal.z</span><span class="p">(::</span><span class="ni">gplist</span><span class="p">))</span><span class="ni"> </span><span class="o">/</span><span class="ni"> </span><span class="m m-Double">0.5</span>
+<span class="nb">end</span>
+<span class="c">; 设置用于监测模型响应的历程</span>
+<span class="nb">history interval</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'force'</span><span class="n"> force</span>
+<span class="nb">struct node history</span><span class="n"> name </span><span class="s">'disp'</span><span class="n"> displacement</span><span class="o">-</span><span class="n">z position </span><span class="p">(</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.7</span><span class="p">)</span>
+<span class="c">; 实现 4.0 cm 的总位移</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">40000</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'pull-6'</span>
+</pre></div>
+</div>
+<p id="pulltest07data"><strong>Pull07.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; ==================================================================</span>
+<span class="c">;   注浆锚杆拉拔试验模拟</span>
+<span class="c">;   采用修改的桩单元 - 围压 4 MPa（使用表）</span>
+<span class="c">; ==================================================================</span>
+<span class="nb">model new</span>
+<span class="nb">fish automatic-create</span><span class="n"> </span><span class="sx">off</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> t </span><span class="p">=</span><span class="ni">  </span><span class="s">'Pull-test using modified pile elements - '</span><span class="ni">]</span>
+<span class="ni">[t </span><span class="o">+=</span><span class="ni"> </span><span class="s">'Confinement 4 MPa (w/table)'</span><span class="ni">]</span>
+<span class="nb">model title</span><span class="n"> </span><span class="ni">[t]</span>
+<span class="c">; 创建单个岩块并设置其材料参数。</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">6</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0.4</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0.4</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                             point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0.6</span><span class="p">)</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">zone property</span><span class="n"> bulk </span><span class="m m-Double">5e9</span><span class="n"> shear </span><span class="m m-Double">3e9</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0.0</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.6</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="c">; 创建桩单元并指定参数</span>
+<span class="nb">struct pile create</span><span class="n"> by</span><span class="o">-</span><span class="n">line </span><span class="p">(</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.7</span><span class="p">)</span><span class="n"> segments </span><span class="m m-Double">12</span>
+<span class="nb">struct pile property</span><span class="n"> rockbolt</span><span class="o">-</span><span class="n">flag </span><span class="sx">on</span>
+<span class="nb">struct pile property</span><span class="n"> young </span><span class="m m-Double">200e9</span><span class="n"> poisson </span><span class="m m-Double">0.25</span><span class="n"> cross</span><span class="o">-</span><span class="n">sectional</span><span class="o">-</span><span class="n">area </span><span class="m m-Double">5e-4</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                     perimeter </span><span class="m m-Double">0.08</span>
+<span class="nb">struct pile property</span><span class="n"> yield</span><span class="o">-</span><span class="n">tension  </span><span class="m m-Double">2.25e5</span><span class="n">  </span><span class="c">; 极限抗拉强度</span>
+<span class="nb">struct pile property</span><span class="n"> moi</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">2.0e-8</span><span class="n"> moi</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">2.0e-8</span><span class="n"> moi</span><span class="o">-</span><span class="n">polar </span><span class="m m-Double">4.0e-8</span><span class="n"> </span><span class="c">; 0.25*pi*r^4</span>
+<span class="nb">struct pile property</span><span class="n"> coupling</span><span class="o">-</span><span class="n">cohesion</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1.75e5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                     coupling</span><span class="o">-</span><span class="n">stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1.12e7</span>
+<span class="nb">struct pile property</span><span class="n"> coupling</span><span class="o">-</span><span class="n">cohesion</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1.75e5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                     coupling</span><span class="o">-</span><span class="n">stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1.12e7</span>
+<span class="nb">struct pile property</span><span class="n"> coupling</span><span class="o">-</span><span class="n">friction</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">30.0</span>
+<span class="c">; 定义围压修正系数的表</span>
+<span class="nb">table</span><span class="n"> </span><span class="s">'cct'</span><span class="n"> add </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0.5</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0.3</span><span class="p">,</span><span class="m m-Double">0.48</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0.5</span><span class="p">,</span><span class="m m-Double">0.45</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0.6</span><span class="p">,</span><span class="m m-Double">0.39</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0.68</span><span class="p">,</span><span class="m m-Double">0.36</span><span class="p">)</span>
+<span class="nb">struct pile property</span><span class="n"> coupling</span><span class="o">-</span><span class="n">confining</span><span class="o">-</span><span class="n">table </span><span class="s">'cct'</span>
+<span class="c">; 注：(snn-szz)/(snn+szz) 为 1，因此 cfac=0.36</span>
+<span class="c">; 设置地应力</span>
+<span class="nb">zone initialize</span><span class="n"> stress xx </span><span class="o">-</span><span class="m m-Double">4e6</span>
+<span class="nb">zone face apply</span><span class="n"> stress</span><span class="o">-</span><span class="n">normal </span><span class="o">-</span><span class="m m-Double">4e6</span><span class="n"> range union position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0.4</span><span class="n"> </span>
+<span class="c">; 设置拉拔试验</span>
+<span class="nb">struct node fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.7</span>
+<span class="nb">struct node initialize</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">1e-6</span><span class="n"> local range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.7</span>
+<span class="c">; 用于计算桩内力的 FISH 函数</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> gplist </span><span class="p">=</span><span class="ni"> </span><span class="k">gp.list</span><span class="p">(</span><span class="k">gp.pos.z</span><span class="p">(::</span><span class="k">gp.list</span><span class="p">)</span><span class="ni"> </span><span class="o">&gt;</span><span class="ni"> </span><span class="m m-Double">0.59</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">fish define</span><span class="ni"> force</span>
+<span class="ni">    return </span><span class="k">list.sum</span><span class="p">(</span><span class="k">gp.force.unbal.z</span><span class="p">(::</span><span class="ni">gplist</span><span class="p">))</span><span class="ni"> </span><span class="o">/</span><span class="ni"> </span><span class="m m-Double">0.5</span>
+<span class="nb">end</span>
+<span class="c">; 设置用于监测模型响应的历程</span>
+<span class="nb">history interval</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'force'</span><span class="n"> force</span>
+<span class="nb">struct node history</span><span class="n"> name </span><span class="s">'disp'</span><span class="n"> displacement</span><span class="o">-</span><span class="n">z position </span><span class="p">(</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.7</span><span class="p">)</span>
+<span class="c">; 实现 4.0 cm 的总位移</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">40000</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'pull-7'</span>
+</pre></div>
+</div>
+<p id="pulltest08data"><strong>Pull08.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; ==================================================================</span>
+<span class="c">;   注浆锚杆拉拔试验模拟</span>
+<span class="c">;   采用修改的桩单元</span>
+<span class="c">;     由最大拉应变或拉应力定义破坏</span>
+<span class="c">; ==================================================================</span>
+<span class="nb">model new</span>
+<span class="nb">fish automatic-create</span><span class="n"> </span><span class="sx">off</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> t </span><span class="p">=</span><span class="ni">  </span><span class="s">'Pull-test using modified pile elements - '</span><span class="ni">]</span>
+<span class="ni">[t </span><span class="o">+=</span><span class="ni"> </span><span class="s">'tensile strain causes rupture'</span><span class="ni">]</span>
+<span class="nb">model title</span><span class="n"> </span><span class="ni">[t]</span>
+<span class="c">; 创建单个岩块并设置其材料参数</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">6</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0.4</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0.4</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                             point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0.6</span><span class="p">)</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">zone property</span><span class="n"> bulk </span><span class="m m-Double">5e9</span><span class="n"> shear </span><span class="m m-Double">3e9</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0.0</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.6</span><span class="n">    </span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">zone mechanical</span><span class="n"> damping combined</span>
+<span class="c">; 创建桩单元并指定参数</span>
+<span class="nb">struct pile create</span><span class="n"> by</span><span class="o">-</span><span class="n">line </span><span class="p">(</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.7</span><span class="p">)</span><span class="n"> segments </span><span class="m m-Double">12</span>
+<span class="nb">struct pile property</span><span class="n"> rockbolt</span><span class="o">-</span><span class="n">flag </span><span class="sx">on</span>
+<span class="nb">struct pile property</span><span class="n"> young </span><span class="m m-Double">200e9</span><span class="n"> poisson </span><span class="m m-Double">0.25</span><span class="n"> cross</span><span class="o">-</span><span class="n">sectional</span><span class="o">-</span><span class="n">area </span><span class="m m-Double">5e-4</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                     perimeter </span><span class="m m-Double">0.08</span>
+<span class="nb">struct pile property</span><span class="n"> moi</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">2.0e-8</span><span class="n"> moi</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">2.0e-8</span><span class="n"> moi</span><span class="o">-</span><span class="n">polar </span><span class="m m-Double">4.0e-8</span><span class="n"> </span><span class="c">; 0.25*pi*r^4</span>
+<span class="nb">struct pile property</span><span class="n"> coupling</span><span class="o">-</span><span class="n">cohesion</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1.75e5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                     coupling</span><span class="o">-</span><span class="n">stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1.12e7</span>
+<span class="nb">struct pile property</span><span class="n"> coupling</span><span class="o">-</span><span class="n">cohesion</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1.75e5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                     coupling</span><span class="o">-</span><span class="n">stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1.12e7</span>
+<span class="nb">struct pile property</span><span class="n"> coupling</span><span class="o">-</span><span class="n">friction</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">30.0</span>
+<span class="nb">struct pile property</span><span class="n"> yield</span><span class="o">-</span><span class="n">tension </span><span class="m m-Double">1.5e5</span><span class="n">  </span><span class="c">; 极限抗拉强度</span>
+<span class="nb">struct pile property</span><span class="n"> tensile</span><span class="o">-</span><span class="n">failure</span><span class="o">-</span><span class="n">strain </span><span class="m m-Double">1.0e-4</span><span class="n"> </span><span class="c">; 极限拉应变</span>
+<span class="c">; 设置地应力</span>
+<span class="nb">zone initialize</span><span class="n"> stress xx </span><span class="o">-</span><span class="m m-Double">4e6</span><span class="n"> yy </span><span class="o">-</span><span class="m m-Double">4e6</span>
+<span class="nb">zone face apply</span><span class="n"> stress</span><span class="o">-</span><span class="n">normal </span><span class="o">-</span><span class="m m-Double">4e6</span><span class="n"> range union position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0.4</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                               position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0.4</span>
+<span class="c">; 设置拉拔试验</span>
+<span class="nb">struct node fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.7</span>
+<span class="nb">struct node initialize</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">1e-6</span><span class="n"> local range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.7</span>
+<span class="c">; 用于计算桩内力的 FISH 函数</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> gplist </span><span class="p">=</span><span class="ni"> </span><span class="k">gp.list</span><span class="p">(</span><span class="k">gp.pos</span><span class="p">(::</span><span class="k">gp.list</span><span class="p">)</span><span class="o">-&gt;</span><span class="ni">z </span><span class="o">&gt;</span><span class="ni"> </span><span class="m m-Double">0.59</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">fish define</span><span class="ni"> force</span>
+<span class="ni">    return </span><span class="k">list.sum</span><span class="p">(</span><span class="k">gp.force.unbal</span><span class="p">(::</span><span class="ni">gplist</span><span class="p">)</span><span class="o">-&gt;</span><span class="ni">z</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> </span><span class="m m-Double">0.5</span>
+<span class="nb">end</span>
+<span class="c">; 设置用于监测模型响应的历程</span>
+<span class="nb">history interval</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'force'</span><span class="n"> force</span>
+<span class="nb">struct node history</span><span class="n"> name </span><span class="s">'disp'</span><span class="n"> displacement</span><span class="o">-</span><span class="n">z position </span><span class="p">(</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.2</span><span class="p">,</span><span class="m m-Double">0.7</span><span class="p">)</span>
+<span class="c">; 实现 2.0 cm 的总位移</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">40000</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'pull-8'</span>
+</pre></div>
+</div>
+<p id="pulltestshear01data"><strong>Shear01.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; ==================================================================</span>
+<span class="c">;   注浆锚杆剪切试验模拟</span>
+<span class="c">;   采用修改的桩单元</span>
+<span class="c">; ==================================================================</span>
+<span class="nb">model new</span>
+<span class="nb">fish automatic-create</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'Shear test using pile elements'</span>
+<span class="c">; 创建单个岩块并设置其材料参数</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">6</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0.3</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0.3</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                             point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0.6</span><span class="p">)</span>
+<span class="nb">zone face skin</span><span class="n"> </span><span class="c">; 标记模型边界</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">zone property</span><span class="n"> bulk </span><span class="m m-Double">5e10</span><span class="n"> shear </span><span class="m m-Double">3e10</span><span class="n"> density </span><span class="m m-Double">2000</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'Bottom'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'East'</span><span class="n"> or </span><span class="s">'West'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'North'</span><span class="n"> or </span><span class="s">'South'</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">zone mechanical</span><span class="n"> damping combined</span>
+<span class="c">; 创建桩单元并指定参数</span>
+<span class="nb">struct pile create</span><span class="n"> by</span><span class="o">-</span><span class="n">line </span><span class="p">(</span><span class="m m-Double">0.15</span><span class="p">,</span><span class="m m-Double">0.15</span><span class="p">,</span><span class="m m-Double">0.1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0.15</span><span class="p">,</span><span class="m m-Double">0.15</span><span class="p">,</span><span class="m m-Double">0.628</span><span class="p">)</span><span class="n"> segments </span><span class="m m-Double">22</span>
+<span class="nb">struct node group</span><span class="n"> </span><span class="s">'Top'</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.628</span><span class="n"> </span><span class="c">; 标记顶部的节点 </span>
+<span class="n">                                               </span><span class="c">; 并为其命名</span>
+<span class="nb">struct pile property</span><span class="n"> rockbolt</span><span class="o">-</span><span class="n">flag </span><span class="sx">on</span>
+<span class="nb">struct pile property</span><span class="n"> young </span><span class="m m-Double">200e9</span><span class="n"> poisson </span><span class="m m-Double">0.25</span><span class="n"> cross</span><span class="o">-</span><span class="n">sectional</span><span class="o">-</span><span class="n">area </span><span class="m m-Double">5e-4</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                     perimeter </span><span class="m m-Double">0.08</span>
+<span class="c">; 极限抗拉强度</span>
+<span class="nb">struct pile property</span><span class="n"> yield</span><span class="o">-</span><span class="n">tension   </span><span class="m m-Double">2.25e5</span>
+<span class="nb">struct pile property</span><span class="n"> moi</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">2.0e-8</span><span class="n"> moi</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">2.0e-8</span><span class="n"> moi</span><span class="o">-</span><span class="n">polar </span><span class="m m-Double">4.0e-8</span>
+<span class="c">;                         0.25*pi*r^4</span>
+<span class="nb">struct pile property</span><span class="n"> coupling</span><span class="o">-</span><span class="n">cohesion</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1.75e5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                     coupling</span><span class="o">-</span><span class="n">stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1.12e7</span>
+<span class="nb">struct pile property</span><span class="n"> coupling</span><span class="o">-</span><span class="n">cohesion</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1.75e8</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                     coupling</span><span class="o">-</span><span class="n">stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1.0e9</span>
+<span class="nb">struct pile property</span><span class="n"> coupling</span><span class="o">-</span><span class="n">friction</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">30.0</span>
+<span class="c">; 设置剪切试验（需在顶部节点固定局部节点坐标轴， </span>
+<span class="c">; 以避免坐标轴随单元转动）</span>
+<span class="nb">struct node fix</span><span class="n"> system</span><span class="o">-</span><span class="n">local range group </span><span class="s">'Top'</span>
+<span class="nb">struct node initialize</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">1e-6</span><span class="n"> local range group </span><span class="s">'Top'</span>
+<span class="nb">struct node fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x range group </span><span class="s">'Top'</span>
+<span class="c">; 用于计算网格上作用力的 FISH 函数</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> bGroup </span><span class="p">=</span><span class="ni"> </span><span class="k">gp.isGroup</span><span class="p">(::</span><span class="k">gp.list</span><span class="p">,</span><span class="s">'Bottom'</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> wGroup </span><span class="p">=</span><span class="ni"> </span><span class="k">gp.isGroup</span><span class="p">(::</span><span class="k">gp.list</span><span class="p">,</span><span class="s">'West'</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> eGroup </span><span class="p">=</span><span class="ni"> </span><span class="k">gp.isGroup</span><span class="p">(::</span><span class="k">gp.list</span><span class="p">,</span><span class="s">'East'</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> gplist </span><span class="p">=</span><span class="ni"> </span><span class="k">gp.list</span><span class="p">(</span><span class="ni">bGroup </span><span class="o">|</span><span class="ni"> wGroup </span><span class="o">|</span><span class="ni"> eGroup</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">fish define</span><span class="ni"> force</span>
+<span class="ni">    return </span><span class="k">list.sum</span><span class="p">(</span><span class="k">gp.force.unbal.x</span><span class="p">(::</span><span class="ni">gplist</span><span class="p">))</span>
+<span class="nb">end</span>
+<span class="c">; 设置用于监测模型响应的历程</span>
+<span class="nb">history interval</span><span class="n"> </span><span class="m m-Double">100</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'force'</span><span class="n"> force</span>
+<span class="nb">struct node history</span><span class="n"> name </span><span class="s">'disp'</span><span class="n"> displacement</span><span class="o">-</span><span class="n">x position </span><span class="p">(</span><span class="m m-Double">0.15</span><span class="p">,</span><span class="m m-Double">0.15</span><span class="p">,</span><span class="m m-Double">0.628</span><span class="p">)</span>
+<span class="c">; 实现 5.0 cm 的总位移</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">50000</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'shear-1'</span>
+</pre></div>
+</div>
+<p id="pulltestshear02data"><strong>Shear02.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; ==================================================================</span>
+<span class="c">;   注浆锚杆剪切试验模拟</span>
+<span class="c">;   采用修改的桩单元 - 弯矩破断</span>
+<span class="c">; ==================================================================</span>
+<span class="nb">model new</span>
+<span class="nb">fish automatic-create</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'Shear test using pile elements - Bending moment rupture'</span>
+<span class="c">; 创建单个岩块并设置其材料参数</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">6</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0.3</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0.3</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                             point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0.6</span><span class="p">)</span>
+<span class="nb">zone face skin</span><span class="n"> </span><span class="c">; 标记模型边界</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">zone property</span><span class="n"> bulk </span><span class="m m-Double">5e10</span><span class="n"> shear </span><span class="m m-Double">3e10</span><span class="n"> density </span><span class="m m-Double">2000</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'Bottom'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'East'</span><span class="n"> or </span><span class="s">'West'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'North'</span><span class="n"> or </span><span class="s">'South'</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">zone mechanical</span><span class="n"> damping combined</span>
+<span class="c">; 创建桩单元并指定参数</span>
+<span class="nb">struct pile create</span><span class="n"> by</span><span class="o">-</span><span class="n">line </span><span class="p">(</span><span class="m m-Double">0.15</span><span class="p">,</span><span class="m m-Double">0.15</span><span class="p">,</span><span class="m m-Double">0.1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0.15</span><span class="p">,</span><span class="m m-Double">0.15</span><span class="p">,</span><span class="m m-Double">0.628</span><span class="p">)</span><span class="n"> segments </span><span class="m m-Double">22</span>
+<span class="nb">struct node group</span><span class="n"> </span><span class="s">'Top'</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.628</span><span class="n"> </span><span class="c">; 标记顶部的节点</span>
+<span class="n">                                               </span><span class="c">; 并为其命名</span>
+<span class="nb">struct pile property</span><span class="n"> rockbolt</span><span class="o">-</span><span class="n">flag </span><span class="sx">on</span>
+<span class="nb">struct pile property</span><span class="n"> young </span><span class="m m-Double">200e9</span><span class="n"> poisson </span><span class="m m-Double">0.25</span><span class="n"> cross</span><span class="o">-</span><span class="n">sectional</span><span class="o">-</span><span class="n">area </span><span class="m m-Double">5e-4</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                     perimeter </span><span class="m m-Double">0.08</span>
+<span class="c">; 极限抗拉强度</span>
+<span class="nb">struct pile property</span><span class="n"> yield</span><span class="o">-</span><span class="n">tension   </span><span class="m m-Double">2.25e5</span>
+<span class="c">; 极限弯矩与抗拉强度</span>
+<span class="nb">struct pile property</span><span class="n"> plastic</span><span class="o">-</span><span class="n">moment   </span><span class="m m-Double">5e3</span><span class="n"> tensile</span><span class="o">-</span><span class="n">failure</span><span class="o">-</span><span class="n">strain   </span><span class="m m-Double">1e-4</span>
+<span class="nb">struct pile property</span><span class="n"> moi</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">2.0e-8</span><span class="n"> moi</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">2.0e-8</span><span class="n"> moi</span><span class="o">-</span><span class="n">polar </span><span class="m m-Double">4.0e-8</span>
+<span class="c">;                        0.25*pi*r^4</span>
+<span class="nb">struct pile property</span><span class="n"> coupling</span><span class="o">-</span><span class="n">cohesion</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1.75e5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                     coupling</span><span class="o">-</span><span class="n">stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">1.12e7</span>
+<span class="nb">struct pile property</span><span class="n"> coupling</span><span class="o">-</span><span class="n">cohesion</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1.75e8</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n">                     coupling</span><span class="o">-</span><span class="n">stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">1.0e10</span>
+<span class="nb">struct pile property</span><span class="n"> coupling</span><span class="o">-</span><span class="n">friction</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">30.0</span>
+<span class="c">; 设置剪切试验（需在顶部节点固定局部节点坐标轴， </span>
+<span class="c">; 以避免坐标轴随单元转动）</span>
+<span class="nb">struct node fix</span><span class="n"> system</span><span class="o">-</span><span class="n">local range group </span><span class="s">'Top'</span>
+<span class="nb">struct node initialize</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">1e-6</span><span class="n"> local range group </span><span class="s">'Top'</span>
+<span class="nb">struct node fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x range group </span><span class="s">'Top'</span>
+<span class="c">; 用于计算网格上作用力的 FISH 函数</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> bGroup </span><span class="p">=</span><span class="ni"> </span><span class="k">gp.isGroup</span><span class="p">(::</span><span class="k">gp.list</span><span class="p">,</span><span class="s">'Bottom'</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> wGroup </span><span class="p">=</span><span class="ni"> </span><span class="k">gp.isGroup</span><span class="p">(::</span><span class="k">gp.list</span><span class="p">,</span><span class="s">'West'</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> eGroup </span><span class="p">=</span><span class="ni"> </span><span class="k">gp.isGroup</span><span class="p">(::</span><span class="k">gp.list</span><span class="p">,</span><span class="s">'East'</span><span class="p">)</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> gplist </span><span class="p">=</span><span class="ni"> </span><span class="k">gp.list</span><span class="p">(</span><span class="ni">bGroup </span><span class="o">|</span><span class="ni"> wGroup </span><span class="o">|</span><span class="ni"> eGroup</span><span class="p">)</span><span class="ni">]</span>
+<span class="nb">fish define</span><span class="ni"> force</span>
+<span class="ni">    return </span><span class="k">list.sum</span><span class="p">(</span><span class="k">gp.force.unbal.x</span><span class="p">(::</span><span class="ni">gplist</span><span class="p">))</span>
+<span class="nb">end</span>
+<span class="c">; 设置用于监测模型响应的历程</span>
+<span class="nb">history interval</span><span class="n"> </span><span class="m m-Double">100</span>
+<span class="nb">fish history</span><span class="n"> name </span><span class="s">'force'</span><span class="n"> force</span>
+<span class="nb">struct node history</span><span class="n"> name </span><span class="s">'disp'</span><span class="n"> displacement</span><span class="o">-</span><span class="n">x position </span><span class="p">(</span><span class="m m-Double">0.15</span><span class="p">,</span><span class="m m-Double">0.15</span><span class="p">,</span><span class="m m-Double">0.628</span><span class="p">)</span>
+<span class="c">; 实现 2.0 cm 的总位移</span>
+<span class="nb">program warning</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">20000</span>
+<span class="nb">program warning</span><span class="n"> </span><span class="sx">on</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'shear-2'</span>
+</pre></div>
+</div>
+<p class="endnotesection rubric">尾注</p>
+<table class="docutils footnote" frame="void" id="id3" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td><p class="first">要在 <span class="codename">FLAC3D</span> 中查看该项目，请使用程序菜单。</p>
+<p><span class="menuselection">帮助 ▼ 算例…</span></p>
+<p class="last">  ⮡   FLAC <br/>
+    ⮡   ExampleApplications <br/>
+      ⮡   PullTestsRock… <br/>
+        ⮡   PullTestsRockReinforcement.prj <br/>（项目文件结构）</p>
+</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id4" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>Hyett 等（1992）对该效应进行了一定程度的探讨。</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../../docproject/source/flac3dhome.html"><span class="codename">FLAC3D</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../../docproject/source/projects/projects.html">Examples</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../../../../docproject/source/projects/examples/examples.html">Example Applications</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../../../../zone/test3d/ExampleApplications/CavityExpansion/cavityexpansion.html" title="previous chapter"> Undrained Cylindrical Cavity Expansion in a Cam-Clay Medium</a> |    
+       <a href="../WheelLoadOverBuriedPipe/wheelloadburiedpipe.html" title="next chapter">Wheel Load over a Buried Pipe</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Simulation of Pull-Tests for Fully Bonded Rock Reinforcement" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

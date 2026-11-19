@@ -1,0 +1,381 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>黏结材料的冲头压入 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="../../../../../pfc/wallsel/test3d/ExampleApplications/SleevedTriaxialTest/SleevedTriaxialTest.html" rel="next" title="Sleeved Triaxial Test of a Bonded Material"/>
+<link href="../../../../../flac3d/zone/test3d/ExampleApplications/HorizontalCut/horizontalcut.html" rel="prev" title="Subsidence above Horizontal Cut"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="punch-indentation-of-a-bonded-material">
+<span id="punchindentation"></span><h1>黏结材料的冲头压入</h1>
+<p class="h2 rubric">问题描述</p>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">要在程序中查看本项目，请使用菜单命令 <span class="menuselection">帮助 ► 算例…</span>。选择“工程应用算例/PunchIndentation”，再选择“PunchIndentation.f3prj”以载入。
+所用的<a class="reference internal" href="#punchdata"><span class="std std-ref">主数据文件</span>（main data files）</a>见本算例末尾。其余数据文件可在项目中找到。</p>
+</div>
+<p>本算例演示黏结颗粒模型（BPM）在被圆形冲头压缩时的压入响应。采用 <span class="codename">PFC</span> 研究此类模型时需要：1）使用规模较大的 <span class="codename">PFC</span> 球体集合，以确保远离压入位置处的材料响应真实；2）用 <span class="codename">PFC</span> 墙体表示冲头本体。由于冲头压入区域之外需要大量球体，这种做法计算开销较大。此外，由于墙体只能作为刚性边界，因此无法在 <span class="codename">PFC</span> 中评估冲头的应力／变形。</p>
+<p><a href="#punch-problem">图 1（Figure  1）</a>给出模型几何形状。将一片区域的网格单元设为空单元，并在该区域内生成 BPM。虽然 BPM 区域较小且球体尺寸较大，但本算例仍有效演示了 <span class="codename">PFC</span> 与 <span class="codename">FLAC3D</span> 模型的耦合机理。如<a class="reference internal" href="../../../../../common/docproject/source/manual/coupling/schemes/wallzone/wallzone.html#wallzone"><span class="std std-ref">墙-网格单元耦合方案</span>（Wall-Zone Coupling Scheme）</a>一节所述，<span class="codename">PFC</span> 墙体从属于表面网格单元。<a href="#punch-walls">图 2（Figure  2）</a>给出 <span class="codename">PFC</span> 墙体以及容纳全部 <span class="codename">PFC</span> 模型组件的模型域。接触存在于 <span class="codename">PFC</span> 球体与墙体面之间；每个球体-墙体面接触处的接触力和力矩用于确定等效力系，并施加到对应的网格单元网格点。</p>
+<div class="figure align-center" id="id1">
+<span id="punch-problem"></span><a class="reference internal image-reference" href="../../../../../_images/punch-initial-geom-with-punch.png"><img alt="../../../../../_images/punch-initial-geom-with-punch.png" src="../../../../../_images/punch-initial-geom-with-punch.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 1：在网格单元空腔内生成 BPM 后 <span class="codename">PFC</span> 球体与 <span class="codename">FLAC3D</span> 网格单元的几何形状。</span></p>
+</div>
+<div class="figure align-center" id="id2">
+<span id="punch-walls"></span><a class="reference internal image-reference" href="../../../../../_images/punch-initial-walls.png"><img alt="../../../../../_images/punch-initial-walls.png" src="../../../../../_images/punch-initial-walls.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 2：<span class="codename">PFC</span> 墙体，由 <a class="reference internal" href="../../../../../common/docproject/source/manual/coupling/schemes/wallzone/commands/wallzone/cmd_wallzone.create.html#command:wall-zone.create" title="Wrap |flac3d| zones with |pfc| walls. |pfc| walls are, by definition, edge-connected
+sets of triangular facets without any non-manifold conditions (i.e., facets
+penetrating one another, multiple facets sharing one edge, etc). The provided
+ range  is applied to |flac3d| zones, filtering the zones that are considered
+for wrapping. Only zone faces that are considered surfaces are wrapped by wall
+facets by default. In this context, a surface is either an exterior zone face
+(i.e., a face..."><code class="xref fish fish-cmd docutils literal"><span class="pre">wall-zone</span> <span class="pre">create</span></code></a> 命令创建。</span></p>
+</div>
+<p class="h2 rubric">耦合 <span class="codename">PFC</span>-<span class="codename">FLAC3D</span> 模型</p>
+<p>在创建耦合 <span class="codename">PFC</span>-<span class="codename">FLAC3D</span> 模型之前，必须先加载 <span class="codename">PFC</span> 模块。这些模块是
+包含用于实例化所有 <span class="codename">PFC</span> 相关模型组件的代码的 DLL。此外，还有一组模块用于将 <span class="codename">PFC</span> 墙与 <span class="codename">FLAC3D</span> 网格单元和基于壳的结构单元耦合。默认情况下，打开 <span class="codename">FLAC3D</span> 应用程序时不加载这些模块。可通过 <span class="menuselection">Tools ► Load PFC</span> 菜单项或以下命令加载这些模块：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">program load</span><span class="n"> module </span><span class="s">'contact'</span>
+<span class="nb">program load</span><span class="n"> module </span><span class="s">'pfc'</span>
+<span class="nb">program load</span><span class="n"> guimodule </span><span class="s">'pfc'</span>
+<span class="nb">program load</span><span class="n"> module </span><span class="s">'pfcthermal'</span>
+<span class="nb">program load</span><span class="n"> guimodule </span><span class="s">'pfcthermal'</span>
+<span class="nb">program load</span><span class="n"> module </span><span class="s">'ccfd'</span>
+<span class="nb">program load</span><span class="n"> guimodule </span><span class="s">'ccfd'</span>
+<span class="nb">program load</span><span class="n"> module </span><span class="s">'wallsel'</span>
+<span class="nb">program load</span><span class="n"> module </span><span class="s">'wallzone'</span>
+</pre></div>
+</div>
+<p>项目在加载任何附加模块后保存一次后，再次打开该项目时将自动加载这些模块。请注意，附加模块会保持加载状态，直到关闭 <span class="codename">FLAC3D</span> 应用程序。</p>
+<p><span class="codename">PFC</span> 球体在设为空单元的 <span class="codename">FLAC3D</span> 网格单元区域内生成。为使每次运行数据文件时都生成相同的初始球体云，采用 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.random.html#command:model.random" title="Set the seed for the random-number generator. By default  i  =  10,000 .
+The...">设置随机数种子命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">random</span></code>）</a> 命令将随机种子初始化为指定值。改变随机种子会得到不同的球体实现，但从统计意义上讲，各实现是相同的。与网格单元和结构单元不同，所有 <span class="codename">PFC</span> 模型组件（即球体、刚性团簇、墙体和接触）只能存在于用户指定的模型域内（见 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.domain.html#command:model.domain" title="Specify the domain boundaries and conditions.  DFN fractures only exist within
+the domain extent...">设置模型域命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">domain</span></code>）</a> 命令）。这一限制使接触检测和空间搜索得以简化和优化。由于 <span class="codename">PFC</span> 始终以大应变模式运行，必须为网格单元和结构单元显式激活大应变模式（见 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.largestrain.html#command:model.large-strain" title="Sets the program to use the numerical formulation for large-strain deformation.
+ The default is  off .  See the section ref-Large- and Small-Strain Modes
+&lt;largeandsmallstrainmodes&gt;- for discussion of the additional calculations done
+in this formulation.   [cs: has Common trouble]...">设置大变形模式命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">large-strain</span></code>）</a> 命令）。<span class="codename">PFC</span> 默认使用球体和刚性团簇的真实惯性特性求解动力运动方程。在本模型中，我们希望 <span class="codename">PFC</span> 采用时间步缩放方式运行（见 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.mechanical.html#command:model.mechanical" title="Set parameters for a mechanical analysis. The activity can be directly specified
+by providing  b ...">设置力学分析参数命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">mechanical</span></code>）</a> 命令），该方式与 <span class="codename">FLAC3D</span> 的默认行为相似。</p>
+<p>完成这些准备步骤后，我们开始创建初始模型。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;创建网格单元底座供球体置于其中</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">35</span><span class="n"> </span><span class="m m-Double">35</span><span class="n"> </span><span class="m m-Double">35</span><span class="n"> point </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4.5</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4.5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                point </span><span class="m m-Double">2</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4.5</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> group </span><span class="s">'bed'</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">zone property</span><span class="n"> young </span><span class="ni">[materialMod]</span><span class="n"> poisson </span><span class="m m-Double">0.25</span>
+<span class="nb">zone cmodel</span><span class="n"> null </span><span class="sx">...</span>
+<span class="n">            range position</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">1.5</span><span class="n"> </span><span class="m m-Double">1.5</span><span class="n"> position</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">1.5</span><span class="n"> </span><span class="m m-Double">1.5</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="c">;在球体充填该区域的过程中 - </span>
+<span class="c">;在球体沉降时固定网格点运动</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span>
+
+<span class="c">;用墙体包裹底座</span>
+<span class="nb">wall-zone create</span><span class="n"> name </span><span class="s">'bed'</span><span class="n"> starting</span><span class="o">-</span><span class="n">zone </span><span class="m m-Double">30013</span>
+<span class="c">;在顶部创建一道墙 </span>
+<span class="nb">wall generate</span><span class="n"> name </span><span class="s">'top'</span><span class="n"> plane position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span>
+
+<span class="c">;生成任意重叠的球体集合  </span>
+<span class="nb">ball distribute</span><span class="n"> porosity </span><span class="m m-Double">0.4</span><span class="n"> box </span><span class="o">-</span><span class="m m-Double">1.5</span><span class="n"> </span><span class="m m-Double">1.5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1.5</span><span class="n"> </span><span class="m m-Double">1.5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> radius </span><span class="m m-Double">0.04</span><span class="n"> </span><span class="m m-Double">0.06</span>
+
+<span class="c">;设置球体密度与局部阻尼系数</span>
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="m m-Double">2600</span><span class="n"> damp </span><span class="m m-Double">0.7</span>
+<span class="c">;设置默认接触行为 - </span>
+<span class="c">;deformability 法用于设置接触模型 </span>
+<span class="c">;线性部分的参数</span>
+<span class="nb">contact cmat</span><span class="n"> default model linearpbond method deformability </span><span class="sx">...</span>
+<span class="n">                   emod </span><span class="ni">[materialMod]</span><span class="n"> kratio </span><span class="m m-Double">1.0</span><span class="n"> </span>
+<span class="c">;允许球体重新排列，并将线速度 </span>
+<span class="c">;与角速度每 100 个循环清零</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span><span class="n"> calm </span><span class="m m-Double">100</span>
+<span class="c">;删除飞出底座的球体</span>
+<span class="nb">ball delete</span><span class="n"> range position </span><span class="o">-</span><span class="m m-Double">1.5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1.5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2</span><span class="n">  </span><span class="m m-Double">1.5</span><span class="n"> </span><span class="m m-Double">1.5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> not</span>
+</pre></div>
+</div>
+<p>采用 <a class="reference internal" href="../../../../../flac3d/zone/doc/manual/zone_manual/zone_commands/cmd_zone.create.html#command:zone.create" title="The  zone.create  command fills primitive shapes (  brick ,  cylinder ,
+etc.) with a predefined grid pattern..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">create</span></code></a> 命令创建简单的网格单元层，并将 BPM 将占据的区域设为空单元。由于生成的球体存在任意重叠，在球体重新排列期间固定所有网格点速度。采用 <a class="reference internal" href="../../../../../common/docproject/source/manual/coupling/schemes/wallzone/commands/wallzone/cmd_wallzone.create.html#command:wall-zone.create" title="Wrap |flac3d| zones with |pfc| walls. |pfc| walls are, by definition, edge-connected
+sets of triangular facets without any non-manifold conditions (i.e., facets
+penetrating one another, multiple facets sharing one edge, etc). The provided
+ range  is applied to |flac3d| zones, filtering the zones that are considered
+for wrapping. Only zone faces that are considered surfaces are wrapped by wall
+facets by default. In this context, a surface is either an exterior zone face
+(i.e., a face..."><code class="xref fish fish-cmd docutils literal"><span class="pre">wall-zone</span> <span class="pre">create</span></code></a> 命令将墙体面包裹在表面网格单元面上。如<a href="#punch-walls">图 2（Figure  2）</a>所示，墙体不超出模型域。另采用 <a class="reference internal" href="../../../../../pfc/pfcmodule/doc/manual/wall_manual/wall_commands/cmd_wall_generate.html#command:wall.generate" title="Generate walls with specified shapes. The wall shapes include: {box, circle,
+and point in 2D; box, cone, cylinder, disk, line, plane, point, polygon, and
+sphere in 3D}..."><code class="xref fish fish-cmd docutils literal"><span class="pre">wall</span> <span class="pre">generate</span></code></a> 命令创建一面额外的墙体以封闭空腔。</p>
+<p><span class="codename">PFC</span> 球体和刚性团簇既可以在无初始重叠的情况下生成，也可以在存在任意初始重叠的情况下生成。在本例中，采用 <a class="reference internal" href="../../../../../pfc/pfcmodule/doc/manual/ball_manual/ball_commands/cmd_ball.distribute.html#command:ball.distribute" title="Distribute balls with overlaps..."><code class="xref fish fish-cmd docutils literal"><span class="pre">ball</span> <span class="pre">distribute</span></code></a> 命令在平行六面体体积内按指定体积分数生成存在任意重叠的球体云。随后为球体赋予属性，并使用 <code class="xref fish fish-cmd docutils literal"><span class="pre">contact</span> <span class="pre">cmat</span></code> 命令指定接触模型行为。完成这些步骤后，即可允许球体重新排列。<span class="cmdkey">calm</span> 关键字（位于 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.cycle.html#command:model.cycle" title="Execute timesteps. The synonym  model.step  may also be used.  This is
+the equivalent of calling  model.solve  with the  cycles  keyword
+set to  i ...">执行计算时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">cycle</span></code>）</a> 命令中）用于定期从系统中移除全部动能。最后，删除所有已逸出生成区域的球体。</p>
+<p>至此，颗粒材料已转换为 BPM。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;按指定间隙将球体黏结在一起</span>
+<span class="nb">contact method</span><span class="n"> bond gap </span><span class="m m-Double">2.0e-3</span>
+<span class="c">;通过 pb_deform 法设置平行黏结参数</span>
+<span class="nb">contact method</span><span class="n"> pb_deform emod </span><span class="ni">[materialMod]</span><span class="n"> kratio </span><span class="m m-Double">1.0</span>
+<span class="c">;移除接触参数中的线性部分</span>
+<span class="c">;并设置接触强度</span>
+<span class="c">;该材料强度相对较低</span>
+<span class="nb">contact property</span><span class="n"> lin_mode </span><span class="m m-Double">1</span><span class="n"> pb_ten </span><span class="m m-Double">2e4</span><span class="n"> pb_coh </span><span class="m m-Double">2e5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">        range contact type </span><span class="s">'ball-ball'</span>
+<span class="c">;将球-面片接触强度设得很高</span>
+<span class="nb">contact property</span><span class="n"> lin_mode </span><span class="m m-Double">1</span><span class="n"> pb_ten </span><span class="m m-Double">1e100</span><span class="n"> pb_coh </span><span class="m m-Double">1e100</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">        range contact type </span><span class="s">'ball-facet'</span>
+<span class="c">;移除盒子</span>
+<span class="nb">wall delete</span><span class="n"> wall range name </span><span class="s">'top'</span>
+<span class="c">;设置新建球-球与球-面片接触的默认行为</span>
+<span class="nb">contact cmat</span><span class="n"> default model linear type ball</span><span class="o">-</span><span class="n">ball method deformability </span><span class="sx">...</span>
+<span class="n">                   emod </span><span class="ni">[materialMod]</span><span class="n"> kratio </span><span class="m m-Double">1.0</span><span class="n"> property fric </span><span class="m m-Double">0.3</span>
+<span class="nb">contact cmat</span><span class="n"> default model linear type ball</span><span class="o">-</span><span class="n">facet method deformability </span><span class="sx">...</span>
+<span class="n">                   emod </span><span class="ni">[materialMod]</span><span class="n"> kratio </span><span class="m m-Double">1.0</span><span class="n"> property fric </span><span class="m m-Double">0.3</span>
+<span class="c">;清除所有速度，固定球体， </span>
+<span class="c">;循环 2 步，以清除先前由 </span>
+<span class="c">;简单堆积过程产生的接触力</span>
+<span class="nb">model calm</span>
+<span class="nb">ball fix</span><span class="n"> velocity spin</span>
+<span class="nb">ball attribute</span><span class="n"> force</span><span class="o">-</span><span class="n">contact multiply </span><span class="m m-Double">0.0</span>
+<span class="nb">contact property</span><span class="n"> lin_force </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">2</span>
+<span class="nb">ball free</span><span class="n"> velocity spin</span>
+</pre></div>
+</div>
+<p>采用 <a class="reference internal" href="../../../../../common/contact/doc/contact_manual/contact_commands/cmd_contact.method.html#command:contact.method" title="Call a contact method. The method, along with its specific list of pairs of
+argument names and values, is invoked..."><code class="xref fish fish-cmd docutils literal"><span class="pre">contact</span> <span class="pre">method</span></code></a> 命令安装平行黏结。此外，还通过同一命令设置平行黏结属性。接触方法是对接触执行某项任务的一组操作，可能会修改多个接触属性。在本例中，<span class="cmdkey">pb_deform</span> 方法设置 <a class="reference internal" href="../../../../../common/contactmodel/linearpbond/doc/manual/cmlinearpbond.html#cmlinearpbond"><span class="std std-ref">线性平行黏结</span>（linear
+parallel bond）</a> 接触模型的 <span class="cmdkey">pb_kn</span> 和 <span class="cmdkey">pb_ks</span> 属性。同时为球体-球体接触和球体-墙体面接触赋予平行黏结强度。需要特别注意的是，球体-墙体面平行黏结强度被设为很大的值，以确保边界处的球体与其相邻网格单元保持黏结。指定 <span class="cmdkey">lin_mode</span> = 1 表示对该 BPM 而言，所有力均按增量累积；在此命令之前，力是由球体-球体接触和球体-墙体面接触的绝对重叠量产生的。这样即可快速生成无内部应力的 BPM。为此，将球体速度和自转清零并固定，使若干个计算循环内不产生新的接触力。此外还必须将接触模型中存储的接触力设为 0。由此，BPM 处于无内部应力的平衡状态。</p>
+<p>至此建模阶段，已在较大 <span class="codename">FLAC3D</span> 模型的空腔内生成无应力的 BPM。部分球体与对应于自由网格单元面的墙体面黏结。这些接触处产生的力／力矩会自动传递到相关联的网格单元网格点，使 BPM 与连续体模型能够自然相互作用。</p>
+<p class="h2 rubric">结果与讨论</p>
+<p>开始循环后，球体在冲头所施加压力的作用下开始位移。冲头压入指定距离，随后将模型求解至指定的平均比率。<a href="#punch-surf-before">图 3（Figure  3）</a>和 <a href="#punch-xc-before">图 4（Figure  4）</a>分别给出球体和网格单元的表面位移与横截面位移。可见 BPM 区域与连续体区域之间的位移是连续的。此外，由于断裂的黏结很少，BPM 的行为与连续体相似，因此位移场呈对称分布。<a href="#con-xc-before">图 5（Figure  5）</a>给出模拟至此已断裂的少数黏结所在位置。</p>
+<div class="figure align-center" id="id3">
+<span id="punch-surf-before"></span><a class="reference internal image-reference" href="../../../../../_images/punch-before-failure-surf.png"><img alt="../../../../../_images/punch-before-failure-surf.png" src="../../../../../_images/punch-before-failure-surf.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 3：BPM 发生大规模破坏前球体和网格单元的表面位移。</span></p>
+</div>
+<div class="figure align-center" id="id4">
+<span id="punch-xc-before"></span><a class="reference internal image-reference" href="../../../../../_images/punch-before-failure-xc.png"><img alt="../../../../../_images/punch-before-failure-xc.png" src="../../../../../_images/punch-before-failure-xc.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 4：BPM 发生大规模破坏前球体和网格单元位移的横截面。</span></p>
+</div>
+<div class="figure align-center" id="id5">
+<span id="con-xc-before"></span><a class="reference internal image-reference" href="../../../../../_images/punch-before-failure-broken-bonds.png"><img alt="../../../../../_images/punch-before-failure-broken-bonds.png" src="../../../../../_images/punch-before-failure-broken-bonds.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 5：BPM 发生大规模破坏前已断裂的黏结。</span></p>
+</div>
+<p>随后，冲头再向 BPM 内压入一段距离。
+<a href="#punch-surf-after">图 6（Figure  6）</a>和 <a href="#punch-xc-after">图 7（Figure  7）</a>分别给出冲头进一步移动后的表面位移与横截面位移。与上文所示位移相比，冲头继续压入时，远离冲头处的位移明显减小。<a href="#con-xc-after">图 8（Figure  8）</a>给出冲头进一步压入时已断裂黏结的位置。此时，整体 BPM 已发生破坏，并伴随局部黏结断裂。因此，球体重新排列，远离压入位置处的位移显著减小。</p>
+<div class="figure align-center" id="id6">
+<span id="punch-surf-after"></span><a class="reference internal image-reference" href="../../../../../_images/punch-after-failure-surf.png"><img alt="../../../../../_images/punch-after-failure-surf.png" src="../../../../../_images/punch-after-failure-surf.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 6：BPM 发生大规模破坏后球体和网格单元的表面位移。</span></p>
+</div>
+<div class="figure align-center" id="id7">
+<span id="punch-xc-after"></span><a class="reference internal image-reference" href="../../../../../_images/punch-after-failure-xc.png"><img alt="../../../../../_images/punch-after-failure-xc.png" src="../../../../../_images/punch-after-failure-xc.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 7：BPM 发生大规模破坏后球体和网格单元位移的横截面。</span></p>
+</div>
+<div class="figure align-center" id="id8">
+<span id="con-xc-after"></span><a class="reference internal image-reference" href="../../../../../_images/punch-after-failure-broken-bonds.png"><img alt="../../../../../_images/punch-after-failure-broken-bonds.png" src="../../../../../_images/punch-after-failure-broken-bonds.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 8：BPM 发生大规模破坏后已断裂的黏结。</span></p>
+</div>
+<p>破坏后不仅位移会发生显著变化，冲头中的应力也显著降低。<a href="#punch-stress-before">图 9（Figure  9）</a>和 <a href="#punch-stress-after">图 10（Figure  10）</a>分别给出整体破坏前、后量测的总应力。此时 BPM 抵抗压入的能力已明显降低。</p>
+<div class="figure align-center" id="id9">
+<span id="punch-stress-before"></span><a class="reference internal image-reference" href="../../../../../_images/punch-before-failure-stress.png"><img alt="../../../../../_images/punch-before-failure-stress.png" src="../../../../../_images/punch-before-failure-stress.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 9：BPM 发生大规模破坏前量测的总应力。</span></p>
+</div>
+<div class="figure align-center" id="id10">
+<span id="punch-stress-after"></span><a class="reference internal image-reference" href="../../../../../_images/punch-after-failure-stress.png"><img alt="../../../../../_images/punch-after-failure-stress.png" src="../../../../../_images/punch-after-failure-stress.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 10：BPM 发生大规模破坏后量测的总应力。</span></p>
+</div>
+<p class="h2 rubric" id="punchdata">数据文件</p>
+<p>PunchIndentation.dat</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;-------------------------------------------------------------------</span>
+<span class="c">;                黏结材料的冲压 </span>
+<span class="c">;                三轴试验</span>
+<span class="c">;-------------------------------------------------------------------</span>
+<span class="nb">model new</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'Punch Indentation of a Bonded Material'</span>
+<span class="c">;通过设置随机数种子使结果可重复 </span>
+<span class="nb">model random</span><span class="n"> </span><span class="m m-Double">10001</span>
+<span class="c">;设置 PFC 球体与墙体的模型域</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">2</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">2</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2.5</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> condition destroy</span>
+<span class="c">;耦合模拟中必须始终开启大应变模式</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="c">;施加时间步缩放，使 PFC 时间步为 1</span>
+<span class="nb">model mechanical</span><span class="n"> timestep scale</span>
+
+<span class="c">;定义 DEM 材料的等效模量 - </span>
+<span class="c">; 并将其同时作为底座网格单元的杨氏模量</span>
+<span class="ni">[materialMod </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0e6</span><span class="ni">]</span>
+<span class="c">;定义构成冲头的网格单元的杨氏模量</span>
+<span class="ni">[punchYoung </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1.0e7</span><span class="ni">]</span>
+
+<span class="c">;创建网格单元底座供球体置于其中</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">35</span><span class="n"> </span><span class="m m-Double">35</span><span class="n"> </span><span class="m m-Double">35</span><span class="n"> point </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4.5</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4.5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                point </span><span class="m m-Double">2</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4.5</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> group </span><span class="s">'bed'</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">zone property</span><span class="n"> young </span><span class="ni">[materialMod]</span><span class="n"> poisson </span><span class="m m-Double">0.25</span>
+<span class="nb">zone cmodel</span><span class="n"> null </span><span class="sx">...</span>
+<span class="n">            range position</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">1.5</span><span class="n"> </span><span class="m m-Double">1.5</span><span class="n"> position</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">1.5</span><span class="n"> </span><span class="m m-Double">1.5</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span>
+<span class="c">;在球体充填该区域的过程中 - </span>
+<span class="c">;在球体沉降时固定网格点运动</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span>
+
+<span class="c">;用墙体包裹底座</span>
+<span class="nb">wall-zone create</span><span class="n"> name </span><span class="s">'bed'</span><span class="n"> starting</span><span class="o">-</span><span class="n">zone </span><span class="m m-Double">30013</span>
+<span class="c">;在顶部创建一道墙 </span>
+<span class="nb">wall generate</span><span class="n"> name </span><span class="s">'top'</span><span class="n"> plane position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span>
+
+<span class="c">;生成任意重叠的球体集合  </span>
+<span class="nb">ball distribute</span><span class="n"> porosity </span><span class="m m-Double">0.4</span><span class="n"> box </span><span class="o">-</span><span class="m m-Double">1.5</span><span class="n"> </span><span class="m m-Double">1.5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1.5</span><span class="n"> </span><span class="m m-Double">1.5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> radius </span><span class="m m-Double">0.04</span><span class="n"> </span><span class="m m-Double">0.06</span>
+
+<span class="c">;设置球体密度与局部阻尼系数</span>
+<span class="nb">ball attribute</span><span class="n"> density </span><span class="m m-Double">2600</span><span class="n"> damp </span><span class="m m-Double">0.7</span>
+<span class="c">;设置默认接触行为 - </span>
+<span class="c">;deformability 法用于设置接触模型 </span>
+<span class="c">;线性部分的参数</span>
+<span class="nb">contact cmat</span><span class="n"> default model linearpbond method deformability </span><span class="sx">...</span>
+<span class="n">                   emod </span><span class="ni">[materialMod]</span><span class="n"> kratio </span><span class="m m-Double">1.0</span><span class="n"> </span>
+<span class="c">;允许球体重新排列，并将线速度 </span>
+<span class="c">;与角速度每 100 个循环清零</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span><span class="n"> calm </span><span class="m m-Double">100</span>
+<span class="c">;删除飞出底座的球体</span>
+<span class="nb">ball delete</span><span class="n"> range position </span><span class="o">-</span><span class="m m-Double">1.5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1.5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">2</span><span class="n">  </span><span class="m m-Double">1.5</span><span class="n"> </span><span class="m m-Double">1.5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> not</span>
+
+<span class="c">;按指定间隙将球体黏结在一起</span>
+<span class="nb">contact method</span><span class="n"> bond gap </span><span class="m m-Double">2.0e-3</span>
+<span class="c">;通过 pb_deform 法设置平行黏结参数</span>
+<span class="nb">contact method</span><span class="n"> pb_deform emod </span><span class="ni">[materialMod]</span><span class="n"> kratio </span><span class="m m-Double">1.0</span>
+<span class="c">;移除接触参数中的线性部分</span>
+<span class="c">;并设置接触强度</span>
+<span class="c">;该材料强度相对较低</span>
+<span class="nb">contact property</span><span class="n"> lin_mode </span><span class="m m-Double">1</span><span class="n"> pb_ten </span><span class="m m-Double">2e4</span><span class="n"> pb_coh </span><span class="m m-Double">2e5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">        range contact type </span><span class="s">'ball-ball'</span>
+<span class="c">;将球-面片接触强度设得很高</span>
+<span class="nb">contact property</span><span class="n"> lin_mode </span><span class="m m-Double">1</span><span class="n"> pb_ten </span><span class="m m-Double">1e100</span><span class="n"> pb_coh </span><span class="m m-Double">1e100</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">        range contact type </span><span class="s">'ball-facet'</span>
+<span class="c">;移除盒子</span>
+<span class="nb">wall delete</span><span class="n"> wall range name </span><span class="s">'top'</span>
+<span class="c">;设置新建球-球与球-面片接触的默认行为</span>
+<span class="nb">contact cmat</span><span class="n"> default model linear type ball</span><span class="o">-</span><span class="n">ball method deformability </span><span class="sx">...</span>
+<span class="n">                   emod </span><span class="ni">[materialMod]</span><span class="n"> kratio </span><span class="m m-Double">1.0</span><span class="n"> property fric </span><span class="m m-Double">0.3</span>
+<span class="nb">contact cmat</span><span class="n"> default model linear type ball</span><span class="o">-</span><span class="n">facet method deformability </span><span class="sx">...</span>
+<span class="n">                   emod </span><span class="ni">[materialMod]</span><span class="n"> kratio </span><span class="m m-Double">1.0</span><span class="n"> property fric </span><span class="m m-Double">0.3</span>
+<span class="c">;清除所有速度，固定球体， </span>
+<span class="c">;循环 2 步，以清除先前由 </span>
+<span class="c">;简单堆积过程产生的接触力</span>
+<span class="nb">model calm</span>
+<span class="nb">ball fix</span><span class="n"> velocity spin</span>
+<span class="nb">ball attribute</span><span class="n"> force</span><span class="o">-</span><span class="n">contact multiply </span><span class="m m-Double">0.0</span>
+<span class="nb">contact property</span><span class="n"> lin_force </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">2</span>
+<span class="nb">ball free</span><span class="n"> velocity spin</span>
+<span class="c">;固定模型底部网格单元 z 方向速度</span>
+<span class="nb">zone gridpoint free</span><span class="n"> velocity</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z range position</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">5</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">4.4</span>
+<span class="c">;重置球体位移</span>
+<span class="nb">ball attribute</span><span class="n"> displacement multiply </span><span class="m m-Double">0.0</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'withoutPunch'</span>
+
+<span class="c">;创建圆角冲头并为其赋参数</span>
+<span class="nb">zone create</span><span class="n"> cylinder point </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.5</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  point </span><span class="m m-Double">1</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="k">math.sqrt</span><span class="p">(</span><span class="m m-Double">2.0</span><span class="p">)</span><span class="o">/</span><span class="m m-Double">2.0</span><span class="ni">]</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.5</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="k">math.sqrt</span><span class="p">(</span><span class="m m-Double">2.0</span><span class="p">)</span><span class="o">/</span><span class="m m-Double">2.0</span><span class="ni">]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  point </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0.5</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  point </span><span class="m m-Double">3</span><span class="n"> </span><span class="ni">[</span><span class="k">math.sqrt</span><span class="p">(</span><span class="m m-Double">2.0</span><span class="p">)</span><span class="o">/</span><span class="m m-Double">2.0</span><span class="ni">]</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.5</span><span class="n"> </span><span class="ni">[</span><span class="o">-</span><span class="k">math.sqrt</span><span class="p">(</span><span class="m m-Double">2.0</span><span class="p">)</span><span class="o">/</span><span class="m m-Double">2.0</span><span class="ni">]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  size </span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> group </span><span class="s">'punch'</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic range group </span><span class="s">'punch'</span>
+<span class="nb">zone property</span><span class="n"> young </span><span class="ni">[punchYoung]</span><span class="n"> poisson </span><span class="m m-Double">0.25</span><span class="n"> range group </span><span class="s">'punch'</span>
+<span class="c">;用墙体包裹冲头</span>
+<span class="nb">wall-zone create</span><span class="n"> range group </span><span class="s">'punch'</span>
+<span class="c">;为冲头顶部的网格点指定组并固定 z 方向速度</span>
+<span class="nb">zone gridpoint group</span><span class="n"> </span><span class="s">"fixed"</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">0.4</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">.0001</span><span class="n"> range group </span><span class="s">"fixed"</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'withPunch'</span>
+
+<span class="c">;将冲头压入球体，仅使材料发生轻微破坏</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.0</span><span class="n"> range group </span><span class="s">"fixed"</span>
+<span class="c">;求解至平衡状态以显示当前位移</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1.0e-4</span><span class="n"> </span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'beforeFailure'</span>
+
+<span class="c">;压入冲头并观察网格单元位移</span>
+<span class="c">;在破坏开始后减小</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">.0001</span><span class="n"> range group </span><span class="s">"fixed"</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">1000</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.0</span><span class="n"> range group </span><span class="s">"fixed"</span>
+<span class="c">;破坏将持续，颗粒试样将重新排列，</span>
+<span class="c">;使位移减小</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">average </span><span class="m m-Double">1.0e-3</span><span class="n"> </span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'afterFailure'</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../../../flac3d/docproject/source/flac3dhome.html"><span class="codename">FLAC3D</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../../../flac3d/docproject/source/projects/projects.html">Examples</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../../../../../flac3d/docproject/source/projects/examples/examples.html">Example Applications</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../../../../../flac3d/zone/test3d/ExampleApplications/HorizontalCut/horizontalcut.html" title="previous chapter"> Subsidence above Horizontal Cut</a> |    
+       <a href="../../../../../pfc/wallsel/test3d/ExampleApplications/SleevedTriaxialTest/SleevedTriaxialTest.html" title="next chapter">Sleeved Triaxial Test of a Bonded Material</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Punch Indentation of a Bonded Material" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

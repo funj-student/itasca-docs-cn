@@ -1,0 +1,159 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>安全系数等值线 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="../../../../../../common/docproject/source/manual/program_guide/methodology/factorofsafety/references.html" rel="next" title="References"/>
+<link href="../BenchExtrusion/BenchExtrusion.html" rel="prev" title="Automatic Calculation of a Stable Pit Slope Angle"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="hide sectionname docutils container">
+<span class="codename">FLAC3D</span> Theory and Background • Factor of Safety</div>
+<div class="section" id="factor-of-safety-contours">
+<span id="foscontours"></span><h1>安全系数等值线</h1>
+<p class="h2 rubric">问题描述</p>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">要在 <span class="codename">FLAC3D</span> 中查看此工程，请使用菜单命令 <span class="menuselection">帮助 ► 示例…</span>。选择“TheoryAndBackground/FactorOfSafety/ FOSContours”，再选择“FOSContours.f3prj”即可加载。该工程的<a class="reference internal" href="#foscontoursdata"><span class="std std-ref">主数据文件</span>（main data files）</a>在本示例末尾给出。</p>
+</div>
+<p>通常，应用强度折减法时每次模拟只得到一个安全系数，对应一个全局最小稳定状态。不过，计算多个最小状态可能是有意义的，例如对于复杂边坡剖面，如台阶式开挖或带马道的边坡（参见 Cheng 等，2007）。通过一系列采用极限平衡法的分析，可以构建“安全图”，以识别此类边坡的多个可能破坏面（Baker 和 Leshchinsky，2001）。</p>
+<p>用强度折减法确定多个局部稳定状态的简单做法是：在进行强度折减计算时排除边坡的不同区域。</p>
+<p>另外，<span class="codename">FLAC3D</span> 所采用的显式动力求解方法允许在一次 <span class="codename">FLAC3D</span> 模拟中识别多个局部稳定面。使用 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 命令时，对于所测试的每个全局安全系数，都会存储每个网格点的速度大小。这些数据作为模型状态的一部分保存。通过将某网格点的速度数据与限值速度进行比较，可以确定使该特定网格点保持稳定的最大检查安全系数。</p>
+<p>通过使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">bracket-limit</span></code> 关键字，可以保证有足够的测试次数来生成有意义的等值线图。</p>
+<p>确定某个网格点应视为稳定还是不稳定的极限速度，可以在计算完成后进行：检查最后一个不稳定状态的速度，并在安全系数图中尝试不同的取值，直到结果看起来可以接受。</p>
+<p>该技术通过一个由两段双坡角边坡组成的剖面加以演示，两段边坡之间由水平马道分隔。本示例取自 Cheng 等（2007），他们采用 Morgenstern-Price 极限平衡法得到了该边坡的一组局部最小稳定状态。边坡形态及所得的局部极小值位置见 <a href="#foscontours-solution">图 1（Figure  1）</a>。</p>
+<p class="h2 rubric"><span class="codename">FLAC3D</span> Model</p>
+<p>边坡几何在 <em>Extrusion</em> 窗格中绘制，挤出网格的输入记录保存为数据文件“geometry.dat”。边坡位于 <span class="math">\(x\)</span>-<span class="math">\(z\)</span> 平面内，在 <span class="math">\(y\)</span> 方向厚度为一个网格单元。网格密度通过 <a class="reference internal" href="../../../../../extruder/doc/manual/extruder_manual/set/commands/cmd_extrude.set.automatic-zone.html#command:extrude.set.automatic-zone" title="Set automatic zoning of the extrusion set..."><code class="xref fish fish-cmd docutils literal"><span class="pre">extrude</span> <span class="pre">set</span> <span class="pre">automatic-zone</span></code></a> 命令指定。</p>
+<p>首先运行 <span class="codename">FLAC3D</span> 模拟，使用 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 命令确定该边坡的全局最小安全系数。结果（见<a href="#foscontours-fos">图 2（Figure  2）</a> 中的剪应变云图）为全局最小安全系数 1.32，其多重破坏面对应于<a href="#foscontours-solution">图 1（Figure  1）</a> 下部边坡中所示安全系数最小的两个面。使用 <span class="cmdkey">bracket-limit</span> 关键字以保证安全系数测试间隔最小为 <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.05</span></span></a>。</p>
+<div class="figure align-center" id="id1">
+<span id="foscontours-solution"></span><a class="reference internal image-reference" href="../../../../../../_images/foscontours-solution1.png"><img alt="../../../../../../_images/foscontours-solution1.png" src="../../../../../../_images/foscontours-solution1.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 1：带马道边坡极限平衡解的局部极小破坏面（引自 Cheng 等，2007）。</span></p>
+</div>
+<div class="figure align-center" id="id2">
+<span id="foscontours-fos"></span><a class="reference internal image-reference" href="../../../../../../_images/foscontours-fos.png"><img alt="../../../../../../_images/foscontours-fos.png" src="../../../../../../_images/foscontours-fos.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 2：带马道边坡的全局最小安全系数。</span></p>
+</div>
+<p>本示例生成的安全系数云图见<a href="#foscontours-contours">图 3（Figure  3）</a>。该云图与<a href="#foscontours-solution">图 1（Figure  1）</a> 中的局部极小破坏面图吻合相当好。请注意，<a href="#foscontours-contours">图 3（Figure  3）</a> 中的全局最小等值线（安全系数为 1.33）与<a href="#foscontours-solution">图 1（Figure  1）</a> 中最小的局部极小破坏面高度吻合。次一条等值线（在马道下方为 1.35、上方为 1.4）也与<a href="#foscontours-contours">图 3（Figure  3）</a> 中识别出的破坏面吻合良好。安全系数云图还显示出一种等值线形状（例如见<a href="#foscontours-contours">图 3（Figure  3）</a> 中的 1.45 等值线），其在马道下方上弯。请注意，极限平衡法未体现这种对破坏面形状的影响；可与<a href="#foscontours-solution">图 1（Figure  1）</a> 中的 1.42 破坏面进行比较。</p>
+<p>本练习表明，通过监测材料强度逐步折减过程中不稳定区域（由高网格点速度定义）的发展来判别破坏，强度折减法可在一次模拟中给出多个潜在破坏面。</p>
+<div class="figure align-center" id="id3">
+<span id="foscontours-contours"></span><a class="reference internal image-reference" href="../../../../../../_images/foscontours-contours.png"><img alt="../../../../../../_images/foscontours-contours.png" src="../../../../../../_images/foscontours-contours.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 3：带马道边坡的安全系数等值线。</span></p>
+</div>
+<p class="h2 rubric">参考文献</p>
+<p>Baker, R. 与 D. Leshchinsky。“安全系数的空间分布”，<em>J. Geotech. Geoenviron. Eng.</em>，<span class="bi">127</span>(2)，135-45（2001）。</p>
+<p>Cheng, Y.M., T. Lansivaara and W.B. Wei. “Two-dimensional slope stability analysis by limit equilibrium and strength reduction methods,” <em>Computers and Geotechnics</em>, <span class="bi">34</span>, 137-150, 2007.</p>
+<p class="h2 rubric" id="foscontoursdata">数据文件</p>
+<p id="foscontours-bermfos"><strong>BermFOS.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="c">; 在二维拉伸工具中创建几何体，并从状态记录中导出。</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'geometry'</span><span class="n"> suppress</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">extrude set automatic-zone</span><span class="n"> direction construction size </span><span class="m m-Double">160</span>
+<span class="nb">zone generate</span><span class="n"> from</span><span class="o">-</span><span class="n">extrude</span>
+<span class="nb">zone face skin</span><span class="n"> </span><span class="c">; 标记模型边界</span>
+<span class="c">; 分配本构模型和属性</span>
+<span class="nb">zone cmodel</span><span class="n"> assign mohr</span><span class="o">-</span><span class="n">coulomb</span>
+<span class="nb">zone property</span><span class="n"> bulk </span><span class="m m-Double">6.25e6</span><span class="n"> shear </span><span class="m m-Double">2.88462e6</span><span class="n"> density </span><span class="m m-Double">2000</span>
+<span class="nb">zone property</span><span class="n"> cohesion </span><span class="m m-Double">5000</span><span class="n"> friction </span><span class="m m-Double">30</span><span class="n"> tension </span><span class="m m-Double">1e100</span>
+<span class="c">; 指定边界条件</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'East'</span><span class="n"> or </span><span class="s">'West'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'North'</span><span class="n"> or </span><span class="s">'South'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> range group </span><span class="s">'Bottom'</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> elastic convergence </span><span class="m m-Double">1</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'initial'</span>
+<span class="c">; 求解初始安全系数</span>
+<span class="nb">model factor-of-safety</span><span class="n"> convergence </span><span class="m m-Double">10</span><span class="n"> filename </span><span class="s">'Berm'</span><span class="n"> bracket</span><span class="o">-</span><span class="n">limit </span><span class="m m-Double">0.05</span>
+<span class="c">; 保存包含安全系数信息的初始状态</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'final'</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../../../../common/docproject/source/manual/program_guide/program_guide.html">程序指南</a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../../../../common/docproject/source/manual/program_guide/methodology/methodology.html">Modeling Methodology</a> »</li>
+<li class="nav-item nav-item-3"><a href="../../../../../../common/docproject/source/manual/program_guide/methodology/factorofsafety/factorofsafety.html">Factor of Safety</a> »</li>
+<li class="nav-item nav-item-4"><a accesskey="U" href="../../../../../../common/docproject/source/manual/program_guide/methodology/factorofsafety/fosexample.html">Example Factor of Safety Calculations using the Strength Reduction Method</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../BenchExtrusion/BenchExtrusion.html" title="previous chapter"> Automatic Calculation of a Stable Pit Slope Angle</a> |    
+       <a href="../../../../../../common/docproject/source/manual/program_guide/methodology/factorofsafety/references.html" title="next chapter">References</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Factor of Safety Contours" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

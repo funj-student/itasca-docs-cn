@@ -1,0 +1,410 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>动力力学模拟流程：土坝地基 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="../DamFoundationWet/damfoundationwet.html" rel="next" title="Procedure for Dynamic Coupled Mechanical/Groundwater Simulations: Dam Foundation Wet"/>
+<link href="../../../../docproject/source/options/dynamic/solving/solving.html" rel="prev" title="Solving Dynamic Problems"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<span class="target" id="damfoundation"></span><div class="section" id="procedure-for-dynamic-mechanical-simulations-dam-foundation">
+<span id="dynamic-procedure-mech"></span><h1>动力力学模拟流程：土坝地基</h1>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">要在 <span class="codename">FLAC3D</span> 中查看此项目，请使用菜单命令 <span class="menuselection">帮助 ‣ 示例…</span>。选择“Dynamic/DamFoundation”并选择“DamFoundation.f3prj”以加载。
+所用主数据文件<a class="reference internal" href="#damfoundationdata"><span class="std std-ref">见本示例末尾</span>（main data files）</a>。其余数据文件可在项目中找到。</p>
+</div>
+<p>采用陡峭河谷中土坝的简单模型来说明动力力学分析中
+使用的大多数功能。该坝高 30 m、宽 60 m，坝顶水平段宽 20 m；
+上、下游边坡坡度为 2:1。假定坝体材料可以破坏，
+而河床地基材料不会因施加的地震荷载而破坏。为便于快速执行，
+该模型作了大幅简化，但很容易扩展用于表示真实土坝（例如具有更
+复杂的内部结构）。</p>
+<p>首先描述达到初始平衡状态的各个阶段，然后描述动力分析中的
+四个组成部分，这些内容在<a class="reference internal" href="#dynamic-procedure-mech"><span class="std std-ref">动力力学模拟流程</span>（Procedure for Dynamic Mechanical Simulations）</a>中有所提及。</p>
+<p class="h2 rubric">网格生成</p>
+<p>用于建立网格的数据文件为“<a class="reference internal" href="#damfoundation-gengrid">GenGrid.dat 数据文件（<span class="std std-ref">GenGrid.dat</span>）</a>”。
+该文件进而调用“Geometry.dat”，后者是使用 <em>块体构建</em> 窗格交互生成
+并从 <em>状态记录</em> 窗格导出的。生成的网格图
+示于 <a href="#damfoundation-grid">图  1（Figure  1）</a>。以绿色显示的土坝坐落在以蓝色阴影显示的
+河床地基材料上。两者均处于表示 45° 边坡对称河谷的边界平面之内。
+就本示例而言，假定河谷材料比坝体和地基材料刚硬得多，因此将其视为
+刚性边界。它由固定边界表示，而不是单独的网格。</p>
+<p>地基材料在两端（两个 <span class="math">\(x\)</span> 方向的边界）被简单截断；
+在更真实的模型中，这些边界应设置得更远。
+请注意，该网格在文件开头即配置为动力模拟
+（<a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.dynamic" title="Fully dynamic analysis*...">模型配置动力分析命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">dynamic</span></code>）</a>），但在初始静力阶段动力运行模式处于“关闭”状态
+（<a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.dynamic.html#kwd:model.dynamic.active" title="The dynamic process is  on , by default, when the  model.configure.dynamic 
+command is given. Specify  active   off  to suppress dynamic calculations...">模型动力活动命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">dynamic</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>）。</p>
+<p>该网格中最大网格单元尺寸约为 12 m。如<a class="reference internal" href="#damfoundation-dynamic-conditions"><span class="std std-ref">动力
+条件与模拟</span>（Dynamic
+Conditions and Simulation）</a>中所述，该尺寸足以
+准确模拟模型中的波传播。坝体网格划分得比
+河床地基更细，以便合理表示坝内可能形成的破坏区。
+细网格坝体通过 <a class="reference internal" href="../../../doc/manual/zone_manual/zone_commands/cmd_zone.attach.html#kwd:zone.attach.by-face" title="Searches the mesh for all surface faces in the range.  For this purpose a surface
+face...">单元附着按面（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">attach</span> <span class="pre">by-face</span></code>）</a> 命令与较粗网格
+地基连接。</p>
+<div class="figure align-center" id="id1">
+<span id="damfoundation-grid"></span><a class="reference internal image-reference" href="../../../../../_images/damfoundation.png"><img alt="../../../../../_images/damfoundation.png" src="../../../../../_images/damfoundation.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 1：土坝及地基的网格。</span></p>
+</div>
+<p class="h2 rubric">初始静力条件</p>
+<p>为两岸坝肩和地基两端设置边界条件，使施加重力时
+垂直于相应平面的运动被约束。这样，模型在边界平面上剪应力为零的条件下达到平衡。
+达到初始平衡状态的数据文件为“<a class="reference internal" href="#damfoundation-gravload">GravLoad.dat 数据文件（<span class="std std-ref">GravLoad.dat</span>）</a>”，
+竖向应力的云图示于 <a href="#damfoundation-szz-gravityloading">图  2（Figure  2）</a>。
+请注意，坝体采用 Mohr-Coulomb 材料，但
+其强度被设为在初始压密阶段不发生屈服。黏聚力和
+抗拉强度设为很大的值。这种施加初始
+应力的方法只是众多可行方案之一；
+关于初始条件的完整讨论参见<a class="reference internal" href="../../../../docproject/source/modeling/problemsolving/initial_conditions.html#initial-conditions"><span class="std std-ref">初始条件</span>（Initial Conditions）</a>。</p>
+<div class="figure align-center" id="id2">
+<span id="damfoundation-szz-gravityloading"></span><a class="reference internal image-reference" href="../../../../../_images/DamFoundation_szz-gravityloading.png"><img alt="../../../../../_images/DamFoundation_szz-gravityloading.png" src="../../../../../_images/DamFoundation_szz-gravityloading.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 2：重力加载后竖向应力的云图。</span></p>
+</div>
+<p>生成初始静力条件的最后阶段是在坝体设置符合实际的
+强度特性，并在坝体上游面施加压力边界条件以模拟蓄水。就本说明性示例而言，
+假定土坝是干燥的（即流体仅起力学边界条件作用，不渗入坝体）。在更真实的分析中，可以在坝内设置
+地下水位，从而改变坝内的有效应力。（这在下一节中有演示——见 <a class="reference internal" href="../DamFoundationWet/damfoundationwet.html#damfoundationwet"><span class="std std-ref">土坝地基（有水）</span>（Dam Foundation Wet）</a>。）假定坝体材料
+黏聚力为 40 kPa、摩擦角为 40°、抗拉强度限值为 4 kPa。</p>
+<p>“<a class="reference internal" href="#damfoundation-proppluswaterload">PropPlusWaterLoad.dat 数据文件（<span class="std std-ref">PropPlusWaterLoad.dat</span>）</a>”在 <span class="math">\(x\)</span>、<span class="math">\(y\)</span> 和 <span class="math">\(z\)</span> 方向固定所有边界（这意味着地基材料与刚性河谷壁之间为粗糙接触面），
+设置坝体材料的实际强度特性，并在坝体上游面施加静水压力以表示水库荷载。地基材料保持弹性。
+执行“<a class="reference internal" href="#damfoundation-proppluswaterload">PropPlusWaterLoad.dat 数据文件（<span class="std std-ref">PropPlusWaterLoad.dat</span>）</a>”的结果是坝内发生部分屈服，
+系统在上游坡面最大位移约 1 cm 后趋于稳定。</p>
+<p class="h2 rubric" id="damfoundation-dynamic-conditions">动力条件与模拟</p>
+<p>在执行动力分析之前，先考虑前面确定的四个组成部分。</p>
+<blockquote>
+<div><ol class="arabic">
+<li><p class="first"><strong>检查波传播</strong>：该问题的动力荷载是一种简化运动：在模型底部沿水平方向施加正弦加速度波。该波频率为 2 Hz，分两个分量施加：一个分量沿 <span class="math">\(x\)</span> 方向（沿河谷），幅值为 2 m/sec<sup>2</sup>（0.2 g）；另一个沿 <span class="math">\(y\)</span> 方向（沿坝轴线），幅值为 1 m/sec<sup>2</sup>（0.1 g）。持续 6 秒的包络函数（<span class="math">\(\{1-\cos\omega t\}/2\)</span>）与 2 Hz 输入波相乘，使波逐渐增强和衰减。该波的加速度方程示于 <a href="#damfoundation-acc-input">图  3（Figure  3）</a>，因此为</p>
+<div class="math" id="equation-dam-inputmotion">
+<span class="eqno">(1)</span>\[ \ddot u(t) = {1 \over 2} \  (1 - \cos({{\pi \over 3} t})) \  A \ \sin (2 \pi f t)\]</div>
+<p>其中 <span class="math">\(A\)</span> 为幅值，<span class="math">\(f\)</span> 为频率。</p>
+<p>地震分析的加速度记录通常读入“动力输入”向导，并在导入 <span class="codename">FLAC3D</span> 之前进行调整。本示例中，记录使用 <span class="codename">FISH</span> 函数 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">波（<span class="varfishsym"><span class="null">wave</span></span>）</a> 创建，并以 0.002 秒的采样间隔存入表格（表‘acc’）。</p>
+<div class="figure align-center" id="id3">
+<span id="damfoundation-acc-input"></span><a class="reference internal image-reference" href="../../../../../_images/DamFoundation_acc-input.png"><img alt="../../../../../_images/DamFoundation_acc-input.png" src="../../../../../_images/DamFoundation_acc-input.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 3：x 方向输入加速度（存于表 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information...">加速度（<span class="varstring"><span class="null">acc</span></span>）</a>）。</span></p>
+</div>
+<p>根据该问题的弹性特性，较小的压缩波速和剪切波速出现在坝体中，分别为（由 <a class="reference internal" href="../../../../docproject/source/options/dynamic/considerations/considerations.html#dynamic-eq-pwave"><span class="std std-ref">P 波</span>（P-Wave）</a> 和 <a class="reference internal" href="../../../../docproject/source/options/dynamic/considerations/considerations.html#dynamic-eq-swave"><span class="std std-ref">S 波</span>（S-Wave）</a>）</p>
+<blockquote>
+<div><p><span class="math">\(C_p\)</span> = 443 m/sec</p>
+<p><span class="math">\(C_s\)</span> = 243 m/sec</p>
+</div></blockquote>
+<p>该模型建立的最大网格单元尺寸 <span class="math">\(\Delta l\)</span> 为 10 m。根据<a class="reference internal" href="../../../../docproject/source/options/dynamic/considerations/considerations.html#dynamic-eq-frequency"><span class="std std-ref">频率</span>（frequency）</a>和<a class="reference internal" href="../../../../docproject/source/options/dynamic/considerations/considerations.html#dynamic-eq-element-size"><span class="std std-ref">单元尺寸</span>（element size）</a>，波在模型中传播时能够准确模拟的最高频率为</p>
+<div class="math" id="equation-dynamic-eq1">
+<span class="eqno">(2)</span>\[f = {{C_s} \over {\lambda}} = {{C_s} \over {10\ \Delta l}} \approx\ {\hbox { 2.4 Hz}}\]</div>
+<p>因此，所选网格单元尺寸足够小，使 2 Hz 输入频率的波能够准确传播。</p>
+</li>
+<li><p class="first"><strong>指定阻尼</strong>：Mohr-Coulomb 模型相关的塑性流动在高激励水平下耗散大量能量。因此，与全程采用弹性模型相比，附加阻尼及其参数的选择对分析结果的影响不那么关键。在施加任何阻尼之前，应在给定动力加载条件下检查假定弹性行为时模型中可能发展的最大剪应变，以评估是否需要附加阻尼。</p>
+<p>如果使用 Rayleigh 阻尼，则必须指定一个能反映系统频率和输入波频率的中心频率，如<a class="reference internal" href="../../../../docproject/source/options/dynamic/considerations/considerations.html#dynamic-rayleigh-damping"><span class="std std-ref">Rayleigh 阻尼参数选取准则</span>（Guidelines for Selecting Rayleigh Damping Parameters）</a>一节所述。本示例中，输入波为单一频率 2 Hz，因此可将该值用作 Rayleigh 中心频率。另一种方法是，可用单个脉冲激励无阻尼系统；由此产生的自由振动可提供系统主要自振周期的估计。</p>
+<p>可使用的另一种阻尼是“滞回”阻尼（如<a class="reference internal" href="../../../../docproject/source/options/dynamic/considerations/considerations.html#dynamic-hysteretic-damping"><span class="std std-ref">滞回阻尼</span>（Hysteretic Damping）</a>一节所述），它与频率无关。本示例假定坝体和地基材料表现为黏性土，其滞回行为由<a class="reference internal" href="../../../../docproject/source/options/dynamic/considerations/considerations.html#dynamic-reduction-curve-clay"><span class="std std-ref">此处</span>（here）</a>所示的模量折减曲线描述。如果采用<a class="reference internal" href="../../../../docproject/source/options/dynamic/considerations/considerations.html#dynamic-hysteretic-formulation"><span class="std std-ref">滞回阻尼公式</span>（Hysteretic Damping Formulation）</a>中所述的默认滞回阻尼函数，取 <span class="math">\(L_1\)</span> = -3.156 和 <span class="math">\(L_2\)</span> = 1.904，则滞回阻尼在约 0.1% 的剪应变范围内都能相当好地拟合模量折减曲线和阻尼比曲线，如<a class="reference internal" href="../F3ShakeNonLinearElasticCase/F3ShakeNonLinearElasticCase.html#f3shakenonlinear"><span class="std std-ref">与 SHAKE 的比较</span>（Comparison to SHAKE）</a>所示。</p>
+<p>请注意，还可以在滞回阻尼中加入少量刚度比例 Rayleigh 阻尼（通常小于 0.2%），以消除模型结果中可能出现的高频噪声。（这由 <a href="#damfoundation-acc-dynloading-hystonly">图  7（Figure  7）</a> 和 <a href="#damfoundation-acc-dynloading">图  8（Figure  8）</a> 的加速度历史图说明。）</p>
+</li>
+<li><p class="first"><strong>施加动力荷载与边界条件</strong>：使用 <a class="reference internal" href="../../../doc/manual/zone_manual/zone_commands/zoneface/cmd_zone.face.apply.html#command:zone.face.apply" title="This command is used to apply boundary conditions at surface faces of the model.
+ To apply conditions to zones rather than at faces, see the  zone.apply 
+command.  To apply conditions at individual gridpoints, see the  zone.gridpoint.fix 
+command...">施加网格单元面条件（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">face</span> <span class="pre">apply</span></code>）</a> 命令并配合 <span class="cmdkey">table</span> 乘数来指定动力输入。假定由 <a class="reference internal" href="#equation-dynamic-eq1">(2)</a> 描述的加速度为河谷两侧可能发生的运动，因此无需对波进行反演。激励可按河谷两侧的刚性运动或柔性运动施加。本示例假定激励以沿两侧的刚性运动形式施加。或者可用“quiet”选项模拟柔性边界；使用 quiet 边界的简单示例见<a class="reference internal" href="../ShearWaveOnVerticalBar/ShearWaveOnVerticalBar.html#shearwave"><span class="std std-ref">竖向杆中的剪切波传播</span>（Shear Wave Propagation in a Vertical Bar）</a>。</p>
+<p>河谷两侧沿 <span class="math">\(z\)</span> 方向的运动被固定。这意味着河谷材料与河床地基材料之间为粗糙接触面。如果预计河谷材料与河床材料之间会发生差异运动，则应增加表示河谷材料的网格单元，并在两种材料之间设置接触面。</p>
+<p>地基材料在 <span class="math">\(+x\)</span> 和 <span class="math">\(-x\)</span> 方向上均终止于距坝顶线 130 m 处。在这些端部规定 quiet 边界，以尽量减少次生波从坝体反射。请注意，无论采用哪种条件（刚性边界或 quiet 边界），都会对竖向传播的波产生非物理影响。（此处不能采用自由场边界，因为模型并非所有侧面都是竖直的。）任何人工边界都应设置在离关注对象足够远的位置，以尽量减小其干扰影响。应进行两次或更多次不同边界位置的模拟，以确定人工边界设置的最小距离，使其影响可以忽略。</p>
+<p>一般来说，使用“动力输入”向导（可从 <em>工具</em> 菜单打开）对输入信号进行预处理（包括滤波和基线校正）更为容易。但在本示例中，这些步骤在 <span class="codename">FISH</span> 中完成。</p>
+<p>在施加输入运动之前，应检查该运动的特性。本练习中的简单波具有一个主频：2 Hz。但一般来说，输入波包含一系列频率成分。对于含多个频率成分的波，可能需要滤除高频成分，因为高频成分会对波传播产生不利影响，如<a class="reference internal" href="../../../../docproject/source/options/dynamic/considerations/considerations.html#dynamic-filtering"><span class="std std-ref">滤波</span>（Filtering）</a>一节所述。</p>
+<p>此外，还应检查基线漂移（见 <a class="reference internal" href="../../../../docproject/source/options/dynamic/considerations/considerations.html#dynamic-baseline-correction"><span class="std std-ref">基线校正</span>（Baseline Correction）</a>）。在本练习中，使用 <span class="codename">FISH</span> 内置函数 <a class="reference internal" href="../../../../../common/kernel/doc/manual/table_manual/table_fish/table_utilities/fish_table.integrate.html#function:table.integrate" title="Returns a list of 2D vectors representing the integration of the table  t ...">表格曲线积分（<code class="xref fish fish-func docutils literal"><span class="pre">table.integrate</span></code>）</a> 对加速度记录（存于表 1）进行两次积分。速度记录存于表 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information...">速度（<span class="varstring"><span class="null">vel</span></span>）</a>，位移记录存于表 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information...">距离（<span class="varstring"><span class="null">dis</span></span>）</a>。所得位移记录显示残余漂移为 -0.00335 m。虽然这被认为不重要、可以忽略，但为演示该过程仍进行了基线漂移校正。基线校正通过向速度记录中加入一个低频正弦波（表 10）来实现；调整正弦波参数使最终位移为零。校正后的速度存于表 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information...">循环速度（<span class="varstring"><span class="null">cvel</span></span>）</a>，校正后的位移存于表 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information...">循环位移（<span class="varstring"><span class="null">cdis</span></span>）</a>。校正程序列为“BASELINE.FIS”（见下文）。</p>
+<p>未校正和校正后的位移记录示于 <a href="#damfoundation-disp-hist">图  4（Figure  4）</a>。</p>
+<div class="figure align-center" id="id4">
+<span id="damfoundation-disp-hist"></span><a class="reference internal image-reference" href="../../../../../_images/DamFoundation_disp-hist.png"><img alt="../../../../../_images/DamFoundation_disp-hist.png" src="../../../../../_images/DamFoundation_disp-hist.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 4：未校正（表 3）和校正后（表 6）的位移历史。</span></p>
+</div>
+<p>现在使用表 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information...">循环速度（<span class="varstring"><span class="null">cvel</span></span>）</a> 中经基线校正的速度记录施加输入运动。使用命令 <a class="reference internal" href="../../../doc/manual/zone_manual/zone_commands/zoneface/cmd_zone.face.apply.html#kwd:zone.face.apply.velocity" title="Vector of all velocity components in the global coordinate axes...">单元面施加速度（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">face</span> <span class="pre">apply</span> <span class="pre">velocity</span></code>）</a> <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:vec" title='A vector ( v  or  v2  or  v3 ) expressed as a matrix with one
+row.   v2  and  v3  denote that a 2D or 3D vector, respectively, is
+required.  A plain " v " indicates that a vector of the same dimensionality
+as the code is required, that is, a 3D vector is required if the code is a 3D
+code, and a 2D vector is required if the code is a 2D code. In |flac3d|,  v...'><span class="varvec"><span class="null">(1,0.5,0)</span></span></a> <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)...">表格插值取值（<span class="varfloat"><span class="null">table</span></span>）</a> <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information...">循环速度（<span class="varstring"><span class="null">cvel</span></span>）</a> 施加 <span class="math">\(x\)</span> 和 <span class="math">\(y\)</span> 方向的速度，其范围对应于河谷左右两侧，如数据文件“<a class="reference internal" href="#damfoundation-dynamicexcitation">DynamicExcitation.dat 数据文件（<span class="std std-ref">DynamicExcitation.dat</span>）</a>”所示。</p>
+</li>
+<li><p class="first"><strong>监测动力响应</strong>：本示例在坝顶以下四个深度处（包括底部（输入波））沿 <span class="math">\(x\)</span> 方向监测速度和加速度。
+位移和应力分量也可在任意位置监测。绘制循环剪应力与剪应变图，以评估最大应变水平以及材料中发生的滞回变形响应量。所有历史都应在动力模拟开始前请求。</p>
+</li>
+</ol>
+</div></blockquote>
+<p>动力模拟的数据文件为“<a class="reference internal" href="#damfoundation-dynamicexcitation">DynamicExcitation.dat 数据文件（<span class="std std-ref">DynamicExcitation.dat</span>）</a>”。请注意，在模拟开始前求解模式由静力切换为动力（<a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.dynamic.html#kwd:model.dynamic.active" title="The dynamic process is  on , by default, when the  model.configure.dynamic 
+command is given. Specify  active   off  to suppress dynamic calculations...">模型动力活动命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">dynamic</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>），并执行大应变计算（<a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.largestrain.html#command:model.large-strain" title="Sets the program to use the numerical formulation for large-strain deformation.
+ The default is  off .  See the section ref-Large- and Small-Strain Modes
+&lt;largeandsmallstrainmodes&gt;- for discussion of the additional calculations done
+in this formulation.   [cs: has Common trouble]...">设置大变形模式命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">large-strain</span></code>）</a> <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>）。<span class="codename">FISH</span> 变量 <span class="cmdkey">freq</span>、<span class="cmdkey">ampl</span> 和 <span class="cmdkey">env _time</span> 分别表示输入波的频率、波的最大幅值和包络的持续时间。</p>
+<p>模型首先在假定无阻尼的条件下运行，以检查对动力荷载的弹性变形响应。
+这有助于评估是否需要附加阻尼。
+在模型的不同位置记录循环剪应力和剪应变历史。
+本例中监测的是应力和应变的 <span class="math">\(xz\)</span> 剪切分量。
+<a href="#damfoundation-stress-strain1-elastic-nodamp">图  5（Figure  5）</a> 显示了坝体中心（0,0,15）处的剪应力与剪应变图，<a href="#damfoundation-stress-strain2-elastic-nodamp">图  6（Figure  6）</a> 显示了动力计算 10 秒后下游坡面附近 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:vec" title='A vector ( v  or  v2  or  v3 ) expressed as a matrix with one
+row.   v2  and  v3  denote that a 2D or 3D vector, respectively, is
+required.  A plain " v " indicates that a vector of the same dimensionality
+as the code is required, that is, a 3D vector is required if the code is a 3D
+code, and a 2D vector is required if the code is a 2D code. In |flac3d|,  v...'><span class="varvec"><span class="null">(-60,0,5)</span></span></a> 处的同一图形。
+发现整个模型中的峰值剪应变小于 0.1%。因此，取参数 <span class="math">\(L_1\)</span> = -3.156 和 <span class="math">\(L_2\)</span> = 1.904 的默认滞回阻尼被认为适合本示例的动力加载范围。</p>
+<p>请注意，如 <a href="#damfoundation-stress-strain2-elastic-nodamp">图  6（Figure  6）</a> 所示，坡面附近的应力/应变图并不关于应力-应变原点对称。如<a class="reference internal" href="../../../../docproject/source/options/dynamic/considerations/considerations.html#dynamic-hysteretic-practical-issues"><span class="std std-ref">使用滞回阻尼时的实际问题</span>（Practical Issues When Using Hysteretic Damping）</a>所述，这会导致使用滞回阻尼时剪应力与应变之间的不协调。为在施加动力荷载时从协调的应力-应变状态出发，更合适的做法是在滞回阻尼处于活动状态下初始化静力平衡状态。本示例中，我们判断剪应力与应变的不协调仅局限于坡面，且模型大部分区域的剪应力较低。因此，在模型达到静力平衡后才开启滞回阻尼。若要更彻底地分析，还应从一开始就开启滞回阻尼进行模拟，以评估原位剪应力的影响。</p>
+<div class="figure align-center" id="id5">
+<span id="damfoundation-stress-strain1-elastic-nodamp"></span><a class="reference internal image-reference" href="../../../../../_images/DamFoundation_stress-strain1_elastic_nodamp.png"><img alt="../../../../../_images/DamFoundation_stress-strain1_elastic_nodamp.png" src="../../../../../_images/DamFoundation_stress-strain1_elastic_nodamp.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 5：(0,0,15) 处的剪应力与剪应变关系——弹性材料，无阻尼。</span></p>
+</div>
+<div class="figure align-center" id="id6">
+<span id="damfoundation-stress-strain2-elastic-nodamp"></span><a class="reference internal image-reference" href="../../../../../_images/DamFoundation_stress-strain2_elastic_nodamp.png"><img alt="../../../../../_images/DamFoundation_stress-strain2_elastic_nodamp.png" src="../../../../../_images/DamFoundation_stress-strain2_elastic_nodamp.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 6：(-60,0,5) 处的剪应力与剪应变关系——弹性材料，无阻尼。</span></p>
+</div>
+<p>现在使用实际强度特性和默认滞回阻尼模型运行模型。<a href="#damfoundation-acc-dynloading-hystonly">图  7（Figure  7）</a> 显示了 10 秒动力计算后模型底部和坝顶记录的加速度历史。图中比较了坝顶的 <span class="math">\(x\)</span> 方向加速度响应（虚线）与模型底部的加速度（实线）。放大系数约为八；请注意，坝顶加速度在下游（负 <span class="math">\(x\)</span>）方向更大。</p>
+<p><a href="#damfoundation-acc-dynloading-hystonly">图  7（Figure  7）</a> 显示模拟时间接近结束时加速度中出现高频噪声。
+加入少量刚度比例 Rayleigh 阻尼（2 Hz 时为 0.05%）后重新运行动力阶段以消除该噪声。（见 <a href="#damfoundation-acc-dynloading">图  8（Figure  8）</a>。）
+该少量 Rayleigh 阻尼不影响模型中计算得到的变形。</p>
+<p>振动过程中坝内发生大量塑性流动，导致不可恢复的位移。坝顶下游边缘的 <span class="math">\(x\)</span> 和 <span class="math">\(z\)</span> 方向位移历史示于 <a href="#damfoundation-disp-dynloading">图  9（Figure  9）</a>；每次
+振荡循环都会使位移向下游和坝肩方向（由于激励未与河谷轴线对齐）增大。最终位移场的更全面视图以云图和矢量叠加在坝面上的形式示于 <a href="#damfoundation-dispcont-dynloading">图  10（Figure  10）</a>。观察到塌陷集中在下游侧坝顶附近。</p>
+<p>坝体材料的滞回响应示于 <a href="#damfoundation-stress-strain1">图  11（Figure  11）</a> 和 <a href="#damfoundation-stress-strain2">图  12（Figure  12）</a>。该响应反映了塑性破坏和滞回阻尼共同耗散的能量。</p>
+<div class="figure align-center" id="id7">
+<span id="damfoundation-acc-dynloading-hystonly"></span><a class="reference internal image-reference" href="../../../../../_images/DamFoundation_acc-dynloading_hystonly.png"><img alt="../../../../../_images/DamFoundation_acc-dynloading_hystonly.png" src="../../../../../_images/DamFoundation_acc-dynloading_hystonly.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 7：底部（蓝线）和坝顶（绿线）的加速度历史——仅含滞回阻尼</span></p>
+</div>
+<div class="figure align-center" id="id8">
+<span id="damfoundation-acc-dynloading"></span><a class="reference internal image-reference" href="../../../../../_images/DamFoundation_acc-dynloading.png"><img alt="../../../../../_images/DamFoundation_acc-dynloading.png" src="../../../../../_images/DamFoundation_acc-dynloading.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 8：底部（蓝线）和坝顶（绿线）的加速度历史——含滞回阻尼和 0.05% 刚度 Rayleigh 阻尼。</span></p>
+</div>
+<div class="figure align-center" id="id9">
+<span id="damfoundation-disp-dynloading"></span><a class="reference internal image-reference" href="../../../../../_images/DamFoundation_disp-dynloading.png"><img alt="../../../../../_images/DamFoundation_disp-dynloading.png" src="../../../../../_images/DamFoundation_disp-dynloading.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 9：坝顶处的位移记录（x 和 z 方向）。</span></p>
+</div>
+<div class="figure align-center" id="id10">
+<span id="damfoundation-dispcont-dynloading"></span><a class="reference internal image-reference" href="../../../../../_images/DamFoundation_dispcont-dynloading.png"><img alt="../../../../../_images/DamFoundation_dispcont-dynloading.png" src="../../../../../_images/DamFoundation_dispcont-dynloading.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 10：最终位移大小的云图和矢量。</span></p>
+</div>
+<div class="figure align-center" id="id11">
+<span id="damfoundation-stress-strain1"></span><a class="reference internal image-reference" href="../../../../../_images/DamFoundation_stress-strain1.png"><img alt="../../../../../_images/DamFoundation_stress-strain1.png" src="../../../../../_images/DamFoundation_stress-strain1.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 11：(0,0,15) 处的剪应力与剪应变关系——Mohr-Coulomb 材料，滞回阻尼。</span></p>
+</div>
+<div class="figure align-center" id="id12">
+<span id="damfoundation-stress-strain2"></span><a class="reference internal image-reference" href="../../../../../_images/DamFoundation_stress-strain2.png"><img alt="../../../../../_images/DamFoundation_stress-strain2.png" src="../../../../../_images/DamFoundation_stress-strain2.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 12：(-60,0,5) 处的剪应力与剪应变关系——Mohr-Coulomb 材料，滞回阻尼。</span></p>
+</div>
+<p class="h2 rubric" id="damfoundationdata">数据文件</p>
+<p id="damfoundation-gengrid"><em>生成坝基网格 - GenGrid.dat</em></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;------------------------------------------------------------</span>
+<span class="c">;       坝体与地基</span>
+<span class="c">;       生成网格</span>
+<span class="c">;-------------------------------------------------------------------</span>
+<span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">model config</span><span class="n"> dynamic</span>
+<span class="nb">model dynamic</span><span class="n"> active </span><span class="sx">off</span>
+<span class="c">;--- 心墙 ---</span>
+<span class="c">; 由图形界面的构建块生成的几何体</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'Geometry'</span><span class="n"> suppress</span>
+<span class="nb">zone densify</span><span class="n"> segments </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> range group </span><span class="s">'dam'</span>
+<span class="c">; --- 将坝体连接到地基 ---</span>
+<span class="nb">zone attach</span><span class="n"> by</span><span class="o">-</span><span class="n">face</span>
+<span class="c">; 分配本构模型和属性</span>
+<span class="nb">zone cmodel</span><span class="n"> assign mohr</span><span class="o">-</span><span class="n">coulomb range group </span><span class="s">'dam'</span>
+<span class="nb">zone property</span><span class="n"> shear </span><span class="m m-Double">1e8</span><span class="n"> bulk </span><span class="m m-Double">2e8</span><span class="n"> cohesion </span><span class="m m-Double">1e10</span><span class="n"> tension </span><span class="m m-Double">1e10</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">              density </span><span class="m m-Double">1700</span><span class="n"> range group </span><span class="s">'dam'</span>
+
+<span class="nb">zone cmodel</span><span class="n"> assign elastic range group </span><span class="s">'foundation'</span>
+<span class="nb">zone property</span><span class="n"> shear </span><span class="m m-Double">5e8</span><span class="n"> bulk </span><span class="m m-Double">1e9</span><span class="n"> density </span><span class="m m-Double">2100</span><span class="n">  range group </span><span class="s">'foundation'</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'dam0'</span>
+</pre></div>
+</div>
+<p id="damfoundation-gravload"><em>施加边界条件和重力荷载 - GravLoad.dat</em></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;------------------------------------------------------------</span>
+<span class="c">;       坝体与地基</span>
+<span class="c">;       施加重力荷载</span>
+<span class="c">;-------------------------------------------------------------------</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'dam0'</span>
+<span class="c">; --- 为各边界分配组名</span>
+<span class="nb">zone face skin</span><span class="n"> break</span><span class="o">-</span><span class="n">angle </span><span class="m m-Double">25</span>
+<span class="c">; --- 施加法向速度为零的边界条件</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0.0</span><span class="n"> range group </span><span class="s">'North'</span><span class="n"> or </span><span class="s">'South'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0.0</span><span class="n"> range group </span><span class="s">'East'</span><span class="n"> or </span><span class="s">'West'</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> convergence </span><span class="m m-Double">1</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'dam1'</span>
+</pre></div>
+</div>
+<p><em>设置实际强度特性并施加水荷载 - PropPlusWaterLoad.dat</em></p>
+<div class="highlight-fish" id="damfoundation-proppluswaterload"><div class="highlight"><pre><span></span><span class="c">;------------------------------------------------------------</span>
+<span class="c">;       坝体与地基</span>
+<span class="c">;       施加实际属性和水荷载</span>
+<span class="c">;-------------------------------------------------------------------</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'dam1'</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> displacement </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="nb">zone face apply-remove</span>
+<span class="nb">zone face apply</span><span class="n"> velocity </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">          range group </span><span class="s">'North'</span><span class="n"> or </span><span class="s">'South'</span><span class="n"> or </span><span class="s">'Bottom2'</span><span class="n"> or </span><span class="s">'East'</span><span class="n"> or </span><span class="s">'West'</span>
+<span class="nb">zone face apply</span><span class="n"> stress</span><span class="o">-</span><span class="n">normal </span><span class="o">-</span><span class="m m-Double">3e5</span><span class="n"> gradient </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">1e4</span><span class="p">)</span><span class="n"> range group </span><span class="s">'Top2'</span>
+<span class="nb">zone initialize-stresses</span>
+<span class="nb">zone property</span><span class="n"> tension</span><span class="p">=</span><span class="m m-Double">4000</span><span class="n"> friction</span><span class="p">=</span><span class="m m-Double">40</span><span class="n"> cohesion</span><span class="p">=</span><span class="m m-Double">40000</span><span class="n"> range group </span><span class="s">'dam'</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> ratio</span><span class="o">-</span><span class="n">local </span><span class="m m-Double">1e-4</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'dam2'</span>
+</pre></div>
+</div>
+<p><em>坝/河谷系统的动力激励 - DynamicExcitation.dat</em></p>
+<div class="highlight-fish" id="damfoundation-dynamicexcitation"><div class="highlight"><pre><span></span><span class="c">;-------------------------------------------------------------------</span>
+<span class="c">;       坝体与地基</span>
+<span class="c">;       坝体/河谷体系的动力激励</span>
+<span class="c">;-------------------------------------------------------------------</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'dam2'</span>
+<span class="nb">model dynamic</span><span class="n"> active</span><span class="p">=</span><span class="sx">on</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="c">; 计算施加波形并将其存储在表 'acc' 中的 FISH 函数</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'wave'</span>
+<span class="ni">[</span><span class="k">table.as.list</span><span class="p">(</span><span class="s">'vel'</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="k">table.integrate</span><span class="p">(</span><span class="s">'acc'</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span>
+<span class="n">           </span><span class="c">; 将加速度积分为速度</span>
+<span class="ni">[</span><span class="k">table.as.list</span><span class="p">(</span><span class="s">'dis'</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="k">table.integrate</span><span class="p">(</span><span class="s">'vel'</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span>
+<span class="n">           </span><span class="c">; 将加速度积分为速度</span>
+<span class="nb">program call</span><span class="n"> </span><span class="s">'baseline'</span><span class="n"> suppress</span>
+<span class="ni">[baseline</span><span class="p">(</span><span class="s">'vel'</span><span class="p">,</span><span class="m m-Double">10</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">0.00335</span><span class="p">,</span><span class="m m-Double">8</span><span class="p">,</span><span class="s">'cvel'</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span><span class="c">; 对速度进行基线校正</span>
+<span class="ni">[</span><span class="k">table.as.list</span><span class="p">(</span><span class="s">'cdis'</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="k">table.integrate</span><span class="p">(</span><span class="s">'cvel'</span><span class="p">)</span><span class="ni">]</span>
+<span class="c">; 施加静边界</span>
+<span class="nb">zone face apply</span><span class="n"> quiet range group </span><span class="s">'East'</span><span class="n"> or </span><span class="s">'West'</span>
+<span class="c">; 向底部施加速度</span>
+<span class="nb">zone face apply</span><span class="n"> velocity </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">0.5</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> table </span><span class="s">'cvel'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                range group </span><span class="s">'South'</span><span class="n"> or </span><span class="s">'Bottom2'</span><span class="n"> or </span><span class="s">'North'</span>
+<span class="c">; 重置速度和位移</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> velocity </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> displacement </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="c">; 历程</span>
+<span class="nb">model history</span><span class="n"> name</span><span class="p">=</span><span class="s">'time'</span><span class="n"> dynamic time</span><span class="o">-</span><span class="n">total</span>
+<span class="nb">zone history</span><span class="n"> name</span><span class="p">=</span><span class="s">'xabase'</span><span class="n"> acceleration</span><span class="o">-</span><span class="n">x position </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">30</span><span class="p">)</span>
+<span class="nb">zone history</span><span class="n"> name</span><span class="p">=</span><span class="s">'xacrest'</span><span class="n"> acceleration</span><span class="o">-</span><span class="n">x position </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">30</span><span class="p">)</span>
+<span class="nb">zone history</span><span class="n"> name</span><span class="p">=</span><span class="s">'xdcrest'</span><span class="n"> displacement</span><span class="o">-</span><span class="n">x position </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">30</span><span class="p">)</span>
+<span class="nb">zone history</span><span class="n"> name</span><span class="p">=</span><span class="s">'zdcrest'</span><span class="n"> displacement</span><span class="o">-</span><span class="n">z position </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">30</span><span class="p">)</span>
+<span class="nb">zone history</span><span class="n"> name</span><span class="p">=</span><span class="s">'ssmid'</span><span class="n"> strain</span><span class="o">-</span><span class="n">increment</span><span class="o">-</span><span class="n">xz position </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">15</span><span class="p">)</span>
+<span class="nb">zone history</span><span class="n"> name</span><span class="p">=</span><span class="s">'sxzmid'</span><span class="n"> stress</span><span class="o">-</span><span class="n">xz position </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">15</span><span class="p">)</span>
+<span class="nb">zone history</span><span class="n"> name</span><span class="p">=</span><span class="s">'sstoe'</span><span class="n"> strain</span><span class="o">-</span><span class="n">increment</span><span class="o">-</span><span class="n">xz position </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">60</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span>
+<span class="nb">zone history</span><span class="n"> name</span><span class="p">=</span><span class="s">'sxztoe'</span><span class="n"> stress</span><span class="o">-</span><span class="n">xz position </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">60</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span>
+<span class="c">; 指定滞回阻尼和瑞利阻尼</span>
+<span class="nb">zone dynamic</span><span class="n"> damping hysteretic default </span><span class="o">-</span><span class="m m-Double">3.156</span><span class="n"> </span><span class="m m-Double">1.904</span>
+<span class="nb">zone dynamic</span><span class="n"> damping rayleigh </span><span class="m m-Double">0.0005</span><span class="n"> </span><span class="m m-Double">2.0</span><span class="n"> stiffness</span>
+<span class="c">; 求解至动力时间 10</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">10</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'dam3'</span>
+</pre></div>
+</div>
+<p><em>BASELINE.FIS</em></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;名称：baseline</span>
+<span class="c">;输入：itab_unc/int/102/未校正的速度表</span>
+<span class="c">;输入：itab_corr/int/120/低频正弦波校正</span>
+<span class="c">;输入：drift/float/0.3/记录终点的残余位移</span>
+<span class="c">;输入：ttime/float/40.0/记录总时长</span>
+<span class="c">;输入：itab_cvel/int/105/基线校正后的速度</span>
+<span class="c">;注意：使用低频正弦波进行基线校正</span>
+<span class="nb">fish define</span><span class="ni"> baseline</span><span class="p">(</span><span class="ni">itab_unc</span><span class="p">,</span><span class="ni">itab_corr</span><span class="p">,</span><span class="ni">drift</span><span class="p">,</span><span class="ni">ttime</span><span class="p">,</span><span class="ni">itab_cvel</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> npnts </span><span class="p">=</span><span class="ni"> </span><span class="k">table.size</span><span class="p">(</span><span class="ni">itab_unc</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">local</span><span class="ni"> ii </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="ni">npnts</span><span class="p">)</span>
+<span class="ni">        </span><span class="k">local</span><span class="ni"> tt </span><span class="p">=</span><span class="ni"> float</span><span class="p">(</span><span class="ni">ii</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="ni"> </span><span class="o">*</span><span class="ni"> ttime </span><span class="o">/</span><span class="ni"> float</span><span class="p">(</span><span class="ni">npnts</span><span class="p">)</span>
+<span class="ni">        </span><span class="k">local</span><span class="ni"> vv </span><span class="p">=</span><span class="ni"> </span><span class="k">math.pi</span><span class="ni"> </span><span class="o">*</span><span class="ni"> tt </span><span class="o">/</span><span class="ni"> ttime</span>
+<span class="ni">        </span><span class="k">local</span><span class="ni"> cor_d </span><span class="p">=</span><span class="ni"> drift </span><span class="o">*</span><span class="ni"> </span><span class="k">math.pi</span><span class="ni"> </span><span class="o">/</span><span class="ni"> </span><span class="p">(</span><span class="m m-Double">2.0</span><span class="ni"> </span><span class="o">*</span><span class="ni"> ttime</span><span class="p">)</span>
+<span class="ni">        </span><span class="k">table</span><span class="p">(</span><span class="ni">itab_corr</span><span class="p">,</span><span class="ni">tt</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="p">(</span><span class="ni">cor_d</span><span class="o">*</span><span class="k">math.sin</span><span class="p">(</span><span class="ni">vv</span><span class="p">))</span>
+<span class="ni">        </span><span class="k">table</span><span class="p">(</span><span class="ni">itab_cvel</span><span class="p">,</span><span class="k">table.x</span><span class="p">(</span><span class="ni">itab_unc</span><span class="p">,</span><span class="ni">ii</span><span class="p">))</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="k">table.y</span><span class="p">(</span><span class="ni">itab_corr</span><span class="p">,</span><span class="ni">ii</span><span class="p">)</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">                                                </span><span class="o">+</span><span class="ni"> </span><span class="k">table.y</span><span class="p">(</span><span class="ni">itab_unc</span><span class="p">,</span><span class="ni">ii</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">endloop</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../../docproject/source/flac3dhome.html"><span class="codename">FLAC3D</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../../docproject/source/options/options.html">Options</a> »</li>
+<li class="nav-item nav-item-3"><a href="../../../../docproject/source/options/dynamic/dynamic.html">Dynamic Analysis</a> »</li>
+<li class="nav-item nav-item-4"><a accesskey="U" href="../../../../docproject/source/options/dynamic/solving/solving.html">Solving Dynamic Problems</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../../../../docproject/source/options/dynamic/solving/solving.html" title="previous chapter"> Solving Dynamic Problems</a> |    
+       <a href="../DamFoundationWet/damfoundationwet.html" title="next chapter">Procedure for Dynamic Coupled Mechanical/Groundwater Simulations: Dam Foundation Wet</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Procedure for Dynamic Mechanical Simulations: Dam Foundation" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

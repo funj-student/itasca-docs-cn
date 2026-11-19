@@ -1,0 +1,304 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>掘进式衬砌隧道（衬砌-土体接触面滑移） — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="../ReinforcedBeam/ReinforcedBeam.html" rel="next" title="Liner-Reinforced Beam"/>
+<link href="../LargeStrainSliding/LargeStrainSliding.html" rel="prev" title="Demonstration of Large-Strain Sliding"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="advancing-lined-tunnel-slip-at-liner-soil-interface">
+<span id="advancingliner"></span><h1>掘进式衬砌隧道（衬砌-土体接触面滑移）</h1>
+<p class="h2 rubric">问题描述</p>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">要在 <span class="codename">FLAC3D</span> 中查看此项目，请使用菜单命令 <span class="menuselection">帮助 ► 示例…</span>。选择“Structure/Liner/AdvancingLinedTunnel”，然后选择“AdvancingLinedTunnel.f3prj”进行加载。所使用的<a class="reference internal" href="#advancinglineddata"><span class="std std-ref">主数据文件</span>（main data files）</a>显示在本示例末尾。其余数据文件可在项目中找到。</p>
+</div>
+<p>本示例演示如何模拟推进式隧道的开挖与支护逐步施工过程。隧道为圆形断面，位于软弹性土中 5 m 深度处（<span class="math">\(E\)</span> = 48.2 MPa，<span class="math">\(\nu\)</span> = 0.34），各向同性原位应力为 1 MPa。隧道由厚 0.2 m 的喷射混凝土支护（<span class="math">\(E\)</span> = 10.5 GPa，<span class="math">\(\nu\)</span> = 0.25）。喷射混凝土保持弹性；但衬砌-土体界面可以分离和/或滑动。本示例重现了<a class="reference internal" href="../../Shell/AdvancingTunnel/AdvancingTunnel.html#advancing"><span class="std std-ref">推进式衬砌隧道（刚性连接）</span>（Advancing Lined Tunnel (Rigidly Connected)）</a>示例，但将该示例中使用的壳单元替换为这里使用的衬砌单元。壳单元与土体之间为刚性连接，而衬砌单元提供弹性连接，允许形成间隙并发生滑动。在本示例中，首先为土-衬砌界面指定较大的黏聚强度，以重现<a class="reference internal" href="../../Shell/AdvancingTunnel/AdvancingTunnel.html#advancing"><span class="std std-ref">壳单元版本</span>（shell element version）</a>中的刚性行为，然后将黏聚强度设为零，观察滑动及由此产生的应力重分布。</p>
+<p>首先建立总长 2 m 的初始隧道。为简化起见，假定开挖在两个隧道掌子面上同时推进；因此只需通过在三个对称面上施加对称边界条件来模拟隧道的四分之一剖面。（为这些平面上的节点指定适当的对称条件，需要首先调整节点局部坐标系，如下所述。）开挖过程通过为网格单元指定空材料模型、然后允许应力重分布来模拟。此阶段的模型如<a href="#advancingliner-system1">图 1（Figure  1）</a> 所示。然后用 <code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">liner</span> <span class="pre">create</span> <span class="pre">by-face</span></code> 命令创建衬砌单元并将其附着到隧道表面以安装喷射混凝土。开挖下一段隧道，再次允许应力重分布。此阶段的模型如<a href="#advancingliner-system2t1">图 2（Figure  2）</a> 所示。可以重复此开挖顺序以模拟整个隧道施工过程。</p>
+<div class="figure align-center" id="id1">
+<span id="advancingliner-system1"></span><a class="reference internal image-reference" href="../../../../../_images/advancingliner-system11.png"><img alt="../../../../../_images/advancingliner-system11.png" src="../../../../../_images/advancingliner-system11.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 1：阶段 1：开挖隧道第 1 段。</span></p>
+</div>
+<div class="figure align-center" id="id2">
+<span id="advancingliner-system2t1"></span><a class="reference internal image-reference" href="../../../../../_images/advancingliner-system2t11.png"><img alt="../../../../../_images/advancingliner-system2t11.png" src="../../../../../_images/advancingliner-system2t11.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 2：阶段 2：在第 1 段安装喷射混凝土；开挖隧道第 2 段。</span></p>
+</div>
+<p>该模型有三个对称面。必须为位于这些平面上的节点指定对称边界条件（垂直于平面的位移为零，平面内两个轴的转动为零）。这些条件使用 <a class="reference internal" href="../../../../../common/sel/doc/manual/sel_manual/nodes/commands/cmd_structure.node.fix.html#command:structure.node.fix" title="Fix conditions for all nodes in the range, thereby preventing these values from
+changing. If any translational/rotational velocity component is fixed, then
+all three components of the translational/rotational velocity should also be
+specified in the local coordinate system via the  structure.node.initialize 
+command. If a fixed displacement is required, the appropriate velocities should
+be initialized to zero. Degrees-of-freedom with a rigid attachment condition
+cannot be fixed; the rigid condition overrides the fix condition..."><code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">node</span> <span class="pre">fix</span></code></a> 命令指定；然而该命令作用于与节点局部坐标系相关的自由度，而衬砌单元所用的所有节点的节点局部坐标系会在一组循环开始时（或在执行 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.cycle.html#command:model.cycle" title="Execute timesteps. The synonym  model.step  may also be used.  This is
+the equivalent of calling  model.solve  with the  cycles  keyword
+set to  i ...">执行计算时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">cycle</span></code>）</a> <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">0</span></span></a> 命令时）自动设定，使 <span class="math">\(z\)</span> 轴与使用该节点的所有衬砌单元的平均法向方向对齐，而 <span class="math">\(xy\)</span> 轴在衬砌单元切平面内任意定向。对于本模型，默认方位如<a href="#advancingliner-localt1">图 3（Figure  3）</a> 所示。</p>
+<p>位于 <span class="math">\(x\)</span> = 0 和 <span class="math">\(z\)</span> = 0 平面上的节点必须重新定向，以指定正确的对称边界条件。这可通过以下命令完成</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">struct node system-local</span><span class="n"> x </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> y </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n">    range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span>
+<span class="nb">struct node fix</span><span class="n"> system</span><span class="o">-</span><span class="n">local                     range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span>
+<span class="nb">struct node fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x rotation</span><span class="o">-</span><span class="n">y rotation</span><span class="o">-</span><span class="n">z range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span>
+<span class="nb">struct node system-local</span><span class="n"> x </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> y </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n">   range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span>
+<span class="nb">struct node fix</span><span class="n"> system</span><span class="o">-</span><span class="n">local                     range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span>
+<span class="nb">struct node fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x rotation</span><span class="o">-</span><span class="n">y rotation</span><span class="o">-</span><span class="n">z range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span>
+<span class="nb">struct node fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y rotation</span><span class="o">-</span><span class="n">x rotation</span><span class="o">-</span><span class="n">z range position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span>
+</pre></div>
+</div>
+<p>这些命令先重新对齐、然后固定相应的节点局部坐标系，并指定合适的速度固定条件。重新对齐后的坐标系必须用 <a class="reference internal" href="../../../../../common/sel/doc/manual/sel_manual/nodes/commands/cmd_structure.node.fix.html#kwd:structure.node.fix.system-local" title="inhibits automatic updating of the node-local system based on the elements that
+use the node. The default behavior is free...">固定结构节点局部坐标系命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">node</span> <span class="pre">fix</span> <span class="pre">system-local</span></code>）</a> 命令固定，以防止在下一组循环中自动重新对齐到默认方向。重新对齐这些坐标系时，必须确保局部 <span class="math">\(z\)</span> 轴仍垂直于衬砌切平面，因为节点局部方向定义了衬砌-网格单元的附着条件。最终重新对齐后的节点局部坐标系方向见 <a href="#advancingliner-localt2">图 4（Figure  4）</a>。</p>
+<div class="figure align-center" id="id3">
+<span id="advancingliner-localt1"></span><a class="reference internal image-reference" href="../../../../../_images/advancingliner-localt11.png"><img alt="../../../../../_images/advancingliner-localt11.png" src="../../../../../_images/advancingliner-localt11.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 3：节点局部坐标系的默认方向。</span></p>
+</div>
+<div class="figure align-center" id="id4">
+<span id="advancingliner-localt2"></span><a class="reference internal image-reference" href="../../../../../_images/advancingliner-localt21.png"><img alt="../../../../../_images/advancingliner-localt21.png" src="../../../../../_images/advancingliner-localt21.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 4：重新对齐后节点局部坐标系的方向。</span></p>
+</div>
+<p>衬砌-网格单元接触面刚度（<span class="math">\(k_n\)</span> 和 <span class="math">\(k_s\)</span>）取为 7.4 × 10<sup>10</sup> N/m<sup>3</sup>，以保证接触面变形相对于网格单元变形很小：取值依据 <a class="reference internal" href="../../../../../common/sel/doc/manual/sel_manual/liners/liners.html#linerinterfacestiffeq"><span class="std std-ref">衬砌刚度公式</span>（the liner stiffness equation）</a>，并按该公式后文所述将数值增大 100 倍。（下文将确认本系统满足接触面变形很小的判据。）</p>
+<p>在第一次运行中，给衬砌-网格单元接触面赋予很大的黏结强度。该模型的行为应类似于<a class="reference internal" href="../../Shell/AdvancingTunnel/AdvancingTunnel.html#advancing"><span class="std std-ref">刚性连接系统</span>（rigidly connected system）</a>的行为。<a href="#advancingliner-dispcontns">图 5（Figure  5）</a> 和 <a href="#advancingliner-dispcont2a">图 6（Figure  6）</a> 分别给出了无支护和有支护情况下第二个开挖阶段中发生的位移。每幅图中都包含隧道拱顶处的 <span class="math">\(z\)</span> 位移历史。可以看到，支护使拱顶位移从约 12 mm 减小到 1 mm。</p>
+<div class="figure align-center" id="id5">
+<span id="advancingliner-dispcontns"></span><a class="reference internal image-reference" href="../../../../../_images/advancingliner-dispcontns1.png"><img alt="../../../../../_images/advancingliner-dispcontns1.png" src="../../../../../_images/advancingliner-dispcontns1.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 5：阶段 2 中的位移——无支护。</span></p>
+</div>
+<div class="figure align-center" id="id6">
+<span id="advancingliner-dispcont2a"></span><a class="reference internal image-reference" href="../../../../../_images/advancingliner-dispcont2a1.png"><img alt="../../../../../_images/advancingliner-dispcont2a1.png" src="../../../../../_images/advancingliner-dispcont2a1.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 6：阶段 2 中的位移——喷射混凝土支护（衬砌-网格单元黏聚力 = 10<sup>20</sup>）。</span></p>
+</div>
+<p>弯曲应力合力 <span class="math">\(M_x\)</span>（其中 <span class="math">\(x\)</span> 方向沿隧道轴线）见 <a href="#advancingliner-bending2a">图 7（Figure  7）</a>。可以看到，衬砌前端靠近隧道掌子面处弯曲最为剧烈。<a href="#advancingliner-deform2a">图 8（Figure  8）</a> 中衬砌的变形形状图表明，这种剧烈弯曲源于较大的挤压变形。这两幅图可与<a class="reference internal" href="../../Shell/AdvancingTunnel/AdvancingTunnel.html#advancing-mx2"><span class="std std-ref">壳单元版本</span>（corresponding figures）</a><a class="reference internal" href="../../Shell/AdvancingTunnel/AdvancingTunnel.html#advancing-deform2"><span class="std std-ref">的相应图</span>（from the shell
+element version）</a>对比。二者的高度相似表明系统行为与刚性连接情况一致。</p>
+<div class="figure align-center" id="id7">
+<span id="advancingliner-bending2a"></span><a class="reference internal image-reference" href="../../../../../_images/advancingliner-bending2a1.png"><img alt="../../../../../_images/advancingliner-bending2a1.png" src="../../../../../_images/advancingliner-bending2a1.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 7：阶段 2 结束时的弯曲应力合力 <span class="math">\(M_x\)</span>（衬砌-网格单元黏聚力 = 10<sup>20</sup>）。</span></p>
+</div>
+<div class="figure align-center" id="id8">
+<span id="advancingliner-deform2a"></span><a class="reference internal image-reference" href="../../../../../_images/advancingliner-deform2a1.png"><img alt="../../../../../_images/advancingliner-deform2a1.png" src="../../../../../_images/advancingliner-deform2a1.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 8：阶段 2 结束时喷射混凝土的变形形状（放大 150 倍）（衬砌-网格单元黏聚力 = 10 <sup>20</sup>）。</span></p>
+</div>
+<p>通过绘制隧道拱顶处网格点、节点和耦合弹簧的法向位移（见 <a href="#advancingliner-ndisphist2a">图 9（Figure  9）</a>），确认接触面变形相对于网格单元变形很小（从而确认 <span class="math">\(k_n\)</span> 和 <span class="math">\(k_s\)</span> 的取值足够大）。若将 <span class="math">\(k_n\)</span> 和 <span class="math">\(k_s\)</span> 取为当前值的 1/100 重新运行模型，可以发现接触面变形相对于网格单元变形不再很小（见 <a href="#advancingliner-ndisphistls">图 10（Figure  10）</a>）。这导致衬砌承受的荷载降低。弯曲应力合力 <span class="math">\(M_x\)</span> 的最大值比先前值小 44%（对比 <a href="#advancingliner-bendingls">图 11（Figure  11）</a> 和 <a href="#advancingliner-bending2a">图 7（Figure  7）</a>）。为获得正确的系统响应，<span class="math">\(k_n\)</span> 和 <span class="math">\(k_s\)</span> 的取值必须足够大，以使接触面变形相对于网格单元变形很小。</p>
+<div class="figure align-center" id="id9">
+<span id="advancingliner-ndisphist2a"></span><a class="reference internal image-reference" href="../../../../../_images/advancingliner-ndisphist2a1.png"><img alt="../../../../../_images/advancingliner-ndisphist2a1.png" src="../../../../../_images/advancingliner-ndisphist2a1.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 9：阶段 2 结束时隧道拱顶处网格点、节点和耦合弹簧的法向位移（衬砌-网格单元黏聚力 = 10<sup>20</sup>）。</span></p>
+</div>
+<div class="figure align-center" id="id10">
+<span id="advancingliner-ndisphistls"></span><a class="reference internal image-reference" href="../../../../../_images/advancingliner-ndisphistls1.png"><img alt="../../../../../_images/advancingliner-ndisphistls1.png" src="../../../../../_images/advancingliner-ndisphistls1.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 10：阶段 2 结束时隧道拱顶处网格点、节点和耦合弹簧的法向位移（<span class="math">\(k_n\)</span> 和 <span class="math">\(k_s\)</span> 减小 100 倍；衬砌-网格单元黏聚力 = 10<sup>20</sup>）。</span></p>
+</div>
+<div class="figure align-center" id="id11">
+<span id="advancingliner-bendingls"></span><a class="reference internal image-reference" href="../../../../../_images/advancingliner-bendingls1.png"><img alt="../../../../../_images/advancingliner-bendingls1.png" src="../../../../../_images/advancingliner-bendingls1.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 11：阶段 2 结束时的弯曲应力合力 <span class="math">\(M_x\)</span>（<span class="math">\(k_n\)</span> 和 <span class="math">\(k_s\)</span> 减小 100 倍；衬砌-网格单元黏聚力 = 10<sup>20</sup>）。</span></p>
+</div>
+<p>阶段 2 结束时作用在衬砌上的法向应力和剪应力见 <a href="#advancingliner-nstress2a">图 12（Figure  12）</a> 和 <a href="#advancingliner-sstress2a">图 13（Figure  13）</a>。两种应力均在靠近隧道掌子面的衬砌前端附近最大。这些应力导致 <a href="#advancingliner-deform2a">图 8（Figure  8）</a> 中看到的挤压变形。若将土体-衬砌接触面的黏结强度设为零并循环至平衡，可以观察到，随着作用在衬砌上的剪应力趋于零，衬砌沿全局负 <span class="math">\(y\)</span> 方向回弹（见 <a href="#advancingliner-disp2b">图 14（Figure  14）</a>）。作用在衬砌上的法向应力和弯曲应力合力 <span class="math">\(M_x\)</span> 仅受到很小影响。</p>
+<div class="figure align-center" id="id12">
+<span id="advancingliner-nstress2a"></span><a class="reference internal image-reference" href="../../../../../_images/advancingliner-nstress2a1.png"><img alt="../../../../../_images/advancingliner-nstress2a1.png" src="../../../../../_images/advancingliner-nstress2a1.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 12：阶段 2 结束时作用在衬砌表面上的法向应力（衬砌-网格单元黏聚力 = 10<sup>20</sup>）。</span></p>
+</div>
+<div class="figure align-center" id="id13">
+<span id="advancingliner-sstress2a"></span><a class="reference internal image-reference" href="../../../../../_images/advancingliner-sstress2a1.png"><img alt="../../../../../_images/advancingliner-sstress2a1.png" src="../../../../../_images/advancingliner-sstress2a1.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 13：阶段 2 结束时作用在衬砌表面上的剪应力（衬砌-网格单元黏聚力 = 10<sup>20</sup>）。</span></p>
+</div>
+<div class="figure align-center" id="id14">
+<span id="advancingliner-disp2b"></span><a class="reference internal image-reference" href="../../../../../_images/advancingliner-disp2b1.png"><img alt="../../../../../_images/advancingliner-disp2b1.png" src="../../../../../_images/advancingliner-disp2b1.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 14：阶段 2 后将衬砌-网格单元黏聚力设为零所产生的衬砌位移。</span></p>
+</div>
+<p>再进行一个开挖阶段。该阶段结束时模型见 <a href="#advancingliner-system3">图 15（Figure  15）</a>。通过再次发出 <code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">liner</span> <span class="pre">create</span> <span class="pre">by-face</span></code> 命令并指定与第 1 段衬砌不同的 ID 号，喷射混凝土支护已延伸至隧道第 2 段。这在两段喷射混凝土之间形成“冷缝”。（接触面处将出现一组双节点，其中一个由第 1 段使用，另一个由第 2 段使用。相邻衬砌单元之间不传递力和弯矩；而是仅在公共位置向周围网格单元传递力。这模拟了并排的两个独立衬砌段。）阶段 3 中发生的变形开始加载新的衬砌段，并在先前衬砌段中产生附加荷载。位移场和弯曲应力场（见 <a href="#advancingliner-bending3">图 16（Figure  16）</a>）在该缝处均不连续。</p>
+<div class="figure align-center" id="id15">
+<span id="advancingliner-system3"></span><a class="reference internal image-reference" href="../../../../../_images/advancingliner-system31.png"><img alt="../../../../../_images/advancingliner-system31.png" src="../../../../../_images/advancingliner-system31.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 15：阶段 3：在第 2 段安装喷射混凝土；开挖隧道第 3 段。</span></p>
+</div>
+<div class="figure align-center" id="id16">
+<span id="advancingliner-bending3"></span><a class="reference internal image-reference" href="../../../../../_images/advancingliner-bending31.png"><img alt="../../../../../_images/advancingliner-bending31.png" src="../../../../../_images/advancingliner-bending31.png" style="width: 82%;"/></a>
+<p class="caption"><span class="caption-text">图 16：阶段 3 结束时的弯曲应力合力 <span class="math">\(M_x\)</span>（衬砌-网格单元黏聚力为零）。</span></p>
+</div>
+<p class="h2 rubric" id="advancinglineddata">数据文件</p>
+<p><strong>AdvancingLinedTunnel.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 衬砌结构单元应用算例 </span>
+<span class="c">; 衬砌与土体接触面允许滑移的隧道推进开挖</span>
+<span class="nb">model new</span><span class="n"> </span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">fish automatic-create</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'Advancing Lined Tunnel with Slip (using liners)'</span>
+<span class="c">; 创建模型几何形状</span>
+<span class="nb">zone create</span><span class="n"> radial</span><span class="o">-</span><span class="n">cylinder dim </span><span class="m m-Double">1.0</span><span class="n"> point </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                    point </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                    ratio </span><span class="m m-Double">1.0</span><span class="n"> </span><span class="m m-Double">1.0</span><span class="n"> </span><span class="m m-Double">1.0</span><span class="n"> </span><span class="m m-Double">1.2</span><span class="n"> size </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">8</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                    group </span><span class="s">'rock'</span><span class="n"> fill group </span><span class="s">'tunnel'</span>
+<span class="nb">zone create</span><span class="n"> radial</span><span class="o">-</span><span class="n">cylinder dim </span><span class="m m-Double">1.0</span><span class="n"> point </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                    point </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                    ratio </span><span class="m m-Double">1.0</span><span class="n"> </span><span class="m m-Double">1.0</span><span class="n"> </span><span class="m m-Double">1.0</span><span class="n"> </span><span class="m m-Double">1.2</span><span class="n"> size </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                    group </span><span class="s">'rock'</span><span class="n"> fill group </span><span class="s">'tunnel'</span>
+<span class="c">; 为模型区域命名</span>
+<span class="nb">zone group</span><span class="n"> </span><span class="s">'section1'</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> group </span><span class="s">'tunnel'</span>
+<span class="nb">zone group</span><span class="n"> </span><span class="s">'section2'</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">2</span><span class="n"> group </span><span class="s">'tunnel'</span>
+<span class="nb">zone group</span><span class="n"> </span><span class="s">'section3'</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">3</span><span class="n"> group </span><span class="s">'tunnel'</span>
+<span class="nb">zone group</span><span class="n"> </span><span class="s">'section4'</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> group </span><span class="s">'tunnel'</span>
+<span class="nb">zone group</span><span class="n"> </span><span class="s">'section5'</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> group </span><span class="s">'tunnel'</span>
+<span class="nb">zone face group</span><span class="n"> </span><span class="s">'shotcrete1'</span><span class="n"> internal range group </span><span class="s">'rock'</span><span class="n"> group </span><span class="s">'section1'</span>
+<span class="nb">zone face group</span><span class="n"> </span><span class="s">'shotcrete2'</span><span class="n"> internal range group </span><span class="s">'rock'</span><span class="n"> group </span><span class="s">'section2'</span>
+<span class="nb">zone face group</span><span class="n"> </span><span class="s">'shotcrete3'</span><span class="n"> internal range group </span><span class="s">'rock'</span><span class="n"> group </span><span class="s">'section3'</span>
+<span class="c">; 材料模型和参数</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">zone property</span><span class="n"> bulk </span><span class="m m-Double">50e6</span><span class="n"> shear </span><span class="m m-Double">18e6</span>
+<span class="c">; 初始条件</span>
+<span class="nb">zone initialize</span><span class="n"> stress xx </span><span class="o">-</span><span class="m m-Double">1e6</span><span class="n"> yy </span><span class="o">-</span><span class="m m-Double">1e6</span><span class="n"> zz </span><span class="o">-</span><span class="m m-Double">1e6</span>
+<span class="c">; 边界条件</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0.0</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y range position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0.0</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.0</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity </span><span class="sx">...</span>
+<span class="n">                   range union position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">5.0</span><span class="n"> position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">5.0</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">5.0</span>
+<span class="c">; --- 阶段 1：开挖第 1 段隧道</span>
+<span class="nb">zone cmodel</span><span class="n"> assign null range group </span><span class="s">'section1'</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> convergence </span><span class="m m-Double">1</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'tun1'</span>
+<span class="c">;</span>
+<span class="c">; --- 阶段 2：开挖第 2 段隧道</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> displacement </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="nb">zone history</span><span class="n"> name </span><span class="s">'zdisp'</span><span class="n"> displacement</span><span class="o">-</span><span class="n">z position </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="nb">zone history</span><span class="n"> name </span><span class="s">'zvel'</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z position </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="nb">zone cmodel</span><span class="n"> assign null range group </span><span class="s">'section2'</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'tun2-initial'</span>
+<span class="c">; --- 求解无支护工况</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> convergence </span><span class="m m-Double">1</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'tun2-nosupport'</span>
+<span class="c">; --- 求解喷射混凝土支护工况</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'tun2-initial'</span>
+<span class="nb">struct liner create</span><span class="n"> by</span><span class="o">-</span><span class="n">zone</span><span class="o">-</span><span class="n">face id</span><span class="p">=</span><span class="m m-Double">1</span><span class="n"> range group </span><span class="s">'shotcrete1'</span>
+<span class="nb">struct liner property</span><span class="n"> isotropic</span><span class="p">=(</span><span class="m m-Double">10.5e9</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0.25</span><span class="p">)</span><span class="n"> thickness</span><span class="p">=</span><span class="m m-Double">0.2</span>
+<span class="nb">struct liner property</span><span class="n"> coupling</span><span class="o">-</span><span class="n">stiffness</span><span class="o">-</span><span class="n">normal</span><span class="p">=</span><span class="m m-Double">7.4e10</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">             coupling</span><span class="o">-</span><span class="n">stiffness</span><span class="o">-</span><span class="n">shear</span><span class="p">=</span><span class="m m-Double">7.4e10</span><span class="n"> coupling</span><span class="o">-</span><span class="n">cohesion</span><span class="o">-</span><span class="n">shear</span><span class="p">=</span><span class="m m-Double">1e20</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'tun2-temp1'</span>
+<span class="c">; --- 为三个对称面上的节点指定对称条件</span>
+<span class="nb">struct node system-local</span><span class="n"> x </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> y </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n">    range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span>
+<span class="nb">struct node fix</span><span class="n"> system</span><span class="o">-</span><span class="n">local                     range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span>
+<span class="nb">struct node fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x rotation</span><span class="o">-</span><span class="n">y rotation</span><span class="o">-</span><span class="n">z range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span>
+<span class="nb">struct node system-local</span><span class="n"> x </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> y </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n">   range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span>
+<span class="nb">struct node fix</span><span class="n"> system</span><span class="o">-</span><span class="n">local                     range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span>
+<span class="nb">struct node fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x rotation</span><span class="o">-</span><span class="n">y rotation</span><span class="o">-</span><span class="n">z range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span>
+<span class="nb">struct node fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y rotation</span><span class="o">-</span><span class="n">x rotation</span><span class="o">-</span><span class="n">z range position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span>
+<span class="nb">struct node history</span><span class="n"> name </span><span class="s">'znode'</span><span class="n"> displacement</span><span class="o">-</span><span class="n">z component</span><span class="o">-</span><span class="n">id</span><span class="p">=</span><span class="m m-Double">25</span>
+<span class="nb">struct liner history</span><span class="n"> name </span><span class="s">'ndis'</span><span class="n"> coupling</span><span class="o">-</span><span class="n">displacement</span><span class="o">-</span><span class="n">normal node </span><span class="m m-Double">2</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                     component</span><span class="o">-</span><span class="n">id</span><span class="p">=</span><span class="m m-Double">32</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'tun2-temp2'</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> convergence </span><span class="m m-Double">1</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'tun2a'</span>
+
+<span class="c">; 降低刚度后重复开挖，降低倍数为 100</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'tun2-temp2'</span>
+<span class="nb">struct liner property</span><span class="n"> coupling</span><span class="o">-</span><span class="n">stiffness</span><span class="o">-</span><span class="n">normal</span><span class="p">=</span><span class="m m-Double">7.4e8</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">             coupling</span><span class="o">-</span><span class="n">stiffness</span><span class="o">-</span><span class="n">shear</span><span class="p">=</span><span class="m m-Double">7.4e8</span><span class="n"> coupling</span><span class="o">-</span><span class="n">cohesion</span><span class="o">-</span><span class="n">shear</span><span class="p">=</span><span class="m m-Double">1e20</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> convergence </span><span class="m m-Double">1</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'tun2a-lowstiff'</span>
+
+<span class="c">; 采用较大刚度继续开挖，并降低黏聚力</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'tun2a'</span>
+<span class="nb">struct node initialize</span><span class="n"> displacement </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="nb">struct liner property</span><span class="n"> coupling</span><span class="o">-</span><span class="n">cohesion</span><span class="o">-</span><span class="n">shear</span><span class="p">=</span><span class="m m-Double">0.0</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> convergence </span><span class="m m-Double">1</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'tun2b'</span>
+
+<span class="c">; --- 阶段 3：开挖第 3 段隧道</span>
+<span class="nb">zone cmodel</span><span class="n"> assign null range group </span><span class="s">'section3'</span>
+<span class="nb">struct liner create</span><span class="n"> by</span><span class="o">-</span><span class="n">zone</span><span class="o">-</span><span class="n">face id</span><span class="p">=</span><span class="m m-Double">2</span><span class="n"> range group </span><span class="s">'shotcrete2'</span>
+<span class="c">; --- 为三个对称面上的节点指定对称条件</span>
+<span class="nb">struct node system-local</span><span class="n"> x </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> y </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n">    range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span>
+<span class="nb">struct node fix</span><span class="n"> system</span><span class="o">-</span><span class="n">local                     range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span>
+<span class="nb">struct node fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x rotation</span><span class="o">-</span><span class="n">y rotation</span><span class="o">-</span><span class="n">z range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span>
+<span class="nb">struct node system-local</span><span class="n"> x </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> y </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n">   range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span>
+<span class="nb">struct node fix</span><span class="n"> system</span><span class="o">-</span><span class="n">local                     range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span>
+<span class="nb">struct node fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x rotation</span><span class="o">-</span><span class="n">y rotation</span><span class="o">-</span><span class="n">z range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span>
+<span class="nb">struct node fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y rotation</span><span class="o">-</span><span class="n">x rotation</span><span class="o">-</span><span class="n">z range position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span>
+<span class="nb">struct liner property</span><span class="n"> isotropic</span><span class="p">=(</span><span class="m m-Double">10.5e9</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0.25</span><span class="p">)</span><span class="n"> thickness</span><span class="p">=</span><span class="m m-Double">0.2</span><span class="n"> range id </span><span class="m m-Double">2</span>
+<span class="nb">struct liner property</span><span class="n"> coupling</span><span class="o">-</span><span class="n">stiffness</span><span class="o">-</span><span class="n">normal</span><span class="p">=</span><span class="m m-Double">7.4e10</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">             coupling</span><span class="o">-</span><span class="n">stiffness</span><span class="o">-</span><span class="n">shear</span><span class="p">=</span><span class="m m-Double">7.4e10</span><span class="n"> coupling</span><span class="o">-</span><span class="n">cohesion</span><span class="o">-</span><span class="n">shear</span><span class="p">=</span><span class="m m-Double">0.0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">             range id </span><span class="m m-Double">2</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> convergence </span><span class="m m-Double">1</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'tun3'</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../../../common/docproject/source/manual/program_guide/program_guide.html">程序指南</a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../../../common/sel/doc/manual/sels.html">Structural Elements</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../../../../../common/sel/doc/manual/sel_manual/liners/liners.html">Liner Structural Elements</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../LargeStrainSliding/LargeStrainSliding.html" title="previous chapter"> Demonstration of Large-Strain Sliding</a> |    
+       <a href="../ReinforcedBeam/ReinforcedBeam.html" title="next chapter">Liner-Reinforced Beam</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Advancing Lined Tunnel (Slip at Liner-Soil Interface)" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>
