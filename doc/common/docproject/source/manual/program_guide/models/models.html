@@ -1,0 +1,213 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>本构模型 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="theory/modelsinflac3d.html" rel="next" title="Constitutive Models in FLAC3D and 3DEC"/>
+<link href="../support/moreresources.html" rel="prev" title="More Resources"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="hide sectionname docutils container">
+<span class="codename">FLAC3D</span> Theory and Background • Constitutive Models</div>
+<div class="section" id="constitutive-models">
+<span id="constitutivemodels"></span><h1>本构模型</h1>
+<p class="h2 rubric">引言</p>
+<p>数值求解格式在实现用于描述岩土材料行为的本构模型时会遇到若干困难。岩土材料有三个特性会带来特别的问题。</p>
+<p>其一是物理不稳定性。当材料破坏时存在软化行为的可能，材料中就可能出现物理不稳定。出现物理不稳定时，一部分材料会加速，储存的能量以动能形式释放。数值求解格式在此阶段常常遇到困难，因为出现物理不稳定时解可能无法收敛。</p>
+<p>第二个特性是非线性材料的路径相关性。在大多数岩土系统中，满足描述该系统的平衡、相容和本构关系的解有无穷多个。为找到“正确”的解，必须指定一条路径。例如，若开挖是突然进行的（如爆破），则解可能受惯性效应影响，这种惯性效应会引起材料的附加破坏。若开挖是逐渐进行的，则可能不会出现这种情况。数值求解格式应能适应不同的加载路径，以便正确应用本构模型。</p>
+<p>第三个特性是应力-应变响应的非线性。这包括弹性刚度和强度包络对围压的非线性依赖关系。这也可包括最终破坏之后随应力水平而改变特性的行为（例如在拉伸、无围压和受围压状态下不同的破坏后响应）。数值格式需要能够适应这些不同形式的非线性。</p>
+<p>岩土工程数值模拟所面临的困难——物理不稳定性、路径相关性以及极度非线性本构模型的实现——均可通过采用 <span class="codename">FLAC3D</span> 中提供的<em>显式动力求解</em>格式来应对。该格式使数值分析能够以符合实际的方式跟踪地质系统的演化，而无需担心数值不稳定问题。在显式动力求解格式中，完整的动力运动方程被包含在公式体系中。采用这一方法，即使所模拟的物理系统不稳定，数值解也是稳定的。对于非线性材料，总存在物理不稳定的可能（例如边坡的突然崩塌）。在现实中，系统的一部分应变能转化为动能，随后从源头向外辐射并耗散。显式动力求解方法直接模拟这一过程，因为其中包含惯性项——动能被产生并耗散。</p>
+<p>相比之下，不包含惯性项的格式必须使用某种数值处理方法来处理物理不稳定。即使该方法能成功防止数值不稳定，所经过的路径也可能不符合实际。不应把数值格式视为能给出“该解”的黑箱。系统在物理上演化的方式会影响解。显式动力求解格式可以遵循物理路径。由于包含完整的运动定律，该格式能够评估加载路径对本构响应的影响。</p>
+<p>显式动力求解格式还允许实现强非线性本构模型，因为其通用计算顺序允许在一个计算步内把模型中每个单元的场量（力/应力与速度/位移）在物理上彼此隔离。<span class="codename">FLAC3D</span> 的通用计算顺序在<a class="reference internal" href="../../../../../../flac3d/docproject/source/theory/theoreticalbackground/theoreticalbackground.html#theoreticalbackground"><span class="std std-ref">理论背景</span>（Theoretical Background）</a>一节中描述。在该格式框架内实现弹/塑性本构模型的问题在<a class="reference internal" href="theory/formulation.html#incrementalformulation"><span class="std std-ref">增量格式</span>（Incremental Formulation）</a>一节中讨论。</p>
+<p><span class="codename">FLAC3D</span> 中可用的力学本构模型从线弹性模型到高度非线性的塑性模型不等。下面列出基本本构模型。在此列表之后，将简要讨论每个模型的理论背景和简单示例试验。</p>
+<p class="h2 rubric">本节提纲</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="theory/modelsinflac3d.html"><span class="codename">FLAC3D</span> 与 <span class="codename">3DEC</span> 中的本构模型（Constitutive Models in FLAC3D and 3DEC）</a></li>
+<li class="toctree-l1"><a class="reference internal" href="theory/formulation.html">增量格式（Incremental Formulation）</a></li>
+<li class="toctree-l1"><a class="reference internal" href="theory/nullmodel.html">空模型组（Null Model Group）</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../models/null/doc/modelnull.html">空模型（Null Model）</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="theory/elasticmodel.html">弹性模型组（Elastic Model Group）</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../models/elastic/doc/modelelastic.html">各向同性弹性模型（Isotropic Elastic Model）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../models/aniso/doc/modelaniso.html">各向异性（横观各向同性）弹性模型（Anisotropic (Transversely) Elastic Model）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../models/ortho/doc/modelortho.html">正交各向异性弹性模型（Orthotropic Elastic Model）</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="theory/plasticmodel.html">塑性模型组（Plastic Model Group）</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../models/drucker/doc/modeldrucker.html">Drucker-Prager 模型（Drucker-Prager Model）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../models/mohr/doc/modelmohr.html">摩尔-库仑模型（Mohr-Coulomb Model）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../models/ubiquit/doc/modelubiquit.html">遍布节理模型（Ubiquitous-Joint Model）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../models/caniso/doc/modelcaniso.html">各向异性弹性遍布节理模型（Anisotropic-Elasticity Ubiquitous-Joint Model）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../models/ssoft/doc/modelssoft.html">应变软化/硬化摩尔-库仑（SSoft）模型（Strain-Softening/Hardening Mohr-Coulomb (SSoft) Model）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../models/subi/doc/modelsubi.html">双线性应变软化/硬化遍布节理（SUBI）模型（Bilinear Strain-Softening/Hardening Ubiquitous-Joint (SUBI) Model）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../models/doubley/doc/modeldoubley.html">双屈服模型（Double-Yield Model）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../models/camclay/doc/modelcamclay.html">修正 Cam-Clay 模型（Modified Cam-Clay Model）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../models/hoek/doc/modelhoek.html">Hoek-Brown 模型（Hoek-Brown Model）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../models/hoekbrownpac/doc/modelhoekbrownpac.html">Hoek-Brown-PAC 模型（Hoek-Brown-PAC Model）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../models/cysoil/doc/modelcysoil.html">帽盖屈服（CYSoil）模型*（Cap-Yield (CYSoil) Model*）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../models/chsoil/doc/modelchsoil.html">简化帽盖屈服（CHSoil）模型*（Simplified Cap-Yield (CHSoil) Model*）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../models/hardening/doc/modelhardening.html">塑性硬化（PH）模型*（Plastic-Hardening (PH) Model*）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../models/swell/doc/modelswell.html">膨胀模型*（Swell Model*）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../models/mohrt/doc/modelmohrt.html">摩尔-库仑拉伸裂缝（MohrT）模型*（Mohr-Coulomb Tension Crack  (MohrT) Model*）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../models/softsoil/doc/modelsoftsoil.html">软土模型*（Soft-Soil Model*）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../models/norsand/doc/modelnorsand.html">NorSand 模型*（NorSand Model*）</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="creep/creep.html"><span class="codename">3DEC</span> 与 <span class="codename">FLAC3D</span> 中的蠕变本构模型（Creep Constitutive Models in 3DEC and FLAC3D）</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="creep/description/description.html">蠕变本构模型说明（Description of Creep Constitutive Models）</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../models/viscous/doc/modelviscous.html">Maxwell 模型（Maxwell Model）</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../models/burgers/doc/modelburgers.html">Burgers 模型（Burgers Model）</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../models/power/doc/modelpower.html">幂模型（Power Model）</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../models/wipp/doc/modelwipp.html">WIPP 模型（WIPP Model）</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../models/cvisc/doc/modelcvisc.html">Burgers-Mohr 模型（Burgers-Mohr Model）</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../models/cpower/doc/modelcpower.html">Power-Mohr 模型（Power-Mohr Model）</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../models/cupow/doc/modelcupow.html">Power-Ubiquitous 模型（Power-Ubiquitous Model）</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../models/pwipp/doc/modelpwipp.html">WIPP-Drucker 模型（WIPP-Drucker Model）</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../models/cwipp/doc/modelcwipp.html">WIPP-Salt 模型（WIPP-Salt Model）</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../models/softsoilcreep/doc/modelsoftsoilcreep.html">Soft-Soil-Creep 模型*（Soft-Soil-Creep Model*）</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="creep/solving/solving.html">求解蠕变问题（Solving Creep Problems）</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="creep/solving/solving.html#creep-timestep">蠕变时间步（Creep Timestep）</a></li>
+<li class="toctree-l3"><a class="reference internal" href="creep/solving/solving.html#automatic-adjustment-of-the-creep-timestep">蠕变时间步的自动调整（Automatic Adjustment of the Creep Timestep）</a></li>
+<li class="toctree-l3"><a class="reference internal" href="creep/solving/solving.html#temperature-dependency">温度相关性（Temperature Dependency）</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="creep/input/input.html">蠕变模拟的输入说明（Input Instructions for Creep Modeling）</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="creep/input/input.html#creep-commands">蠕变命令（Creep Commands）</a></li>
+<li class="toctree-l3"><a class="reference internal" href="creep/input/input.html#creep-fish-variables">蠕变 <span class="codename">FISH</span> 变量（Creep FISH Variables）</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="creep/verification/verification.html">验证与示例问题（Verification and Example Problems）</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/Creep/ParallelPlateViscometerClassical/parallelplateviscometerclassical.html">Maxwell/Kelvin/Burgers 模型：平行板黏度计（Maxwell/Kelvin/Burgers Model: Parallel-Plate Viscometer）</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/Creep/ParallelPlateViscometerWIPP/parallelplateviscometerwipp.html">WIPP 类模型：平行板黏度计（WIPP-Type Models: Parallel-Plate Viscometer）</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/Creep/CylindricalCavityPower/cylindricalcavitypower.html">幂模型：圆柱形洞室（Power Model: Cylindrical Cavity）</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/Creep/CylindricalCavityPowerMohr/cylindricalcavitypowermohr.html">Power-Mohr 模型：圆柱形洞室（Power-Mohr Model: Cylindrical Cavity）</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/Creep/CylindricalCavityWIPP/cylindricalcavitywipp.html">WIPP 模型：圆柱形洞室（WIPP Model: Cylindrical Cavity）</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/Creep/SphericalCavityPower/sphericalcavitypower.html">幂模型：球形洞室（Power Model: Spherical Cavity）</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/Creep/OedometerMaxwell/oedometermaxwell.html">Maxwell 模型：固结仪试验（Maxwell Model: Oedometer Test）</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/Creep/OedometerKelvin/oedometerkelvin.html">Kelvin 模型：固结仪试验（Kelvin Model: Oedometer Test）</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/Creep/CompressionClassical/compressionclassical.html">Maxwell/Burgers 模型：压缩试验（Maxwell/Burgers Model: Compression Test）</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/Creep/CompressionViscoplastic/compressionviscoplastic.html">Burgers-Mohr/Power-Mohr 模型：加/卸载压缩试验（Burgers-Mohr/Power-Mohr Model: Loading/Unloading Compression Test）</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/Creep/ComparisonWIPPDrucker/comparisonwippdrucker.html">WIPP-Drucker 模型：与 Drucker-Prager 模型的比较（WIPP-Drucker Model: Comparison with Drucker-Prager Model）</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/Creep/CompressionWIPPDrucker/compressionwippdrucker.html">WIPP-Drucker 模型：显示局部化的压缩试验（WIPP-Drucker Model: Compression Test Showing Localization）</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/Creep/HydrostaticCompressionWIPPSalt/hydrostaticcompressionwippsalt.html">WIPP-Salt 模型：静水压缩试验（WIPP-Salt Model: Hydrostatic Compression Test）</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/Creep/UnconfinedAndBiaxialCompressionWIPPSalt/unconfinedandbiaxialcompressionwippsalt.html">WIPP-Salt 模型：剪切压缩试验（WIPP-Salt Model: Shear Compression Test）</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/Creep/UndrainedTriaxialSoftSoilCreep/undrainedtriaxialsoftsoilcreep.html">Soft-Soil-Creep 模型：三轴固结不排水加载（Soft-Soil-Creep Model: Triaxial Consolidated Undrained Loading）</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="creep/references/references.html">参考文献（References）</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="theory/modeltests.html">模型试验与示例（Model Tests and Examples）</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/ConstitutiveModels/OedometerMohrCoulomb/oedometermohrcoulomb.html">采用摩尔-库仑模型的固结仪试验（Oedometer Test with Mohr-Coulomb Model）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/VerificationProblems/UniaxialStrengthJointed/UniaxialStrengthJointed.html">节理材料试样的单轴抗压强度（Uniaxial Compressive Strength of a Jointed Material Sample）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/ConstitutiveModels/IsotropicCompressionDoubleYield/isotropiccompressiondoubleyield.html">采用双屈服模型的各向同性固结试验（Isotropic Consolidation Test with Double-Yield Model）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/ConstitutiveModels/IsotropicConsolidationModifiedCamClay/isotropicconsolidationmodifiedcamclay.html">采用修正 Cam-Clay 模型的各向同性固结试验（Isotropic Consolidation Test with Modified Cam-Clay Model）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/ConstitutiveModels/TriaxialCompressionHoekBrown/TriaxialCompressionHoekBrown.html">采用 Hoek-Brown 模型的三轴压缩试验（Triaxial Compression Test with Hoek-Brown Model）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/ConstitutiveModels/TriaxialCompressionHoekBrownPAC/TriaxialCompressionHoekBrownPAC.html">采用 Hoek-Brown-PAC 模型的三轴压缩试验（Triaxial Compression Test with Hoek-Brown-PAC Model）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/ConstitutiveModels/IsotropicCompressionCYSoil/isotropiccompressioncysoil.html">采用 CYSoil 模型的各向同性压缩试验（Isotropic Compression Test with CYSoil Model）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/ConstitutiveModels/OedometerCYSoil/oedometercysoil.html">采用 CYSoil 模型的固结仪试验（Oedometer Test with CYSoil Model）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/ConstitutiveModels/DrainedTriaxialConstantDilationCYSoil/drainedtriaxialconstantdilationcysoil.html">采用 CYSoil 模型的排水三轴试验——恒定剪胀（Drained Triaxial Test with CYSoil Model — Constant Dilation）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/ConstitutiveModels/DrainedTriaxialDilationHardeningCYSoil/drainedtriaxialdilationhardeningcysoil.html">采用 CYSoil 模型的排水三轴试验——剪胀硬化（Drained Triaxial Test with CYSoil Model — Dilation Hardening）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/ConstitutiveModels/UndrainedTriaxialCYSoil/undrainedtriaxialcysoil.html">采用 CYSoil 模型的不排水三轴试验（Undrained Triaxial Test with CYSoil Model）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/ConstitutiveModels/DrainedTriaxialCHSoil/drainedtriaxialchsoil.html">采用简化帽盖屈服（CHSoil）模型的排水三轴压缩试验（Drained Triaxial Compression Test with Simplified Cap-Yield (CHSoil) Model）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/ConstitutiveModels/ComparisonPlasticHardening/comparisonplastichardening.html">摩尔-库仑模型与塑性硬化模型的比较（Comparison between Mohr-Coulomb Model and Plastic-Hardening model）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/ConstitutiveModels/ComparisonSmallStrainPlasticHardening/comparisonsmallstrainplastichardening.html">无小应变刚度与有小应变刚度的塑性硬化模型比较（Comparison of Plastic-Hardening Model without and with Small-Strain Stiffness）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/ConstitutiveModels/IsotropicCompressionPlasticHardening/isotropiccompressionplastichardening.html">采用塑性硬化模型的各向同性压缩试验（Isotropic Compression Test with Plastic-Hardening Model）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/ConstitutiveModels/DrainedTriaxialPlasticHardening/drainedtriaxialplastichardening.html">采用塑性硬化模型的排水三轴压缩试验（Drained Triaxial Compression Test with Plastic-Hardening Model）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/ConstitutiveModels/UndrainedTriaxialPlasticHardening/undrainedtriaxialplastichardening.html">采用塑性硬化模型的不排水三轴压缩试验（Undrained Triaxial Compression Test with Plastic-Hardening Model）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/ConstitutiveModels/OedometerPlasticHardening/oedometerplastichardening.html">采用塑性硬化模型的固结仪试验（Oedometer Test with Plastic-Hardening Model）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/ConstitutiveModels/SingleZoneSwell/singlezoneswell.html">单网格单元膨胀试验（Single Zone Swell Test）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/ConstitutiveModels/SingleZoneMohrCoulombTensionCrack/singlezonemohrcoulombtensioncrack.html">采用 MohrT 模型的单网格单元加卸载试验（Single Zone Loading-Unloading Test with  MohrT Model）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/ConstitutiveModels/UndrainedTriaxialSoftSoil/undrainedtriaxialsoftsoil.html">采用软土模型的不排水三轴试验（Undrained Triaxial Test with Soft-Soil Model）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../flac3d/zone/test3d/ConstitutiveModels/UndrainedTriaxialNorSand/undrainedtriaxialnorsand.html">采用 NorSand 模型的不排水三轴试验（Undrained Triaxial Test with NorSand Model）</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="theory/references.html">参考文献（References）</a></li>
+</ul>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a accesskey="U" href="../program_guide.html">程序指南</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../support/moreresources.html" title="previous chapter"> More Resources</a> |    
+       <a href="theory/modelsinflac3d.html" title="next chapter">Constitutive Models in <span class="codename">FLAC3D</span> and <span class="codename">3DEC</span></a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Constitutive Models" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

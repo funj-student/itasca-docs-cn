@@ -1,0 +1,775 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>在 FLAC3D 中使用 Python — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../../search.html" rel="search" title="Search"/>
+<link href="code_python_flac3d.py.html" rel="next" title="python_flac3d.py"/>
+<link href="../python_flac3d.html" rel="prev" title="FLAC3D Python"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="using-python-with-flac3d">
+<h1>在 <span class="codename">FLAC3D</span> 中使用 Python</h1>
+<p>本节给出用 Python 程序与 <span class="codename">FLAC3D</span> 交互的示例。本例中我们创建一个简单 <span class="codename">FLAC3D</span> 模型，并用 Python 施加边界条件、考察模型响应。</p>
+<p>首先我们用 <code class="docutils literal"><span class="pre">import</span></code> 语句导入 <code class="docutils literal"><span class="pre">itasca</span></code> 模块。<code class="docutils literal"><span class="pre">itasca</span></code> 模块定义 Python 与 <span class="codename">FLAC3D</span> 之间的交互。我们以简写名 <code class="docutils literal"><span class="pre">it</span></code> 导入 <code class="docutils literal"><span class="pre">itasca</span></code> 模块。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">itasca</span> <span class="kn">as</span> <span class="nn">it</span>
+<span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"python-reset-state false"</span><span class="p">)</span>
+<span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">program load module 'zone'</span>
+<span class="s2">program load guimodule 'zone'</span>
+<span class="s2">program load module 'body'</span>
+<span class="s2">program load guimodule 'body'</span>
+<span class="s2">program load module 'extruder'</span>
+<span class="s2">program load guimodule 'extruder'</span>
+<span class="s2">program load module 'sel'</span>
+<span class="s2">program load module 'zonesel'</span>
+<span class="s2">program load module 'selpython'</span>
+<span class="s2">program load module 'wallsel'</span>
+<span class="s2">program load guimodule 'sel'</span>
+<span class="s2">program load module 'pfcsel'</span>
+<span class="s2">program load module 'rblocksel'</span>
+<span class="s2">program load module 'dfnzone'</span>
+<span class="s2">program load module 'ballzone'</span>
+<span class="s2">program load module 'zonepython'</span>
+<span class="s2">program load module 'wallzone'</span>
+<span class="s2">"""</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>我们将创建一些网格单元以展示 Python 脚本的特性。用 <code class="docutils literal"><span class="pre">it.command</span></code>（<a class="reference internal" href="itasca.html#itasca.command" title="itasca.command"><code class="xref py py-func docutils literal"><span class="pre">itasca.command</span></code></a>）函数发出一系列 <span class="codename">FLAC3D</span> 命令。始终在 Python 程序开头给出命令 <code class="xref fish fish-cmd docutils literal"><span class="pre">python-reset-state</span> <span class="pre">false</span></code>。若不给出该命令，则当 <span class="codename">FLAC3D</span> 模型状态通过 <code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">new</span></code> 或 <code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">restore</span></code> 命令重置时，Python 变量与函数会被删除。</p>
+<p>这些命令创建网格单元并设置若干性质。三引号用于定义多行字符串。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">model new</span>
+<span class="s2">model large-strain off</span>
+<span class="s2">zone create brick size 10 10 10</span>
+<span class="s2">zone cmodel assign elastic</span>
+<span class="s2">zone property density 2950 young 12e9 poisson 0.25</span>
+<span class="s2">cycle 1</span>
+<span class="s2">"""</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="section" id="working-with-flac3d-zones">
+<h2>处理 <span class="codename">FLAC3D</span> 网格单元</h2>
+<p>可用 <code class="docutils literal"><span class="pre">it.zone.count</span></code>（<a class="reference internal" href="itasca.zone.html#itasca.zone.count" title="itasca.zone.count"><code class="xref py py-func docutils literal"><span class="pre">itasca.zone.count</span></code></a>）函数确认创建了 1000 个网格单元。在 IPython 终端中键入以下表达式会向屏幕输出数字 1000。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">it</span><span class="o">.</span><span class="n">zone</span><span class="o">.</span><span class="n">count</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>1000
+</pre></div>
+</div>
+</dd>
+</dl>
+<p><a class="reference internal" href="itasca.html#pyapi-itasca"><span class="std std-ref">itasca</span></a> 模块定义了用于与 <span class="codename">FLAC3D</span> 模型交互的函数和类。其中一些函数返回对象，</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">z</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">zone</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>&lt;itasca.zone.Zone object at 0x000001A830FC12D0, ID : 1&gt;
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>此处 <code class="docutils literal"><span class="pre">it.zone.find(1)</span></code>（<a class="reference internal" href="itasca.zone.html#itasca.zone.find" title="itasca.zone.find"><code class="xref py py-func docutils literal"><span class="pre">itasca.zone.find</span></code></a>）返回 id 为 1 的网格单元的 Zone 对象。该对象被赋给 Python 变量 <code class="docutils literal"><span class="pre">z</span></code>。多数 <span class="codename">FLAC3D</span> 模型项都是这样的对象（类的实例）。Zone 对象有许多方法，例如</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">z</span><span class="o">.</span><span class="n">pos</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>vec3(( 5.000000e-01, 5.000000e-01, 5.000000e-01 ))
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>变量 <code class="docutils literal"><span class="pre">z</span></code> 是一个 Zone 对象，表示单个 <span class="codename">FLAC3D</span> 网格单元。<code class="docutils literal"><span class="pre">pos</span></code>（<a class="reference internal" href="itasca.zone.Zone.html#itasca.zone.Zone.pos" title="itasca.zone.Zone.pos">单元位置（<code class="xref py py-func docutils literal"><span class="pre">itasca.zone.Zone.pos</span></code>）</a>）是该对象的一个方法，返回网格单元形心。</p>
+<div class="admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last"><a class="reference internal" href="itasca.zone.Zone.html#itasca.zone.Zone.pos" title="itasca.zone.Zone.pos">单元位置（<code class="xref py py-func docutils literal"><span class="pre">itasca.zone.Zone.pos</span></code>）</a> 方法返回以 <code class="docutils literal"><span class="pre">vec3</span></code> 对象表示的长度为 3 的向量。关于 vec3 对象以及用 Python 处理向量的更多信息，见 <a class="reference internal" href="vec.html#pyapi-vec"><span class="std std-ref">vec 模块</span>（vec module）</a>。</p>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">print</span><span class="p">(</span><span class="s2">"zone"</span><span class="p">,</span> <span class="n">z</span><span class="o">.</span><span class="n">id</span><span class="p">(),</span> <span class="s2">"with model"</span><span class="p">,</span> <span class="n">z</span><span class="o">.</span><span class="n">model</span><span class="p">(),</span> <span class="s2">"at"</span><span class="p">,</span> <span class="n">z</span><span class="o">.</span><span class="n">pos</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>Python 中用 <code class="docutils literal"><span class="pre">for</span></code> 语句遍历事物的序列，</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">volume_sum</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="k">for</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">it</span><span class="o">.</span><span class="n">zone</span><span class="o">.</span><span class="n">list</span><span class="p">():</span>
+    <span class="n">volume_sum</span> <span class="o">+=</span> <span class="n">z</span><span class="o">.</span><span class="n">vol</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>在本例中，用 <code class="docutils literal"><span class="pre">for</span></code> 语句遍历所有 <span class="codename">FLAC3D</span> 网格单元。每次循环中变量 <code class="docutils literal"><span class="pre">z</span></code> 是另一个 Zone 对象。最后，我们检验各网格单元体积之和是否符合预期。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">print</span><span class="p">(</span><span class="n">volume_sum</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">vol</span><span class="p">()</span> <span class="o">*</span> <span class="n">it</span><span class="o">.</span><span class="n">zone</span><span class="o">.</span><span class="n">count</span><span class="p">())</span>
+<span class="k">assert</span> <span class="n">volume_sum</span> <span class="o">==</span> <span class="n">z</span><span class="o">.</span><span class="n">vol</span><span class="p">()</span> <span class="o">*</span> <span class="n">it</span><span class="o">.</span><span class="n">zone</span><span class="o">.</span><span class="n">count</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>1000.0
+1000.0
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>我们来查找靠近模型中心的网格单元</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">z</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">zone</span><span class="o">.</span><span class="n">near</span><span class="p">((</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>并用 <span class="math">\(pos\)</span> 方法确认其位置。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">z</span><span class="o">.</span><span class="n">pos</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>vec3(( 4.500000e+00, 4.500000e+00, 4.500000e+00 ))
+</pre></div>
+</div>
+</dd>
+</dl>
+</div>
+<div class="section" id="working-with-flac3d-zones-properties">
+<h2>处理 <span class="codename">FLAC3D</span> 网格单元性质</h2>
+<p><code class="docutils literal"><span class="pre">props</span></code>（<a class="reference internal" href="itasca.zone.Zone.html#itasca.zone.Zone.props" title="itasca.zone.Zone.props">单元属性列表（<code class="xref py py-func docutils literal"><span class="pre">itasca.zone.Zone.props</span></code>）</a>）方法以 Python 字典对象返回网格单元本构模型性质。字典的键为性质名，值为性质取值。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">z</span><span class="o">.</span><span class="n">props</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>{'bulk': 8000000000.0, 'shear': 4800000000.0, 'young': 12000000000.0, 'poisson': 0.25}
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>要访问字典的各个部分，需用 [] 括号配合字符串键，</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">z</span><span class="o">.</span><span class="n">props</span><span class="p">()[</span><span class="s1">'bulk'</span><span class="p">]</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>8000000000.0
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>或可使用 <code class="docutils literal"><span class="pre">prop</span></code> 的 <code class="xref py py-func docutils literal"><span class="pre">itasca.zone.zone.prop</span></code> 方法。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">z</span><span class="o">.</span><span class="n">prop</span><span class="p">(</span><span class="s1">'shear'</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>4800000000.0
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>网格单元性质可用 <code class="docutils literal"><span class="pre">set_prop</span></code>（<a class="reference internal" href="itasca.zone.Zone.html#itasca.zone.Zone.set_prop" title="itasca.zone.Zone.set_prop">设置单元属性（<code class="xref py py-func docutils literal"><span class="pre">itasca.zone.Zone.set_prop</span></code>）</a>）方法设置。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">z</span><span class="o">.</span><span class="n">set_prop</span><span class="p">(</span><span class="s1">'bulk'</span><span class="p">,</span> <span class="mf">8.5e9</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">prop</span><span class="p">(</span><span class="s1">'bulk'</span><span class="p">))</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>8500000000.0
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>Python 与 <span class="codename">FLAC3D</span> 网格单元有两处交互：(i) 属于 <code class="docutils literal"><span class="pre">itasca.zone</span></code> Python 模块的函数；(ii) 单个 <code class="docutils literal"><span class="pre">itasca.zone.Zone</span> <span class="pre">object</span></code> 的方法。按 Python 术语，<code class="docutils literal"><span class="pre">itasca.zone</span></code> 是 <code class="docutils literal"><span class="pre">itasca</span></code> 模块的子模块，Zone 是 <code class="docutils literal"><span class="pre">itasca.zone</span></code> 模块中定义的类。为简洁起见，我们常以缩写名 <code class="docutils literal"><span class="pre">it</span></code> 导入 <code class="docutils literal"><span class="pre">itasca</span></code> 模块。上文中 <code class="docutils literal"><span class="pre">it.zone.count()</span></code>（<a class="reference internal" href="itasca.zone.html#itasca.zone.count" title="itasca.zone.count"><code class="xref py py-func docutils literal"><span class="pre">itasca.zone.count</span></code></a>）、<code class="docutils literal"><span class="pre">it.zone.list()</span></code>（<a class="reference internal" href="itasca.zone.html#itasca.zone.list" title="itasca.zone.list"><code class="xref py py-func docutils literal"><span class="pre">itasca.zone.list</span></code></a>）与 <code class="docutils literal"><span class="pre">it.zone.find()</span></code>（<a class="reference internal" href="itasca.zone.html#itasca.zone.find" title="itasca.zone.find"><code class="xref py py-func docutils literal"><span class="pre">itasca.zone.find</span></code></a>）是 <code class="docutils literal"><span class="pre">itasca.zone</span></code> 模块中定义的函数。<code class="docutils literal"><span class="pre">z.pos()</span></code>（<a class="reference internal" href="itasca.zone.Zone.html#itasca.zone.Zone.pos" title="itasca.zone.Zone.pos">单元位置（<code class="xref py py-func docutils literal"><span class="pre">itasca.zone.Zone.pos</span></code>）</a>）与 <code class="docutils literal"><span class="pre">z.vol()</span></code>（<a class="reference internal" href="itasca.zone.Zone.html#itasca.zone.Zone.vol" title="itasca.zone.Zone.vol">单元体积（<code class="xref py py-func docutils literal"><span class="pre">itasca.zone.Zone.vol</span></code>）</a>）是 <code class="docutils literal"><span class="pre">Zone</span></code> 对象的方法调用。</p>
+<ul class="simple">
+<li><a class="reference internal" href="itasca.html#pyapi-itasca"><span class="std std-ref">itasca</span></a> 给出 <code class="docutils literal"><span class="pre">itasca</span></code> 模块函数与类的完整列表。</li>
+<li><a class="reference internal" href="itasca.zone.html#pyapi-itasca-zone"><span class="std std-ref">itasca.zone</span></a> 给出 <code class="docutils literal"><span class="pre">itasca.zone</span></code> 模块函数的完整列表。</li>
+<li><a class="reference internal" href="itasca.zone.Zone.html#pyapi-itasca-zone-zone">网格单元（<span class="std std-ref">Zone</span>）</a> 给出 <code class="docutils literal"><span class="pre">Zone</span></code> 对象方法的完整列表。</li>
+</ul>
+</div>
+<div class="section" id="working-with-flac3d-gridpoints">
+<h2>处理 <span class="codename">FLAC3D</span> 网格点</h2>
+<p>类似地，Python 可以通过以下方式与 <span class="codename">FLAC3D</span> 网格点交互</p>
+<ul class="simple">
+<li><a class="reference internal" href="itasca.gridpoint.html#pyapi-itasca-gridpoint"><span class="std std-ref">itasca.gridpoint</span></a> 模块函数以及</li>
+<li><a class="reference internal" href="itasca.gridpoint.Gridpoint.html#pyapi-itasca-gridpoint-gridpoint">网格点（<span class="std std-ref">Gridpoint</span>）</a> 对象的方法。</li>
+</ul>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">gridpoint</span><span class="o">.</span><span class="n">near</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+<span class="k">print</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">pos</span><span class="p">())</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>vec3(( 2.000000e+00, 2.000000e+00, 2.000000e+00 ))
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>与网格单元一样，我们可以用 Python 的 <code class="docutils literal"><span class="pre">for</span></code> 语句遍历所有 <span class="codename">FLAC3D</span> 网格点。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">total_mass</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">for</span> <span class="n">gp</span> <span class="ow">in</span> <span class="n">it</span><span class="o">.</span><span class="n">gridpoint</span><span class="o">.</span><span class="n">list</span><span class="p">():</span>
+    <span class="n">total_mass</span> <span class="o">+=</span> <span class="n">gp</span><span class="o">.</span><span class="n">mass_gravity</span><span class="p">()</span>
+
+<span class="k">print</span><span class="p">(</span><span class="n">total_mass</span><span class="p">,</span> <span class="n">z</span><span class="o">.</span><span class="n">vol</span><span class="p">()</span><span class="o">*</span><span class="mi">1000</span><span class="o">*</span><span class="n">z</span><span class="o">.</span><span class="n">density</span><span class="p">())</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>2949999.9999999995 2950000.0
+</pre></div>
+</div>
+</dd>
+</dl>
+</div>
+<div class="section" id="working-with-structural-elements">
+<h2>处理结构单元</h2>
+<p>Python 可通过 <a class="reference internal" href="itasca.structure.html#pyapi-itasca-structure"><span class="std std-ref">itasca.structure</span></a> 模块与结构单元交互。为演示从 Python 访问结构单元，用以下命令添加结构。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">struct cable create by-line (0.0, 5, 5) (10, 5, 5) id=1 segments=4</span>
+<span class="s2">zone mechanical damping combined</span>
+<span class="s2">struct cable property cross-sectional-area=2e-3 young=200e9 ...</span>
+<span class="s2">                      yield-tension=1.1e20 grout-stiffness=1e10 ...</span>
+<span class="s2">                      grout-cohesion=1e20 grout-friction=0.123</span>
+<span class="s2">struct beam create by-line (0.0, 2, 2) (10, 2, 2) id=2 segments=4</span>
+<span class="s2">struct beam property young=1.234e9 poisson=0.223 plastic-moment=23.4e4 ...</span>
+<span class="s2">                     cross-sectional-area=1.234 moi-y=55.66 moi-z=3458.33</span>
+<span class="s2">"""</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>所有类型的结构单元都存储在单个列表中，可通过 <code class="docutils literal"><span class="pre">it.structure.list()</span></code>（<a class="reference internal" href="itasca.structure.html#itasca.structure.list" title="itasca.structure.list"><code class="xref py py-func docutils literal"><span class="pre">itasca.structure.list</span></code></a>）函数访问。与 Itasca Python 接口中的其他迭代器不同，该迭代器返回特定类型的对象。共有六种结构单元类型：</p>
+<ul class="simple">
+<li><a class="reference internal" href="itasca.structure.Cable.html#pyapi-itasca-structure-cable"><span class="std std-ref">锚索</span>（Cable）</a></li>
+<li><a class="reference internal" href="itasca.structure.Beam.html#pyapi-itasca-structure-beam"><span class="std std-ref">梁</span>（Beam）</a></li>
+<li><a class="reference internal" href="itasca.structure.Pile.html#pyapi-itasca-structure-pile"><span class="std std-ref">桩</span>（Pile）</a></li>
+<li><a class="reference internal" href="itasca.structure.Shell.html#pyapi-itasca-structure-shell"><span class="std std-ref">壳</span>（Shell）</a></li>
+<li><a class="reference internal" href="itasca.structure.Geogrid.html#pyapi-itasca-structure-geogrid"><span class="std std-ref">土工格栅</span>（Geogrid）</a></li>
+<li><a class="reference internal" href="itasca.structure.Liner.html#pyapi-itasca-structure-liner"><span class="std std-ref">衬砌</span>（Liner）</a></li>
+</ul>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">it</span><span class="o">.</span><span class="n">structure</span><span class="o">.</span><span class="n">list</span><span class="p">():</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="ow">is</span> <span class="n">it</span><span class="o">.</span><span class="n">structure</span><span class="o">.</span><span class="n">Cable</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">"Cable element with id: {} and component id: {}"</span>
+              <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">id</span><span class="p">(),</span> <span class="n">s</span><span class="o">.</span><span class="n">component_id</span><span class="p">()))</span>
+    <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="ow">is</span> <span class="n">it</span><span class="o">.</span><span class="n">structure</span><span class="o">.</span><span class="n">Beam</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">"Beam element with Young's modulus: {}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">young</span><span class="p">()))</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>Cable element with id: 1 and component id: 1
+Cable element with id: 1 and component id: 2
+Cable element with id: 1 and component id: 3
+Cable element with id: 1 and component id: 4
+Beam element with Young's modulus: 1234000000.0
+Beam element with Young's modulus: 1234000000.0
+Beam element with Young's modulus: 1234000000.0
+Beam element with Young's modulus: 1234000000.0
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>类似地，可用 <code class="docutils literal"><span class="pre">it.structure.find()</span></code>（<a class="reference internal" href="itasca.structure.html#itasca.structure.find" title="itasca.structure.find"><code class="xref py py-func docutils literal"><span class="pre">itasca.structure.find</span></code></a>）与 <code class="docutils literal"><span class="pre">it.structure.near()</span></code>（<a class="reference internal" href="itasca.structure.html#itasca.structure.near" title="itasca.structure.near"><code class="xref py py-func docutils literal"><span class="pre">itasca.structure.near</span></code></a>）函数获取特定的单元。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">s1</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">structure</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">s2</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">structure</span><span class="o">.</span><span class="n">near</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+
+<span class="k">print</span><span class="p">(</span><span class="n">s1</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">s2</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>&lt;itasca.structure.Cable object at 0x000001A830FC12D0, ID : 1&gt;
+&lt;itasca.structure.Beam object at 0x000001A830FC1168, ID : 5&gt;
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>结构单元节点与连接可通过以下子模块访问：</p>
+<ul class="simple">
+<li><a class="reference internal" href="itasca.structure.node.html#pyapi-itasca-structure-node"><span class="std std-ref">itasca.structure.node</span></a></li>
+<li><a class="reference internal" href="itasca.structure.link.html#pyapi-itasca-structure-link"><span class="std std-ref">itasca.structure.link</span></a></li>
+</ul>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">s_node</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">structure</span><span class="o">.</span><span class="n">node</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">s_link</span> <span class="o">=</span> <span class="n">s_node</span><span class="o">.</span><span class="n">links</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+<span class="k">print</span><span class="p">(</span><span class="s2">"SEL node {} is attached to zone {}"</span>
+      <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">s_node</span><span class="o">.</span><span class="n">id</span><span class="p">(),</span> <span class="n">s_link</span><span class="o">.</span><span class="n">target</span><span class="p">()</span><span class="o">.</span><span class="n">id</span><span class="p">()))</span>
+
+<span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"struct cable delete"</span><span class="p">)</span>
+<span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"struct beam delete"</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>SEL node 1 is attached to zone 551
+</pre></div>
+</div>
+</dd>
+</dl>
+</div>
+<div class="section" id="extra-variables">
+<h2>额外变量</h2>
+<p><span class="codename">FLAC3D</span> 的网格单元、网格点及其他 Itasca 模型对象都有额外变量，从而可把某些数据关联到模型对象。Python 程序可用所有对象类型都定义的 <code class="docutils literal"><span class="pre">extra</span></code> 和 <code class="docutils literal"><span class="pre">set_extra</span></code> 方法读写额外变量。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">z</span><span class="o">.</span><span class="n">set_extra</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">1.23</span><span class="p">)</span>
+<span class="n">z</span><span class="o">.</span><span class="n">set_extra</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s2">"a text string"</span><span class="p">)</span>
+
+<span class="k">print</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">extra</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+<span class="k">print</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">extra</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>1.23
+a text string
+</pre></div>
+</div>
+</dd>
+</dl>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">gp</span><span class="o">.</span><span class="n">set_extra</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">gp</span><span class="o">.</span><span class="n">pos</span><span class="p">())</span>
+<span class="n">gp</span><span class="o">.</span><span class="n">set_extra</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">86856527</span><span class="p">)</span>
+
+<span class="k">print</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">extra</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+<span class="k">print</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">extra</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>vec3(( 1.000000e+01, 1.000000e+01, 1.000000e+01 ))
+86856527
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>Python 中索引通常从 0 开始。额外变量的索引是例外，以便 Python 与 Itasca 软件 GUI 良好配合。额外变量保存在模型存档文件中，这是把 Python 数据关联到 Itasca 模型状态的一种方式。</p>
+</div>
+<div class="section" id="using-flac3d-groups-and-applying-boundary-conditions">
+<h2>使用 <span class="codename">FLAC3D</span> 的组并施加边界条件</h2>
+<p>组用于创建 <span class="codename">FLAC3D</span> 模型对象的列表。这常用于设置边界条件或对模型的特定部分施加材料性质。此处我们用 <span class="codename">FLAC3D</span> 命令创建两组网格单元，分别表示模型的上部和下部。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">zone group "lower" range position-z 0 5</span>
+<span class="s2">zone group "upper" range position-z 5 10</span>
+<span class="s2">"""</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>可用 Zone 的 <code class="docutils literal"><span class="pre">group</span></code>（<a class="reference internal" href="itasca.zone.Zone.html#itasca.zone.Zone.group" title="itasca.zone.Zone.group">单元分组（<code class="xref py py-func docutils literal"><span class="pre">itasca.zone.Zone.group</span></code>）</a>）方法查询某个网格单元是否属于某个组。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">lower_zones</span><span class="p">,</span> <span class="n">upper_zones</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
+
+<span class="k">for</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">it</span><span class="o">.</span><span class="n">zone</span><span class="o">.</span><span class="n">list</span><span class="p">():</span>
+    <span class="k">if</span> <span class="n">z</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s2">"default"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"lower"</span><span class="p">:</span>
+        <span class="n">lower_zones</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">z</span><span class="o">.</span><span class="n">set_prop</span><span class="p">(</span><span class="s2">"young"</span><span class="p">,</span> <span class="mf">1.6e10</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">z</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s2">"default"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"upper"</span><span class="p">:</span>
+        <span class="n">upper_zones</span> <span class="o">+=</span> <span class="mi">1</span>
+
+<span class="k">print</span><span class="p">(</span><span class="n">lower_zones</span><span class="p">,</span> <span class="n">upper_zones</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>500 500
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>对象所属的组可用 <code class="docutils literal"><span class="pre">set_group</span></code>（<a class="reference internal" href="itasca.zone.Zone.html#itasca.zone.Zone.set_group" title="itasca.zone.Zone.set_group">设置单元分组（<code class="xref py py-func docutils literal"><span class="pre">itasca.zone.Zone.set_group</span></code>）</a>）方法设置。</p>
+<p>接下来我们固定模型下表面的网格点，并对模型上表面的网格点施加力。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">lower_gridpoints</span><span class="p">,</span> <span class="n">upper_gridpoints</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
+
+<span class="k">for</span> <span class="n">gp</span> <span class="ow">in</span> <span class="n">it</span><span class="o">.</span><span class="n">gridpoint</span><span class="o">.</span><span class="n">list</span><span class="p">():</span>
+    <span class="k">if</span> <span class="n">gp</span><span class="o">.</span><span class="n">pos_z</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">lower_gridpoints</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">gp</span><span class="o">.</span><span class="n">set_fix</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
+        <span class="n">gp</span><span class="o">.</span><span class="n">set_fix</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
+        <span class="n">gp</span><span class="o">.</span><span class="n">set_fix</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">gp</span><span class="o">.</span><span class="n">pos_z</span><span class="p">()</span> <span class="o">==</span> <span class="mi">10</span><span class="p">:</span>
+        <span class="n">upper_gridpoints</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">gp</span><span class="o">.</span><span class="n">set_force_load</span><span class="p">((</span><span class="mf">1e6</span><span class="p">,</span><span class="mf">2e6</span><span class="p">,</span><span class="mf">1e6</span><span class="p">))</span>
+
+<span class="k">print</span><span class="p">(</span><span class="n">lower_gridpoints</span><span class="p">,</span> <span class="n">upper_gridpoints</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>121 121
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>接下来我们对模型进行循环计算，并考察模型对该荷载的响应。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">model save "before_cycling"</span>
+<span class="s2">model solve</span>
+<span class="s2">"""</span><span class="p">)</span>
+
+
+<span class="n">gp_top_middle</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">gridpoint</span><span class="o">.</span><span class="n">near</span><span class="p">((</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">10</span><span class="p">))</span>
+<span class="n">gp_middle</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">gridpoint</span><span class="o">.</span><span class="n">near</span><span class="p">((</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
+<span class="k">print</span><span class="p">(</span><span class="n">gp_top_middle</span><span class="o">.</span><span class="n">disp</span><span class="p">())</span>
+<span class="k">print</span><span class="p">(</span><span class="n">gp_middle</span><span class="o">.</span><span class="n">disp</span><span class="p">())</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>vec3(( 5.342222e-03, 1.068130e-02, 7.624022e-04 ))
+vec3(( 1.930042e-03, 3.858870e-03, 3.268840e-04 ))
+</pre></div>
+</div>
+</dd>
+</dl>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">central_zone</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">zone</span><span class="o">.</span><span class="n">near</span><span class="p">((</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
+<span class="n">stress</span> <span class="o">=</span> <span class="n">central_zone</span><span class="o">.</span><span class="n">stress</span><span class="p">()</span>
+<span class="n">strain</span> <span class="o">=</span> <span class="n">central_zone</span><span class="o">.</span><span class="n">strain</span><span class="p">()</span>
+
+<span class="k">print</span><span class="p">(</span><span class="n">stress</span><span class="p">)</span>
+<span class="k">print</span><span class="p">()</span>
+<span class="k">print</span><span class="p">(</span><span class="n">strain</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>stens3([[ 6.953505e+04, -6.300446e+04, 1.773334e+06 ],
+        [               6.912071e+04, 3.557791e+06 ],
+        [ sym.                        2.246628e+06 ]])
+
+stens3([[ -3.362803e-05, -4.970694e-06, 1.399064e-04 ],
+        [               -3.366050e-05, 2.806897e-04 ],
+        [ sym.                        1.381372e-04 ]])
+</pre></div>
+</div>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last"><code class="docutils literal"><span class="pre">stress</span></code>（<a class="reference internal" href="itasca.zone.Zone.html#itasca.zone.Zone.stress" title="itasca.zone.Zone.stress">单元应力（<code class="xref py py-func docutils literal"><span class="pre">itasca.zone.Zone.stress</span></code>）</a>）和 <code class="docutils literal"><span class="pre">strain</span></code>（<a class="reference internal" href="itasca.zone.Zone.html#itasca.zone.Zone.strain" title="itasca.zone.Zone.strain">单元应变（<code class="xref py py-func docutils literal"><span class="pre">itasca.zone.Zone.strain</span></code>）</a>）这两个网格单元方法以 <code class="docutils literal"><span class="pre">stens3</span></code> 对象返回对称张量。关于对称张量对象以及用 Python 处理张量的更多信息，见 <a class="reference internal" href="vec.stens3.html#pyapi-vec-stens3"><span class="std std-ref">stens3 类型</span>（stens3 type）</a>。</p>
+</div>
+</div>
+<div class="section" id="running-parameter-studies">
+<h2>进行参数研究</h2>
+<p>Python 程序及其变量不依赖于 <span class="codename">FLAC3D</span> 模型状态（前提是已给出命令 <code class="xref fish fish-cmd docutils literal"><span class="pre">python-reset-state</span> <span class="pre">false</span></code>）。这便于以程序化方式开展参数研究。下例用 4 个不同的杨氏模量运行同一模型，并打印模型顶部中心的竖向位移。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">modulus</span> <span class="ow">in</span> <span class="p">[</span><span class="mf">6e9</span><span class="p">,</span> <span class="mf">8e9</span><span class="p">,</span> <span class="mf">10e9</span><span class="p">,</span> <span class="mf">12e9</span><span class="p">]:</span>
+    <span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">    model restore 'before_cycling'</span>
+<span class="s2">    zone prop young {}</span>
+<span class="s2">    model solve</span>
+<span class="s2">    """</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">modulus</span><span class="p">))</span>
+    <span class="n">vertical_disp</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">gridpoint</span><span class="o">.</span><span class="n">near</span><span class="p">((</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">10</span><span class="p">))</span><span class="o">.</span><span class="n">disp_z</span><span class="p">()</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">"Modulus: {:.01e} Pa, vertical displacement: {:.03e}"</span>
+          <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">modulus</span><span class="p">,</span> <span class="n">vertical_disp</span><span class="p">))</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>Modulus: 6.0e+09 Pa, vertical displacement: 1.771e-03
+Modulus: 8.0e+09 Pa, vertical displacement: 1.328e-03
+Modulus: 1.0e+10 Pa, vertical displacement: 1.063e-03
+Modulus: 1.2e+10 Pa, vertical displacement: 8.856e-04
+</pre></div>
+</div>
+</dd>
+</dl>
+</div>
+<div class="section" id="handling-flac3d-errors">
+<h2>处理 <span class="codename">FLAC3D</span> 错误</h2>
+<p>借助 Python，可用内置的异常处理机制捕获并处理错误。Python 中的运行时错误称为异常。可用 <code class="docutils literal"><span class="pre">try</span></code>、<code class="docutils literal"><span class="pre">except</span></code> 块捕获并处理异常。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">    zone prop young 0</span>
+<span class="s2">    model solve</span>
+<span class="s2">    """</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">data</span><span class="p">:</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">"an error occurred"</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s2">"Python program execution continues..."</span><span class="p">)</span>
+
+<span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"zone prop young 8e9"</span><span class="p">)</span>  <span class="c1"># 修正该问题</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>an error occurred Zero stiffness in gridpoint 133.
+    While processing line 1 of source Python interpreter.
+Python program execution continues...
+</pre></div>
+</div>
+</dd>
+</dl>
+</div>
+<div class="section" id="inspecting-the-flac3d-model-geometry">
+<h2>考察 <span class="codename">FLAC3D</span> 模型几何</h2>
+<p>调用 <code class="docutils literal"><span class="pre">gridpoints</span></code>（<a class="reference internal" href="itasca.zone.Zone.html#itasca.zone.Zone.gridpoints" title="itasca.zone.Zone.gridpoints">单元网格点（<code class="xref py py-func docutils literal"><span class="pre">itasca.zone.Zone.gridpoints</span></code>）</a>）方法可得到与网格单元 z 关联的网格点列表。先打印与网格单元 z 关联的网格点数目。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">z</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">zone</span><span class="o">.</span><span class="n">near</span><span class="p">((</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
+<span class="nb">len</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">gridpoints</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>Python 中用内置函数 <code class="docutils literal"><span class="pre">len</span></code> 确定序列的长度。以下代码遍历网格单元 <code class="docutils literal"><span class="pre">z</span></code> 的所有网格点，并打印网格点 ID 与位置。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">gp</span> <span class="ow">in</span> <span class="n">z</span><span class="o">.</span><span class="n">gridpoints</span><span class="p">():</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">"gridpoint with id: {} at {}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">id</span><span class="p">(),</span> <span class="n">gp</span><span class="o">.</span><span class="n">pos</span><span class="p">()))</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>gridpoint with id: 533 at vec3(( 4.000000e+00, 4.000000e+00, 4.000000e+00 ))
+gridpoint with id: 534 at vec3(( 5.000000e+00, 4.000000e+00, 4.000000e+00 ))
+gridpoint with id: 544 at vec3(( 4.000000e+00, 5.000000e+00, 4.000000e+00 ))
+gridpoint with id: 654 at vec3(( 4.000000e+00, 4.000000e+00, 5.000000e+00 ))
+gridpoint with id: 545 at vec3(( 5.000000e+00, 5.000000e+00, 4.000000e+00 ))
+gridpoint with id: 665 at vec3(( 4.000000e+00, 5.000000e+00, 5.000000e+00 ))
+gridpoint with id: 655 at vec3(( 5.000000e+00, 4.000000e+00, 5.000000e+00 ))
+gridpoint with id: 666 at vec3(( 5.000000e+00, 5.000000e+00, 5.000000e+00 ))
+</pre></div>
+</div>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">字符串对象的 <code class="docutils literal"><span class="pre">format</span></code> 方法用于把数值代入字符串。字符串中的 {} 部分被 format 方法的参数替换——此处用于显示网格点 ID 与位置。</p>
+</div>
+<p>调用 <code class="docutils literal"><span class="pre">adjacent_zones</span></code>（<a class="reference internal" href="itasca.zone.Zone.html#itasca.zone.Zone.adjacent_zones" title="itasca.zone.Zone.adjacent_zones">相邻单元（<code class="xref py py-func docutils literal"><span class="pre">itasca.zone.Zone.adjacent_zones</span></code>）</a>）方法可找出与网格单元 z 相连的网格单元。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">z</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">zone</span><span class="o">.</span><span class="n">near</span><span class="p">((</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
+<span class="k">print</span><span class="p">(</span><span class="s2">"central zone id: {}, position: {}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">id</span><span class="p">(),</span> <span class="n">z</span><span class="o">.</span><span class="n">pos</span><span class="p">()))</span>
+<span class="k">print</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">neighbor</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">adjacent_zones</span><span class="p">()):</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">"neighbor zone {} id: {}, position: {}"</span>
+          <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">neighbor</span><span class="o">.</span><span class="n">id</span><span class="p">(),</span> <span class="n">neighbor</span><span class="o">.</span><span class="n">pos</span><span class="p">()))</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>central zone id: 445, position: vec3(( 4.500000e+00, 4.500000e+00, 4.500000e+00 ))
+
+neighbor zone 0 id: 345, position: vec3(( 4.500000e+00, 4.500000e+00, 3.500000e+00 ))
+neighbor zone 1 id: 545, position: vec3(( 4.500000e+00, 4.500000e+00, 5.500000e+00 ))
+neighbor zone 2 id: 444, position: vec3(( 3.500000e+00, 4.500000e+00, 4.500000e+00 ))
+neighbor zone 3 id: 446, position: vec3(( 5.500000e+00, 4.500000e+00, 4.500000e+00 ))
+neighbor zone 4 id: 455, position: vec3(( 4.500000e+00, 5.500000e+00, 4.500000e+00 ))
+neighbor zone 5 id: 435, position: vec3(( 4.500000e+00, 3.500000e+00, 4.500000e+00 ))
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>如我们所料，该网格单元有 6 个相邻单元。该函数的返回值长度始终为 6。对模型边界处的网格单元，返回 Python 的 <code class="docutils literal"><span class="pre">None</span></code> 对象以表示不存在相应的相邻单元。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">z</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">zone</span><span class="o">.</span><span class="n">near</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">neighbor</span> <span class="ow">in</span>  <span class="n">z</span><span class="o">.</span><span class="n">adjacent_zones</span><span class="p">():</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">neighbor</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>None
+&lt;itasca.zone.Zone object at 0x000001A830FC1360, ID : 101&gt;
+None
+&lt;itasca.zone.Zone object at 0x000001A830FC1378, ID : 2&gt;
+&lt;itasca.zone.Zone object at 0x000001A830FC1390, ID : 11&gt;
+None
+</pre></div>
+</div>
+</dd>
+</dl>
+<p><code class="docutils literal"><span class="pre">faces</span></code>（<a class="reference internal" href="itasca.zone.Zone.html#itasca.zone.Zone.faces" title="itasca.zone.Zone.faces">单元面（<code class="xref py py-func docutils literal"><span class="pre">itasca.zone.Zone.faces</span></code>）</a>）方法以网格点对象列表的列表形式返回网格单元各面。返回列表长度始终为 6，但对少于 6 个面的网格单元会用 <code class="docutils literal"><span class="pre">None</span></code> 对象表示缺失的面。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">face</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">faces</span><span class="p">()):</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">"face {} contains the gridpoints with IDs: {}"</span>
+          <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="p">[</span><span class="n">gp</span><span class="o">.</span><span class="n">id</span><span class="p">()</span> <span class="k">for</span> <span class="n">gp</span> <span class="ow">in</span> <span class="n">face</span><span class="p">]))</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>face 0 contains the gridpoints with IDs: [2, 5, 3, 1]
+face 1 contains the gridpoints with IDs: [4, 6, 8, 7]
+face 2 contains the gridpoints with IDs: [1, 3, 6, 4]
+face 3 contains the gridpoints with IDs: [7, 8, 5, 2]
+face 4 contains the gridpoints with IDs: [3, 5, 8, 6]
+face 5 contains the gridpoints with IDs: [1, 4, 7, 2]
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>类似地，面法向向量由 <code class="docutils literal"><span class="pre">face_normals</span></code>（<a class="reference internal" href="itasca.zone.Zone.html#itasca.zone.Zone.face_normals" title="itasca.zone.Zone.face_normals">单元面法向（<code class="xref py py-func docutils literal"><span class="pre">itasca.zone.Zone.face_normals</span></code>）</a>）方法返回。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">normal</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">face_normals</span><span class="p">()):</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">"face {} has normal vector {}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">normal</span><span class="p">))</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>face 0 has normal vector vec3(( -0.000000e+00, -0.000000e+00, -1.000000e+00 ))
+face 1 has normal vector vec3(( -0.000000e+00, -0.000000e+00, 1.000000e+00 ))
+face 2 has normal vector vec3(( -1.000000e+00, -0.000000e+00, -0.000000e+00 ))
+face 3 has normal vector vec3(( 1.000000e+00, -0.000000e+00, -0.000000e+00 ))
+face 4 has normal vector vec3(( -0.000000e+00, 1.000000e+00, -0.000000e+00 ))
+face 5 has normal vector vec3(( -0.000000e+00, -1.000000e+00, -0.000000e+00 ))
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>这三种方法中面的排列顺序相同，即取值 0 到 5 的面索引。</p>
+<p>给定一个网格点，可用 <code class="docutils literal"><span class="pre">zones</span></code>（<a class="reference internal" href="itasca.gridpoint.Gridpoint.html#itasca.gridpoint.Gridpoint.zones" title="itasca.gridpoint.Gridpoint.zones">网格点所属单元（<code class="xref py py-func docutils literal"><span class="pre">itasca.gridpoint.Gridpoint.zones</span></code>）</a>）方法遍历与该网格点相连的网格单元</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">gridpoint</span><span class="o">.</span><span class="n">near</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+<span class="k">print</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">pos</span><span class="p">())</span>
+<span class="k">for</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">gp</span><span class="o">.</span><span class="n">zones</span><span class="p">():</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">"gp id: {} is connected to zone id: {}, position: {}"</span>
+          <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">id</span><span class="p">(),</span> <span class="n">z</span><span class="o">.</span><span class="n">id</span><span class="p">(),</span> <span class="n">z</span><span class="o">.</span><span class="n">pos</span><span class="p">()))</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>vec3(( 2.000000e+00, 2.000000e+00, 2.000000e+00 ))
+gp id: 267 is connected to zone id: 223, position: vec3(( 2.500000e+00, 2.500000e+00, 2.500000e+00 ))
+gp id: 267 is connected to zone id: 222, position: vec3(( 1.500000e+00, 2.500000e+00, 2.500000e+00 ))
+gp id: 267 is connected to zone id: 213, position: vec3(( 2.500000e+00, 1.500000e+00, 2.500000e+00 ))
+gp id: 267 is connected to zone id: 212, position: vec3(( 1.500000e+00, 1.500000e+00, 2.500000e+00 ))
+gp id: 267 is connected to zone id: 123, position: vec3(( 2.500000e+00, 2.500000e+00, 1.500000e+00 ))
+gp id: 267 is connected to zone id: 122, position: vec3(( 1.500000e+00, 2.500000e+00, 1.500000e+00 ))
+gp id: 267 is connected to zone id: 113, position: vec3(( 2.500000e+00, 1.500000e+00, 1.500000e+00 ))
+gp id: 267 is connected to zone id: 112, position: vec3(( 1.500000e+00, 1.500000e+00, 1.500000e+00 ))
+</pre></div>
+</div>
+</dd>
+</dl>
+</div>
+<div class="section" id="python-type-system">
+<h2>Python 类型系统</h2>
+<p>有时 Python 程序需要确定 Python 变量的类型。以下示例演示 Python 类型系统。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">int</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">float</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="s2">"Itasca"</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">str</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">gp</span><span class="p">)</span> <span class="ow">is</span> <span class="n">it</span><span class="o">.</span><span class="n">gridpoint</span><span class="o">.</span><span class="n">Gridpoint</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">gp</span><span class="p">)</span> <span class="ow">is</span> <span class="n">it</span><span class="o">.</span><span class="n">zone</span><span class="o">.</span><span class="n">Zone</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="ow">is</span> <span class="n">it</span><span class="o">.</span><span class="n">gridpoint</span><span class="o">.</span><span class="n">Gridpoint</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="ow">is</span> <span class="n">it</span><span class="o">.</span><span class="n">zone</span><span class="o">.</span><span class="n">Zone</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="python-callback-functions">
+<h2>Python 回调函数</h2>
+<p>Python 函数可在 <span class="codename">FLAC3D</span> 计算序列的特定位置运行。<a class="reference internal" href="itasca.html#itasca.set_callback" title="itasca.set_callback"><code class="xref py py-func docutils literal"><span class="pre">itasca.set_callback</span></code></a> 函数注册在循环期间调用的 Python 函数，而 <a class="reference internal" href="itasca.html#itasca.remove_callback" title="itasca.remove_callback"><code class="xref py py-func docutils literal"><span class="pre">itasca.remove_callback</span></code></a> 函数移除这些函数回调。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">i</span><span class="o">=</span><span class="mi">0</span>
+<span class="k">def</span> <span class="nf">my_callback</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="k">global</span> <span class="n">i</span>
+    <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">"in Python callback function."</span><span class="p">)</span>
+
+<span class="n">it</span><span class="o">.</span><span class="n">set_callback</span><span class="p">(</span><span class="s2">"my_callback"</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"cycle 5"</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s2">"The Python callback function was called {} times"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+
+<span class="n">it</span><span class="o">.</span><span class="n">remove_callback</span><span class="p">(</span><span class="s2">"my_callback"</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">i</span><span class="o">=</span><span class="mi">0</span>
+<span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"cycle 5"</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s2">"The Python callback function was called {} times"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>in Python callback function.
+in Python callback function.
+in Python callback function.
+in Python callback function.
+in Python callback function.
+The Python callback function was called 5 times
+The Python callback function was called 0 times
+</pre></div>
+</div>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="first admonition-title">注意</p>
+<p>给出 <code class="xref fish fish-cmd docutils literal"><span class="pre">model</span>
+<span class="pre">new</span></code> 或 <code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">restore</span></code> 命令时，回调函数注册会被清除。请注意不要把同一 Python 函数重复注册为每个循环调用多次。可用 <code class="xref fish fish-cmd docutils literal"><span class="pre">list</span> <span class="pre">fish</span> <span class="pre">callback</span></code> 命令查看已注册的函数。</p>
+<p class="last">有三个回调事件在 Python 中具有特殊行为。给出 <code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">new</span></code> 或 <code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">restore</span></code> 命令时，“save”、“restore” 和 “new” 回调事件不会被重置。这些回调允许 Python 程序手动保存或读取与模型状态关联的数据。<a class="reference internal" href="itasca.html#itasca.state_callbacks" title="itasca.state_callbacks"><code class="xref py py-func docutils literal"><span class="pre">itasca.state_callbacks</span></code></a> 函数可用于查看在这些特殊回调事件处定义了哪些 Python 函数。</p>
+</div>
+</div>
+<div class="section" id="example-file">
+<h2>示例文件</h2>
+<div class="toctree-wrapper hide compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="code_python_flac3d.py.html">python_flac3d.py</a></li>
+</ul>
+</div>
+<p>此示例的源代码为 <a class="reference internal" href="code_python_flac3d.py.html#python-flac3d"><span class="std std-ref">python_flac3d.py</span></a></p>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../scripting.html">Scripting</a> »</li>
+<li class="nav-item nav-item-2"><a href="../python.html">Python Scripting</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../python_flac3d.html"><span class="codename">FLAC3D</span> Python</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../python_flac3d.html" title="previous chapter"> <span class="codename">FLAC3D</span> Python</a> |    
+       <a href="code_python_flac3d.py.html" title="next chapter">python_flac3d.py</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Using Python with FLAC3D" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

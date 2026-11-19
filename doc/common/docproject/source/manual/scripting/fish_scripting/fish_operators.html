@@ -1,0 +1,193 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>运算子：支持多线程的函数 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="fish_redefining.html" rel="next" title="Redefining FISH Functions"/>
+<link href="fish_splitting.html" rel="prev" title="Splitting: Automatic Execution of Functions on Type Contents"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="operators-multi-threaded-function-support">
+<span id="fish-operators"></span><h1>运算子：支持多线程的函数</h1>
+<p><span class="codename">FISH</span> 运算子是一类特殊函数，专门用于在多线程环境中执行。</p>
+<p>通过<a class="reference internal" href="fish_splitting.html#fish-splitting"><span class="std std-ref">拆分</span>（splitting）</a>重复调用函数时，如果该符号声明为运算子，各次独立执行就会分配到所有可用线程上，见 <a class="reference internal" href="../../../../../kernel/doc/manual/program/commands/cmd_program.threads.html#command:program.threads" title="Set the number of threads for calculations and plotting...">设置线程数命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">program</span> <span class="pre">threads</span></code>）</a> 命令。对于典型的现代多核计算机和大型数据集，这可以大幅提高运行速度。</p>
+<p>这些函数需要在多个线程同时运行时保证安全，因此必须在受限环境中执行。以下规则使运算子与普通函数有所不同：</p>
+<ol class="arabic simple">
+<li>运算子必须始终接受至少一个参数。</li>
+<li>运算子不能调用普通 <span class="codename">FISH</span> 函数，但可以调用其他运算子。</li>
+<li>运算子只能调用标记为线程安全的 <span class="codename">FISH</span> 库函数。如果文档说明中的“=”号前面带有“:”，就表示该库函数是线程安全的。</li>
+<li>运算子只有在使用 <span class="fishname">lock</span> 语句时，才可以写入全局符号。</li>
+<li>运算子不能修改通过参数传入的值。</li>
+<li>运算子不能在赋值时，即在等号左侧调用库函数，并向其传递对象指针，<em>除非</em>该对象本身就是作为参数传入的。</li>
+<li>运算子不能调用其他运算子并向其传递对象指针，<em>除非</em>该对象本身就是作为参数传入的。</li>
+</ol>
+<p>请注意，对全局符号的读取<em>或</em>写入，必须在所有同时运行的执行线程之间进行同步，因此可能严重影响整体性能。建议尽可能只使用局部变量。</p>
+<p>运算子通过 <a class="reference internal" href="../../../../../kernel/doc/manual/fish/commands/cmd_fish.operator.html#command:fish.operator" title="Define a new |FISH| operator...">定义FISH运算符命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fish</span> <span class="pre">operator</span></code>）</a> 命令创建，参数写在后面，方式与 <a class="reference internal" href="../../../../../kernel/doc/manual/fish/commands/cmd_fish.define.html#command:fish.define" title="Define a new |FISH| function.   The function will be named  s , and must
+be a valid symbol name.  Tokens following are assumed to be arguments that the
+function will take.  Please see  fish_scripting .  [CS: this needs
+'common-izing  for use with PFC] and the ref-basicclifishtutorial.`...">定义FISH函数命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fish</span> <span class="pre">define</span></code>）</a> 相同。定义中的 <span class="codename">FISH</span> 代码行与普通函数相同，但必须遵守上述限制。</p>
+<p>为演示运算子的使用，先生成一组待处理数据。以下 <span class="codename">FISH</span> 函数将在 10×10×10 的立方体内随机生成 <a class="reference internal" href="../../../../utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">100,000</span></span></a> 个数据标量对象，并为其赋予 <a class="reference internal" href="../../../../utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.0</span></span></a> 至 <a class="reference internal" href="../../../../utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">10.0</span></span></a> 之间的随机值。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model random</span><span class="n"> </span><span class="m m-Double">12000</span>
+<span class="nb">fish define</span><span class="ni"> generate</span><span class="p">(</span><span class="ni">n</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> x </span><span class="p">=</span><span class="ni"> </span><span class="k">math.random.uniform</span><span class="p">(</span><span class="ni">n</span><span class="p">)</span><span class="ni"> </span><span class="o">*</span><span class="ni"> </span><span class="m m-Double">10.0</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> y </span><span class="p">=</span><span class="ni"> </span><span class="k">math.random.uniform</span><span class="p">(</span><span class="ni">n</span><span class="p">)</span><span class="ni"> </span><span class="o">*</span><span class="ni"> </span><span class="m m-Double">10.0</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> z </span><span class="p">=</span><span class="ni"> </span><span class="k">math.random.uniform</span><span class="p">(</span><span class="ni">n</span><span class="p">)</span><span class="ni"> </span><span class="o">*</span><span class="ni"> </span><span class="m m-Double">10.0</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> scalars </span><span class="p">=</span><span class="ni"> data</span><span class="p">.</span><span class="ni">scalar</span><span class="p">.</span><span class="ni">create</span><span class="p">(::</span><span class="ni">vector</span><span class="p">(::</span><span class="ni">x</span><span class="p">,::</span><span class="ni">y</span><span class="p">,::</span><span class="ni">z</span><span class="p">))</span>
+<span class="ni">    data</span><span class="p">.</span><span class="ni">scalar</span><span class="p">.</span><span class="ni">value</span><span class="p">(::</span><span class="ni">scalars</span><span class="p">)</span><span class="ni"> </span><span class="p">=::</span><span class="ni"> </span><span class="k">math.random.uniform</span><span class="p">(</span><span class="ni">n</span><span class="p">)</span><span class="ni"> </span><span class="o">*</span><span class="ni"> </span><span class="m m-Double">10.0</span>
+<span class="nb">end</span>
+<span class="ni">[generate</span><span class="p">(</span><span class="m m-Double">100000</span><span class="p">)</span><span class="ni">]</span><span class="n"> </span>
+</pre></div>
+</div>
+<p>以下示例运算子判断某个标量对象的 x 坐标是否位于给定范围内。如果是，就将该对象加入槽位 <a class="reference internal" href="../../../../utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information...">标记（<span class="varstring"><span class="null">mark</span></span>）</a> 中的组 <a class="reference internal" href="../../../../utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">inside</span></span></a>，并返回 <a class="reference internal" href="../../../../utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">真值（<span class="varbool"><span class="null">true</span></span>）</a>；否则，将它加入组 <a class="reference internal" href="../../../../utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">outside</span></span></a>，并返回 <a class="reference internal" href="../../../../utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">假值（<span class="varbool"><span class="null">false</span></span>）</a>。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish operator</span><span class="n"> labeldata</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">low</span><span class="p">,</span><span class="n">high</span><span class="p">)</span>
+<span class="n">    local x </span><span class="p">=</span><span class="n"> data</span><span class="p">.</span><span class="n">scalar</span><span class="p">.</span><span class="n">pos</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">x</span>
+<span class="n">    if math</span><span class="p">.</span><span class="n">in</span><span class="p">.</span><span class="n">range</span><span class="p">(</span><span class="n">low</span><span class="p">,</span><span class="n">x</span><span class="p">,</span><span class="n">high</span><span class="p">)</span><span class="n"> then</span>
+<span class="n">        data</span><span class="p">.</span><span class="n">scalar</span><span class="p">.</span><span class="n">group</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="s">'mark'</span><span class="p">)</span><span class="n"> </span><span class="p">=</span><span class="n"> </span><span class="s">'inside'</span>
+<span class="n">        return </span><span class="sx">true</span>
+<span class="n">    endif</span>
+<span class="n">    data</span><span class="p">.</span><span class="n">scalar</span><span class="p">.</span><span class="n">group</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="s">'mark'</span><span class="p">)</span><span class="n"> </span><span class="p">=</span><span class="n"> </span><span class="s">'outside'</span>
+<span class="n">    return </span><span class="sx">false</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+<p>要执行运算子，可像调用普通 <span class="codename">FISH</span> 符号一样调用它，并传入一个<a class="reference internal" href="fish_splitting.html#fish-splitting"><span class="std std-ref">拆分</span>（split）</a>参数。由于它是运算子，这些重复调用将在所有可用线程上执行。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="ni">[labeldata</span><span class="p">(::</span><span class="ni">data</span><span class="p">.</span><span class="ni">scalar</span><span class="p">.</span><span class="ni">list</span><span class="p">,</span><span class="m m-Double">4.0</span><span class="p">,</span><span class="m m-Double">6.0</span><span class="p">)</span><span class="ni">]</span>
+</pre></div>
+</div>
+<p>请注意运算子中 <span class="cmdkey">return</span> 语句的用法。运算子与函数一样，本身也是一个全局符号；若直接为它赋值，就需要使用 <span class="fishname">lock</span> 语句，并产生明显的同步开销。因此，运算子应始终使用 <span class="cmdkey">return</span> 语句返回操作结果。与所有拆分操作一样，各次调用的返回值会汇总为一个列表。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p>某些情况下，对全局符号的读取和/或写入不可避免。此时，需要在运算子内部使用 <span class="cmdkey">fwd</span> 语句，以允许写入全局符号。以下示例使用 <span class="codename">FISH</span> 运算子扫描标量数据，查找位于给定笛卡尔坐标范围所定义的长方体内部的值，并将其中的最大值、最小值、累计值和最后找到的值返回到全局符号中。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="ni">[</span><span class="k">global</span><span class="ni"> maxval </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> minval </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1e30</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> accval </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">]</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> setval </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span><span class="ni">]</span>
+<span class="nb">fish operator</span><span class="n"> maxdata</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="n">low</span><span class="p">,</span><span class="n">high</span><span class="p">)</span>
+<span class="n">    local p </span><span class="p">=</span><span class="n"> data</span><span class="p">.</span><span class="n">scalar</span><span class="p">.</span><span class="n">pos</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="n">    if math</span><span class="p">.</span><span class="n">in</span><span class="p">.</span><span class="n">range</span><span class="p">(</span><span class="n">low</span><span class="p">,</span><span class="n">p</span><span class="p">,</span><span class="n">high</span><span class="p">)</span><span class="n"> then</span>
+<span class="n">        lock maxval </span><span class="p">=</span><span class="n"> math</span><span class="p">.</span><span class="n">max</span><span class="p">(</span><span class="n">maxval</span><span class="p">,</span><span class="n">data</span><span class="p">.</span><span class="n">scalar</span><span class="p">.</span><span class="n">val</span><span class="p">(</span><span class="n">data</span><span class="p">))</span><span class="n"> </span><span class="c">; 最大值</span>
+<span class="n">        lock minval </span><span class="p">=</span><span class="n"> math</span><span class="p">.</span><span class="n">min</span><span class="p">(</span><span class="n">minval</span><span class="p">,</span><span class="n">data</span><span class="p">.</span><span class="n">scalar</span><span class="p">.</span><span class="n">val</span><span class="p">(</span><span class="n">data</span><span class="p">))</span><span class="n"> </span><span class="c">; 最小值</span>
+<span class="n">        lock accval </span><span class="o">+=</span><span class="n"> data</span><span class="p">.</span><span class="n">scalar</span><span class="p">.</span><span class="n">val</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="n">         </span><span class="c">; 累计值</span>
+<span class="n">        lock setval </span><span class="p">=</span><span class="n"> data</span><span class="p">.</span><span class="n">scalar</span><span class="p">.</span><span class="n">val</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="n">   </span><span class="c">; 设置的值，应为</span>
+<span class="n">                                              </span><span class="c">; 列表中的最后一个值</span>
+<span class="n">    endif</span>
+<span class="nb">end</span>
+<span class="ni">[maxdata</span><span class="p">(::</span><span class="ni">data</span><span class="p">.</span><span class="ni">scalar</span><span class="p">.</span><span class="ni">list</span><span class="p">,(</span><span class="m m-Double">4</span><span class="p">,</span><span class="m m-Double">4</span><span class="p">,</span><span class="m m-Double">4</span><span class="p">),(</span><span class="m m-Double">6</span><span class="p">,</span><span class="m m-Double">6</span><span class="p">,</span><span class="m m-Double">6</span><span class="p">))</span><span class="ni">]</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p>最后，<span class="codename">FISH</span> 运算子最常见、最重要的用途之一，是在循环计算过程中使用；这实际上也是开发运算子的主要原因。否则，一个检查或修改模型中所有对象的单线程 <span class="codename">FISH</span> 函数，很容易占据系统运行时间的主要部分。</p>
+<p>要指定某个运算子在循环计算期间执行，可以使用 <a class="reference internal" href="../../../../../kernel/doc/manual/fish/commands/cmd_fish.callback.html#command:fish.callback" title="Add/remove functions to be executed in response to callback events...">设置FISH回调命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fish</span> <span class="pre">callback</span></code>）</a> 命令，或 <a class="reference internal" href="../../../../../kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令的 <span class="cmdkey">fish-call</span> 关键字。先指定运算子名称，再给出每次执行时传入的参数。</p>
+<p>通常，用来指定待遍历对象列表的参数由 <span class="codename">FISH</span> 库函数提供，命令处理器不能直接识别，因此必须使用<a class="reference internal" href="fish_inline.html#fish-inline"><span class="std std-ref">内联 FISH</span>（inline fish）</a>。与通常的拆分调用一样，必须添加前缀 <a class="reference internal" href="../../../../utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">::</span></span></a>，表示要对该参数进行拆分，见<a class="reference internal" href="fish_splitting.html#fish-splitting"><span class="std std-ref">拆分</span>（Splitting）</a>。请注意，这些值在处理命令时求出并保存，供循环计算期间执行时使用。</p>
+<p>下面给出一个示例：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;; 持续生效的 FISH 调用项</span>
+<span class="nb">fish callback</span><span class="n"> add my_function</span><span class="p">(</span><span class="ni">[</span><span class="p">::</span><span class="ni">data</span><span class="p">.</span><span class="ni">scalar</span><span class="p">.</span><span class="ni">list]</span><span class="p">)</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">100</span>
+<span class="c">;; 仅添加到单条 solve 命令的 FISH 调用</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fish</span><span class="o">-</span><span class="n">call </span><span class="o">-</span><span class="m m-Double">100</span><span class="n"> my_function</span><span class="p">(</span><span class="ni">[</span><span class="p">::</span><span class="ni">data</span><span class="p">.</span><span class="ni">scalar</span><span class="p">.</span><span class="ni">list]</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../scripting.html">Scripting</a> »</li>
+<li class="nav-item nav-item-2"><a href="fish.html"><span class="codename">FISH</span> Scripting Reference</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="fish_languagerules.html"><span class="codename">FISH</span> Rules and Usage</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="fish_splitting.html" title="previous chapter"> Splitting: Automatic Execution of Functions on Type Contents</a> |    
+       <a href="fish_redefining.html" title="next chapter">Redefining <span class="codename">FISH</span> Functions</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Operators: Multi-threaded function support" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

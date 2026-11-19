@@ -1,0 +1,668 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>使用 FLAC3D 与 NumPy 的数组式编程 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../../search.html" rel="search" title="Search"/>
+<link href="code_flac3d_array_interface.py.html" rel="next" title="flac3d_array_interface.py"/>
+<link href="code_python_flac3d.py.html" rel="prev" title="python_flac3d.py"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="array-style-programming-with-flac3d-and-numpy">
+<h1>使用 <span class="codename">FLAC3D</span> 与 NumPy 的数组式编程</h1>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">functools</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="n">np</span><span class="o">.</span><span class="n">set_printoptions</span><span class="p">(</span><span class="n">threshold</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">为便于本教程，打印大数组时终端中显示的数据量已被减少。这通过 <code class="docutils literal"><span class="pre">numpy</span></code> 模块的 <code class="docutils literal"><span class="pre">set_printoptions</span></code> 函数实现。大多数使用情形不需要该步骤。</p>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">itasca</span> <span class="kn">as</span> <span class="nn">it</span>
+<span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"python-reset-state false"</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">itasca</span> <span class="kn">import</span> <span class="n">zonearray</span> <span class="k">as</span> <span class="n">za</span>
+<span class="kn">from</span> <span class="nn">itasca</span> <span class="kn">import</span> <span class="n">gridpointarray</span> <span class="k">as</span> <span class="n">gpa</span>
+</pre></div>
+</div>
+<p>首先，我们导入 <a class="reference internal" href="itasca.html#pyapi-itasca"><span class="std std-ref">itasca</span></a>、<a class="reference internal" href="itasca.zonearray.html#pyapi-itasca-zonearray">zonearray（网格单元数组）（<span class="std std-ref">zonearray</span>）</a>、<a class="reference internal" href="itasca.gridpointarray.html#pyapi-itasca-gridpointarray">gridpointarray（网格点数组）（<span class="std std-ref">gridpointarray</span>）</a> 和 <code class="docutils literal"><span class="pre">numpy</span></code> 模块。注意 <code class="docutils literal"><span class="pre">zonearray</span></code> 和 <code class="docutils literal"><span class="pre">gridpointarray</span></code> 模块是 <code class="docutils literal"><span class="pre">itasca</span></code> 模块的子模块。为减少输入量，我们以简写名导入这些模块。</p>
+<p>在本教程中，我们做与上一示例相同的建模，但改用数组接口。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">model new</span>
+<span class="s2">model large-strain off</span>
+<span class="s2">zone create brick size 10 10 10</span>
+<span class="s2">zone cmodel assign elastic</span>
+<span class="s2">zone property density 2950 young 12e9 poisson 0.25</span>
+<span class="s2">cycle 1</span>
+<span class="s2">"""</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>首先我们创建一个简单模型。</p>
+<div class="section" id="zone-array-functions">
+<h2>网格单元数组函数</h2>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">za</span><span class="o">.</span><span class="n">pos</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>[[ 0.5  0.5  0.5]
+ [ 1.5  0.5  0.5]
+ [ 2.5  0.5  0.5]
+ ...,
+ [ 7.5  9.5  9.5]
+ [ 8.5  9.5  9.5]
+ [ 9.5  9.5  9.5]]
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>调用 <a class="reference internal" href="itasca.zonearray.html#itasca.zonearray.pos" title="itasca.zonearray.pos"><code class="xref py py-func docutils literal"><span class="pre">itasca.zonearray.pos</span></code></a> 函数（<code class="docutils literal"><span class="pre">za.pos()</span></code>）返回网格单元形心的 NumPy 数组。</p>
+<div class="admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">在终端中打印大数组时，只显示数组的开头和结尾。省略号表示中间的间隔。</p>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">p</span> <span class="o">=</span> <span class="n">za</span><span class="o">.</span><span class="n">pos</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="nb">type</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>&lt;class 'numpy.ndarray'&gt;
+</pre></div>
+</div>
+</dd>
+</dl>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">p</span><span class="o">.</span><span class="n">shape</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>(1000, 3)
+</pre></div>
+</div>
+</dd>
+</dl>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">it</span><span class="o">.</span><span class="n">zone</span><span class="o">.</span><span class="n">count</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>1000
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>该数组被赋给变量 <code class="docutils literal"><span class="pre">p</span></code>。数组的形状取决于网格单元数量。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">,</span><span class="n">z</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">T</span>
+
+<span class="k">print</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>[ 0.5  1.5  2.5 ...,  7.5  8.5  9.5]
+(1000,)
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>各网格单元形心分量可解包到不同变量中。<code class="docutils literal"><span class="pre">.T</span></code> 是转置运算符。<code class="docutils literal"><span class="pre">p</span></code> 是多维数组，而 <code class="docutils literal"><span class="pre">x</span></code>、<code class="docutils literal"><span class="pre">y</span></code> 和 <code class="docutils literal"><span class="pre">z</span></code> 是标量数组。</p>
+</div>
+<div class="section" id="mask-arrays">
+<h2>掩码数组</h2>
+<p>沿用上一示例，我们将在模型的上、下两层设置不同的模量。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">z</span> <span class="o">&gt;</span> <span class="mi">5</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>[False False False ...,  True  True  True]
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>上文中我们对数组 <code class="docutils literal"><span class="pre">z</span></code> 使用了 <code class="docutils literal"><span class="pre">&gt;</span></code> 运算符。返回值是由 True 或 False 值组成的数组。模型高 10 m，因此若网格单元形心位于模型上半部，该值为 True。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">upper_zones</span> <span class="o">=</span> <span class="n">z</span> <span class="o">&gt;</span> <span class="mi">5</span>
+<span class="k">print</span><span class="p">((</span><span class="n">upper_zones</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>500
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>数组的 sum 方法可用于统计该数组中有多少个网格单元为 True。由 True 或 False 值组成的数组称为<em>掩码</em>，可用于设置数组的某些部分。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">modulus</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">modulus</span><span class="p">[</span><span class="n">upper_zones</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.2e10</span>
+<span class="n">lower_zones</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">upper_zones</span><span class="p">)</span>
+<span class="n">modulus</span><span class="p">[</span><span class="n">lower_zones</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.6e10</span>
+</pre></div>
+</div>
+<p>创建一个新数组，其形状与网格单元位置 x 分量相同。该数组中对应模型上半部网格单元的部分取与下半部不同的值。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">za</span><span class="o">.</span><span class="n">set_prop_scalar</span><span class="p">(</span><span class="s2">"young"</span><span class="p">,</span> <span class="n">modulus</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><a class="reference internal" href="itasca.zonearray.html#itasca.zonearray.set_prop_scalar" title="itasca.zonearray.set_prop_scalar"><code class="xref py py-func docutils literal"><span class="pre">itasca.zonearray.set_prop_scalar</span></code></a> 函数（<code class="docutils literal"><span class="pre">za.set_prop_scalar()</span></code>）设置模型中每个网格单元的杨氏模量。</p>
+</div>
+<div class="section" id="flac3d-groups-and-mask-arrays">
+<h2><span class="codename">FLAC3D</span> 的组与掩码数组</h2>
+<p>掩码数组（为每个网格单元取 True 或 False 值）的概念类似于 <span class="codename">FLAC3D</span> 中组的概念。既可由 <span class="codename">FLAC3D</span> 的组得到掩码数组，也可反向进行。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"zone group </span><span class="se">\"</span><span class="s2">lower</span><span class="se">\"</span><span class="s2"> range position-z 0 5"</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">za</span><span class="o">.</span><span class="n">in_group</span><span class="p">(</span><span class="s2">"lower"</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>[ True  True  True ..., False False False]
+</pre></div>
+</div>
+</dd>
+</dl>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">za</span><span class="o">.</span><span class="n">in_group</span><span class="p">(</span><span class="s2">"lower"</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span> <span class="s2">"zones in lower group."</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>(500, 'zones in lower group.')
+</pre></div>
+</div>
+</dd>
+</dl>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="nb">reduce</span>
+<span class="n">corner_mask</span> <span class="o">=</span> <span class="nb">reduce</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="o">&lt;</span><span class="mi">3</span><span class="p">,</span> <span class="n">y</span><span class="o">&lt;</span><span class="mi">3</span><span class="p">,</span> <span class="n">z</span><span class="o">&lt;</span><span class="mi">3</span><span class="p">))</span>
+<span class="n">za</span><span class="o">.</span><span class="n">set_group</span><span class="p">(</span><span class="n">corner_mask</span><span class="p">,</span> <span class="s2">"corner"</span><span class="p">,</span> <span class="s2">"geometry"</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">za</span><span class="o">.</span><span class="n">in_group</span><span class="p">(</span><span class="s2">"corner"</span><span class="p">,</span> <span class="s2">"geometry"</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(),</span> <span class="s2">"zones in corner group."</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>27 zones in corner group.
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>上文中，由组创建了掩码数组，又由掩码数组创建了组。</p>
+</div>
+<div class="section" id="gridpoint-array-functions">
+<h2>网格点数组函数</h2>
+<p>接下来用 <code class="docutils literal"><span class="pre">gridpointarray</span></code> 模块函数设置边界条件。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">gpos</span> <span class="o">=</span> <span class="n">gpa</span><span class="o">.</span><span class="n">pos</span><span class="p">()</span>
+<span class="n">gx</span><span class="p">,</span> <span class="n">gy</span><span class="p">,</span> <span class="n">gz</span> <span class="o">=</span> <span class="n">gpos</span><span class="o">.</span><span class="n">T</span>
+<span class="k">print</span><span class="p">(</span><span class="n">gz</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>[  0.   0.   0. ...,  10.  10.  10.]
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>首先，把网格点位置的各个分量分别赋给变量 <code class="docutils literal"><span class="pre">gx</span></code>、<code class="docutils literal"><span class="pre">gy</span></code> 和 <code class="docutils literal"><span class="pre">gz</span></code>。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">f</span> <span class="o">=</span> <span class="n">gpa</span><span class="o">.</span><span class="n">fixity</span><span class="p">()</span>
+<span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>[[False False False]
+ [False False False]
+ [False False False]
+ ...,
+ [False False False]
+ [False False False]
+ [False False False]]
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>接下来调用 <code class="xref py py-func docutils literal"><span class="pre">itasca.gridpointarray.fixity</span> <span class="pre">function</span> <span class="pre">(``gpa.fixity()`</span></code>) 以获得描述当前网格点约束状态的数组。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">f</span><span class="p">[:,][</span><span class="n">gz</span><span class="o">==</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span><span class="p">,</span> <span class="bp">True</span><span class="p">,</span> <span class="bp">True</span>
+<span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>[[ True  True  True]
+ [ True  True  True]
+ [ True  True  True]
+ ...,
+ [False False False]
+ [False False False]
+ [False False False]]
+</pre></div>
+</div>
+</dd>
+</dl>
+<p><code class="docutils literal"><span class="pre">f</span></code> 数组中与下表面网格点对应的项被设为 True。数组接口函数返回的是 <span class="codename">FLAC3D</span> 模型中数据的副本。仅仅修改该数组中的值不会影响 <span class="codename">FLAC3D</span> 模型。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">gpa</span><span class="o">.</span><span class="n">set_fixity</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>最后，用数组 <code class="docutils literal"><span class="pre">f</span></code> 调用 <a class="reference internal" href="itasca.gridpointarray.html#itasca.gridpointarray.set_fixity" title="itasca.gridpointarray.set_fixity"><code class="xref py py-func docutils literal"><span class="pre">itasca.gridpointarray.set_fixity</span></code></a> 函数（<code class="docutils literal"><span class="pre">gpa.set_fixity()</span></code>），以设置 <span class="codename">FLAC3D</span> 模型中网格点的固定状态。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">top_gridpoints</span> <span class="o">=</span> <span class="n">gz</span><span class="o">==</span><span class="mi">10</span>
+<span class="n">radial_distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">gx</span><span class="o">-</span><span class="mi">5</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="o">+</span><span class="p">(</span><span class="n">gy</span><span class="o">-</span><span class="mi">5</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">central_gridpoints</span> <span class="o">=</span> <span class="n">radial_distance</span> <span class="o">&lt;</span> <span class="mi">5</span>
+<span class="n">mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">top_gridpoints</span><span class="p">,</span> <span class="n">central_gridpoints</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s2">"boundary load applied to {} gridpoints"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mask</span><span class="o">.</span><span class="n">sum</span><span class="p">()))</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>boundary load applied to 69 gridpoints
+</pre></div>
+</div>
+</dd>
+</dl>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">fapp</span> <span class="o">=</span> <span class="n">gpa</span><span class="o">.</span><span class="n">force_app</span><span class="p">()</span>
+<span class="k">print</span><span class="p">(</span><span class="n">fapp</span><span class="p">)</span>
+<span class="n">fapp</span><span class="p">[:,</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">mask</span><span class="o">*</span><span class="mf">1e6</span><span class="o">*</span><span class="p">(</span><span class="mf">5.0</span><span class="o">-</span><span class="n">radial_distance</span><span class="p">)</span><span class="o">/</span><span class="mf">5.0</span>
+<span class="n">gpa</span><span class="o">.</span><span class="n">set_force_app</span><span class="p">(</span><span class="n">fapp</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>[[ 0.  0.  0.]
+ [ 0.  0.  0.]
+ [ 0.  0.  0.]
+ ...,
+ [ 0.  0.  0.]
+ [ 0.  0.  0.]
+ [ 0.  0.  0.]]
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>在模型顶面的圆形区域施加荷载。模型中部荷载为 1e6 Pa，并在距模型中部径向 5 m 处降为零。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"model solve"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>求解模型后，可用网格单元与网格点数组接口检查模型响应。先显示网格点位移：</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">print</span><span class="p">(</span><span class="s2">"gridpoint displacements:"</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">gpa</span><span class="o">.</span><span class="n">disp</span><span class="p">())</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>gridpoint displacements:
+[[  0.00000000e+00   0.00000000e+00   0.00000000e+00]
+ [  0.00000000e+00   0.00000000e+00   0.00000000e+00]
+ [  0.00000000e+00   0.00000000e+00   0.00000000e+00]
+ ...,
+ [  1.00817672e-05   1.34893133e-05   9.87057263e-05]
+ [  1.05750220e-05   1.17518780e-05   8.43147596e-05]
+ [  1.07288134e-05   1.07309207e-05   6.84082122e-05]]
+</pre></div>
+</div>
+</dd>
+</dl>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">print</span><span class="p">(</span><span class="s2">"gridpoint displacement magnitudes: "</span><span class="p">)</span>
+<span class="n">mag</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">gpa</span><span class="o">.</span><span class="n">disp</span><span class="p">(),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">mag</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>gridpoint displacement magnitudes:
+[  0.00000000e+00   0.00000000e+00   0.00000000e+00 ...,   1.00132033e-04
+   8.57841268e-05   7.00709896e-05]
+</pre></div>
+</div>
+</dd>
+</dl>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">max_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">mag</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s2">"Maximum displacement: {} at location {}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">gpa</span><span class="o">.</span><span class="n">disp</span><span class="p">()[</span><span class="n">max_index</span><span class="p">],</span>
+                                              <span class="n">gpa</span><span class="o">.</span><span class="n">pos</span><span class="p">()[</span><span class="n">max_index</span><span class="p">]))</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>Maximum displacement: [ -4.52702458e-10   1.86453593e-09   3.48017689e-04] at location [  5.   5.  10.]
+</pre></div>
+</div>
+</dd>
+</dl>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">print</span><span class="p">(</span><span class="s2">"Vertical displacement along the vertical line x=5, y=5: from z=0 to z=10"</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">gpa</span><span class="o">.</span><span class="n">disp</span><span class="p">()[</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">gx</span><span class="o">==</span><span class="mi">5</span><span class="p">,</span> <span class="n">gy</span><span class="o">==</span><span class="mi">5</span><span class="p">)][:,</span><span class="mi">2</span><span class="p">])</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>Vertical displacement along the vertical line x=5, y=5: from z=0 to z=10
+[  0.00000000e+00   1.32736099e-05   2.90161310e-05   4.73383602e-05
+   6.85192220e-05   9.30672832e-05   1.29455954e-04   1.72421045e-04
+   2.22942342e-04   2.81949365e-04   3.48017689e-04]
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>下面显示各网格单元的应力。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">za</span><span class="o">.</span><span class="n">stress</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>[[[  6.17465910e+04   1.01416448e+02   4.89994456e+04]
+  [  1.01416448e+02   6.17465236e+04   4.89997227e+04]
+  [  4.89994456e+04   4.89997227e+04   3.27999527e+05]]
+
+ [[  6.78059670e+04  -2.06730704e+02   3.86946869e+04]
+  [ -2.06730704e+02   5.38905523e+04   4.87472043e+04]
+  [  3.86946869e+04   4.87472043e+04   2.89819206e+05]]
+
+ [[  7.09115883e+04  -1.28065496e+01   2.76193649e+04]
+  [ -1.28065496e+01   5.40605685e+04   4.85390854e+04]
+  [  2.76193649e+04   4.85390854e+04   2.85324217e+05]]
+
+ ...,
+ [[  9.55693655e+03  -2.96732631e+03  -1.10777147e+04]
+  [ -2.96732631e+03   4.08106384e+03   5.84626994e+02]
+  [ -1.10777147e+04   5.84626994e+02   2.43435143e+04]]
+
+ [[ -2.75298024e+02  -3.62867135e+03   6.97528022e+03]
+  [ -3.62867135e+03  -1.55273155e+03   7.15403465e+03]
+  [  6.97528022e+03   7.15403465e+03  -2.14997007e+03]]
+
+ [[  1.49396407e+02  -4.59852072e+03   8.30887546e+03]
+  [ -4.59852072e+03   1.49541790e+02   8.30883923e+03]
+  [  8.30887546e+03   8.30883923e+03  -1.19746482e+04]]]
+</pre></div>
+</div>
+</dd>
+</dl>
+<p><a class="reference internal" href="itasca.zonearray.html#itasca.zonearray.stress" title="itasca.zonearray.stress"><code class="xref py py-func docutils literal"><span class="pre">itasca.zonearray.stress</span></code></a> 函数（<code class="docutils literal"><span class="pre">za.stress()</span></code>）把每个网格单元的应力张量返回为多维数组。这些数组是对称的，因此还提供更紧凑的表示：</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">za</span><span class="o">.</span><span class="n">stress_flat</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>[[  6.17465910e+04   6.17465236e+04   3.27999527e+05   1.01416448e+02
+    4.89997227e+04   4.89994456e+04]
+ [  6.78059670e+04   5.38905523e+04   2.89819206e+05  -2.06730704e+02
+    4.87472043e+04   3.86946869e+04]
+ [  7.09115883e+04   5.40605685e+04   2.85324217e+05  -1.28065496e+01
+    4.85390854e+04   2.76193649e+04]
+ ...,
+ [  9.55693655e+03   4.08106384e+03   2.43435143e+04  -2.96732631e+03
+    5.84626994e+02  -1.10777147e+04]
+ [ -2.75298024e+02  -1.55273155e+03  -2.14997007e+03  -3.62867135e+03
+    7.15403465e+03   6.97528022e+03]
+ [  1.49396407e+02   1.49541790e+02  -1.19746482e+04  -4.59852072e+03
+    8.30883923e+03   8.30887546e+03]]
+</pre></div>
+</div>
+</dd>
+</dl>
+</div>
+<div class="section" id="flac3d-model-geometry-array-data">
+<h2><span class="codename">FLAC3D</span> 模型几何数组数据</h2>
+<p>获取网格单元或网格点 ID 的数组有时很有用。这可通过数组模块的 <code class="docutils literal"><span class="pre">ids</span></code> 函数实现。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">za</span><span class="o">.</span><span class="n">ids</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>[   1    2    3 ...,  998  999 1000]
+</pre></div>
+</div>
+</dd>
+</dl>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">gpa</span><span class="o">.</span><span class="n">ids</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>[   1    2    3 ..., 1329 1330 1331]
+</pre></div>
+</div>
+</dd>
+<dt>各网格单元所连接的网格点由 <a class="reference internal" href="itasca.zonearray.html#itasca.zonearray.gridpoints" title="itasca.zonearray.gridpoints"><code class="xref py py-func docutils literal"><span class="pre">itasca.zonearray.gridpoints</span></code></a> 给出</dt>
+<dd>function (<code class="docutils literal"><span class="pre">za.gridpoints()</span></code>).</dd>
+</dl>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">za</span><span class="o">.</span><span class="n">gridpoints</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>[[   0    1    2 ...,    5    6    7]
+ [   1    8    4 ...,    7   10   11]
+ [   8   12    9 ...,   11   14   15]
+ ...,
+ [1195 1196 1206 ..., 1327 1317 1328]
+ [1196 1197 1207 ..., 1328 1318 1329]
+ [1197 1198 1208 ..., 1329 1319 1330]]
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>返回值是 <a class="reference internal" href="itasca.gridpointarray.html#pyapi-itasca-gridpointarray"><span class="std std-ref">gridpointarray 模块</span>（gridpointarray module）</a> 各函数所返回数组的索引。我们可以借此确认网格单元的形心是各网格点位置的平均值。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">print</span><span class="p">(</span><span class="s2">"average gridpoint locations: "</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">gpa</span><span class="o">.</span><span class="n">pos</span><span class="p">()[</span><span class="n">za</span><span class="o">.</span><span class="n">gridpoints</span><span class="p">()]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="mf">8.0</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>average gridpoint locations:
+[[ 0.5  0.5  0.5]
+ [ 1.5  0.5  0.5]
+ [ 2.5  0.5  0.5]
+ ...,
+ [ 7.5  9.5  9.5]
+ [ 8.5  9.5  9.5]
+ [ 9.5  9.5  9.5]]
+</pre></div>
+</div>
+</dd>
+</dl>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">print</span><span class="p">(</span><span class="s2">"zone centroids: "</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">za</span><span class="o">.</span><span class="n">pos</span><span class="p">())</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>zone centroids:
+[[ 0.5  0.5  0.5]
+ [ 1.5  0.5  0.5]
+ [ 2.5  0.5  0.5]
+ ...,
+ [ 7.5  9.5  9.5]
+ [ 8.5  9.5  9.5]
+ [ 9.5  9.5  9.5]]
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>类似地，我们可以获取与每个网格点相连的网格单元的索引。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">za</span><span class="o">.</span><span class="n">gridpoints</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>[[   0    1    2 ...,    5    6    7]
+ [   1    8    4 ...,    7   10   11]
+ [   8   12    9 ...,   11   14   15]
+ ...,
+ [1195 1196 1206 ..., 1327 1317 1328]
+ [1196 1197 1207 ..., 1328 1318 1329]
+ [1197 1198 1208 ..., 1329 1319 1330]]
+</pre></div>
+</div>
+</dd>
+</dl>
+<p><a class="reference internal" href="itasca.zonearray.html#itasca.zonearray.faces" title="itasca.zonearray.faces"><code class="xref py py-func docutils literal"><span class="pre">itasca.zonearray.faces</span></code></a> 函数（<code class="docutils literal"><span class="pre">za.faces()</span></code>）返回每个网格单元各面上网格点的索引。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">za</span><span class="o">.</span><span class="n">faces</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>[[[   1    4    2    0]
+  [   3    5    7    6]
+  [   0    2    5    3]
+  [   6    7    4    1]
+  [   2    4    7    5]
+  [   0    3    6    1]]
+
+ [[   8    9    4    1]
+  [   6    7   11   10]
+  [   1    4    7    6]
+  [  10   11    9    8]
+  [   4    9   11    7]
+  [   1    6   10    8]]
+
+ [[  12   13    9    8]
+  [  10   11   15   14]
+  [   8    9   11   10]
+  [  14   15   13   12]
+  [   9   13   15   11]
+  [   8   10   14   12]]
+
+ ...,
+ [[1196 1207 1206 1195]
+  [1316 1327 1328 1317]
+  [1195 1206 1327 1316]
+  [1317 1328 1207 1196]
+  [1206 1207 1328 1327]
+  [1195 1316 1317 1196]]
+
+ [[1197 1208 1207 1196]
+  [1317 1328 1329 1318]
+  [1196 1207 1328 1317]
+  [1318 1329 1208 1197]
+  [1207 1208 1329 1328]
+  [1196 1317 1318 1197]]
+
+ [[1198 1209 1208 1197]
+  [1318 1329 1330 1319]
+  [1197 1208 1329 1318]
+  [1319 1330 1209 1198]
+  [1208 1209 1330 1329]
+  [1197 1318 1319 1198]]]
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>最后，<a class="reference internal" href="itasca.zonearray.html#itasca.zonearray.neighbors" title="itasca.zonearray.neighbors"><code class="xref py py-func docutils literal"><span class="pre">itasca.zonearray.neighbors</span></code></a> 函数（<code class="docutils literal"><span class="pre">za.neighbors()</span></code>）返回与各网格单元的面相邻的网格单元索引。对不存在的面、网格点或相邻单元，这些函数返回索引 -1。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">print</span><span class="p">(</span><span class="n">za</span><span class="o">.</span><span class="n">neighbors</span><span class="p">())</span>
+<span class="k">print</span><span class="p">()</span>
+<span class="n">exterior_zone_mask</span> <span class="o">=</span> <span class="p">[(</span><span class="n">v</span><span class="o">==-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">()</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">za</span><span class="o">.</span><span class="n">neighbors</span><span class="p">()]</span>
+<span class="n">n_exterior</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">exterior_zone_mask</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">n_exterior</span><span class="p">,</span> <span class="s2">"zones on the model exterior"</span><span class="p">)</span>
+
+<span class="n">N</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="k">assert</span> <span class="n">n_exterior</span> <span class="o">==</span> <span class="mi">2</span><span class="o">*</span><span class="n">N</span><span class="o">*</span><span class="n">N</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">N</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="n">N</span> <span class="o">+</span> <span class="mi">2</span><span class="o">*</span><span class="p">(</span><span class="n">N</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span><span class="o">*</span><span class="p">(</span><span class="n">N</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>[[ -1 100  -1   1  10  -1]
+ [ -1 101   0   2  11  -1]
+ [ -1 102   1   3  12  -1]
+ ...,
+ [897  -1 996 998  -1 987]
+ [898  -1 997 999  -1 988]
+ [899  -1 998  -1  -1 989]]
+
+488 zones on the model exterior
+</pre></div>
+</div>
+</dd>
+</dl>
+</div>
+<div class="section" id="example-file">
+<h2>示例文件</h2>
+<div class="toctree-wrapper hide compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="code_flac3d_array_interface.py.html">flac3d_array_interface.py</a></li>
+</ul>
+</div>
+<p>此示例的源代码为 <a class="reference internal" href="code_flac3d_array_interface.py.html#flac3d-array-interface"><span class="std std-ref">flac3d_array_interface.py</span></a></p>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../scripting.html">Scripting</a> »</li>
+<li class="nav-item nav-item-2"><a href="../python.html">Python Scripting</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../python_flac3d.html"><span class="codename">FLAC3D</span> Python</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="code_python_flac3d.py.html" title="previous chapter"> python_flac3d.py</a> |    
+       <a href="code_flac3d_array_interface.py.html" title="next chapter">flac3d_array_interface.py</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Array Style Programming with FLAC3D and NumPy" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

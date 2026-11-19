@@ -1,0 +1,571 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>在 3DEC 中使用 Python — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../../search.html" rel="search" title="Search"/>
+<link href="code_python_3dec.py.html" rel="next" title="python_3dec.py"/>
+<link href="../python_3dec.html" rel="prev" title="3DEC Python"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="using-python-with-3dec">
+<span id="usingpythonwith3dec"></span><h1>在 <span class="codename">3DEC</span> 中使用 Python</h1>
+<p>本节给出用 Python 程序与 <span class="codename">3DEC</span> 交互的示例。本例中我们创建一个简单 <span class="codename">3DEC</span> 模型，并用 Python 施加边界条件、考察模型响应。</p>
+<p>首先我们用 <code class="docutils literal"><span class="pre">import</span></code> 语句导入 <span class="flag3">c</span> <a class="reference internal" href="itasca.html#pyapi-itasca"><span class="std std-ref">itasca</span></a> 模块。<code class="docutils literal"><span class="pre">itasca</span></code> 模块定义 Python 与 <span class="codename">3DEC</span> 之间的交互。我们以简写名 <code class="docutils literal"><span class="pre">it</span></code> 导入 <code class="docutils literal"><span class="pre">itasca</span></code> 模块。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">itasca</span> <span class="kn">as</span> <span class="nn">it</span>
+<span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"python-reset-state false"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>我们将创建一些块体以展示 Python 脚本的特性。用 <a class="reference internal" href="itasca.html#itasca.command" title="itasca.command"><code class="xref py py-func docutils literal"><span class="pre">itasca.command</span></code></a> 函数发出一系列 <span class="codename">3DEC</span> 命令。在 Python 程序开头应始终给出命令 <code class="xref fish fish-cmd docutils literal"><span class="pre">python-reset-state</span> <span class="pre">false</span></code>。若未给出该命令，则当通过 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.new.html#command:model.new" title="Clear model-state information. Model information is cleared, allowing one to
+begin a new...">新建模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">new</span></code>）</a> 或 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.restore.html#command:model.restore" title="Restore program-state information. The state information, resulting from a previous...">恢复模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">restore</span></code>）</a> 命令重置 <span class="codename">3DEC</span> 模型状态时，Python 变量与函数会被删除。</p>
+<p>这些命令创建一个块体，然后把它细分为小块体。三引号用于定义多行字符串。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">model new</span>
+<span class="s2">model large-strain off</span>
+<span class="s2">block create brick 0 10</span>
+<span class="s2">block densify segment 5</span>
+<span class="s2">block cut joint-set o 5 5 5 dip 20 d-d 90</span>
+<span class="s2">"""</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="section" id="working-with-3dec-block">
+<h2>处理 <span class="codename">3DEC</span> 块体</h2>
+<p>可用 <a class="reference internal" href="itasca.block.html#itasca.block.count" title="itasca.block.count"><code class="xref py py-func docutils literal"><span class="pre">itasca.block.count</span></code></a> 函数获取块体数量。把以下表达式输入 IPython 终端，屏幕上会打印出数字 160。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">it</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">count</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>output:</p>
+<blockquote>
+<div><div class="highlight-none"><div class="highlight"><pre><span></span>160
+</pre></div>
+</div>
+</div></blockquote>
+<p><code class="xref py py-func docutils literal"><span class="pre">itasca</span></code> 模块定义了用于与 <span class="codename">3DEC</span> 模型交互的函数和类。其中一些函数返回对象，</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">b</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>output:</p>
+<blockquote>
+<div><div class="highlight-none"><div class="highlight"><pre><span></span>&lt;itasca.block.Block object at 0x000001BB82260288, ID : 1&gt;
+</pre></div>
+</div>
+</div></blockquote>
+<p>此处 <a class="reference internal" href="itasca.block.html#itasca.block.find" title="itasca.block.find"><code class="xref py py-func docutils literal"><span class="pre">itasca.block.find</span></code></a>(1) 返回 id 为 1 的块体的 Block 对象。该对象被赋给 Python 变量 <code class="docutils literal"><span class="pre">b</span></code>。多数 <span class="codename">3DEC</span> 模型项都是这样的对象（类的实例）。Block 对象有许多方法，例如</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">b</span><span class="o">.</span><span class="n">pos</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>output:</p>
+<blockquote>
+<div><div class="highlight-none"><div class="highlight"><pre><span></span>vec3(( 9.000000e+00, 9.000000e+00, 9.000000e+00 ))
+</pre></div>
+</div>
+</div></blockquote>
+<p>变量 <code class="docutils literal"><span class="pre">b</span></code> 是一个 Block 对象，表示单个 <span class="codename">3DEC</span> 块体。<code class="docutils literal"><span class="pre">pos</span></code>（<a class="reference internal" href="itasca.block.Block.html#itasca.block.Block.pos" title="itasca.block.Block.pos">区块位置（<code class="xref py py-func docutils literal"><span class="pre">itasca.block.Block.pos</span></code>）</a>）是该对象的一个方法，返回块体形心。</p>
+<div class="admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last"><a class="reference internal" href="itasca.block.Block.html#itasca.block.Block.pos" title="itasca.block.Block.pos">区块位置（<code class="xref py py-func docutils literal"><span class="pre">itasca.block.Block.pos</span></code>）</a> 方法返回以 <code class="docutils literal"><span class="pre">vec3</span></code> 对象表示的长度为 3 的向量。关于 vec3 对象以及用 Python 处理向量的更多信息，见 <span class="flag3">c</span> <a class="reference internal" href="vec.html#pyapi-vec"><span class="std std-ref">vec</span></a> 模块。</p>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">print</span><span class="p">(</span><span class="s2">"block"</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">id</span><span class="p">(),</span> <span class="s2">"at"</span><span class="p">,</span> <span class="n">b</span><span class="o">.</span><span class="n">pos</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>Python 中用 <code class="docutils literal"><span class="pre">for</span></code> 语句遍历事物的序列，</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">volume_sum</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">it</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">list</span><span class="p">():</span>
+    <span class="n">volume_sum</span> <span class="o">+=</span> <span class="n">b</span><span class="o">.</span><span class="n">vol</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>在本例中，用 <code class="docutils literal"><span class="pre">for</span></code> 语句遍历所有 <span class="codename">3DEC</span> 块体。每次循环中变量 <code class="docutils literal"><span class="pre">b</span></code> 是另一个 <code class="docutils literal"><span class="pre">Block</span></code> 对象。最后，我们检验各块体体积之和是否符合预期。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">print</span><span class="p">(</span><span class="n">volume_sum</span><span class="p">)</span>
+<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">volume_sum</span> <span class="o">-</span> <span class="mf">1000.0</span><span class="p">)</span><span class="o">&lt;</span><span class="mf">1e-9</span>
+</pre></div>
+</div>
+<p>output:</p>
+<blockquote>
+<div><div class="highlight-none"><div class="highlight"><pre><span></span>999.9999999999998
+</pre></div>
+</div>
+</div></blockquote>
+<p>我们来查找靠近模型中心的块体</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">b</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">near</span><span class="p">((</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>并用 <code class="docutils literal"><span class="pre">pos</span></code> 方法确认其位置。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">b</span><span class="o">.</span><span class="n">pos</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>output:</p>
+<blockquote>
+<div><div class="highlight-none"><div class="highlight"><pre><span></span>vec3(( 5.121323e+00, 5.000000e+00, 5.477921e+00 ))
+</pre></div>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="working-with-3dec-zone">
+<h2>处理 <span class="codename">3DEC</span> 网格单元</h2>
+<p>我们在块体内生成网格单元，并在可变形块体之间生成子接触。随后为网格单元和子接触设置本构模型与若干性质。最后在模型中初始化地应力。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">block zone generate edgelength 1.0</span>
+<span class="s2">block zone cmodel assign elastic</span>
+<span class="s2">block zone property density 2950 young 12e9 poisson 0.25</span>
+<span class="s2">"""</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><code class="docutils literal"><span class="pre">props</span></code> 方法（<a class="reference internal" href="itasca.block.zone.Zone.html#itasca.block.zone.Zone.props" title="itasca.block.zone.Zone.props">区块单元属性列表（<code class="xref py py-func docutils literal"><span class="pre">itasca.block.zone.Zone.props</span></code>）</a>）以 Python 字典对象返回网格单元本构模型性质。字典的键为性质名，值为性质取值。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">z</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">zone</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">z</span><span class="p">)</span>
+<span class="n">z</span><span class="o">.</span><span class="n">props</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>output:</p>
+<blockquote>
+<div><div class="highlight-none"><div class="highlight"><pre><span></span>&lt;itasca.block.zone.Zone object at 0x000001BB82260288, ID : 1&gt;
+</pre></div>
+</div>
+</div></blockquote>
+<p>要访问字典的各个部分，需用 [   ] 括号配合字符串键，</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">z</span><span class="o">.</span><span class="n">props</span><span class="p">()[</span><span class="s1">'bulk'</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>output:</p>
+<blockquote>
+<div><div class="highlight-none"><div class="highlight"><pre><span></span>8000000000.0
+</pre></div>
+</div>
+</div></blockquote>
+<p>或可使用 <code class="docutils literal"><span class="pre">prop</span></code> 方法（<a class="reference internal" href="itasca.block.zone.Zone.html#itasca.block.zone.Zone.prop" title="itasca.block.zone.Zone.prop">区块单元属性（<code class="xref py py-func docutils literal"><span class="pre">itasca.block.zone.Zone.prop</span></code>）</a>）。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">z</span><span class="o">.</span><span class="n">prop</span><span class="p">(</span><span class="s1">'shear'</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>output:</p>
+<blockquote>
+<div><div class="highlight-none"><div class="highlight"><pre><span></span>4800000000.0
+</pre></div>
+</div>
+</div></blockquote>
+<p>网格单元性质可用 <code class="docutils literal"><span class="pre">set_prop</span></code> 方法（<a class="reference internal" href="itasca.block.zone.Zone.html#itasca.block.zone.Zone.set_prop" title="itasca.block.zone.Zone.set_prop">设置区块单元属性（<code class="xref py py-func docutils literal"><span class="pre">itasca.block.zone.Zone.set_prop</span></code>）</a>）设置。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">z</span><span class="o">.</span><span class="n">set_prop</span><span class="p">(</span><span class="s1">'bulk'</span><span class="p">,</span> <span class="mf">8.5e9</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">prop</span><span class="p">(</span><span class="s1">'bulk'</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>output:</p>
+<blockquote>
+<div><div class="highlight-none"><div class="highlight"><pre><span></span>8500000000.0
+</pre></div>
+</div>
+</div></blockquote>
+<p>Python 与 <span class="codename">3DEC</span> 网格单元有两处交互：</p>
+<ol class="lowerroman simple">
+<li>属于 <span class="flag3">c</span> <a class="reference internal" href="itasca.block.zone.html#pyapi-itasca-block-zone"><span class="std std-ref">itasca.block.zone</span></a> Python 模块的函数，以及</li>
+<li>单个 <span class="flag3">c</span> <a class="reference internal" href="itasca.block.zone.Zone.html#pyapi-itasca-block-zone-zone">网格单元（<span class="std std-ref">Zone</span>）</a> 对象的方法。</li>
+</ol>
+<p>用 Python 术语说，<span class="flag3">c</span> <a class="reference internal" href="itasca.block.zone.html#pyapi-itasca-block-zone"><span class="std std-ref">itasca.block.zone</span></a> 是 <span class="flag3">c</span> <a class="reference internal" href="itasca.block.html#pyapi-itasca-block"><span class="std std-ref">itasca.block</span></a> 模块的子模块，而 <span class="flag3">c</span> <a class="reference internal" href="itasca.block.zone.Zone.html#pyapi-itasca-block-zone-zone">网格单元（<span class="std std-ref">Zone</span>）</a> 是定义在 <span class="flag3">c</span> <a class="reference internal" href="itasca.block.zone.html#pyapi-itasca-block-zone"><span class="std std-ref">itasca.block.zone</span></a> 模块中的类。为简洁起见，我们常用简写名 <code class="docutils literal"><span class="pre">it</span></code> 导入 <code class="docutils literal"><span class="pre">itasca</span></code> 模块。上文中，<a class="reference internal" href="itasca.block.zone.html#itasca.block.zone.count" title="itasca.block.zone.count"><code class="xref py py-func docutils literal"><span class="pre">itasca.block.zone.count</span></code></a>、<a class="reference internal" href="itasca.block.zone.html#itasca.block.zone.list" title="itasca.block.zone.list"><code class="xref py py-func docutils literal"><span class="pre">itasca.block.zone.list</span></code></a> 和 <a class="reference internal" href="itasca.block.zone.html#itasca.block.zone.find" title="itasca.block.zone.find"><code class="xref py py-func docutils literal"><span class="pre">itasca.block.zone.find</span></code></a> 是定义在 <span class="flag3">c</span> <a class="reference internal" href="itasca.block.zone.html#pyapi-itasca-block-zone"><span class="std std-ref">itasca.block.zone</span></a> 模块中的函数，而 <a class="reference internal" href="itasca.block.zone.Zone.html#itasca.block.zone.Zone.pos_z" title="itasca.block.zone.Zone.pos_z">区块单元 z 向位置（<code class="xref py py-func docutils literal"><span class="pre">itasca.block.zone.Zone.pos_z</span></code>）</a> 和 <code class="xref py py-func docutils literal"><span class="pre">itasca.block.zone.Zone.vol_z</span></code> 是 <span class="flag3">c</span> <a class="reference internal" href="itasca.block.zone.Zone.html#pyapi-itasca-block-zone-zone">网格单元（<span class="std std-ref">Zone</span>）</a> 对象的方法调用。</p>
+<ul class="simple">
+<li><span class="flag3">c</span> <a class="reference internal" href="itasca.html#pyapi-itasca"><span class="std std-ref">itasca</span></a> 给出 <code class="docutils literal"><span class="pre">itasca</span></code> 模块函数与类的完整列表。</li>
+<li><span class="flag3">c</span> <a class="reference internal" href="itasca.block.zone.html#pyapi-itasca-block-zone"><span class="std std-ref">itasca.block.zone</span></a> 给出 <code class="docutils literal"><span class="pre">itasca.block.zone</span></code> 模块函数的完整列表。</li>
+<li><span class="flag3">c</span> <a class="reference internal" href="itasca.block.zone.Zone.html#pyapi-itasca-block-zone-zone">网格单元（<span class="std std-ref">Zone</span>）</a> 给出 <code class="docutils literal"><span class="pre">Zone</span></code> 对象方法的完整列表。</li>
+</ul>
+</div>
+<div class="section" id="working-with-3dec-vertex">
+<h2>处理 <span class="codename">3DEC</span> 顶点</h2>
+<p>类似地，Python 可以通过以下方式与 <span class="codename">3DEC</span> 网格点交互</p>
+<ul class="simple">
+<li><span class="flag3">c</span> <a class="reference internal" href="itasca.block.gridpoint.html#pyapi-itasca-block-gridpoint"><span class="std std-ref">itasca.block.gridpoint</span></a> 模块函数以及</li>
+<li><span class="flag3">c</span> <a class="reference internal" href="itasca.block.gridpoint.Gridpoint.html#pyapi-itasca-block-gridpoint-gridpoint">网格点（<span class="std std-ref">Gridpoint</span>）</a> 对象的方法。</li>
+</ul>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">gp</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">gridpoint</span><span class="o">.</span><span class="n">near</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+<span class="k">print</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">pos</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>output:</p>
+<blockquote>
+<div><div class="highlight-none"><div class="highlight"><pre><span></span>vec3(( 2.000000e+00, 2.000000e+00, 2.000000e+00 ))
+</pre></div>
+</div>
+</div></blockquote>
+<p>与块体和网格单元一样，我们可以用 Python 的 <code class="docutils literal"><span class="pre">for</span></code> 语句遍历所有 <span class="codename">3DEC</span> 网格点。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">gp_mass</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">for</span> <span class="n">gp</span> <span class="ow">in</span> <span class="n">it</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">gridpoint</span><span class="o">.</span><span class="n">list</span><span class="p">():</span>
+    <span class="n">gp_mass</span> <span class="o">+=</span> <span class="n">gp</span><span class="o">.</span><span class="n">mass</span><span class="p">()</span>
+
+<span class="n">z_mass</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="k">for</span> <span class="n">z</span> <span class="ow">in</span> <span class="n">it</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">zone</span><span class="o">.</span><span class="n">list</span><span class="p">():</span>
+    <span class="n">z_mass</span> <span class="o">+=</span> <span class="n">z</span><span class="o">.</span><span class="n">mass</span><span class="p">()</span>
+<span class="k">print</span><span class="p">(</span><span class="n">gp_mass</span><span class="p">,</span> <span class="n">z_mass</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>output:</p>
+<blockquote>
+<div><div class="highlight-none"><div class="highlight"><pre><span></span>0.0 0.0
+</pre></div>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="working-with-contact-and-subcontact">
+<h2>处理接触与子接触</h2>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">block contact gen-sub</span>
+<span class="s2">block contact jmodel assign mohr</span>
+<span class="s2">block contact property stiffness-normal 1e9 stiffness-shear 1e9 coh 1e20 fric 35</span>
+<span class="s2">"""</span><span class="p">)</span>
+
+
+<span class="sd">"""</span>
+<span class="sd">Similarly, the :py:func:`it.block.contact.find()</span>
+<span class="sd">&lt;pyapi_itasca_block_contact_find&gt;` and :py:func:`it.block.contact.near()</span>
+<span class="sd">&lt;pyapi_itasca_block_contact_near&gt;` functions can be used to get specific</span>
+<span class="sd">contact.</span>
+
+<span class="sd">"""</span>
+
+<span class="n">c1</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">contact</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">c2</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">contact</span><span class="o">.</span><span class="n">near</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">))</span>
+
+<span class="k">print</span><span class="p">(</span><span class="n">c1</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">c2</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>output:</p>
+<blockquote>
+<div><div class="highlight-none"><div class="highlight"><pre><span></span>&lt;itasca.block.contact.Contact object at 0x000001BB832B47B0, ID : 1&gt;
+&lt;itasca.block.contact.Contact object at 0x000001BB822603A8, ID : 475&gt;
+</pre></div>
+</div>
+</div></blockquote>
+<p>我们获取与某个接触关联的所有子接触的列表</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">cx</span> <span class="ow">in</span> <span class="n">c1</span><span class="o">.</span><span class="n">subcontacts</span><span class="p">():</span>
+     <span class="k">print</span><span class="p">(</span><span class="s2">"subcontact "</span><span class="p">,</span><span class="n">cx</span><span class="o">.</span><span class="n">id</span><span class="p">(),</span> <span class="s2">"at"</span><span class="p">,</span> <span class="n">cx</span><span class="o">.</span><span class="n">pos</span><span class="p">())</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="extra-variables">
+<h2>额外变量</h2>
+<p><span class="codename">3DEC</span> 的块体、网格单元、网格点及其他 Itasca 模型对象都有额外变量，从而可把某些数据关联到模型对象。Python 程序可用所有对象类型都定义的 <code class="docutils literal"><span class="pre">extra</span></code> 和 <code class="docutils literal"><span class="pre">set_extra</span></code> 方法读写额外变量。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">b</span><span class="o">.</span><span class="n">set_extra</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mf">1.23</span><span class="p">)</span>
+<span class="n">b</span><span class="o">.</span><span class="n">set_extra</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s2">"a text string"</span><span class="p">)</span>
+
+<span class="k">print</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">extra</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+<span class="k">print</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">extra</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>output:</p>
+<blockquote>
+<div><div class="highlight-none"><div class="highlight"><pre><span></span>1.23
+a text string
+</pre></div>
+</div>
+</div></blockquote>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">z</span><span class="o">.</span><span class="n">set_extra</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">z</span><span class="o">.</span><span class="n">vol</span><span class="p">())</span>
+<span class="n">z</span><span class="o">.</span><span class="n">set_extra</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="n">z</span><span class="o">.</span><span class="n">model</span><span class="p">())</span>
+
+<span class="k">print</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">extra</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+<span class="k">print</span><span class="p">(</span><span class="n">z</span><span class="o">.</span><span class="n">extra</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>output:</p>
+<blockquote>
+<div><div class="highlight-none"><div class="highlight"><pre><span></span>0.19669147144483143
+Isotropic Elastic
+</pre></div>
+</div>
+</div></blockquote>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">gp</span><span class="o">.</span><span class="n">set_extra</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">gp</span><span class="o">.</span><span class="n">pos</span><span class="p">())</span>
+<span class="n">gp</span><span class="o">.</span><span class="n">set_extra</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">86856527</span><span class="p">)</span>
+
+<span class="k">print</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">extra</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+<span class="k">print</span><span class="p">(</span><span class="n">gp</span><span class="o">.</span><span class="n">extra</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>output:</p>
+<blockquote>
+<div><div class="highlight-none"><div class="highlight"><pre><span></span>vec3(( 6.826550e+00, 6.560625e+00, 2.581529e+00 ))
+86856527
+</pre></div>
+</div>
+</div></blockquote>
+<p>Python 中索引通常从 0 开始。额外变量的索引是例外，以便 Python 与 Itasca 软件 GUI 良好配合。额外变量保存在模型存档文件中，这是把 Python 数据关联到 Itasca 模型状态的一种方式。</p>
+</div>
+<div class="section" id="using-3dec-groups">
+<h2>使用 <span class="codename">3DEC</span> 组</h2>
+<p>组用于创建 <span class="codename">3DEC</span> 模型对象的列表。这常用于设置边界条件或对模型的特定部分施加材料性质。此处我们用 <span class="codename">3DEC</span> 命令创建两组块体，分别表示模型的上部和下部。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">block group "lower" range plane o 5 5 5 dip 20 d-d 90 above</span>
+<span class="s2">block group "upper" range plane o 5 5 5 dip 20 d-d 90 below</span>
+<span class="s2">block join range group "lower"</span>
+<span class="s2">block join range group "upper"</span>
+<span class="s2">"""</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>可用 <code class="docutils literal"><span class="pre">Block.group</span></code> 方法（<a class="reference internal" href="itasca.block.Block.html#itasca.block.Block.group" title="itasca.block.Block.group">区块分组（<code class="xref py py-func docutils literal"><span class="pre">itasca.block.Block.group</span></code>）</a>）查询块体是否属于某个组。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">lower_blocks</span><span class="p">,</span> <span class="n">upper_blocks</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
+
+<span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">it</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">list</span><span class="p">():</span>
+    <span class="k">if</span> <span class="n">b</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s2">"default"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"lower"</span><span class="p">:</span>
+        <span class="n">lower_blocks</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">elif</span> <span class="n">b</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="s2">"default"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"upper"</span><span class="p">:</span>
+        <span class="n">upper_blocks</span> <span class="o">+=</span> <span class="mi">1</span>
+
+<span class="k">print</span><span class="p">(</span><span class="n">lower_blocks</span><span class="p">,</span> <span class="n">upper_blocks</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>output:</p>
+<blockquote>
+<div><div class="highlight-none"><div class="highlight"><pre><span></span>80 80
+</pre></div>
+</div>
+</div></blockquote>
+<p>接下来我们对模型进行循环计算，并考察模型对该荷载的响应。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">model gravity 0 0 -10</span>
+<span class="s2">block face apply stress-zz -1e6 range position-x 10</span>
+<span class="s2">block gridpoint apply velocity (0.,0.,0.) range position-z 0</span>
+<span class="s2">model save "before_cycling"</span>
+<span class="s2">model solve</span>
+<span class="s2">"""</span><span class="p">)</span>
+
+
+<span class="n">gp_top_middle</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">gridpoint</span><span class="o">.</span><span class="n">near</span><span class="p">((</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">10</span><span class="p">))</span>
+<span class="n">gp_middle</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">gridpoint</span><span class="o">.</span><span class="n">near</span><span class="p">((</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
+<span class="k">print</span><span class="p">(</span><span class="n">gp_top_middle</span><span class="o">.</span><span class="n">disp</span><span class="p">())</span>
+<span class="k">print</span><span class="p">(</span><span class="n">gp_middle</span><span class="o">.</span><span class="n">disp</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>output:</p>
+<blockquote>
+<div><div class="highlight-none"><div class="highlight"><pre><span></span>vec3(( 4.449410e-05, 7.152149e-08, -2.622171e-04 ))
+vec3(( -7.172716e-07, 1.519721e-07, -2.311518e-04 ))
+</pre></div>
+</div>
+</div></blockquote>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">central_zone</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">zone</span><span class="o">.</span><span class="n">near</span><span class="p">((</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
+<span class="n">stress</span> <span class="o">=</span> <span class="n">central_zone</span><span class="o">.</span><span class="n">stress</span><span class="p">()</span>
+<span class="n">strain</span> <span class="o">=</span> <span class="n">central_zone</span><span class="o">.</span><span class="n">strain_inc</span><span class="p">()</span>
+
+<span class="k">print</span><span class="p">(</span><span class="n">stress</span><span class="p">)</span>
+<span class="k">print</span><span class="p">()</span>
+<span class="k">print</span><span class="p">(</span><span class="n">strain</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>output:</p>
+<blockquote>
+<div><div class="highlight-none"><div class="highlight"><pre><span></span>stens3([[ -7.954626e+03, -1.565704e+02, 3.726855e+03 ],
+        [               -5.499364e+03, 4.192065e+03 ],
+        [ sym.                        -1.854032e+05 ]])
+
+stens3([[ 3.314251e-06, -1.630942e-08, 3.882140e-07 ],
+        [               3.570008e-06, 4.366735e-07 ],
+        [ sym.                        -1.516998e-05 ]])
+</pre></div>
+</div>
+</div></blockquote>
+<div class="admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last"><code class="docutils literal"><span class="pre">stress</span></code>（<a class="reference internal" href="itasca.block.zone.Zone.html#itasca.block.zone.Zone.stress" title="itasca.block.zone.Zone.stress">区块单元应力（<code class="xref py py-func docutils literal"><span class="pre">itasca.block.zone.Zone.stress</span></code>）</a>）和 <code class="docutils literal"><span class="pre">strain</span></code>（<a class="reference internal" href="itasca.block.zone.Zone.html#itasca.block.zone.Zone.strain_inc" title="itasca.block.zone.Zone.strain_inc">区块单元应变增量（<code class="xref py py-func docutils literal"><span class="pre">itasca.block.zone.Zone.strain_inc</span></code>）</a>）这两个网格单元方法以 <code class="docutils literal"><span class="pre">stens3</span></code> 对象返回对称张量。关于对称张量对象以及用 Python 处理张量的更多信息，见 <code class="docutils literal"><span class="pre">stens3</span></code> 类型（<a class="reference internal" href="vec.stens3.html#vec.stens3" title="vec.stens3">vec 模块 stens3 类型（<code class="xref py py-func docutils literal"><span class="pre">vec.stens3</span></code>）</a>）。</p>
+</div>
+</div>
+<div class="section" id="running-parameter-studies">
+<h2>进行参数研究</h2>
+<p>Python 程序及其变量与 <span class="codename">3DEC</span> 模型状态无关（前提是已给出命令 <code class="xref fish fish-cmd docutils literal"><span class="pre">python-reset-state</span> <span class="pre">false</span></code>）。这便于以程序化方式开展参数研究。下例用 4 个不同的杨氏模量运行同一模型，并打印模型顶部中心的竖向位移。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">modulus</span> <span class="ow">in</span> <span class="p">[</span><span class="mf">6e9</span><span class="p">,</span> <span class="mf">8e9</span><span class="p">,</span> <span class="mf">10e9</span><span class="p">,</span> <span class="mf">12e9</span><span class="p">]:</span>
+    <span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">    model restore 'before_cycling'</span>
+<span class="s2">    block zone prop young {}</span>
+<span class="s2">    model solve</span>
+<span class="s2">    """</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">modulus</span><span class="p">))</span>
+    <span class="n">vertical_disp</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">gridpoint</span><span class="o">.</span><span class="n">near</span><span class="p">((</span><span class="mi">5</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">10</span><span class="p">))</span><span class="o">.</span><span class="n">disp_z</span><span class="p">()</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="s2">"Modulus: {:.01e} Pa, vertical displacement: {:.03e}"</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">modulus</span><span class="p">,</span> <span class="n">vertical_disp</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>output:</p>
+<blockquote>
+<div><div class="highlight-none"><div class="highlight"><pre><span></span>Modulus: 6.0e+09 Pa, vertical displacement: -3.846e-04
+Modulus: 8.0e+09 Pa, vertical displacement: -3.235e-04
+Modulus: 1.0e+10 Pa, vertical displacement: -2.867e-04
+Modulus: 1.2e+10 Pa, vertical displacement: -2.622e-04
+</pre></div>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="handling-3dec-errors">
+<h2>处理 <span class="codename">3DEC</span> 错误</h2>
+<p>借助 Python，可用内置的异常处理机制捕获并处理错误。Python 中的运行时错误称为异常。可用 <code class="docutils literal"><span class="pre">try</span></code>、<code class="docutils literal"><span class="pre">except</span></code> 块捕获并处理异常。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">    block zone prop young 0</span>
+<span class="s2">    model solve</span>
+<span class="s2">    """</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">data</span><span class="p">:</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">"an error occurred"</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s2">"Python program execution continues..."</span><span class="p">)</span>
+
+<span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"block zone prop young 8e9"</span><span class="p">)</span>  <span class="c1"># 修正该问题</span>
+</pre></div>
+</div>
+<p>output:</p>
+<blockquote>
+<div><div class="highlight-none"><div class="highlight"><pre><span></span>an error occurred moduli have not been set - cannot cycle
+    While processing line 1 of source Python interpreter.
+Python program execution continues...
+</pre></div>
+</div>
+</div></blockquote>
+</div>
+<div class="section" id="python-type-system">
+<h2>Python 类型系统</h2>
+<p>有时 Python 程序需要确定 Python 变量的类型。以下示例演示 Python 类型系统。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">int</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">float</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="s2">"Itasca"</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">str</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">gp</span><span class="p">)</span> <span class="ow">is</span> <span class="n">it</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">gridpoint</span><span class="o">.</span><span class="n">Gridpoint</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">gp</span><span class="p">)</span> <span class="ow">is</span> <span class="n">it</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">zone</span><span class="o">.</span><span class="n">Zone</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="ow">is</span> <span class="n">it</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">gridpoint</span><span class="o">.</span><span class="n">Gridpoint</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">z</span><span class="p">)</span> <span class="ow">is</span> <span class="n">it</span><span class="o">.</span><span class="n">block</span><span class="o">.</span><span class="n">zone</span><span class="o">.</span><span class="n">Zone</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="python-callback-functions">
+<h2>Python 回调函数</h2>
+<p>Python 函数可在 <span class="codename">3DEC</span> 计算序列的特定位置运行。<a class="reference internal" href="itasca.html#itasca.set_callback" title="itasca.set_callback"><code class="xref py py-func docutils literal"><span class="pre">itasca.set_callback</span></code></a> 函数注册在循环期间调用的 Python 函数，而 <a class="reference internal" href="itasca.html#itasca.remove_callback" title="itasca.remove_callback"><code class="xref py py-func docutils literal"><span class="pre">itasca.remove_callback</span></code></a> 移除这些函数回调。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">i</span><span class="o">=</span><span class="mi">0</span>
+<span class="k">def</span> <span class="nf">my_callback</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="k">global</span> <span class="n">i</span>
+    <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">"in Python callback function."</span><span class="p">)</span>
+
+<span class="n">it</span><span class="o">.</span><span class="n">set_callback</span><span class="p">(</span><span class="s2">"my_callback"</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"cycle 5"</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s2">"The Python callback function was called {} times"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+
+<span class="n">it</span><span class="o">.</span><span class="n">remove_callback</span><span class="p">(</span><span class="s2">"my_callback"</span><span class="p">,</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">i</span><span class="o">=</span><span class="mi">0</span>
+<span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"cycle 5"</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s2">"The Python callback function was called {} times"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>output:</p>
+<blockquote>
+<div><div class="highlight-none"><div class="highlight"><pre><span></span>in Python callback function.
+in Python callback function.
+in Python callback function.
+in Python callback function.
+in Python callback function.
+The Python callback function was called 5 times
+The Python callback function was called 0 times
+</pre></div>
+</div>
+</div></blockquote>
+<div class="admonition note">
+<p class="first admonition-title">注意</p>
+<p>给出 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.new.html#command:model.new" title="Clear model-state information. Model information is cleared, allowing one to
+begin a new...">新建模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">new</span></code>）</a> 或 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.restore.html#command:model.restore" title="Restore program-state information. The state information, resulting from a previous...">恢复模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">restore</span></code>）</a> 命令时，回调函数注册会被清除。请注意不要把同一 Python 函数重复注册为每个循环调用多次。可用 <a class="reference internal" href="../../../../../../kernel/doc/manual/fish/commands/cmd_fish.list.html#kwd:fish.list.callbacks" title="List the |fish| functions that have been added to be executed as callbacks (i.e.,
+with the  fish.callback  command)...">fish list 回调（<code class="xref fish fish-cmd docutils literal"><span class="pre">fish</span> <span class="pre">list</span> <span class="pre">callbacks</span></code>）</a> 命令查看已注册的函数。</p>
+<p class="last">有三个回调事件在 Python 中具有特殊行为。给出 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.new.html#command:model.new" title="Clear model-state information. Model information is cleared, allowing one to
+begin a new...">新建模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">new</span></code>）</a> 或 <a class="reference internal" href="../../../../../../kernel/doc/manual/model/commands/cmd_model.restore.html#command:model.restore" title="Restore program-state information. The state information, resulting from a previous...">恢复模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">restore</span></code>）</a> 命令时，“save”、“restore” 和 “new” 回调事件不会被重置。这些回调允许 Python 程序手动保存或读取与模型状态关联的数据。<a class="reference internal" href="itasca.html#itasca.state_callbacks" title="itasca.state_callbacks"><code class="xref py py-func docutils literal"><span class="pre">itasca.state_callbacks</span></code></a> 函数可用于查看在这些特殊回调事件处定义了哪些 Python 函数。</p>
+</div>
+</div>
+<div class="section" id="example-file">
+<h2>示例文件</h2>
+<div class="toctree-wrapper hide compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="code_python_3dec.py.html">python_3dec.py</a></li>
+</ul>
+</div>
+<p>此示例的源代码为 <a class="reference internal" href="code_python_3dec.py.html#python-3dec"><span class="std std-ref">python_3dec.py</span></a></p>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../scripting.html">Scripting</a> »</li>
+<li class="nav-item nav-item-2"><a href="../python.html">Python Scripting</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../python_3dec.html"><span class="codename">3DEC</span> Python</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../python_3dec.html" title="previous chapter"> <span class="codename">3DEC</span> Python</a> |    
+       <a href="code_python_3dec.py.html" title="next chapter">python_3dec.py</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Using Python with 3DEC" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

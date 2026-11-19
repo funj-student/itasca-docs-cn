@@ -1,0 +1,139 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>拆分：针对类型中的各项内容自动执行函数 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="fish_operators.html" rel="next" title="Operators: Multi-threaded function support"/>
+<link href="fish_inline.html" rel="prev" title="Executing FISH: Inline FISH or FISH Fragments"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="splitting-automatic-execution-of-functions-on-type-contents">
+<span id="fish-splitting"></span><h1>拆分：针对类型中的各项内容自动执行函数</h1>
+<p><span class="codename">FISH</span> 拆分允许对聚合类型，例如列表、数组或对象容器中的每个元素，重复执行函数、运算子或库函数调用。如果拆分用于读取操作，结果将是一个列表，按顺序包含各次执行的结果。</p>
+<p>拆分可作为 <span class="cmdkey">loop</span> 语句的替代方案，以非常清晰简洁的方式对许多对象执行操作。</p>
+<p>要进行拆分调用，可以在函数、运算子或库函数调用的一个或多个参数前添加拆分运算符前缀“::”。未拆分的参数在每次执行时都保持相同值。如果拆分多个参数，这些参数必须包含相同数量的元素。</p>
+<p>例如，要建立包含所有数据标量对象 x 坐标的列表，可以这样写：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="n">    local a </span><span class="p">=</span><span class="n"> data</span><span class="p">.</span><span class="n">scalar</span><span class="p">.</span><span class="n">pos</span><span class="p">(::</span><span class="n">data</span><span class="p">.</span><span class="n">scalar</span><span class="p">.</span><span class="n">list</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">x</span>
+</pre></div>
+</div>
+<p>这会对 <a class="reference internal" href="../../../../../kernel/doc/manual/data/fish/data.scalar_utilities/fish_data.scalar.list.html#function:data.scalar.list" title="Get the global scalar list. Use the  loop foreach &lt;fish_statement_loopendloop&gt; 
+construct to iterate through the list...">标量数据列表（<code class="xref fish fish-func docutils literal"><span class="pre">data.scalar.list</span></code>）</a> 返回值所指容器中的所有数据标量对象进行拆分，并对列表中的每一项调用一次内置函数 <a class="reference internal" href="../../../../../kernel/doc/manual/data/fish/data.scalar_utilities/fish_data.scalar.pos.html#function:data.scalar.pos" title="Get/set the scalar position...">标量数据位置（<code class="xref fish fish-func docutils literal"><span class="pre">data.scalar.pos</span></code>）</a>。任何可迭代的 <span class="codename">FISH</span> 类型都可以拆分。<span class="codename">FISH</span> 的可迭代类型包括指向容器的指针、字符串、向量、张量、矩阵、列表、映射和数组。最常见的拆分对象是列表，或指向网格点、球、块体等模型对象容器的指针。</p>
+<div class="section" id="list-filtering">
+<h2>列表筛选</h2>
+<p>将拆分与布尔列表筛选结合使用，可以快速找出满足特定条件的对象子列表。例如，以下代码会找出所有标记为“surface”组的数据标量对象。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="n">    local allpts </span><span class="p">=</span><span class="n"> list</span><span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">scalar</span><span class="p">.</span><span class="n">list</span><span class="p">)</span><span class="n"> </span><span class="c">; 指向标量的指针列表</span>
+<span class="n">    local check </span><span class="p">=</span><span class="n"> data</span><span class="p">.</span><span class="n">scalar</span><span class="p">.</span><span class="n">isgroup</span><span class="p">(::</span><span class="n">data</span><span class="p">.</span><span class="n">scalar</span><span class="p">.</span><span class="n">list</span><span class="p">,</span><span class="s">'surface'</span><span class="p">)</span><span class="n"> </span>
+<span class="n">                                                 </span><span class="c">; 布尔值列表</span>
+<span class="n">    global pts </span><span class="p">=</span><span class="n"> allpts</span><span class="p">(</span><span class="n">check</span><span class="p">)</span><span class="n"> </span><span class="c">; 'surface' 中的标量列表</span>
+</pre></div>
+</div>
+<p>这可以用下面一行 <span class="codename">FISH</span> 代码完成：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="n">    global pts </span><span class="p">=</span><span class="n"> </span><span class="sx">...</span>
+<span class="nb">    list</span><span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">scalar</span><span class="p">.</span><span class="n">list</span><span class="p">)(</span><span class="n">data</span><span class="p">.</span><span class="n">scalar</span><span class="p">.</span><span class="n">isgroup</span><span class="p">(::</span><span class="n">data</span><span class="p">.</span><span class="n">scalar</span><span class="p">.</span><span class="n">list</span><span class="p">,</span><span class="s">'surface'</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="splitting-on-assignment">
+<h2>赋值时拆分</h2>
+<p>向库函数赋值时也可以进行拆分。此时，用户必须明确赋值语句右侧，即等号后面的内容是否也要拆分。如果不拆分右侧，就会在对函数进行的每次拆分赋值中赋入相同的值；如果拆分右侧，则将右侧列表中的元素依次赋给各次函数调用。</p>
+<p>在赋值运算符 =、+=、-=、*= 或 /= 后面添加拆分运算符 ::，即可表示对右侧进行拆分，分别写作 =::、+=::、-=::、*=:: 和 /=::。</p>
+<p>例如，以下一行 <span class="codename">FISH</span> 代码会为模型中每个数据标量对象的 x 坐标增加一个介于 0.0 和 1.0 之间的随机值。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="n">    data</span><span class="p">.</span><span class="n">scalar</span><span class="p">.</span><span class="n">pos</span><span class="p">(::</span><span class="n">data</span><span class="p">.</span><span class="n">scalar</span><span class="p">.</span><span class="n">list</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">x </span><span class="sx">...</span>
+<span class="n">                      </span><span class="o">+=</span><span class="p">::</span><span class="n"> math</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">scalar</span><span class="p">.</span><span class="n">num</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="splitting-and-multithreading">
+<h2>拆分与多线程</h2>
+<p>如果拆分调用的是运算子或标记为线程安全的库函数，就会自动在所有可用线程上执行。如果文档说明中的“=”号前面带有“:”，就表示该库函数是线程安全的。其他情况下，仍会执行拆分操作，但仅在单个线程上顺序执行。</p>
+</div>
+<div class="section" id="conclusion-and-tips">
+<h2>总结与提示</h2>
+<p>结合布尔列表筛选、作用于列表元素的运算符以及拆分功能，可以用较少的代码实现复杂算法，而无需使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">loop</span></code> 语句。</p>
+<p>要有效使用拆分，需要在传统顺序编程的思路和方法上作出一定调整。不过，熟悉之后，就能用较少的代码，以很快且相对高效的方式处理大量数据。</p>
+<p>请注意，拆分虽然非常方便，但在多线程环境中，通常不如使用一次拆分、并对每个对象同时完成多项计算的 <span class="codename">FISH</span> 运算子高效。如果运行速度十分重要，例如函数在循环计算期间执行时通常如此，则一般值得编写运算子，而不是对现有内置函数反复执行多次拆分。</p>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../scripting.html">Scripting</a> »</li>
+<li class="nav-item nav-item-2"><a href="fish.html"><span class="codename">FISH</span> Scripting Reference</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="fish_languagerules.html"><span class="codename">FISH</span> Rules and Usage</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="fish_inline.html" title="previous chapter"> Executing <span class="codename">FISH</span>:  Inline <span class="codename">FISH</span> or <span class="codename">FISH</span> Fragments</a> |    
+       <a href="fish_operators.html" title="next chapter">Operators: Multi-threaded function support</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Splitting: Automatic Execution of Functions on Type Contents" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

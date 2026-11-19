@@ -1,0 +1,113 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>一般求解流程（图解） — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="2dvs3dmodels.html" rel="next" title="2D vs. 3D Models"/>
+<link href="generalapproach.html" rel="prev" title="General Approach"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="general-solution-procedure-illustrated">
+<span id="generalsolutionillustrated"></span><h1>一般求解流程（图解）</h1>
+<p>在 Itasca 软件中，<a class="reference internal" href="generalapproach.html#frameworkgeneralapproach"><span class="std std-ref">总体方法</span>（General Approach）</a>中描述的建模方法学使用起来很方便，因为它再现了物理环境中发生的处理过程序列。该方法的流程如下图所示。</p>
+<div class="figure align-center" id="id1">
+<a class="reference internal image-reference" href="../../../../../../_images/solutionprocedure.svg"><img alt="a general solution procedure for numerical modeling" src="../../../../../../_images/solutionprocedure.svg" width="60%"/></a>
+<p class="caption"><span class="caption-text">图 1：一般求解流程：软件中作为工作流的建模方法学。</span></p>
+</div>
+<p><span class="flag3">该图试图对所有程序作一般化处理——因此它与 flac3d、pfc 或 3dec 文档中显示的版本有所不同</span></p>
+<p>工作流的第一步是模型设置，至多需要指定问题的四个基本组成部分：</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>模型域（仅 <span class="codename">PFC</span>）；</li>
+<li>核心模型，由基本模型要素构成（<span class="codename">PFC</span> 中的颗粒集合体；<span class="codename">FLAC3D</span> 中的网格单元网格；<span class="codename">3DEC</span> 中由节理块体构成的形体）；</li>
+<li>接触行为和/或本构行为以及材料属性；以及，</li>
+<li>边界条件和初始条件</li>
+</ol>
+</div></blockquote>
+<p><span class="flag3">上述列表中涵盖了过去仅针对 PFC 的内容，并试图加入 FLAC3D 和 3DEC——需要复核！！</span></p>
+<p><span class="flag3">本页来自 PFC 领域，因此下一段过于针对 PFC。它与再下一段原本是一段。不过我在这里把它们拆开，并把第二段一般化到对全部程序在描述上都准确的程度。那么，第一段该怎么办……</span></p>
+<p><span class="flag2">模型几何由颗粒的位置和尺寸分布（PFC）、多边形块体的集合（3DEC）或分区的体积（FLAC3D）来定义。接触行为和/或材料属性决定了模型在受到扰动（例如开挖引起的变形响应）时表现出的响应类型。在此阶段，选择合适的能量耗散机制至关重要。</span></p>
+<p>边界条件和初始条件定义了原位状态（即，在问题状态发生改变或扰动之前的状态）。在这些条件确定之后，计算模型的初始平衡状态。然后进行某种改变（例如开挖材料或改变边界条件），并计算模型由此产生的响应。Itasca 程序对问题的实际求解方式不同于传统的隐式求解程序。Itasca 程序都使用显式时间推进方法求解代数方程。解是在一系列计算步之后得到的。在每个程序中，达到解所需的步数既可由程序自动控制，也可由用户手动控制。然而，用户最终必须判断步数是否足以达到求解状态。</p>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../program_guide.html">程序指南</a> »</li>
+<li class="nav-item nav-item-2"><a accesskey="U" href="methodology.html">Modeling Methodology</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="generalapproach.html" title="previous chapter"> General Approach</a> |    
+       <a href="2dvs3dmodels.html" title="next chapter">2D vs. 3D Models</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?General Solution Procedure, Illustrated" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

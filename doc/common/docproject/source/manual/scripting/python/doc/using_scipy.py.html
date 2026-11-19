@@ -1,0 +1,381 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>使用 SciPy 及其他第三方 Python 包 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../../search.html" rel="search" title="Search"/>
+<link href="code_using_scipy.py.html" rel="next" title="using_scipy.py"/>
+<link href="code_test_ucs.py.html" rel="prev" title="test_ucs.py"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="using-scipy-and-other-third-party-python-packages">
+<h1>使用 SciPy 及其他第三方 Python 包</h1>
+<p>本例演示用 <code class="docutils literal"><span class="pre">scipy</span></code> 中的优化例程求解反演弹性问题。</p>
+<p>在悬臂梁端部施加恒力 f。由给定梁几何和位移，我们用 <span class="codename">PFC</span> 求梁的模量。梁用平行粘结的 <span class="codename">PFC</span> 颗粒模拟。</p>
+<p>挠度有解析解，</p>
+<div class="math">
+\[\Delta y = \frac {f x^{2}}{2EI} \left(L - \frac{x}{3}\right)\]</div>
+<p>其中 f 为施加的力，E 为杨氏模量，I 为转动惯量，x 为沿梁的位置，L 为梁的总长度。</p>
+<p>这是 <span class="codename">PFC</span> 验证问题的简化版本，更多信息见 <a class="reference internal" href="../../../../../../../pfc/docproject/source/manual/examples/verification/Cantilever/CantileverBeam.html#cantileverbeam">悬臂梁（<span class="std std-ref">Cantilever Beam</span>）</a>。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">matplotlib</span>
+
+<span class="n">matplotlib</span><span class="o">.</span><span class="n">use</span><span class="p">(</span><span class="s2">"QT5Agg"</span><span class="p">)</span>
+
+<span class="n">matplotlib</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'backend.qt5'</span><span class="p">]</span><span class="o">=</span><span class="s1">'PySide2'</span>
+
+<span class="kn">import</span> <span class="nn">pylab</span> <span class="kn">as</span> <span class="nn">plt</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">scipy.constants</span> <span class="kn">import</span> <span class="n">inch</span>
+
+
+
+<span class="kn">import</span> <span class="nn">itasca</span> <span class="kn">as</span> <span class="nn">it</span>
+
+<span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"python-reset-state false"</span><span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">itasca</span> <span class="kn">import</span> <span class="n">ballarray</span> <span class="k">as</span> <span class="n">ba</span>
+
+
+
+<span class="n">r</span> <span class="o">=</span> <span class="mf">8.0</span>  <span class="c1"># 梁半径，单位为英寸</span>
+
+<span class="n">l</span> <span class="o">=</span> <span class="mf">200.0</span> <span class="c1"># 梁长度，单位为英寸</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">l</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+
+<span class="n">E</span> <span class="o">=</span> <span class="mf">1e4</span> <span class="c1"># [ksi]</span>
+
+<span class="n">I</span> <span class="o">=</span> <span class="mf">0.25</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">r</span><span class="o">**</span><span class="mi">4</span> <span class="c1"># 惯性矩。</span>
+
+<span class="n">f</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="c1"># 沿 y 正方向施加的力，单位为 kip</span>
+</pre></div>
+</div>
+<p>首先我们导入所需库并为梁设置若干参数。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">analytical_deflection</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+
+    <span class="s2">"Return the analytical solution for y deflection at the x point(s)"</span>
+
+    <span class="k">return</span> <span class="n">f</span> <span class="o">*</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="mf">2.0</span> <span class="o">/</span> <span class="n">E</span> <span class="o">/</span> <span class="n">I</span> <span class="o">*</span> <span class="p">(</span> <span class="n">l</span> <span class="o">-</span> <span class="n">x</span> <span class="o">/</span> <span class="mf">3.0</span><span class="p">)</span>
+
+
+
+<span class="k">def</span> <span class="nf">pfc_deflection</span><span class="p">(</span><span class="n">E_trial</span><span class="p">):</span>
+
+    <span class="sd">"""For a given parallel bond stiffness, return a tuple containing the</span>
+
+<span class="sd">    ball x positions and the y displacements.</span>
+
+
+
+<span class="sd">    calling this function cycles the PFC engine</span>
+
+<span class="sd">    """</span>
+
+    <span class="n">n</span> <span class="o">=</span> <span class="mi">11</span> <span class="c1"># PFC 颗粒数量</span>
+
+    <span class="n">pb_kn</span> <span class="o">=</span> <span class="n">E_trial</span><span class="o">/</span><span class="n">l</span><span class="o">*</span><span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">print</span> <span class="p">(</span><span class="s2">"calculating deflection with pb_kn = {} ... "</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pb_kn</span><span class="p">),)</span>
+
+    <span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"""</span>
+
+<span class="s2">    model new</span>
+
+<span class="s2">    model large-strain on</span>
+
+<span class="s2">    model random</span>
+
+<span class="s2">    model domain ext -50 250 -50 50</span>
+
+<span class="s2">    contact cmat default model linearpbond</span>
+
+<span class="s2">    """</span><span class="p">)</span>
+
+
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+
+        <span class="n">it</span><span class="o">.</span><span class="n">ball</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="mf">10.0</span><span class="p">,</span> <span class="p">(</span><span class="n">i</span><span class="o">*</span><span class="mf">20.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">))</span>
+
+
+
+    <span class="n">tip_ball</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">ball</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">n</span><span class="p">)</span>
+
+    <span class="n">tip_ball</span><span class="o">.</span><span class="n">set_force_app_y</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+
+
+    <span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s2">"""</span>
+
+<span class="s2">    ball attribute dens=1000 damp 0.7</span>
+
+<span class="s2">    ball property 'kn'=0 'ks'=0</span>
+
+<span class="s2">    model clean</span>
+
+<span class="s2">    contact method bond</span>
+
+<span class="s2">    contact property pb_ten 1e5 pb_coh 1e5 pb_kn {kn} pb_ks 188 pb_rmul 0.8</span>
+
+<span class="s2">    ball fix velocity-x velocity-y velocity-z ...</span>
+
+<span class="s2">    spin-x spin-y spin-z range id=1</span>
+
+<span class="s2">    model solve ratio-maximum 1e-4</span>
+
+<span class="s2">    """</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">kn</span><span class="o">=</span><span class="n">pb_kn</span><span class="p">))</span>
+
+
+
+    <span class="n">pfc_x</span> <span class="o">=</span> <span class="n">ba</span><span class="o">.</span><span class="n">pos</span><span class="p">()[:,</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="n">pfc_dy</span> <span class="o">=</span> <span class="n">ba</span><span class="o">.</span><span class="n">disp</span><span class="p">()[:,</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">print</span> <span class="p">(</span><span class="s2">"done"</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">pfc_x</span><span class="p">,</span> <span class="n">pfc_dy</span>
+</pre></div>
+</div>
+<p>定义两个函数，一个给出解析解，一个给出 <span class="codename">PFC</span> 解。</p>
+<p>我们可用已知正确模量调用 pfc_deflection 函数来检验一切正常。此时 pfc 解与解析解应吻合，</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">pfc_x</span><span class="p">,</span> <span class="n">pfc_dy</span> <span class="o">=</span> <span class="n">pfc_deflection</span><span class="p">(</span><span class="n">E</span><span class="p">)</span>
+
+
+
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">analytical_deflection</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">pfc_x</span><span class="p">,</span> <span class="n">pfc_dy</span><span class="p">,</span> <span class="s2">"o"</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">"Length along beam [inches]"</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">"Beam vertical displacement [inches]"</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">"p3d-opt_comp.png"</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>calculating deflection with pb_kn = 500.0 ...
+done
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>PFC 梁的挠度以点表示。PFC 解与以蓝色实线表示的解析解吻合良好。</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="pfcpythonmodule/test3d/examples/test_ucs/simple/p3d-opt_comp.*"><img alt="pfcpythonmodule/test3d/examples/test_ucs/simple/p3d-opt_comp.*" src="pfcpythonmodule/test3d/examples/test_ucs/simple/p3d-opt_comp.*" style="width: 400pt;"/></a>
+</div>
+<p>接下来进行实际的优化计算。函数 <code class="docutils literal"><span class="pre">fminbound</span></code> 从 <code class="docutils literal"><span class="pre">scipy.optimize</span></code> 模块导入。该函数接受三个参数：一个可调用函数、一个上界和一个下界。我们定义函数 <code class="docutils literal"><span class="pre">residual</span></code> 返回 <span class="codename">PFC</span> 解与解析解之差的平方和。优化范围取 1e2 到 5.5e4。</p>
+<ul class="simple">
+<li>关于 <code class="docutils literal"><span class="pre">fminbound</span></code> 的更多内容见：<a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.fminbound.html">SciPy fminbound 函数文档页面（http://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.fminbound.html）</a></li>
+</ul>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="kn">import</span> <span class="n">fminbound</span>
+
+
+
+<span class="k">def</span> <span class="nf">residual</span><span class="p">(</span><span class="n">pb_kn</span><span class="p">):</span>
+
+    <span class="sd">"""Return the sum of squares of the residual. This is a scalar measure</span>
+
+<span class="sd">       of the difference between the PFC solution and the analytical solution.</span>
+
+<span class="sd">    """</span>
+
+    <span class="n">pfc_x</span><span class="p">,</span> <span class="n">pfc_dy</span> <span class="o">=</span> <span class="n">pfc_deflection</span><span class="p">(</span><span class="n">pb_kn</span><span class="p">)</span>
+
+    <span class="n">a_dy</span> <span class="o">=</span> <span class="n">analytical_deflection</span><span class="p">(</span><span class="n">pfc_x</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="s1">'all'</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">analytical_deflection</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">pfc_x</span><span class="p">,</span> <span class="n">pfc_dy</span><span class="p">,</span> <span class="s2">"o"</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">"Length along beam [inches]"</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">"Beam vertical displacement [inches]"</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">draw</span><span class="p">()</span>
+
+
+
+    <span class="k">return</span> <span class="p">((</span><span class="n">a_dy</span> <span class="o">-</span> <span class="n">pfc_dy</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+
+
+
+<span class="n">E_opt</span> <span class="o">=</span>  <span class="n">fminbound</span><span class="p">(</span><span class="n">residual</span><span class="p">,</span> <span class="mf">1e2</span><span class="p">,</span> <span class="mf">5.5e4</span><span class="p">)</span>
+
+
+
+
+
+<span class="k">print</span> <span class="p">(</span><span class="s2">"""</span>
+
+
+
+<span class="s2">E specified: {}</span>
+
+<span class="s2">E calculated: {}"""</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="n">E_opt</span><span class="p">))</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="s1">'all'</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>output:</dt>
+<dd><div class="first last highlight-none"><div class="highlight"><pre><span></span>calculating deflection with pb_kn = 1053.4967008815386 ...
+done
+calculating deflection with pb_kn = 1701.5032991184614 ...
+done
+calculating deflection with pb_kn = 653.0065982369227 ...
+done
+calculating deflection with pb_kn = 405.490102644616 ...
+done
+calculating deflection with pb_kn = 530.7543627593386 ...
+done
+calculating deflection with pb_kn = 529.6311596321268 ...
+done
+calculating deflection with pb_kn = 482.21349526223526 ...
+done
+calculating deflection with pb_kn = 501.8190835557665 ...
+done
+calculating deflection with pb_kn = 501.70523214550855 ...
+done
+calculating deflection with pb_kn = 499.7989842280888 ...
+done
+calculating deflection with pb_kn = 493.08192515191905 ...
+done
+calculating deflection with pb_kn = 500.68789623953967 ...
+done
+calculating deflection with pb_kn = 500.5925746896699 ...
+done
+calculating deflection with pb_kn = 500.66760871604833 ...
+done
+calculating deflection with pb_kn = 500.6732746302266 ...
+done
+calculating deflection with pb_kn = 500.6776216232916 ...
+done
+calculating deflection with pb_kn = 500.6759566385157 ...
+done
+calculating deflection with pb_kn = 500.681546177477 ...
+done
+calculating deflection with pb_kn = 500.67693683977063 ...
+done
+calculating deflection with pb_kn = 500.67762921620755 ...
+done
+calculating deflection with pb_kn = 500.6791253622799 ...
+done
+calculating deflection with pb_kn = 500.678200693155 ...
+done
+calculating deflection with pb_kn = 500.6778475009777 ...
+done
+calculating deflection with pb_kn = 500.6777125935705 ...
+done
+calculating deflection with pb_kn = 500.6776610635263 ...
+done
+calculating deflection with pb_kn = 500.6776413808009 ...
+done
+
+
+E specified: 10000.0
+E calculated: 10013.55258432415
+</pre></div>
+</div>
+</dd>
+</dl>
+<p>计算得到的 E 值与已知值接近。</p>
+<div class="section" id="example-file">
+<h2>示例文件</h2>
+<div class="toctree-wrapper hide compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="code_using_scipy.py.html">using_scipy.py</a></li>
+</ul>
+</div>
+<p>此处示例的源代码为 <a class="reference internal" href="code_using_scipy.py.html#using-scipy"><span class="std std-ref">using_scipy.py</span></a>。</p>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../scripting.html">Scripting</a> »</li>
+<li class="nav-item nav-item-2"><a href="../python.html">Python Scripting</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../python_pfc.html"><span class="codename">PFC</span> Python</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="code_test_ucs.py.html" title="previous chapter"> test_ucs.py</a> |    
+       <a href="code_using_scipy.py.html" title="next chapter">using_scipy.py</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Using SciPy and Other Third-party Python Packages" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

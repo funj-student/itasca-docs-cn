@@ -1,0 +1,164 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>求解蠕变问题 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../../../search.html" rel="search" title="Search"/>
+<link href="../input/input.html" rel="next" title="Input Instructions for Creep Modeling"/>
+<link href="../../../../../../../models/softsoilcreep/doc/modelsoftsoilcreep.html" rel="prev" title="Soft-Soil-Creep Model*"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="solving-creep-problems">
+<span id="creepsolving"></span><h1>求解蠕变问题</h1>
+<p>在 <span class="codename">FLAC3D</span> 或 <span class="codename">3DEC</span> 中，蠕变与其他本构模型的主要区别在于模拟中的问题时间概念。对于蠕变计算，问题时间和时间步代表真实时间；而对于其他本构模型的静力分析，时间步是一个人为量，仅用作推进到稳态条件的手段。</p>
+<div class="section" id="creep-timestep">
+<span id="creeptimestep"></span><h2>蠕变时间步</h2>
+<p>对于蠕变这类与时间相关的现象，<span class="codename">FLAC3D</span> 或 <span class="codename">3DEC</span> 允许用户定义时间步。该时间步的默认值为零，此时程序视情况将材料按线弹性（黏弹性模型）或弹塑性（黏塑性模型）处理。（命令 <a class="reference internal" href="../../../../../../../kernel/doc/manual/model/commands/cmd_model.creep.html#kwd:model.creep.active" title="The creep process is  on , by default, when the  model.configure.creep 
+command is...">设置蠕变计算激活状态（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">creep</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a> 也可用于停止蠕变计算。）这可用于在开始蠕变模拟前达到平衡。蠕变本构定律在其方程中使用时间步，因此时间步可能影响响应。</p>
+<p>尽管用户可以设置时间步，但它并非任意取值。为使系统始终处于准静态力学平衡（如蠕变模拟中那样），本构定律产生的随时间变化的应力变化相对于与应变相关的应力变化而言不能过大。否则，不平衡力会很大，惯性效应（理论上并不存在）可能影响解。</p>
+<p>蠕变过程受偏应力状态控制。为数值精度考虑，最大蠕变时间步的估计值可表示为材料黏度与剪切模量之比，</p>
+<div class="math" id="equation-creepsolvingdtamxcr">
+<span class="eqno">(1)</span>\[\Delta t^{cr}_{max} = {\eta \over G}\]</div>
+<p>对于幂型蠕变模型，黏度可估计为应力大小 <span class="math">\(\bar\sigma\)</span> 与蠕变速率 <span class="math">\(\dot\epsilon_{cr}\)</span> 之比。使用 <a class="reference internal" href="../../../../../../../models/power/doc/modelpower.html#modelpowereqpower"><span class="std std-ref">该方程</span>（this equation）</a>（如同在 <a class="reference internal" href="../../../../../../../models/power/doc/modelpower.html#modelpower"><span class="std std-ref">幂模型</span>（power model）</a> 中那样），最大蠕变时间步为</p>
+<div class="math" id="equation-creepsolvingdtamxcr2">
+<span class="eqno">(2)</span>\[\Delta t^{cr}_{max} = {\bar\sigma^{1-n} \over {A G}}\]</div>
+<p>对于 WIPP 类模型，黏度可估计为 <span class="math">\(\bar\sigma\)</span> 与二次蠕变速率 <span class="math">\(\dot\epsilon_s\)</span> 之比；使用 <a class="reference internal" href="../../../../../../../models/wipp/doc/modelwipp.html#modelwippeqes"><span class="std std-ref">该方程</span>（this equation）</a>（如同在 <a class="reference internal" href="../../../../../../../models/wipp/doc/modelwipp.html#modelwipp"><span class="std std-ref">WIPP 模型</span>（WIPP model）</a> 中那样），最大蠕变时间步为</p>
+<div class="math" id="equation-creepsolvingdtamxcr3">
+<span class="eqno">(3)</span>\[\Delta t^{cr}_{max} = {e^{Q/RT} \over {G \ D \ \bar\sigma^{n-1}}}\]</div>
+<p>对于 Burgers 类模型，方程 <a class="reference internal" href="#equation-creepsolvingdtamxcr">(1)</a> 必须理解为</p>
+<div class="math" id="equation-creepsolvingdtamxcr4">
+<span class="eqno">(4)</span>\[\Delta t_{\max }^{cr}=\min \left( {{\eta^K} \over {G^K}}, {{\eta^M} \over {G^M}} \right)\]</div>
+<p>其中上标 <span class="math">\(.^K\)</span> 和 <span class="math">\(.^M\)</span> 分别表示 Kelvin 和 Maxwell 性质。</p>
+<p>蠕变压实的时步限制（例如 <a class="reference internal" href="../../../../../../../models/cwipp/doc/modelcwipp.html#modelcwipp"><span class="std std-ref">WIPP-Salt 模型</span>（WIPP-salt model）</a>）涉及系统的体积响应，按黏度与体积模量之比估计。该黏度可表示为 <span class="math">\(\bar\sigma\)</span> 与体积蠕变压实速率 <span class="math">\(\dot\epsilon^c_v\)</span> 之比。使用 <a class="reference internal" href="../../../../../../../models/cwipp/doc/modelcwipp.html#modelcwippeqdotevc"><span class="std std-ref">该方程</span>（this equation）</a>（如同在 <a class="reference internal" href="../../../../../../../models/cwipp/doc/modelcwipp.html#modelcwipp"><span class="std std-ref">WIPP-Salt 模型</span>（WIPP-salt model）</a> 中那样），蠕变压实的最大蠕变时间步为</p>
+<div class="math" id="equation-creepsolvingdtamxcr5">
+<span class="eqno">(5)</span>\[\Delta t^{cr}_{max} = {\vert\sigma\vert \rho \over {K B_0 \left[e^{B_1 \vert\sigma\vert } - 1 \right] e^{B_2 \rho}}}\]</div>
+<p>建议使用 <span class="codename">FLAC3D</span> 或 <span class="codename">3DEC</span> 进行蠕变分析时，初始蠕变时间步取比由上述相应公式算得的 <span class="math">\(\Delta t^{cr}_{max}\)</span> 小约两到三个数量级。通过调用 <a class="reference internal" href="../../../../../../../kernel/doc/manual/model/commands/cmd_model.creep.html#kwd:model.creep.timestep.automatic" title="If  on , the stable timestep is determined according to the timestep
+servo with...">设置蠕变时步自动控制（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">creep</span> <span class="pre">timestep</span> <span class="pre">automatic</span></code>）</a> <a class="reference internal" href="../../../../../../utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>，即可利用 <a class="reference internal" href="#automaticadjustmentofthecreeptimestep"><span class="std std-ref">自动时间步调整</span>（automatic timestep adjustment）</a>。通常，时间步的最大值（<a class="reference internal" href="../../../../../../../kernel/doc/manual/model/commands/cmd_model.creep.html#kwd:model.creep.timestep.maximum" title="The maximum timestep allowed.  The servo will not raise the timestep above this
+value...">设置蠕变最大时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">creep</span> <span class="pre">timestep</span> <span class="pre">maximum</span></code>）</a>）不应超过为 <span class="math">\(\Delta t^{cr}_{max}\)</span> 推导出的值。示例应用见 <a class="reference internal" href="../verification/verification.html#creepverification"><span class="std std-ref">验证与示例问题</span>（Verifications and Example Problems）</a>。</p>
+<p>用于计算 <span class="math">\(\Delta t^{cr}_{max}\)</span> 的应力大小 <span class="math">\(\bar\sigma\)</span>，可由蠕变过程开始前的初始应力状态确定。<span class="math">\(\bar\sigma\)</span>（也称为 von Mises 应力不变量）可通过 <span class="codename">FISH</span> 函数计算。应使用 <span class="codename">FLAC3D</span> 模型中最大的 <span class="math">\(\bar\sigma\)</span> 来计算 <span class="math">\(\Delta t^{cr}_{max}\)</span>。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;  计算管道中的最大 von Mises 应力</span>
+<span class="nb">fish define</span><span class="ni"> mises</span>
+<span class="ni">    </span><span class="k">local</span><span class="ni"> max </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> elem </span><span class="k">struct.list</span>
+<span class="ni">        </span><span class="k">if</span><span class="ni"> </span><span class="k">struct.pos.y</span><span class="p">(</span><span class="ni">elem</span><span class="p">)</span><span class="ni"> </span><span class="o">&lt;</span><span class="ni"> </span><span class="m m-Double">2.0</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">            </span><span class="k">local</span><span class="ni"> j2  </span><span class="p">=</span><span class="ni"> </span><span class="k">tensor.j2</span><span class="p">(</span><span class="k">struct.shell.stress</span><span class="p">(</span><span class="ni">elem</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">))</span>
+<span class="ni">            </span><span class="k">local</span><span class="ni"> sr_vmstr  </span><span class="p">=</span><span class="ni"> </span><span class="k">math.sqrt</span><span class="p">(</span><span class="m m-Double">3.0</span><span class="o">*</span><span class="ni">j2</span><span class="p">)</span>
+<span class="ni">            max </span><span class="p">=</span><span class="ni"> </span><span class="k">math.max</span><span class="p">(</span><span class="ni">max</span><span class="p">,</span><span class="ni">sr_vmstr</span><span class="p">)</span>
+<span class="ni">        </span><span class="k">endif</span>
+<span class="ni">    </span><span class="k">endloop</span>
+<span class="ni">    mises </span><span class="p">=</span><span class="ni"> max</span>
+<span class="nb">end</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="automatic-adjustment-of-the-creep-timestep">
+<span id="automaticadjustmentofthecreeptimestep"></span><h2>蠕变时间步的自动调整</h2>
+<p>时间步可由用户设为常数，也可由 <span class="codename">FLAC3D</span> 或 <span class="codename">3DEC</span> 控制而自动变化。若时间步自动变化，则当最大不平衡力超过某一阈值时可将其减小，而当其低于另一水平时又可增大。该阈值定义为最大不平衡力与平均网格点力的<em>比值</em>。</p>
+<p>所求问题的典型不平衡力判据，可通过观察问题初始阶段仅存在弹性效应时接近平衡状态出现的不平衡力来确定。许多情况下，采用时间步的逐渐增大或减小（例如使用默认比值 <span class="cmdkey">lower-multiplier</span> = 1.01 和 <span class="cmdkey">upper-multiplier</span> = 0.90）可获得良好性能。</p>
+<p>在某些情况下，最好避免连续调整时间步，因为连续调整可能产生“噪声”。为此，在时间步发生变化后，存在一个用户定义的“延迟期”（例如 100 步），在此期间不再进行进一步调整，以便系统稳定下来。通常，时间步从较小值开始，以适应开挖等瞬态过程，然后随模拟推进而增大。若引入了新的瞬态过程，可先手动减小时间步，然后让其再次自动增大。</p>
+<p><a class="reference internal" href="../../../../../../../kernel/doc/manual/model/commands/cmd_model.creep.html#kwd:model.creep.timestep" title="Timestep controls for creep calculations.  Note that there is no analytical
+solution for the stable timestep for most creep models, therefore the timestep
+in automatic mode is controlled by a servo tied to the unbalanced force ratio.
+  [CS: removing this for now while we are on PFC; common docs issue]
+See the topic ref-automaticadjustmentofthecreeptimestep- in the Creep section. 
+The following keywords are available...">设置蠕变时步控制（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">creep</span> <span class="pre">timestep</span></code>）</a> 命令用于设置时间步以及使时间步可自动变化所需的参数。命令中列出了各关键字。</p>
+</div>
+<div class="section" id="temperature-dependency">
+<h2>温度相关性</h2>
+<p>对于 WIPP 模型，蠕变速率与温度相关。向 WIPP 类模型提供温度有两种方式：可作为 WIPP 类模型的属性指定；也可利用程序的热学选项计算。采用第一种方式时，温度用 <a class="reference internal" href="../../../../../../../../flac3d/zone/doc/manual/zone_manual/zone_commands/cmd_zone.property.html#command:zone.property" title="Make a constitutive model(s) property assignment. Properties are name value
+pairs where the name is the keyword given in the command and the value type
+is specific to the property. The assignment will affect *any* zone whose constitutive
+model includes the property named (noting that some properties, such as  bulk ,
+for instance, appear in *many* constitutive models).  Limiting a property assignment
+to zones that have a particular constitutive model assignment is done using
+the...">设置网格单元属性（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">property</span></code>）</a>（<span class="codename">FLAC3D</span>）或 <a class="reference internal" href="../../../../../../../../3dec/block/doc/manual/block_manual/block_commands/block.zone/cmd_block.zone.property.html#command:block.zone.property" title="Make a constitutive model(s) property assignment. Properties are name value
+pairs where the name is the keyword given in the command and the value type
+is specific to the property...">设置块体网格单元属性（<code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">zone</span> <span class="pre">property</span></code>）</a>（<span class="codename">3DEC</span>）命令赋值，并且在计算期间不发生变化。采用第二种方式时，必须先给出 <a class="reference internal" href="../../../../../../../kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.thermal" title="Thermal analysis...">配置热力计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">thermal</span></code>）</a> 命令，并可用 <a class="reference internal" href="../../../../../../../../flac3d/zone/doc/manual/zone_manual/zone_commands/zonegridpoint/cmd_zone.gridpoint.initialize.html#kwd:zone.gridpoint.initialize.temperature" title="temperature at the gridpoint.  Only available if the  model.configure.thermal 
+has been given...">初始化网格点温度（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">gridpoint</span> <span class="pre">initialize</span> <span class="pre">temperature</span></code>）</a>（<span class="codename">FLAC3D</span>）或 <a class="reference internal" href="../../../../../../../../3dec/block/doc/manual/block_manual/block_commands/block.gridpoint/cmd_block.gridpoint.initialize.html#kwd:block.gridpoint.initialize.temperature" title="Initialize gridpoint temperatures (must be configured for thermal calculations
+– CONFIG thermal)...">初始化块体网格点温度（<code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">gridpoint</span> <span class="pre">initialize</span> <span class="pre">temperature</span></code>）</a>（<span class="codename">3DEC</span>）命令初始化温度。在后一种情况下，温度可在循环过程中变化。两种方式均可指定温度梯度。</p>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../program_guide.html">程序指南</a> »</li>
+<li class="nav-item nav-item-2"><a href="../../models.html">Constitutive Models</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../creep.html">Creep Constitutive Models in <span class="codename">3DEC</span> and <span class="codename">FLAC3D</span></a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../../../../../../../models/softsoilcreep/doc/modelsoftsoilcreep.html" title="previous chapter"> Soft-Soil-Creep Model*</a> |    
+       <a href="../input/input.html" title="next chapter">Input Instructions for Creep Modeling</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Solving Creep Problems" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

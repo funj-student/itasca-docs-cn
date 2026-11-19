@@ -1,0 +1,140 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>FISH 错误处理 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="fish_fishcallback.html" rel="next" title="FISH Callback Events"/>
+<link href="fish_redefining.html" rel="prev" title="Redefining FISH Functions"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="fish-error-handling">
+<span id="fish-errorhandling"></span><h1><span class="codename">FISH</span> 错误处理</h1>
+<p><span class="codename">FLAC3D</span> 内置错误处理机制，当程序的某个部分检测到错误时便会调用它。无论在何处检测到错误，该机制都能有序地将控制权交还用户。用户编写的 <span class="codename">FISH</span> 函数可以通过访问 <span class="codename">FISH</span> 函数 <a class="reference internal" href="../../../../../fish/doc/fish_manual/fish_fish/system_utilities/fish_system.error.html#function:system.error" title="Throw a |FISH| exception..."><code class="xref fish fish-func docutils literal"><span class="pre">system.error</span></code></a> 来使用这一机制。如果某个 <span class="codename">FISH</span> 函数将字符串赋给 <a class="reference internal" href="../../../../../fish/doc/fish_manual/fish_fish/system_utilities/fish_system.error.html#function:system.error" title="Throw a |FISH| exception..."><code class="xref fish fish-func docutils literal"><span class="pre">system.error</span></code></a>，就会立即调用 <span class="codename">FLAC3D</span> 的错误处理机制，并输出一条包含赋给 <a class="reference internal" href="../../../../../fish/doc/fish_manual/fish_fish/system_utilities/fish_system.error.html#function:system.error" title="Throw a |FISH| exception..."><code class="xref fish fish-func docutils literal"><span class="pre">system.error</span></code></a> 的字符串的消息。一旦设置 <a class="reference internal" href="../../../../../fish/doc/fish_manual/fish_fish/system_utilities/fish_system.error.html#function:system.error" title="Throw a |FISH| exception..."><code class="xref fish fish-func docutils literal"><span class="pre">system.error</span></code></a>，步进计算和 <span class="codename">FISH</span> 处理便会停止。</p>
+<p>错误处理机制也可用于并未发生“错误”的情况。例如，可以在检测到特定条件时停止步进计算，如下例所示。当不平衡力低于设定值时，计算将停止。请注意，本例中必须对 <a class="reference internal" href="../../../../../kernel/doc/manual/global_manual/global_fish/global_utilities/fish_global.step.html#function:global.step" title="Get the cycle/step number. This value corresponds to the total number of cycles/steps
+taken...">当前计算步数（<code class="xref fish fish-func docutils literal"><span class="pre">global.step</span></code>）</a> 进行判断，因为步进计算开始时的不平衡力为零。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">;文件名：fishr13.dat</span>
+<span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">on</span>
+<span class="nb">model domain</span><span class="n"> extent </span><span class="o">-</span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">contact cmat</span><span class="n"> default model linearpbond</span>
+<span class="c">;</span>
+<span class="nb">fish define</span><span class="ni"> unbal_met</span>
+<span class="ni">  </span><span class="k">while_stepping</span>
+<span class="ni">  </span><span class="k">io.out</span><span class="p">(</span><span class="s">'unbal = '</span><span class="o">+</span><span class="ni">string</span><span class="p">(</span><span class="k">mech.solve</span><span class="p">(</span><span class="s">'unbalanced'</span><span class="p">)))</span>
+<span class="ni">  </span><span class="k">if</span><span class="ni"> </span><span class="k">mech.solve</span><span class="p">(</span><span class="s">'unbalanced'</span><span class="p">)</span><span class="ni"> </span><span class="o">&lt;</span><span class="ni"> </span><span class="m m-Double">5000.0</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> </span><span class="k">global.step</span><span class="ni"> </span><span class="o">&gt;</span><span class="ni"> </span><span class="m m-Double">5</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">      system</span><span class="p">.</span><span class="ni">error </span><span class="p">=</span><span class="ni"> </span><span class="s">' Unbalanced force is now: '</span><span class="ni"> </span><span class="o">+</span><span class="ni"> </span><span class="sx">...</span>
+<span class="ni">                       string</span><span class="p">(</span><span class="k">mech.solve</span><span class="p">(</span><span class="s">'unbalanced'</span><span class="p">))</span>
+<span class="ni">    </span><span class="k">end_if</span>
+<span class="ni">  </span><span class="k">end_if</span>
+<span class="nb">end</span>
+<span class="c">;                                      下一步，沿一条直线创建五个球颗粒</span>
+<span class="nb">ball create</span><span class="n"> id</span><span class="p">=</span><span class="m m-Double">1</span><span class="n"> position</span><span class="o">-</span><span class="n">x</span><span class="p">=</span><span class="m m-Double">0.0</span><span class="n"> position</span><span class="o">-</span><span class="n">y</span><span class="p">=</span><span class="m m-Double">0.0</span><span class="n"> position</span><span class="o">-</span><span class="n">z</span><span class="p">=</span><span class="m m-Double">0.0</span><span class="n"> rad</span><span class="p">=</span><span class="m m-Double">0.5</span>
+<span class="nb">ball create</span><span class="n"> id</span><span class="p">=</span><span class="m m-Double">2</span><span class="n"> position</span><span class="o">-</span><span class="n">x</span><span class="p">=</span><span class="m m-Double">1.0</span><span class="n"> position</span><span class="o">-</span><span class="n">y</span><span class="p">=</span><span class="m m-Double">0.0</span><span class="n"> position</span><span class="o">-</span><span class="n">z</span><span class="p">=</span><span class="m m-Double">0.0</span><span class="n"> rad</span><span class="p">=</span><span class="m m-Double">0.5</span>
+<span class="nb">ball create</span><span class="n"> id</span><span class="p">=</span><span class="m m-Double">3</span><span class="n"> position</span><span class="o">-</span><span class="n">x</span><span class="p">=</span><span class="m m-Double">2.0</span><span class="n"> position</span><span class="o">-</span><span class="n">y</span><span class="p">=</span><span class="m m-Double">0.0</span><span class="n"> position</span><span class="o">-</span><span class="n">z</span><span class="p">=</span><span class="m m-Double">0.0</span><span class="n"> rad</span><span class="p">=</span><span class="m m-Double">0.5</span>
+<span class="nb">ball create</span><span class="n"> id</span><span class="p">=</span><span class="m m-Double">4</span><span class="n"> position</span><span class="o">-</span><span class="n">x</span><span class="p">=</span><span class="m m-Double">3.0</span><span class="n"> position</span><span class="o">-</span><span class="n">y</span><span class="p">=</span><span class="m m-Double">0.0</span><span class="n"> position</span><span class="o">-</span><span class="n">z</span><span class="p">=</span><span class="m m-Double">0.0</span><span class="n"> rad</span><span class="p">=</span><span class="m m-Double">0.5</span>
+<span class="nb">ball create</span><span class="n"> id</span><span class="p">=</span><span class="m m-Double">5</span><span class="n"> position</span><span class="o">-</span><span class="n">x</span><span class="p">=</span><span class="m m-Double">4.0</span><span class="n"> position</span><span class="o">-</span><span class="n">y</span><span class="p">=</span><span class="m m-Double">0.0</span><span class="n"> position</span><span class="o">-</span><span class="n">z</span><span class="p">=</span><span class="m m-Double">0.0</span><span class="n"> rad</span><span class="p">=</span><span class="m m-Double">0.5</span>
+<span class="nb">ball attribute</span><span class="n"> density</span><span class="p">=</span><span class="m m-Double">2000</span><span class="n"> damp </span><span class="m m-Double">0.7</span>
+<span class="nb">ball property</span><span class="n"> </span><span class="s">'kn'</span><span class="n"> </span><span class="m m-Double">1e8</span><span class="n"> </span><span class="s">'ks'</span><span class="n"> </span><span class="m m-Double">1e8</span><span class="n"> </span>
+<span class="nb">model clean</span>
+<span class="c">; 使用平行黏结将它们黏结成梁</span>
+<span class="nb">contact method</span><span class="n"> bond gap </span><span class="m m-Double">0.1</span>
+<span class="nb">contact property</span><span class="n"> pb_rmul</span><span class="p">=</span><span class="m m-Double">1.0</span><span class="n"> pb_kn</span><span class="p">=</span><span class="m m-Double">1e10</span><span class="n"> pb_ks</span><span class="p">=</span><span class="m m-Double">1e10</span><span class="n"> pb_ten</span><span class="p">=</span><span class="m m-Double">1e20</span><span class="n"> pb_coh</span><span class="p">=</span><span class="m m-Double">1e20</span>
+<span class="nb">ball fix</span><span class="n"> velocity spin range id</span><span class="p">=</span><span class="m m-Double">1</span><span class="n"> </span><span class="c">; 固定左端球颗粒</span>
+<span class="n">model grav </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">9.8</span><span class="n">               </span><span class="c">; 指定重力荷载</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> </span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p>以上示例仅用于说明；实际使用时，更推荐采用 <a class="reference internal" href="../../../../../kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令的 <span class="cmdkey">fish-halt</span> 关键字。</p>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../scripting.html">Scripting</a> »</li>
+<li class="nav-item nav-item-2"><a href="fish.html"><span class="codename">FISH</span> Scripting Reference</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="fish_languagerules.html"><span class="codename">FISH</span> Rules and Usage</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="fish_redefining.html" title="previous chapter"> Redefining <span class="codename">FISH</span> Functions</a> |    
+       <a href="fish_fishcallback.html" title="next chapter"><span class="codename">FISH</span> Callback Events</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?FISH Error Handling" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

@@ -1,0 +1,228 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>记录峰值质点速度 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../../search.html" rel="search" title="Search"/>
+<link href="code_ppv.py.html" rel="next" title="ppv.py"/>
+<link href="code_flac3d_array_interface.py.html" rel="prev" title="flac3d_array_interface.py"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="recording-peak-particle-velocity">
+<h1>记录峰值质点速度</h1>
+<p>本教程中运行动力波传播模型，并记录各网格点的峰值质点速度（PPV）。PPV 定义为模型中各点所经历速度向量大小的最大值。</p>
+<p>与前面的示例不同，该模型由 <span class="codename">FLAC3D</span> 数据文件驱动，而 Python 用于扩展模型行为。<span class="codename">FLAC3D</span> 力学循环过程中会调用 Python 回调函数，并更新各网格点的 PPV。</p>
+<p>默认情况下，<span class="codename">FLAC3D</span> 存档文件中不存储任何 Python 数据。此时使用 <code class="docutils literal"><span class="pre">save</span></code>、<code class="docutils literal"><span class="pre">restore</span></code> 和 <code class="docutils literal"><span class="pre">new</span></code> Python 回调事件，把 PPV 数据保存到 <span class="codename">FLAC3D</span> 存档文件并从其中恢复。</p>
+<p>创建一个边长 100 米的弹性材料立方体，并移除立方体中心的一块区域。对模型中单个网格单元施加各向同性应力，以产生应力波源。</p>
+<p>该模型通过执行 <code class="docutils literal"><span class="pre">ppv.f3dat</span></code> 数据文件来运行。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="n">python</span><span class="o">-</span><span class="n">reset</span><span class="o">-</span><span class="n">state </span><span class="sx">false</span>
+<span class="nb">model new</span>
+<span class="nb">call</span><span class="n"> </span><span class="s">'ppv.py'</span>
+<span class="nb">model config</span><span class="n"> dynamic</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">100</span><span class="n"> </span><span class="m m-Double">100</span><span class="n"> </span><span class="m m-Double">100</span>
+<span class="nb">zone delete</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">40</span><span class="n"> </span><span class="m m-Double">50</span><span class="n"> position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">40</span><span class="n"> </span><span class="m m-Double">50</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">40</span><span class="n"> </span><span class="m m-Double">60</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">zone property</span><span class="n"> density </span><span class="m m-Double">2950</span><span class="n"> young </span><span class="m m-Double">12e9</span><span class="n"> poisson </span><span class="m m-Double">0.25</span>
+<span class="nb">zone dynamic</span><span class="n"> damping rayleigh </span><span class="m m-Double">0.05</span><span class="n"> </span><span class="m m-Double">150</span>
+
+<span class="nb">zone face apply</span><span class="n"> quiet</span><span class="o">-</span><span class="n">normal range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">100</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                             position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">100</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> union</span>
+<span class="nb">zone face apply</span><span class="n"> quiet</span><span class="o">-</span><span class="n">strike range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">100</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                             position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">100</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> union</span>
+<span class="nb">zone face apply</span><span class="n"> quiet</span><span class="o">-</span><span class="n">dip    range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">100</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                             position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">100</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> union</span>
+
+<span class="nb">zone initialize</span><span class="n"> stress xx </span><span class="m m-Double">10e6</span><span class="n"> yy </span><span class="m m-Double">10e6</span><span class="n"> zz </span><span class="m m-Double">10e6</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">80</span><span class="n"> </span><span class="m m-Double">81</span><span class="n"> position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">80</span><span class="n"> </span><span class="m m-Double">81</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">80</span><span class="n"> </span><span class="m m-Double">81</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">0.08</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">"after_loading"</span>
+</pre></div>
+</div>
+<p>该数据文件调用 ppv.py，如下所示。</p>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">itasca</span> <span class="kn">as</span> <span class="nn">it</span>
+<span class="n">it</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="s1">'python-reset-state false'</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="kn">as</span> <span class="nn">np</span>
+<span class="n">np</span><span class="o">.</span><span class="n">set_printoptions</span><span class="p">(</span><span class="n">threshold</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">itasca</span> <span class="kn">import</span> <span class="n">gridpointarray</span> <span class="k">as</span> <span class="n">gpa</span>
+
+<span class="n">ppv</span> <span class="o">=</span> <span class="bp">None</span>
+
+<span class="k">def</span> <span class="nf">store_ppv</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="k">global</span> <span class="n">ppv</span>
+    <span class="k">if</span> <span class="n">ppv</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">ppv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">it</span><span class="o">.</span><span class="n">gridpoint</span><span class="o">.</span><span class="n">count</span><span class="p">())</span>
+    <span class="n">ppv</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">gpa</span><span class="o">.</span><span class="n">vel</span><span class="p">(),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">ppv</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">ppv_save</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="k">global</span> <span class="n">ppv</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">"saving PPV"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">ppv</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+        <span class="n">gpa</span><span class="o">.</span><span class="n">set_extra</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">ppv</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">ppv_restore</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="k">global</span> <span class="n">ppv</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">"restoring PPV"</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">print</span><span class="p">(</span><span class="n">it</span><span class="o">.</span><span class="n">zone</span><span class="o">.</span><span class="n">count</span><span class="p">())</span>
+        <span class="n">ppv</span> <span class="o">=</span> <span class="n">gpa</span><span class="o">.</span><span class="n">extra</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="s2">"max ppv during restore"</span><span class="p">,</span> <span class="n">ppv</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+    <span class="k">except</span><span class="p">:</span> <span class="k">pass</span>
+
+<span class="k">def</span> <span class="nf">ppv_new</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">):</span>
+    <span class="k">global</span> <span class="n">ppv</span>
+    <span class="k">print</span><span class="p">(</span><span class="s2">"resetting PPV"</span><span class="p">)</span>
+    <span class="n">ppv</span> <span class="o">=</span> <span class="bp">None</span>
+
+<span class="k">def</span> <span class="nf">transit_time</span><span class="p">():</span>
+    <span class="n">z</span> <span class="o">=</span> <span class="n">it</span><span class="o">.</span><span class="n">zone</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">K</span><span class="p">,</span> <span class="n">G</span><span class="p">,</span> <span class="n">rho</span> <span class="o">=</span> <span class="n">z</span><span class="o">.</span><span class="n">prop</span><span class="p">(</span><span class="s2">"bulk"</span><span class="p">),</span> <span class="n">z</span><span class="o">.</span><span class="n">prop</span><span class="p">(</span><span class="s2">"shear"</span><span class="p">),</span> <span class="n">z</span><span class="o">.</span><span class="n">density</span><span class="p">()</span>
+    <span class="n">vp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="n">K</span> <span class="o">+</span> <span class="mf">4.0</span><span class="o">/</span><span class="mf">3.0</span><span class="o">*</span><span class="n">G</span><span class="p">)</span><span class="o">/</span><span class="n">rho</span><span class="p">)</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="mi">100</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">d</span><span class="o">/</span><span class="n">vp</span>
+
+<span class="n">it</span><span class="o">.</span><span class="n">set_callback</span><span class="p">(</span><span class="s2">"store_ppv"</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)</span>
+<span class="n">it</span><span class="o">.</span><span class="n">set_callback</span><span class="p">(</span><span class="s2">"ppv_save"</span><span class="p">,</span> <span class="s2">"save"</span><span class="p">)</span>
+<span class="n">it</span><span class="o">.</span><span class="n">set_callback</span><span class="p">(</span><span class="s2">"ppv_restore"</span><span class="p">,</span> <span class="s2">"restore"</span><span class="p">)</span>
+<span class="n">it</span><span class="o">.</span><span class="n">set_callback</span><span class="p">(</span><span class="s2">"ppv_new"</span><span class="p">,</span> <span class="s2">"new"</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>每个力学循环中都会调用 Python 函数 <code class="docutils literal"><span class="pre">store_ppv</span></code>。该函数使用 <a class="reference internal" href="itasca.gridpointarray.html#pyapi-itasca-gridpointarray"><span class="std std-ref">gridpointarray 模块</span>（gridpointarray module）</a> 获取每个网格点的速度，形式为 <code class="docutils literal"><span class="pre">numpy</span></code> 数组。求出每个网格点的速度大小，并把每个网格点经历的最大速度大小存入数组 <code class="docutils literal"><span class="pre">ppv</span></code>。</p>
+<div class="section" id="saving-and-restoring-python-data-in-flac3d-save-files">
+<h2>在 <span class="codename">FLAC3D</span> 存档文件中保存与恢复 Python 数据</h2>
+<p>保存 <span class="codename">FLAC3D</span> 模型时会调用 Python 函数 <code class="docutils literal"><span class="pre">ppv_save</span></code>。在该函数中，PPV 被存入网格点额外变量，随后随 <span class="codename">FLAC3D</span> 存档文件一起保存。定义为在“save”回调事件期间调用的 Python 函数在保存操作开始前即被调用。类似地，<span class="codename">FLAC3D</span> 恢复操作完成后会调用 Python 函数 <code class="docutils literal"><span class="pre">ppv_restore</span></code>。在该函数中，用此前存入网格点额外变量的 PPV 值重新填充 Python 变量 <code class="docutils literal"><span class="pre">ppv</span></code>。</p>
+<p>当用 <code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">new</span></code> 或 <code class="xref fish fish-cmd docutils literal"><span class="pre">model</span>
+<span class="pre">restore</span></code> 命令重置 <span class="codename">FLAC3D</span> 模型时会调用 Python 函数 <code class="docutils literal"><span class="pre">ppv_new</span></code>。此时 <code class="docutils literal"><span class="pre">ppv</span></code> Python 变量的值被重置。</p>
+<div class="admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">也可以使用 <a class="reference internal" href="itasca.fish.html#pyapi-itasca-fish">it.fish 文件（<span class="std std-ref">it.fish</span>）</a> 函数保存和恢复 Python 变量的值。存为 <span class="codename">FISH</span> 变量的值会被写入 <span class="codename">FLAC3D</span> 存档文件并从其中读取。大多数常见 Python 值都可转换为 <span class="codename">FISH</span> 值。</p>
+</div>
+</div>
+<div class="section" id="data-analysis-using-numpy-and-matplotlib">
+<h2>使用 <code class="docutils literal"><span class="pre">numpy</span></code> 和 <code class="docutils literal"><span class="pre">matplotlib</span></code> 进行数据分析</h2>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="n">load_point</span> <span class="o">=</span> <span class="p">(</span><span class="mf">80.5</span><span class="p">,</span> <span class="mf">80.5</span><span class="p">,</span> <span class="mf">80.5</span><span class="p">)</span>
+<span class="c1"># 源网格单元至各网格点的距离</span>
+<span class="n">distance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">gpa</span><span class="o">.</span><span class="n">pos</span><span class="p">()</span><span class="o">-</span><span class="n">load_point</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">gpos</span> <span class="o">=</span> <span class="n">gpa</span><span class="o">.</span><span class="n">pos</span><span class="p">()</span>
+<span class="n">gx</span><span class="p">,</span> <span class="n">gy</span><span class="p">,</span> <span class="n">gz</span> <span class="o">=</span> <span class="n">gpos</span><span class="o">.</span><span class="n">T</span>
+<span class="n">top_mask</span> <span class="o">=</span> <span class="n">gz</span> <span class="o">==</span> <span class="mf">100.0</span>
+<span class="n">exterior_mask</span> <span class="o">=</span> <span class="nb">reduce</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">,</span> 
+                       <span class="p">(</span><span class="n">gx</span><span class="o">==</span><span class="mi">0</span><span class="p">,</span> <span class="n">gz</span><span class="o">==</span><span class="mi">100</span><span class="p">,</span> <span class="n">gy</span><span class="o">==</span><span class="mi">0</span><span class="p">,</span> <span class="n">gy</span><span class="o">==</span><span class="mi">100</span><span class="p">,</span> <span class="n">gz</span><span class="o">==</span><span class="mi">0</span><span class="p">,</span> <span class="n">gz</span><span class="o">==</span><span class="mi">100</span><span class="p">))</span>
+<span class="n">boundary_gridpoint_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">!=</span><span class="mi">8</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">gpa</span><span class="o">.</span><span class="n">zones</span><span class="p">()])</span>
+<span class="n">excavation_surface_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">exterior_mask</span><span class="p">),</span> 
+                                         <span class="n">boundary_gridpoint_mask</span><span class="p">)</span>
+<span class="n">interior_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_not</span><span class="p">(</span><span class="n">boundary_gridpoint_mask</span><span class="p">)</span>
+
+<span class="n">colors</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"#4e79a7"</span><span class="p">,</span> <span class="s2">"#f28e2b"</span><span class="p">,</span><span class="s2">"#e15759"</span><span class="p">,</span><span class="s2">"#76b7b2"</span><span class="p">,</span><span class="s2">"#59a14e"</span><span class="p">,</span>
+          <span class="s2">"#edc949"</span><span class="p">,</span><span class="s2">"#b07aa2"</span><span class="p">,</span><span class="s2">"#ff9da7"</span><span class="p">,</span><span class="s2">"#9c755f"</span><span class="p">,</span><span class="s2">"#bab0ac"</span><span class="p">]</span>
+
+<span class="kn">import</span> <span class="nn">pylab</span> <span class="kn">as</span> <span class="nn">plt</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">loglog</span><span class="p">(</span><span class="n">distance</span><span class="p">[</span><span class="n">interior_mask</span><span class="p">],</span> <span class="n">ppv</span><span class="p">[</span><span class="n">interior_mask</span><span class="p">],</span> 
+           <span class="s2">"o"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">markeredgewidth</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">loglog</span><span class="p">(</span><span class="n">distance</span><span class="p">[</span><span class="n">excavation_surface_mask</span><span class="p">],</span> <span class="n">ppv</span><span class="p">[</span><span class="n">excavation_surface_mask</span><span class="p">],</span> 
+           <span class="s2">"o"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">markeredgewidth</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">loglog</span><span class="p">(</span><span class="n">distance</span><span class="p">[</span><span class="n">top_mask</span><span class="p">],</span> <span class="n">ppv</span><span class="p">[</span><span class="n">top_mask</span><span class="p">],</span> 
+           <span class="s2">"o"</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">markeredgewidth</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">((</span><span class="s2">"Interior"</span><span class="p">,</span> <span class="s2">"Excavation Surface"</span><span class="p">,</span> <span class="s2">"Ground Surface"</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">"Distance from Source [m]"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">"PPV [m/s]"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+<div class="figure">
+<a class="reference internal image-reference" href="../../../../../../../_images/PPV_dist.png"><img alt="../../../../../../../_images/PPV_dist.png" src="../../../../../../../_images/PPV_dist.png" style="width: 80%;"/></a>
+</div>
+<p>峰值质点速度按距源的距离绘制。数据分为三组绘制：蓝色点对应地表，橙色点对应开挖面，红色点对应模型内部。</p>
+</div>
+<div class="section" id="example-file">
+<h2>示例文件</h2>
+<div class="toctree-wrapper hide compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="code_ppv.py.html">ppv.py</a></li>
+</ul>
+</div>
+<p>此示例的源代码为 <a class="reference internal" href="code_ppv.py.html#ppv"><span class="std std-ref">ppv.py</span></a></p>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../scripting.html">Scripting</a> »</li>
+<li class="nav-item nav-item-2"><a href="../python.html">Python Scripting</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../python_flac3d.html"><span class="codename">FLAC3D</span> Python</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="code_flac3d_array_interface.py.html" title="previous chapter"> flac3d_array_interface.py</a> |    
+       <a href="code_ppv.py.html" title="next chapter">ppv.py</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Recording Peak Particle Velocity" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>
