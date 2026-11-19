@@ -21,25 +21,40 @@ function toTop() {
 }
 
 function doNav() {
-  var x = document.getElementById("mySidenav").style.width;
-  if (x === "0" || x === "0px" || x === "") {
-    openNav();
+  if (isMobileNav()) {
+    if (document.body.classList.contains('nav-open')) {
+      closeNav();
+    } else {
+      openNav();
+    }
   } else {
-    closeNav();
+    if (document.getElementById("mySidenav").style.width === "350px") {
+      closeNav();
+    } else {
+      openNav();
+    }
   }
 }
 
 function openNav() {
-    var w = isMobileNav() ? "85vw" : "350px";
-    document.getElementById("mySidenav").style.width = w;
-    document.getElementById("main").style.marginLeft = isMobileNav() ? "0" : w;
-    document.getElementById("navbutton").style.marginLeft = isMobileNav() ? "0" : w;
+  if (isMobileNav()) {
+    document.body.classList.add('nav-open');
+    document.getElementById("mySidenav").style.width = "";
+    document.getElementById("main").style.marginLeft = "0";
+    document.getElementById("navbutton").style.marginLeft = "0";
+  } else {
+    document.body.classList.remove('nav-open');
+    document.getElementById("mySidenav").style.width = "350px";
+    document.getElementById("main").style.marginLeft = "350px";
+    document.getElementById("navbutton").style.marginLeft = "350px";
+  }
 }
 
 function closeNav() {
-    document.getElementById("mySidenav").style.width = "0";
-    document.getElementById("main").style.marginLeft = "0";
-    document.getElementById("navbutton").style.marginLeft = "0";
+  document.body.classList.remove('nav-open');
+  document.getElementById("mySidenav").style.width = "0";
+  document.getElementById("main").style.marginLeft = "0";
+  document.getElementById("navbutton").style.marginLeft = "0";
 }
 
 var f = document.getElementById('toctobj2');
