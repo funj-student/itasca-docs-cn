@@ -1,0 +1,171 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>综合液化本构模型 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="../../../../../zone/test3d/Dynamic/ShakingTableTest/ShakingTableTest.html" rel="next" title="Shaking Table Test with Finn Model: Simulation of the Liquefaction of a Layer"/>
+<link href="../../../../../../common/models/p2psand/doc/modelp2psand.html" rel="prev" title="P2PSand Model"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="comprehensive-liquefaction-constitutive-models">
+<span id="dyn-comprehensive-liquefaction-constitutive-models"></span><h1>综合液化本构模型</h1>
+<p>涉及可液化材料的抗震分析，目前的实践状况正从使用经验方法（最初于 20 世纪 70 年代开发）模拟液化，转向采用包含液化本构模型的时步推进数值方法，这些模型目前处于不同的开发阶段。数值方法中纳入液化行为的方式有多种，从估算液化条件的总应力经验方案（例如 UBCTOT 模型——见 Beaty 和 Byrne 2000），到简单的有效应力剪切-体积耦合方案（例如<a class="reference internal" href="../../../../../../common/models/finn/doc/modelfinn.html#modelfinn"><span class="std std-ref">Finn 模型</span>（Finn model）</a>以及“Roth”模型——见 Dawson 等 2001），再到更综合的本构模型（例如 UBCSAND 模型——见 Byrne 等 1995；以及边界面模型，如 Wang 1990 中描述的模型和 Papadimitriou 等 2001 中描述的模型），后者通过随动硬化处理循环剪切。</p>
+<p>为帮助执业工程师选择最适合其需要的步骤，下面概述若干方法，其复杂程度和模型参数确定难度从简单到精细不等。这并不是一份详尽的清单，而是挑选出来用以说明已在二维 <span class="codename">FLAC</span> 中开发并使用、并可用于 <span class="codename">FLAC3D</span> 的不同类型液化模型的示例。<a class="footnote-reference" href="#id4" id="id1">[1]</a> 需要牢记的一个重要因素是，在工程实践中，考虑到土性和地震动的诸多不确定性以及必须作出的众多近似，为液化分析采用非常复杂的模型往往很难说是合理的（见 Dawson 等 2001）。在介绍各个模型之前，先回顾液化分析的当前实践状况将有所帮助。（关于实践状况分析的进一步讨论见 Byrne 等 2006。）</p>
+<p><em>实践状况</em>——地震荷载液化分析的标准实践方法基于总应力分析，其中假定可液化土在原位孔隙比下保持不排水（Byrne 和 Wijewickreme 2006）。通常，该分析方法分为三步：</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><em>触发评价</em>：通常针对设计地震进行采用应变相容模量和阻尼的等效线性弹性动力分析（例如 <em>SHAKE</em>）。由数值模拟评价循环应力比（CSR）<a class="footnote-reference" href="#id5" id="id2">[2]</a>，并与土因其密度而具有的循环应力抗力值（CRR）<a class="footnote-reference" href="#id6" id="id3">[3]</a>（由经验曲线得出）相比较。利用 CRR 与 CSR 之比评价抗液化触发的安全系数（例如见 Byrne 和 Anderson 1991，以及 Youd 等 2001）。</li>
+<li><em>流动滑移评价</em>：在触发评价分析中预测会液化的网格单元内赋予液化后（不排水）强度，并进行标准的极限平衡分析，以评价抗流动滑移的安全系数。液化后强度可由贯入阻力（修正击数 <span class="math">\((N_1)_{60}\)</span>）利用经验图表得出（例如见 Seed 和 Harder 1990，以及 Olson 和 Stark 2002）。</li>
+<li><em>地震位移</em>：采用 Newmark 方法（见 Newmark 1965）评价位移。在这一步中，潜在的滑动土块被模拟为置于斜面上的刚体质量。在底部施加设计加速度时程，求解运动方程以获得震动引起的该质量体的位移。</li>
+</ol>
+</div></blockquote>
+<p>标准实践方法的主要缺点在于，液化的三个方面（触发、流动滑移和变形）是依次处理的，而实际上它们可能在土体结构的各个网格单元中局部相互作用，并影响土体的整体行为。此外，未直接考虑超孔隙压力的重分布和消散。</p>
+<p class="h3 rubric">总应力综合方法</p>
+<p>Beaty 和 Byrne（2000）的综合方法使用 <span class="codename">FLAC</span> 和 UBCTOT 本构模型，将标准实践方法的三个步骤（触发、流动滑移和液化诱导位移的估算）合并为一次分析。该方法假定不排水行为，采用（二维）总应力方法进行液化分析，并依赖于在液化触发瞬间调整已液化单元的性质（刚度和强度）。UBCTOT 模型的主要特点概述如下。</p>
+<p>采用该综合方法的地震分析从 <span class="codename">FLAC</span> 模型的静力平衡状态开始。地震分析在总应力空间中进行。UBCTOT 采用零摩擦、黏聚力值等于不排水抗剪强度的 Mohr-Coulomb 弹塑性逻辑，并结合瑞利阻尼。弹性剪切模量取 <span class="math">\(G_{max}\)</span> 乘以模量折减系数（MRF）的值。与等效线性方法不同，该方法不迭代，MRF 和阻尼的适当值在地震分析开始时选定。液化触发基于水平面上剪应力 <span class="math">\(\tau_{xy}\)</span> 的变化。地震引起的无规则剪应力历程在每个 <span class="codename">FLAC</span> 网格单元中被解释为一系列半循环，其对触发的贡献由 <span class="math">\(\tau_{cyc}\)</span> 的最大值确定，该最大值定义为 <span class="math">\(\tau_{xy}\)</span> 与地震加载前初始水平剪应力（即静力偏置）之差。采用累积损伤方法将各半循环的影响组合起来。该方法将非均匀历程转换为一系列等幅的等效均匀应力循环，其幅值等于 <span class="math">\(\tau_{15}\)</span>（即引起 15 个循环液化的 <span class="math">\(\tau_{cyc}\)</span> 值，这大约相当于 7.5 级地震的循环次数）。这一转换使用给出循环应力比（CSR）与液化循环次数关系的经验图表完成。当在某个 <span class="codename">FLAC</span> 网格单元中检测到液化时，将施加若干性质更改：赋予残余抗剪强度；采用降低的加载刚度；并根据双线性刚度模型，卸载采用比加载更大的模量。此外，当某网格单元经历剪应力反向时，施加静水应力状态。最后，在已液化的网格单元中赋予降低的黏性阻尼。该本构模型还具有考虑刚度和强度各向异性的逻辑。更多信息见 Beaty（2001）。</p>
+<p>UBCTOT 模型消除了实践状况方法中逐步求解问题所带来的部分局限，同时仍依赖类似的用于液化触发和残余强度的经验图表。</p>
+<dl class="docutils">
+<dt>以下是该模型的一些缺点：</dt>
+<dd><ul class="first last simple">
+<li>采用等效模量比，可能无法很好地反映液化前的阶段；</li>
+<li>仅考虑水平面上的循环剪应力；</li>
+<li>不排水抗剪强度的指定方式过于简化；</li>
+<li>未显式考虑孔隙压力；以及</li>
+<li>未考虑单调加载引起的液化。</li>
+</ul>
+</dd>
+</dl>
+<p class="h3 rubric">松散耦合有效应力方法</p>
+<p>Roth 模型是一种松散耦合的有效应力本构模型，它使用 Seed 循环应力方法（Seed 和 Idriss 1971）由剪应力循环产生孔隙压力。该模型围绕标准 <span class="codename">FLAC</span> Mohr-Coulomb 模型构建。（二维）模型通过跟踪作用在水平面上的剪应力（<span class="math">\(\tau_{xy}\)</span>）并寻找应力反向来统计剪应力循环。测量每个循环的循环应力比（CSR），并用其计算增量“损伤”，再将其转换为超孔隙压力增量。该过程被称为“松散耦合”，因为孔隙压力仅在分析推进过程中每 1/2 个应变或应力循环之后才计算一次。该模型采用由残余黏聚力值和零摩擦角组成的两段式破坏包络线，并将其延伸至与传统的 Mohr-Coulomb 破坏包络线相接，从而纳入残余强度（地震稳定性分析的关键参数）。</p>
+<p>该模型简单、稳健且面向实践；它基于广泛接受的循环应力方法，其输入参数可方便地由常规现场勘察获得。（请注意，未考虑单调加载引起的液化。）
+该模型的一个缺点是无法捕捉液化诱导的固结沉降，因为液化产生孔隙压力这一实际物理机制（通过土骨架收缩）被绕过了。该模型适用于主要关注抗剪强度降低引起坡体运动的问题（例如坝和水岸挡水结构的地震稳定性），而震动诱导的固结沉降则属次要。部分现场应用见 Roth 等（1991）、Inel 等（1993）、Roth 等（1993）以及 Perlea 等（2008）。</p>
+<p>Roth 模型与内建的<a class="reference internal" href="../../../../../../common/models/finn/doc/modelfinn.html#modelfinn"><span class="std std-ref">Finn 模型</span>（Finn model）</a>类似，后者也被视为松散耦合有效应力模型。主要区别在于，在 Finn 模型中，循环加载引起的体积应变是基于不可恢复体积应变与等幅循环次数关系的试验曲线来评价的。随后由这些体积应变以及土骨架的收缩产生孔隙压力。此外，<span class="codename">FLAC</span>（以及 <span class="codename">FLAC3D</span>）中的 Finn 模型目前不包含液化后残余强度。</p>
+<p class="h3 rubric">完全耦合有效应力方法</p>
+<p>UBCSAND 模型是一种完全耦合（随动硬化）的有效应力本构模型，用于预测平面应变问题中无黏性土的地震响应和液化。该模型采用基于应力比与塑性剪应变之间假定的双曲线关系的弹塑性公式，与 Duncan 和 Chang（1970）的公式类似。它适用于单调加载以及循环加载（例如见 Byrne 等 2003、2006）。</p>
+<p>该模型的实现是 <span class="codename">FLAC</span> 中内建 Mohr-Coulomb 模型的改进形式，它考虑应变硬化摩擦行为，忽略黏聚力，并适用于平面应变条件。硬化律为塑性剪应变的双曲线函数。假定卸载为非线性弹性，其体积模量和剪切模量为平均（平面内）有效应力的函数。应力反向通过水平剪应力 <span class="math">\(\tau_{xy}\)</span> 的符号变化来检测。再加载为弹塑性，屈服轨迹重置为反向点处的值。塑性流动为非关联的；其逻辑基于 Rowe 应力-剪胀理论的一种变体。根据该理论，存在一个等体积应力比 <span class="math">\(\phi_{cv}\)</span>，低于该值时材料发生收缩（即当发挥摩擦角 <span class="math">\(\phi_m\)</span> 小于 <span class="math">\(\phi_{cv}\)</span> 时），而当应力比更高时（即 <span class="math">\(\phi_m &gt; \phi_{cv}\)</span> 时），材料发生剪胀。相对密度的影响通过材料性质的选择来体现。大多数性质依据现场经验以及离心机试验进行标定，并可方便地与击数 <span class="math">\((N_1)_{60}\)</span> 相关联。</p>
+<p>该模型能够捕捉循环等体积单剪试验中所观察到的刚性较强的液化前阶段、在适当循环次数下液化开始，以及软化得多的液化后响应。</p>
+<p>耦合有效应力方法纠正了前述方法的许多缺点。尽管大多数参数与击数相关联，并依赖不断积累的数据和经验，但始终良好的做法是通过（使用单剪试验的数值模拟）检查各层的模型参数，以验证若按现场数据它应在 <span class="math">\(N\)</span> 个循环内液化，则它确实会液化。此外，由于与标准方法的比较可能并不直接，建议在经验丰富的从业者指导下使用该模型。随着时间推移和使用增多，该模型应会变得更加重要，并能在很少费力的情况下用于从简单到复杂的问题。</p>
+<p>主要缺点为：1) 检测应力反向的逻辑仅基于水平剪应力；2) 目前的公式仅适用于二维分析。</p>
+<p class="h3 rubric">完全耦合有效应力边界面方法</p>
+<p>边界面塑性为在二维和三维中考虑循环应力反向提供了框架（见 Dafalias 1986，以及 Wang 1990）。Wang（1990）（此处称为 WANG 模型）和 Papadimitriou 等（2001）（此处称为 PAPADIMITRIOU 模型）所开发的模型是基于该逻辑在 <span class="codename">FLAC</span> 中实现的两个（随动硬化）本构模型。</p>
+<p><em>WANG 模型</em>——WANG 模型是一种针对（无黏性）土的有效应力边界面亚塑性模型，能够详细再现对初始密实和松散土进行经典实验室试验时所观察到的典型单调和循环、排水和不排水、硬化和软化行为（Wang 1990）。（“亚塑性”一词表征加载方向和塑性应变率方向对应力率方向的依赖性。）</p>
+<p>该模型的公式包括非圆形锥形破坏（边界）面、加载面、相变面（剪切过程中收缩行为转变为剪胀行为之处）以及临界状态面（定义砂在恒定应力下等体积变形的最终状态）。该三维有效应力模型对给定砂需要指定 15 个常数（二维分析需要 8 个参数）。一个缺点是模型标定是一项艰巨的任务，因为大多数模型常数与从业者所熟悉的性质无关，且现有的参数数据体系尚不够完善。此外，与实践状况分析的比较也不直接。可利用循环应力比、液化循环次数与归一化击数之间的关系来标定该模型（Wang 等 2001），但标准实践中使用的经验规则与模型理论中使用的理论定律之间没有<em>直接</em>关系。WANG 模型是用于实验室尺度试验的复杂研究工具。在没有模型开发者建议的情况下，可能不应尝试将该模型应用于研究现场尺度的边值问题，模型标定、结果解释以及数值实现可能问题的支持都需要其协助。</p>
+<p><em>PAPADIMITRIOU 模型</em>——PAPADIMITRIOU 模型是一种针对松散和密实砂的有效应力边界面模型，基于临界状态弹塑性理论（Papadimitriou 等 2001，Papadimitriou 和 Bouckovalas 2002）。该模型适用于无黏性土在小应变和大应变下的单调加载以及循环加载（二维和三维）。模型采用随动硬化的非圆形锥面作为（加载）屈服面。除边界面和剪胀面（标志收缩行为与剪胀行为之间的过渡）外，模型还包含临界状态面（定义砂在恒定剪应力和围压下等体积变形的最终状态）。该模型共包含 14 个参数：其中 11 个参数可由原位试验和实验室试验得出，其余 3 个必须通过对排水和不排水实验室试验的试算模拟间接得出。（请注意，每一组参数都与初始条件、排水条件以及循环剪应变幅值无关。）</p>
+<p>该模型能够定性地再现循环试验中所观察到的特征行为，包括剪切模量随循环剪应变幅值增大而退化、滞回阻尼随之增大，剪应变和体积应变随循环次数增加而以递减的速率累积，以及抗液化能力随密度增大而提高。已与离心机试验进行了比较（Andrianopoulos 等 2006a），并展示了该模型研究岩土地震工程实际问题的能力（Andrianopoulos 等 2006b）。其缺点是模型标定相当繁琐，需要多数情况下不易获得的试验数据库，以及求解实际问题所需的计算时间较长。此外，与标准实践的对比也不直接。目前不建议在没有模型开发者协助的情况下将该模型应用于研究现场尺度的边值问题，因为模型标定、结果解释以及数值实现相关问题的最终支持都需要其协助。</p>
+<table class="docutils footnote" frame="void" id="id4" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>本节经许可摘编自 Mejia 和 Dawson（2006）的文献。</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id5" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>基于快速傅里叶变换的谱分析以 <span class="codename">FISH</span> 函数的形式提供于 <span class="codename">FISH</span> 库的“datafiles\FISH\Library\fft.fis”中。</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id6" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id3">[3]</a></td><td>本节讨论的液化模型已以 <span class="codename">FISH</span> 或 C++ 用户自定义本构模型的形式在二维 <span class="codename">FLAC</span> 中实现。
+（如需关于这些液化模型的更多信息或索取模型副本，请联系这些模型的作者。）
+Itasca <em>不</em>为这些模型提供技术支持。</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id7" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label">[4]</td><td>循环应力比：特定位置处最大动剪应力与地震前初始竖向有效应力之比。</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id8" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label">[5]</td><td>循环抗力比：通常取为在 15 个动力加载循环内引起液化的 CSR 值。</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../flac3dhome.html"><span class="codename">FLAC3D</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../options.html">Options</a> »</li>
+<li class="nav-item nav-item-3"><a href="../dynamic.html">Dynamic Analysis</a> »</li>
+<li class="nav-item nav-item-4"><a accesskey="U" href="models.html">Liquefaction Modeling</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../../../../../../common/models/p2psand/doc/modelp2psand.html" title="previous chapter"> P2PSand Model</a> |    
+       <a href="../../../../../zone/test3d/Dynamic/ShakingTableTest/ShakingTableTest.html" title="next chapter">Shaking Table Test with Finn Model: Simulation of the Liquefaction of a Layer</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Comprehensive Liquefaction Constitutive Models" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

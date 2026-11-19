@@ -1,0 +1,1010 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>网格生成 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="identifyingregions.html" rel="next" title="Identifying Regions of the Model"/>
+<link href="projectsetup.html" rel="prev" title="Approach and Project Setup"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="hide sectionname docutils container">
+<span class="codename">FLAC3D</span> Modeling • Problem Solving with <span class="codename">FLAC3D</span></div>
+<div class="section" id="grid-generation">
+<span id="gridgeneration"></span><h1>网格生成</h1>
+<p><span class="codename">FLAC3D</span> 内置三种主要方法来创建构成网格的网格单元：<a class="reference internal" href="#primitivebasedgrids"><span class="std std-ref">基本体</span>（primitives）</a>、<a class="reference internal" href="#extrusionbasedgrids"><span class="std std-ref">拉伸体</span>（extrusions）</a>和<a class="reference internal" href="#buildingblocksbasedgrids"><span class="std std-ref">构建块</span>（building blocks）</a>。各方法不同，均有各自的优缺点。在初始生成网格时，它们互斥（即无法同时使用基本体<em>和</em>拉伸体创建同一组网格单元）。但程序提供相应命令，允许按需对任何方法生成的网格单元进一步修改、组合等。实现模型几何形状的合适方式，可能需要灵活结合这些网格单元生成方法。</p>
+<p>此外，<span class="codename">FLAC3D</span> 可以根据导入文件创建网格单元。<a class="reference internal" href="#thirdpartygrids"><span class="std std-ref">第三方工具</span>（Third-party tools）</a>（基于体积的 CAD 程序，如 <em>Rhino</em>）也可与 Itasca 的高级自动网格划分器 <em>Griddle</em> 配合创建网格单元。后一种方法是最先进的网格单元创建方法，适合最复杂的网格；对于这类网格，<span class="codename">FLAC3D</span> 内置工具可能能力不足，或需要过多人工操作。</p>
+<p><span class="codename">FLAC3D</span> 还提供用于生成和修改网格单元的<a class="reference internal" href="#gridadditional"><span class="std std-ref">其他功能</span>（additional facilities）</a>。对于几何形状复杂、但网格单元面与表面精确吻合在物理上并不重要的情况，通常利用几何描述和网格加密创建<strong>八叉树</strong>网格，<a class="reference internal" href="#geometrydensifying"><span class="std std-ref">基于几何的加密：八叉树网格划分</span>（Geometry-Based Densification: Octree Meshing）</a>对此有简要说明。对于复杂的互不相交层面或不平整地表，可以使用 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.generate.html#kwd:zone.generate.from-topography" title="Generates zones by extruding surface faces in the range until they meet polygons
+in a geometric set...">按地形生成单元命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">generate</span> <span class="pre">from-topography</span></code>）</a> 命令，如<a class="reference internal" href="#geometrytopography"><span class="std std-ref">地表地形与分层</span>（Surface Topography and Layering）</a>中所示。</p>
+<p>本节介绍内置网格生成方法的使用，并简述第三方工具和导入所提供的附加功能。网格生成需要考虑许多因素。选择正确的网格生成方法并高效使用，是 <span class="codename">FLAC3D</span> 建模流程的重要部分。</p>
+<p>从 <span class="codename">FLAC3D</span> 提供的众多工具即可推知，没有一种网格生成方法适合所有情况。最佳方法高度依赖模型几何形状和分析目标。以下是选择<em>内置</em>方法的简要初步指南：</p>
+<ul class="simple">
+<li>如果问题的几何形状非常简单、规则，或者恰好符合 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.create.html#command:zone.create" title="The  zone.create  command fills primitive shapes (  brick ,  cylinder ,
+etc.) with a predefined grid pattern..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">create</span></code></a> 命令提供的某种形状，那么<a class="reference internal" href="#primitivebasedgrids"><span class="std std-ref">基本体</span>（primitive）</a>方法最快且最容易。</li>
+<li>如果问题几何形状可以用二维图描述，或者在第三维方向仅有小幅变化，则应首先考虑<a class="reference internal" href="#extrusionbasedgrids"><span class="std std-ref">拉伸</span>（extrusion）</a>。请注意，可将二维初始几何形状导出到构建块中，进行三维修改。</li>
+<li>如果问题更复杂，但仍由相对规则的形状组成，则应考虑<a class="reference internal" href="#buildingblocksbasedgrids"><span class="std std-ref">构建块</span>（Building Blocks）</a>。这在涉及隧道、结构或基础的土木工程问题中相当常见。该工具也可通过大量手动调整或有策略地使用贴合工具来处理不规则形状，但建议仅在其余部分规则的模型中，对有限区域这样处理。</li>
+<li>如果问题非常不规则，和／或涉及复杂、不规则的相交表面，就需要判断网格单元面与描述模型的表面精确吻合是否会影响结果。对于不规则矿体或其他材料边界，这往往对模型总体物理响应不重要。这种情况下，常采用八叉树方法（可能先用构建块创建最关注的区域）。此类模型在采矿中并不少见。</li>
+<li>如果问题非常不规则，并且网格精确吻合很重要，则应考虑 Itasca 的 <em>Griddle</em> 或其他第三方网格划分工具。</li>
+</ul>
+<p>无论采用何种构建方式，网格生成都涉及计算效率、模型几何真实性和结果准确性之间的权衡。以下因素决定这些权衡。</p>
+<ol class="arabic">
+<li><p class="first">优先采用六面体网格单元，原因是：</p>
+<ul class="simple">
+<li>混合离散方法使其在涉及等体积塑性变形的情况下（例如 Mohr-Coulomb 剪切破坏过程中）响应更准确；以及</li>
+<li>混合离散方法使其总体响应更准确（响应阶次略高）。</li>
+</ul>
+<p>不过，构建几何复杂模型时，六面体网格单元比四面体网格单元更难使用。</p>
+</li>
+<li><p class="first">计算速度随网格单元数量增加而降低。</p>
+</li>
+<li><p class="first">更细的网格能够更好地表示较高的应力梯度，因此结果更准确。</p>
+</li>
+<li><p class="first">网格单元纵横比越接近 1，准确性越高。</p>
+</li>
+<li><p class="first">如果需要不同网格单元尺寸，则从最小到最大尺寸的变化越平缓，结果越好。</p>
+</li>
+</ol>
+<div class="section" id="primitive-based-grids">
+<span id="primitivebasedgrids"></span><h2>基于基本体的网格</h2>
+<p>初看之下，<span class="codename">FLAC3D</span> 基于基本体的网格生成似乎仅适用于较简单、形状规则的区域。入门章节提供的示例通常为均匀多面体网格。不过，<span class="codename">FLAC3D</span> 的基本体形状可以变形，以适应任意复杂体积区域。<span class="codename">FLAC3D</span> 提供功能强大的网格生成命令，可操作基本体，使其适应各种三维问题区域形状。</p>
+<p>本主题介绍通过命令实现基于基本体的网格的流程。首先在<a class="reference internal" href="#prims-overview"><span class="std std-ref">网格生成器概述</span>（Overview of the Grid Generator）</a>中介绍操作概况。随后，在<a class="reference internal" href="#prims-fitting"><span class="std std-ref">使网格适应简单形状</span>（Fitting the Grid to Simple Shapes）</a>和<a class="reference internal" href="#prims-fish"><span class="std std-ref">使用 FISH 生成网格</span>（Grid Generation with FISH）</a>中介绍网格生成的各个方面，并给出为获得准确解而设计网格应遵循的指导原则。每个方面均提供示例说明。</p>
+<p>网格生成的一个重要方面是，模型模拟中要表示的所有物理边界（包括在模拟后续阶段将添加的区域或将创建的开挖）都<em>必须</em>在求解步进开始前定义。在顺序分析中，后续将添加的结构形状也必须预先定义，然后移除（通过 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.cmodel.html#kwd:zone.cmodel.assign.null" title="null model — for most purposes null models are ignored by default, and zones
+adjacent to them are treated as surfaces (see the  Null model &lt;modelnull&gt; 
+description)...">单元本构模型指定空（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">cmodel</span> <span class="pre">assign</span> <span class="pre">null</span></code>）</a> 或 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.delete.html#command:zone.delete" title="|..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">delete</span></code></a>），直到需要将其激活。网格生成器旨在便于创建模型中所有所需的物理形状。</p>
+<p>本节列出的所有示例均包含在项目文件“grid-generation.f3prj”中。</p>
+<div class="section" id="overview-of-the-grid-primitives">
+<span id="prims-overview"></span><h3>网格基本体概述</h3>
+<p>在 <span class="codename">FLAC3D</span> 中使用<em>基本体</em>生成网格，是将具有特定连接关系的网格形状拼接起来，形成具有所需几何形状的完整模型。程序提供多种基本体，它们可以相互连接并调整为匹配形状，以创建复杂三维几何体。</p>
+<p>各类基本体的网格单元均通过 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.create.html#command:zone.create" title="The  zone.create  command fills primitive shapes (  brick ,  cylinder ,
+etc.) with a predefined grid pattern..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">create</span></code></a> 命令生成。可以使用 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/zonegridpoint/cmd_zone.gridpoint.create.html#command:zone.gridpoint.create" title="Create a single gridpoint.  The gridpoint is created at position  v \ ..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">gridpoint</span> <span class="pre">create</span></code></a> 命令定义单个参考点，将网格点放在特定位置，然后在 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.create.html#command:zone.create" title="The  zone.create  command fills primitive shapes (  brick ,  cylinder ,
+etc.) with a predefined grid pattern..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">create</span></code></a> 命令中引用。可以使用 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/zonegridpoint/cmd_zone.gridpoint.merge.html#command:zone.gridpoint.merge" title="Attempts to merge all gridpoints in the range.  A gridpoint will be merged if
+another gridpoint falls within a distance given by the tolerances specified.
+ The following optional keywords are available to manually specify the tolerances
+used..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">gridpoint</span> <span class="pre">merge</span></code></a> 命令确保不同基本体正确连接。两个基本体若要合并，其匹配面上的所有网格点都必须位于指定容差内。也可使用 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.attach.html#command:zone.attach" title="Create attached gridpoints.  Gridpoints on one zone may be rigidly attached
+(or slaved) to master gridpoints, edges, or faces..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">attach</span></code></a> 命令连接网格单元尺寸不同的基本体网格。必要时，可使用 <span class="codename">FISH</span> 调整最终网格，使其与模型区域的表面吻合。以下各节介绍如何使用这些功能创建 <span class="codename">FLAC3D</span> 网格。</p>
+<p class="h4 rubric">网格单元生成</p>
+<p>基于基本体的 <span class="codename">FLAC3D</span> 网格通过 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.create.html#command:zone.create" title="The  zone.create  command fills primitive shapes (  brick ,  cylinder ,
+etc.) with a predefined grid pattern..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">create</span></code></a> 命令生成。该命令实际访问基本体形状库；每种形状均有特定的网格连接类型。<span class="codename">FLAC3D</span> 中可用的基本体形状，按复杂度递增顺序如下。</p>
+<table border="1" class="colwidths-given icg1 docutils" id="id3">
+<caption><span class="caption-text">表 1：<a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.create.html#command:zone.create" title="The  zone.create  command fills primitive shapes (  brick ,  cylinder ,
+etc.) with a predefined grid pattern..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">create</span></code></a> 命令可用的基本体网格形状</span></caption>
+<colgroup>
+<col width="38%"/>
+<col width="63%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">关键字</th>
+<th class="head">定义</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><span class="cmdkey">brick</span></td>
+<td>砖形网格</td>
+</tr>
+<tr class="row-odd"><td><span class="cmdkey">wedge</span></td>
+<td>楔形网格</td>
+</tr>
+<tr class="row-even"><td><span class="cmdkey">uniform-wedge</span></td>
+<td>均匀楔形网格</td>
+</tr>
+<tr class="row-odd"><td><span class="cmdkey">tetrahedron</span></td>
+<td>四面体形网格</td>
+</tr>
+<tr class="row-even"><td><span class="cmdkey">pyramid</span></td>
+<td>棱锥形网格</td>
+</tr>
+<tr class="row-odd"><td><span class="cmdkey">cylinder</span></td>
+<td>圆柱形网格</td>
+</tr>
+<tr class="row-even"><td><span class="cmdkey">degenerate-brick</span></td>
+<td>退化砖形网格</td>
+</tr>
+<tr class="row-odd"><td><span class="cmdkey">radial-brick</span></td>
+<td>砖体周围沿径向渐变的网格</td>
+</tr>
+<tr class="row-even"><td><span class="cmdkey">radial-tunnel</span></td>
+<td>平行六面体形隧道周围沿径向渐变的网格</td>
+</tr>
+<tr class="row-odd"><td><span class="cmdkey">radial-cylinder</span></td>
+<td>圆柱形隧道周围沿径向渐变的网格</td>
+</tr>
+<tr class="row-even"><td><span class="cmdkey">cylindrical-shell</span></td>
+<td>圆柱壳网格</td>
+</tr>
+<tr class="row-odd"><td><span class="cmdkey">cylindrical-intersection</span></td>
+<td>相交圆柱形隧道</td>
+</tr>
+<tr class="row-even"><td><span class="cmdkey">tunnel-intersection</span></td>
+<td>相交平行六面体形隧道</td>
+</tr>
+</tbody>
+</table>
+<p>正如<a class="reference internal" href="../tutorials/firstflac3dmodel.html#mechanics"><span class="std std-ref">教程：示范模型——FLAC3D 的使用机制</span>（Tutorial: Illustrative Model — Mechanics of Using FLAC3D）</a>中所示，单独使用 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.create.html#command:zone.create" title="The  zone.create  command fills primitive shapes (  brick ,  cylinder ,
+etc.) with a predefined grid pattern..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">create</span></code></a> 命令即可创建划分网格后的模型。如果三维区域由简单形状组成，可分别应用基本体，或将基本体连接起来创建 <span class="codename">FLAC3D</span> 网格。</p>
+<p>例如，可以通过以下命令创建圆柱形隧道的四分之一对称模型</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">zone create</span><span class="n"> radial</span><span class="o">-</span><span class="n">cylinder size </span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">6</span><span class="n"> </span><span class="m m-Double">12</span><span class="n"> fill</span>
+</pre></div>
+</div>
+<p><span class="cmdkey">size</span> 关键字定义网格中的网格单元数量。对于圆柱形隧道，<span class="cmdkey">size</span> 关键字后的每个数值对应特定方向的网格单元数量。本例中，沿圆柱形隧道内半径有五个网格单元，沿隧道轴线有十个网格单元，沿隧道圆周有六个网格单元，隧道周边与模型外边界之间有十二个网格单元。下图显示模型网格。使用 <span class="cmdkey">fill</span> 关键字在隧道内填充网格单元。</p>
+<div class="figure align-center" id="id4">
+<a class="reference internal image-reference" href="../../../../../_images/103F1026.png"><img alt="click on image to enlarge in a new window" src="../../../../../_images/103F1026.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 1：圆柱形隧道模型的网格。</span></p>
+</div>
+<p>除 <span class="cmdkey">size</span> 和 <span class="cmdkey">fill</span> 外，还可使用其他若干关键字定义基本体形状的特征。下表汇总了基本体形状可用的特征关键字。请参阅 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.create.html#command:zone.create" title="The  zone.create  command fills primitive shapes (  brick ,  cylinder ,
+etc.) with a predefined grid pattern..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">create</span></code></a> 命令及其参考图，以确定每种基本体形状适用的关键字和数值项。例如，单击 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.create.html#kwd:zone.create.radial-cylinder" title=".. csv-table::...">创建径向圆柱单元命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">create</span> <span class="pre">radial-cylinder</span></code>）</a> 中的缩略图，即可查看圆柱形隧道中 <span class="cmdkey">size</span> 各项（<a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">i1</span></span></a>、<a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">i2</span></span></a>、<a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">i3</span></span></a>、<a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">i4</span></span></a>）应采用的输入顺序。</p>
+<table border="1" class="colwidths-given icg1 docutils" id="id5">
+<caption><span class="caption-text">表 2：<a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.create.html#command:zone.create" title="The  zone.create  command fills primitive shapes (  brick ,  cylinder ,
+etc.) with a predefined grid pattern..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">create</span></code></a> 基本体形状的特征关键字</span></caption>
+<colgroup>
+<col width="29%"/>
+<col width="71%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">关键字</th>
+<th class="head">定义</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><span class="cmdkey">dimension</span></td>
+<td>内部区域的尺寸（长度）</td>
+</tr>
+<tr class="row-odd"><td><span class="cmdkey">edge</span></td>
+<td>网格各边的边长</td>
+</tr>
+<tr class="row-even"><td><span class="cmdkey">fill</span></td>
+<td>用网格单元填充内部区域</td>
+</tr>
+<tr class="row-odd"><td><span class="cmdkey">point</span></td>
+<td>形状的参考点（角点）。其后应先给出点索引（<a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">0</span></span></a> 至 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">16</span></span></a>），再给出 <span class="math">\(x,y,z\)</span> 坐标位置。</td>
+</tr>
+<tr class="row-even"><td><span class="cmdkey">ratio</span></td>
+<td>用于设置网格单元间距的等比系数</td>
+</tr>
+<tr class="row-odd"><td><span class="cmdkey">size</span></td>
+<td>每种形状的网格单元数量</td>
+</tr>
+</tbody>
+</table>
+<p>设计网格以在无需过多网格单元的情况下获得准确解时，<span class="cmdkey">ratio</span> 关键字尤为重要。例如，如果需要紧邻圆柱形隧道周边布置细网格，以更准确地表示较高应力梯度，可使用 <span class="cmdkey">ratio</span> 调整网格单元尺寸，使靠近隧道的网格单元较小，远离隧道时逐渐增大。</p>
+<p>要查看使用 <span class="cmdkey">ratio</span> 关键字的效果，请输入以下命令</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">zone create</span><span class="n"> radial</span><span class="o">-</span><span class="n">cylinder size </span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">6</span><span class="n"> </span><span class="m m-Double">12</span><span class="n"> ratio </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1.2</span>
+</pre></div>
+</div>
+<p>每个 <span class="cmdkey">size</span> 项都由一个 <span class="cmdkey">ratio</span> 控制。本例中，第四个 <span class="cmdkey">size</span> 项的等比系数为 1.2（即从隧道周边向外边界方向，每个后续网格单元的尺寸是前一个的 1.2 倍——见下图）。可以指定小于 1.0 的比值，将递增改为递减。</p>
+<div class="figure align-center" id="id6">
+<a class="reference internal image-reference" href="../../../../../_images/103F1027.png"><img alt="click on image to enlarge in a new window" src="../../../../../_images/103F1027.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 2：圆柱形隧道周围沿径向渐变的网格。</span></p>
+</div>
+<p>在采用合理数量网格单元的同时调整网格尺寸以获得准确结果，可能比较复杂。应记住三个因素：</p>
+<ol class="arabic simple">
+<li>更细的网格能够更好地表示较高的应力梯度，因此结果更准确。</li>
+<li>网格单元纵横比越接近 1，准确性越高。经验原则是尽量避免纵横比超过约 10。</li>
+<li>如果需要不同网格单元尺寸，则从最小到最大尺寸的变化越平缓，结果越好。</li>
+</ol>
+<p>以下各节的示例说明这些因素的一些应用。</p>
+<p>可以发出多条 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.create.html#command:zone.create" title="The  zone.create  command fills primitive shapes (  brick ,  cylinder ,
+etc.) with a predefined grid pattern..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">create</span></code></a> 命令，将两个或多个基本体形状连接起来构建网格。例如，要构建马蹄形隧道，可以使用 <span class="cmdkey">radial-cylinder</span> 和 <span class="cmdkey">radial-tunnel</span> 形状，如本例所示：</p>
+<p><strong>构建马蹄形隧道——半模型</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">zone create</span><span class="n"> radial</span><span class="o">-</span><span class="n">cylinder size </span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">6</span><span class="n"> </span><span class="m m-Double">12</span><span class="n"> rat </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1.2</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     point </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">100</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">200</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">100</span><span class="p">)</span>
+<span class="nb">zone create</span><span class="n"> radial</span><span class="o">-</span><span class="n">tunnel size </span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">12</span><span class="n"> rat </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1.2</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     point </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">100</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">200</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">100</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>构建这些形状时，请参阅 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.create.html#kwd:zone.create.radial-cylinder" title=".. csv-table::...">创建径向圆柱单元命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">create</span> <span class="pre">radial-cylinder</span></code>）</a> 和 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.create.html#kwd:zone.create.radial-tunnel" title=".. csv-table::...">创建径向隧道单元命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">create</span> <span class="pre">radial-tunnel</span></code>）</a> 的参考图。模型边界尺寸为 100 × 200 × 100；边界坐标通过 <span class="cmdkey">point</span> 关键字定义。网格如下图所示。请注意，<span class="cmdkey">radial-tunnel</span> 形状旋转了 90°，以放在 <span class="cmdkey">radial-cylinder</span> 形状下方。这通过为 <span class="cmdkey">radial-tunnel</span> 形状指定不同的 <span class="cmdkey">point</span> 坐标值实现。</p>
+<div class="figure align-center" id="id7">
+<a class="reference internal image-reference" href="../../../../../_images/103F1028.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/103F1028.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 3：由 <span class="cmdkey">radcylinder</span> 和 <span class="cmdkey">radtunnel</span> 基本体构成的马蹄形隧道。</span></p>
+</div>
+<p>配合 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.create.html#command:zone.create" title="The  zone.create  command fills primitive shapes (  brick ,  cylinder ,
+etc.) with a predefined grid pattern..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">create</span></code></a>，还可使用两个附加选项帮助创建由多个形状组成的网格：<a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.copy.html#command:zone.copy" title="Copy zones..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">copy</span></code></a> 和 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.reflect.html#command:zone.reflect" title="All zones within the given range are reflected across the plane.  Note that
+group information is copied from the original to the new zones..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">reflect</span></code></a>。前者通过为所有网格点添加偏移向量，将一个或多个形状复制到新位置；后者将一个或多个形状关于对称面镜像。下一示例给出将前面命令创建的几何体镜像所需的附加命令。</p>
+<p><strong>构建马蹄形隧道——完整模型</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">zone create</span><span class="n"> radial</span><span class="o">-</span><span class="n">cylinder size </span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">6</span><span class="n"> </span><span class="m m-Double">12</span><span class="n"> rat </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1.2</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     point </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">100</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">200</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">100</span><span class="p">)</span>
+<span class="nb">zone create</span><span class="n"> radial</span><span class="o">-</span><span class="n">tunnel size </span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">12</span><span class="n"> rat </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1.2</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">     point </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">100</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">200</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">100</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="nb">zone reflect</span><span class="n"> dip </span><span class="m m-Double">90</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">270</span><span class="n"> origin </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n">                </span>
+</pre></div>
+</div>
+<p>所得网格如下图所示。对称面为与 <span class="math">\(x\)</span> = 0 平面重合的竖直平面（通过 <span class="cmdkey">dip</span>、<span class="cmdkey">dip-direction</span> 和 <span class="cmdkey">origin</span> 关键字定位）。请注意，倾角（<span class="cmdkey">dip</span>）和倾向（<span class="cmdkey">dip-direction</span>）假定 <span class="math">\(x\)</span> 对应“东”、<span class="math">\(y\)</span> 对应“北”、<span class="math">\(z\)</span> 对应“上”。</p>
+<p>第三个选项 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/zonegridpoint/cmd_zone.gridpoint.create.html#command:zone.gridpoint.create" title="Create a single gridpoint.  The gridpoint is created at position  v \ ..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">gridpoint</span> <span class="pre">create</span></code></a> 命令，可以在模型区域内定位单个点，适合用于定位基本体的参考点。下文<a class="reference internal" href="#prims-fitting"><span class="std std-ref">使网格适应简单形状</span>（Fitting the Grid to Simple Shapes）</a>一节给出了一个使用 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/zonegridpoint/cmd_zone.gridpoint.create.html#command:zone.gridpoint.create" title="Create a single gridpoint.  The gridpoint is created at position  v \ ..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">gridpoint</span> <span class="pre">create</span></code></a> 将两个不同尺寸隧道的仰拱设置在同一高程的示例。</p>
+<div class="figure align-center" id="id8">
+<a class="reference internal image-reference" href="../../../../../_images/103F1029.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/103F1029.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 4：通过 <span class="cmdkey">reflect</span> 关键字生成的完整马蹄形隧道。</span></p>
+</div>
+</div>
+<div class="section" id="connecting-adjoining-primitive-shapes">
+<span id="connecting-adjoining-shapes"></span><h3>连接相邻的基本体形状</h3>
+<p>使用基本体构建几何体时，各基本体的侧面<em>必须</em>相互连接，形成不间断的连续体。执行 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.create.html#command:zone.create" title="The  zone.create  command fills primitive shapes (  brick ,  cylinder ,
+etc.) with a predefined grid pattern..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">create</span></code></a> 命令时，会将每个边界网格点与已有网格单元的边界网格点逐一比较，不检查内部网格点。如果两个边界网格点之间的距离位于 1 × 10<sup>-7</sup> 的容差内（相对于网格点位置向量的模），则认为它们是同一点；在所有后续计算中使用第一个网格点，而不创建新点。</p>
+<p>用户负责确保相邻基本体上的所有网格点相互对应。模型创建过程中，通过 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/zonegridpoint/cmd_zone.gridpoint.create.html#command:zone.gridpoint.create" title="Create a single gridpoint.  The gridpoint is created at position  v \ ..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">gridpoint</span> <span class="pre">create</span></code></a> 命令使用参考点，有助于确保两个基本体的包围砖体均正确指定。应确保网格单元数量正确，并且控制网格单元分布的 <span class="cmdkey">ratio</span> 一致。请注意，如果一个基本体的比值方向与另一个相反，则应对其中一个采用倒数比值，以确保边界网格点匹配。</p>
+<p>在本版 <span class="codename">FLAC3D</span> 中，如果边界网格点不匹配，程序不会发出警告。开始计算后，模型中不匹配的网格点会出现局部速度异常。如果发现某些网格点不匹配，可以在执行 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.create.html#command:zone.create" title="The  zone.create  command fills primitive shapes (  brick ,  cylinder ,
+etc.) with a predefined grid pattern..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">create</span></code></a> 命令后，用 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/zonegridpoint/cmd_zone.gridpoint.merge.html#command:zone.gridpoint.merge" title="Attempts to merge all gridpoints in the range.  A gridpoint will be merged if
+another gridpoint falls within a distance given by the tolerances specified.
+ The following optional keywords are available to manually specify the tolerances
+used..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">gridpoint</span> <span class="pre">merge</span></code></a> 命令合并这些网格点。</p>
+<p><a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.attach.html#command:zone.attach" title="Create attached gridpoints.  Gridpoints on one zone may be rigidly attached
+(or slaved) to master gridpoints, edges, or faces..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">attach</span></code></a> 命令可以连接网格单元尺寸不同的基本体。不过，此方法允许指定的网格单元尺寸范围有一些限制。为获得最准确的计算，网格单元尺寸比应为整数倍比（如 2 比 1、3 比 1、4 比 1）。建议先在弹性条件下运行模型，测试所用比值。如果连接网格之间的位移或应力分布出现不连续，可能需要调整网格单元尺寸比。但如果不连续很小且远离关注区域，则可能不会明显影响计算。</p>
+<p>下一示例说明 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.attach.html#command:zone.attach" title="Create attached gridpoints.  Gridpoints on one zone may be rigidly attached
+(or slaved) to master gridpoints, edges, or faces..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">attach</span></code></a> 命令的用法及不同网格单元尺寸的影响。将网格单元尺寸为 0.5 的砖体基本体，与网格单元尺寸为 1 的砖体基本体连接。所得 <span class="math">\(z\)</span> 位移等值线见下图。</p>
+<p>在下一示例中，也可以将前两条命令改为</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">4</span>
+<span class="nb">zone densify</span><span class="n"> segments </span><span class="m m-Double">2</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">4</span>
+</pre></div>
+</div>
+<p>其中，<a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.densify.html#command:zone.densify" title="|...">加密网格单元（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">densify</span></code>）</a> <span class="cmdkey">segments</span> <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">2</span></span></a> 将上部网格单元（<span class="math">\(z\)</span> 坐标在 2 至 4 之间）加密，每条边分为 2 段。</p>
+<p><strong>两个不等尺寸子网格</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">2</span><span class="n"> point </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">4</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n">                             point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">4</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">8</span><span class="n"> </span><span class="m m-Double">8</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> point </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">4</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n">                             point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">4</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">4</span><span class="p">)</span>
+<span class="nb">zone attach</span><span class="n"> by</span><span class="o">-</span><span class="n">face range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">2</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">zone property</span><span class="n"> bulk </span><span class="m m-Double">8e9</span><span class="n"> shear </span><span class="m m-Double">5e9</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x range union position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">4</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y range union position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">4</span>
+<span class="nb">zone face apply</span><span class="n"> stress</span><span class="o">-</span><span class="n">zz </span><span class="o">-</span><span class="m m-Double">1e6</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">4</span><span class="n"> position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">2</span><span class="n"> position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">2</span>
+<span class="nb">model history</span><span class="n"> mechanical unbalanced</span><span class="o">-</span><span class="n">maximum</span>
+<span class="nb">model </span><span class="ss">solve</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'att'</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id9">
+<a class="reference internal image-reference" href="../../../../../_images/103F1051.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/103F1051.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 5：网格单元尺寸比为 2 比 1 的两个连接网格中的 z 位移等值线。</span></p>
+</div>
+<p>为测试准确性，进行类似计算，但改用网格单元尺寸恒为 0.5 的单一网格。数据文件如下，结果见后图。该图与上图几乎相同。</p>
+<p><strong>用于与两个子网格比较的单一网格</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">8</span><span class="n"> </span><span class="m m-Double">8</span><span class="n"> </span><span class="m m-Double">8</span><span class="n"> point </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">4</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                             point </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">4</span><span class="p">,</span><span class="m m-Double">0</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">4</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">zone property</span><span class="n"> bulk </span><span class="m m-Double">8e9</span><span class="n"> shear </span><span class="m m-Double">5e9</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x range union position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">4</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y range union position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">4</span>
+<span class="nb">zone face apply</span><span class="n"> stress</span><span class="o">-</span><span class="n">zz </span><span class="o">-</span><span class="m m-Double">1e6</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">4</span><span class="n"> position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">2</span><span class="n"> position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">2</span>
+<span class="nb">model history</span><span class="n"> mechanical unbalanced</span><span class="o">-</span><span class="n">maximum</span>
+<span class="nb">model </span><span class="ss">solve</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'noatt'</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="fig-zdispcontours">
+<a class="reference internal image-reference" href="../../../../../_images/103F1052.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/103F1052.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 6：单一网格中的 z 位移等值线。</span></p>
+</div>
+</div>
+<div class="section" id="fitting-the-grid-to-simple-shapes">
+<span id="prims-fitting"></span><h3>使网格适应简单形状</h3>
+<p>网格生成的目的是使模型网格适应研究的物理区域。对于简单几何体，只需 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.create.html#command:zone.create" title="The  zone.create  command fills primitive shapes (  brick ,  cylinder ,
+etc.) with a predefined grid pattern..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">create</span></code></a> 命令即可生成适合问题区域的模型网格。要判断 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.create.html#command:zone.create" title="The  zone.create  command fills primitive shapes (  brick ,  cylinder ,
+etc.) with a predefined grid pattern..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">create</span></code></a> 是否足够，可尝试用该命令文档中的一个或多个基本体形状定义问题区域。</p>
+<p>例如，考虑一个涉及三条平行隧道的问题几何（一条服务隧道位于两条较大的主隧道之间的居中位置）。三条隧道均为圆柱形，因此 <span class="cmdkey">radial-cylinder</span> 基本体形状是构建隧道网格的合理选择。可假定沿服务隧道中心线存在一个竖直对称面。因此，只需为主隧道之一以及服务隧道的一半创建网格。</p>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">本例用于说明较高级的基本体网格单元创建技术。实际中，建议使用<a class="reference internal" href="../../../../extruder/doc/manual/extrusion_pane/extrusionpane.html#extrusion-pane"><span class="std std-ref">二维拉伸器</span>（2D Extruder）</a>创建此类几何体。</p>
+</div>
+<p>构建任何模型时，都有两个重要问题：1）关注区域获得准确解所需的网格划分密度；2）网格边界位置如何影响模型结果。</p>
+<p>在应力梯度或应变梯度较高的区域，采用高密度网格划分很重要。通常可通过二维分析确定这些区域。对于本问题，可以方便地运行二维 <span class="codename">FLAC</span> 计算，以确定隧道周围可接受的网格单元密度。为演示起见，隧道周围的网格单元尺寸选为大约辅助隧道半径的一半。</p>
+<p>该问题网格生成的第一步是使用 <span class="cmdkey">radial-cylinder</span> 基本体为隧道创建网格。复杂之处在于隧道尺寸不同，但具有相同的仰拱高程。服务隧道半径为 3 m，主隧道半径为 4 m。模型长度对应于隧道 50 m 的长度。下例给出了创建隧道周围网格的命令。</p>
+<p id="twotunnels-grid-example"><strong>为仰拱高程相同的两条隧道创建网格</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 主隧道</span>
+<span class="nb">zone create</span><span class="n"> radial</span><span class="o">-</span><span class="n">cylinder point </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">15</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n">  point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">23</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">15</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">15</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">8</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            size </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">6</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> dim </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> rat </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> fill </span><span class="sx">...</span>
+<span class="n">                            group </span><span class="s">'service'</span>
+<span class="nb">zone reflect</span><span class="n"> dip </span><span class="m m-Double">90</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="m m-Double">90</span><span class="n"> origin </span><span class="p">(</span><span class="m m-Double">15</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="nb">zone reflect</span><span class="n"> dip </span><span class="m m-Double">0</span><span class="n"> origin </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="c">; 服务隧道</span>
+<span class="nb">zone gridpoint create</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">2.969848</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">0.575736</span><span class="p">)</span><span class="n"> name </span><span class="s">'p2124'</span>
+<span class="nb">zone gridpoint create</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">2.969848</span><span class="p">,</span><span class="m m-Double">50.0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">0.575736</span><span class="p">)</span><span class="n"> name </span><span class="s">'p2125'</span>
+<span class="nb">zone create</span><span class="n"> radial</span><span class="o">-</span><span class="n">cylinder point </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">7</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">8</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            point </span><span class="m m-Double">4</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">7</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n">  point </span><span class="m m-Double">5</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">8</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            point </span><span class="m m-Double">6</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">7</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">8</span><span class="p">)</span><span class="n">   point </span><span class="m m-Double">7</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">7</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">8</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            point </span><span class="m m-Double">8</span><span class="n"> gridpoint </span><span class="s">'p2124'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            point </span><span class="m m-Double">10</span><span class="n"> gridpoint </span><span class="s">'p2125'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            size </span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">6</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> dim </span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">3</span><span class="n"> rat </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">zone create</span><span class="n"> radial</span><span class="o">-</span><span class="n">cylinder point </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">8</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">7</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            point </span><span class="m m-Double">4</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">8</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">5</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">7</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            point </span><span class="m m-Double">6</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">7</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">8</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">7</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">7</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">8</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            point </span><span class="m m-Double">9</span><span class="n"> gridpoint </span><span class="s">'p2124'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            point </span><span class="m m-Double">11</span><span class="n"> gridpoint </span><span class="s">'p2125'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            size </span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">6</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> dim </span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">3</span><span class="n"> rat </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span>
+</pre></div>
+</div>
+<p>首先创建主隧道网格：生成四分之一网格，再关于水平和竖直平面镜像，创建整个隧道的网格。辅助隧道不能使用 <span class="cmdkey">reflect</span> 选项，因为要求辅助隧道仰拱与主隧道位于同一高程。必须调整 <span class="cmdkey">radial-cylinder</span> 基本体中确定辅助隧道半径的顶点。为此，先使用 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/zonegridpoint/cmd_zone.gridpoint.create.html#command:zone.gridpoint.create" title="Create a single gridpoint.  The gridpoint is created at position  v \ ..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">gridpoint</span> <span class="pre">create</span></code></a> 命令定义这些位置。一个 <span class="cmdkey">radial-cylinder</span> 基本体中的角点 <span class="cmdkey">point 8</span> 和 <span class="cmdkey">point 10</span>，以及另一个基本体中的 <span class="cmdkey">point 9</span> 和 <span class="cmdkey">point 11</span>，均定位在这些参考点上。这确保生成网格时，两基本体的边界网格点匹配。下图显示两条隧道的网格。<span class="math">\(x\)</span> = 0 处的竖直平面为对称面。</p>
+<div class="figure align-center" id="id10">
+<a class="reference internal image-reference" href="../../../../../_images/103F1030.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/103F1030.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 7：辅助隧道和主隧道的内部网格。</span></p>
+</div>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">*这会创建与网格刚性连接的衬砌。若需要衬砌与网格之间的连接能够滑动／分离，可以使用 <a class="reference internal" href="../../../../../common/sel/doc/manual/sel_manual/liners/commands/cmd_structure.liner.create.html#command:structure.liner.create" title="Create a liner. There are four different techniques of creation: by creating
+a collection of elements from a group of zone faces ( by-zone-face  or
+ by-block-face ); by creating a single element from four existing nodes
+( by-nodeids ), from a specified quadrilateral ( by-quadrilateral ),
+or from a triangle ( by-triangle )..."><code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">liner</span> <span class="pre">create</span></code></a> 命令指定。</p>
+</div>
+<p>本模型初始时，主隧道内填有网格单元，辅助隧道内未填充。本模型分析的开挖和施工阶段在本主题后文介绍。开挖主隧道之前，先为辅助隧道定义衬砌。通过 <a class="reference internal" href="../../../../../common/sel/doc/manual/sel_manual/shells/commands/cmd_structure.shell.create.html#command:structure.shell.create" title="Create a shell. The four main keywords articulate four different techniques
+of creation: by creating a collection of elements from a group of zone faces
+( by-face ); by creating a single element from four existing nodes ( by-nodes );
+from a specified quadrilateral ( by-quadrilateral ); or from a triangle
+( by-triangle )..."><code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">shell</span> <span class="pre">create</span></code></a> 命令实现，该命令创建由结构壳单元组成的隧道衬砌。*一般应使用结构单元表示薄隧道衬砌，因为与有限差分网格单元组成的衬砌相比，它们能够更准确地表示衬砌弯曲。有关 <span class="codename">FLAC3D</span> 结构单元功能的详细信息，见<a class="reference internal" href="../../../../../common/sel/doc/manual/sels.html#structural-elements-overview"><span class="std std-ref">结构单元</span>（Structural Elements）</a>一节。下一示例给出创建衬砌的命令。</p>
+<p><strong>在辅助隧道内创建衬砌</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 衬砌</span>
+<span class="nb">structure shell create</span><span class="n"> by</span><span class="o">-</span><span class="n">zone</span><span class="o">-</span><span class="n">face range cylinder </span><span class="sx">...</span>
+<span class="n">                                     end</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> end</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                     radius </span><span class="m m-Double">3</span>
+</pre></div>
+</div>
+<p>衬砌包含 240 个结构壳单元，通过 143 个结构节点连接与 <span class="codename">FLAC3D</span> 网格相连。带有衬砌的网格如下图所示。</p>
+<div class="figure align-center" id="id11">
+<a class="reference internal image-reference" href="../../../../../_images/103F1031.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/103F1031.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 8：辅助隧道内的衬砌单元。</span></p>
+</div>
+<p>最后，在隧道网格周围创建外边界网格。对于地下开挖分析，边界距开挖周边的距离应约为十倍开挖直径。但该距离可以随分析目的变化。如果主要关注破坏，模型边界可以更近；如果位移很重要，则可能需要增大至边界的距离。</p>
+<p>通过模型试算评估边界效应十分重要。首先使用 <span class="codename">FLAC</span> 建立粗略二维网格，在改变边界距离的同时，分别采用固定和自由边界条件，确定边界效应的上下界。随后，可以根据关注区域计算应力或位移的差异评估改变边界的影响。然后应在 <span class="codename">FLAC3D</span> 中使用粗网格测试边界位置。</p>
+<p>本模型的边界网格由 <span class="cmdkey">radial-tunnel</span> 和 <span class="cmdkey">brick</span> 基本体创建。使用 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.reflect.html#command:zone.reflect" title="All zones within the given range are reflected across the plane.  Note that
+group information is copied from the original to the new zones..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">reflect</span></code></a> 命令将网格关于 <span class="math">\(z\)</span> = 0 平面镜像。<span class="cmdkey">range</span> 关键字用于限制 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.reflect.html#command:zone.reflect" title="All zones within the given range are reflected across the plane.  Note that
+group information is copied from the original to the new zones..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">reflect</span></code></a> 的作用范围。见以下示例。</p>
+<p>本问题的最终网格如下图所示。</p>
+<p><strong>创建边界网格</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="c">; 外边界</span>
+<span class="nb">zone create</span><span class="n"> radial</span><span class="o">-</span><span class="n">tunnel point  </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="n"> </span><span class="m m-Double">7</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point  </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">50</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                          point  </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="n"> </span><span class="m m-Double">7</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point  </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">15</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                          point  </span><span class="m m-Double">4</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">50</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point  </span><span class="m m-Double">5</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">15</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                          point  </span><span class="m m-Double">6</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">50</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">)</span><span class="n"> point  </span><span class="m m-Double">7</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">50</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                          point  </span><span class="m m-Double">8</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">23</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point  </span><span class="m m-Double">9</span><span class="n"> </span><span class="p">(</span><span class="n"> </span><span class="m m-Double">7</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">8</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                          point </span><span class="m m-Double">10</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">23</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">11</span><span class="n"> </span><span class="p">(</span><span class="n"> </span><span class="m m-Double">7</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">8</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                          size </span><span class="m m-Double">6</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> ratio </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1.1</span>
+<span class="nb">zone create</span><span class="n"> brick point </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">8</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="n"> </span><span class="m m-Double">7</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">8</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">8</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  point </span><span class="m m-Double">4</span><span class="n"> </span><span class="p">(</span><span class="n"> </span><span class="m m-Double">7</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">8</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">5</span><span class="n"> </span><span class="p">(</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  point </span><span class="m m-Double">6</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">15</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">7</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">15</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">,</span><span class="m m-Double">50</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  size </span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> ratio </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1.1</span>
+<span class="nb">zone reflect</span><span class="n"> dip </span><span class="m m-Double">0</span><span class="n"> origin </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                   range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">23</span><span class="n"> position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">50</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">8</span><span class="n"> </span><span class="m m-Double">50</span>
+<span class="nb">zone reflect</span><span class="n"> dip </span><span class="m m-Double">0</span><span class="n"> origin </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                   range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">23</span><span class="n"> </span><span class="m m-Double">50</span><span class="n"> position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">50</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">50</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="twotunnels-example-finalgrid">
+<a class="reference internal image-reference" href="../../../../../_images/103F1032.png"><img alt="../../../../../_images/103F1032.png" src="../../../../../_images/103F1032.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 9：辅助隧道和主隧道的完整网格。</span></p>
+</div>
+</div>
+<div class="section" id="grid-generation-with-fish">
+<span id="prims-fish"></span><h3>使用 <span class="codename">FISH</span> 生成网格</h3>
+<p><span class="codename">FISH</span> 可用于指定不易通过 <span class="codename">FLAC3D</span> 内置基本体获得的几何形状。也可以使用 <span class="codename">FISH</span> 创建自己的基本体形状。以下示例构建球形空腔周围沿径向渐变的网格。只生成八分之一网格，随后可将网格镜像，以创建完整球形空腔。</p>
+<p>以 <span class="cmdkey">radial-brick</span> 基本体为基础创建“radsphere”形状。首先定义描述立方体内球体的参数：球形空腔半径、外立方体边长、沿外立方体边的网格单元数量，以及从内立方体到外立方体的径向网格单元数量。然后定义 <span class="cmdkey">radial-brick</span>，使球形空腔内接于内立方体。下一示例列出以 1.2 的等比系数创建初始网格的命令，网格见其后图示。</p>
+<p><strong>创建球形空腔周围径向渐变网格的参数</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="ni">[</span><span class="k">global</span><span class="ni"> rad</span><span class="p">=</span><span class="m m-Double">4.0</span><span class="ni">    ]</span><span class="n"> </span><span class="c">; 球形空腔半径</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> len</span><span class="p">=</span><span class="m m-Double">10.0</span><span class="ni">   ]</span><span class="n"> </span><span class="c">; 外围立方体的边长</span>
+<span class="nb">zone create</span><span class="n"> radial</span><span class="o">-</span><span class="n">brick edge </span><span class="ni">[len]</span><span class="n"> size </span><span class="m m-Double">6</span><span class="p">,</span><span class="m m-Double">6</span><span class="p">,</span><span class="m m-Double">6</span><span class="p">,</span><span class="m m-Double">10</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                         rat </span><span class="m m-Double">1.0</span><span class="n"> </span><span class="m m-Double">1.0</span><span class="n"> </span><span class="m m-Double">1.0</span><span class="n"> </span><span class="m m-Double">1.2</span><span class="n"> dim </span><span class="ni">[rad]</span><span class="n"> </span><span class="ni">[rad]</span><span class="n"> </span><span class="ni">[rad]</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id12">
+<a class="reference internal image-reference" href="../../../../../_images/103F1044.png"><img alt="../../../../../_images/103F1044.png" src="../../../../../_images/103F1044.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 10：用于创建球形空腔周围径向渐变网格的初始 radial-brick 基本体。</span></p>
+</div>
+<p>现在重新定位径向砖体内的网格点，形成球形空腔周围的网格。<span class="codename">FISH</span> 函数 <span class="cmdkey">make_sphere</span> 遍历所有网格点，并沿从球心到外部盒体各侧面网格点的径向线进行线性插值，重新映射其坐标。下一示例给出 <span class="codename">FISH</span> 函数 <span class="cmdkey">make_sphere</span>，其后图示显示最终网格。</p>
+<p><strong>用于定位网格点以生成球形物体周围网格的 FISH 函数</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish define</span><span class="ni"> make_sphere</span>
+<span class="ni">    </span><span class="c">; 遍历所有网格点（GP），并重新映射其坐标：</span>
+<span class="ni">    </span><span class="c">;  假定 len&gt;rad</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> </span><span class="k">local</span><span class="ni"> gp </span><span class="k">gp.list</span>
+<span class="ni">        </span><span class="k">local</span><span class="ni"> p </span><span class="p">=</span><span class="ni"> </span><span class="k">gp.pos</span><span class="p">(</span><span class="ni">gp</span><span class="p">)</span><span class="ni"> </span><span class="c">; 获取网格点坐标：p</span>
+<span class="ni">        </span><span class="k">local</span><span class="ni"> dist </span><span class="p">=</span><span class="ni"> </span><span class="k">math.mag</span><span class="p">(</span><span class="ni">p</span><span class="p">)</span>
+<span class="ni">        </span><span class="k">if</span><span class="ni"> dist</span><span class="o">&gt;</span><span class="m m-Double">0</span><span class="ni"> </span><span class="k">then</span>
+<span class="ni">            </span><span class="k">local</span><span class="ni"> k </span><span class="p">=</span><span class="ni"> rad</span><span class="o">/</span><span class="ni">dist</span>
+<span class="ni">            </span><span class="k">local</span><span class="ni"> a </span><span class="p">=</span><span class="ni"> p </span><span class="o">*</span><span class="ni"> k </span><span class="c">; 计算 a：沿径向位于 p“下方”的球面上的点。</span>
+<span class="ni">            </span><span class="k">local</span><span class="ni"> maxp </span><span class="p">=</span><span class="ni"> </span><span class="k">math.max</span><span class="p">(</span><span class="ni">p</span><span class="o">-&gt;</span><span class="ni">x</span><span class="p">,</span><span class="ni">p</span><span class="o">-&gt;</span><span class="ni">y</span><span class="p">,</span><span class="ni">p</span><span class="o">-&gt;</span><span class="ni">z</span><span class="p">)</span>
+<span class="ni">            k </span><span class="p">=</span><span class="ni"> len</span><span class="o">/</span><span class="ni">maxp</span>
+<span class="ni">            </span><span class="k">local</span><span class="ni"> b </span><span class="p">=</span><span class="ni"> p </span><span class="o">*</span><span class="ni"> k </span><span class="c">; 计算 b：外围立方体边界上的点， </span>
+<span class="ni">                            </span><span class="c">; 沿径向位于 p 的“上方”。</span>
+<span class="ni">            </span><span class="k">local</span><span class="ni"> u </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="ni">maxp</span><span class="o">-</span><span class="ni">rad</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="ni">len</span><span class="o">-</span><span class="ni">rad</span><span class="p">)</span><span class="ni"> </span><span class="c">; 线性插值：P=A+u*(B-A)</span>
+<span class="ni">            </span><span class="k">gp.pos</span><span class="p">(</span><span class="ni">gp</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> a </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="ni">b</span><span class="o">-</span><span class="ni">a</span><span class="p">)</span><span class="o">*</span><span class="ni">u</span>
+<span class="ni">        </span><span class="k">end_if</span>
+<span class="ni">    </span><span class="k">end_loop</span>
+<span class="nb">end</span>
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id13">
+<a class="reference internal image-reference" href="../../../../../_images/103F1045.png"><img alt="../../../../../_images/103F1045.png" src="../../../../../_images/103F1045.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 11：球形空腔周围沿径向渐变的网格。</span></p>
+</div>
+</div>
+</div>
+<div class="section" id="extrusion-based-grids">
+<span id="extrusionbasedgrids"></span><h2>基于拉伸的网格</h2>
+<p><span class="math">\(i\)</span> <a class="reference internal" href="../../../../extruder/doc/manual/extrusion_pane/extrusionpane.html#extrusion-pane"><span class="std std-ref">拉伸</span>（Extrusion）</a>窗格可将二维几何形状沿第三维拉伸（线性延伸），由此创建网格。</p>
+<p>在 <span class="math">\(i\)</span> <a class="reference internal" href="../../../../extruder/doc/manual/extrusion_pane/extrusionpane.html#extrusion-pane"><span class="std std-ref">拉伸</span>（Extrusion）</a>窗格中处理拉伸体时，所有改变模型状态的操作都会生成为命令。这些命令会在 <span class="math">\(i\)</span> <a class="reference internal" href="../../../../../common/docproject/source/manual/program_guide/mechanics/commands/console_pane/consolepane.html#theconsolepane"><span class="std std-ref">控制台</span>（Console）</a>窗格中回显，并记录在 <span class="math">\(i\)</span> <a class="reference internal" href="../../../../../common/docproject/source/manual/program_guide/mechanics/savedstates/staterecord_pane/staterecordoverview.html#staterecordpane"><span class="std std-ref">状态记录</span>（State Record）</a>窗格中。可以完全通过 <span class="math">\(i\)</span> <a class="reference internal" href="../../../../extruder/doc/manual/extrusion_pane/extrusionpane.html#extrusion-pane"><span class="std std-ref">拉伸</span>（Extrusion）</a>窗格创建网格单元，然后从保存文件而非创建数据文件开始下一阶段建模；有时这种方式更合适。用于创建几何模型状态的命令始终随保存文件存储。不过，使用数据文件通常更有优势，因为它更小，而且在必要时重建几何体更方便。可以使用 <span class="math">\(i\)</span> <a class="reference internal" href="../../../../../common/docproject/source/manual/program_guide/mechanics/savedstates/staterecord_pane/staterecordoverview.html#staterecordpane"><span class="std std-ref">状态记录</span>（State Record）</a>窗格，将用于创建拉伸体的所有命令导出到数据文件。这些命令的文档见<a class="reference internal" href="../../elements/extrude/extrude.html#extrude"><span class="std std-ref">拉伸</span>（Extrude）</a>一节。</p>
+<p><span class="math">\(i\)</span> <a class="reference internal" href="../../../../extruder/doc/manual/extrusion_pane/extrusionpane.html#extrusion-pane"><span class="std std-ref">拉伸</span>（Extrusion）</a>窗格所提供工具的用法，在本文档的 <span class="math">\(i\)</span> <a class="reference internal" href="../../../../extruder/doc/manual/extrusion_pane/extrusionpane.html#extrusion-pane"><span class="std std-ref">拉伸</span>（Extrusion）</a>窗格一节中有详细说明。以下内容概述如何用它创建网格。</p>
+<div class="section" id="create-a-set">
+<h3>创建集合</h3>
+<p>开始拉伸前，必须在<a class="reference internal" href="../../../../extruder/doc/manual/extrusion_pane/extrusionpane.html#extrusion-pane"><span class="std std-ref">拉伸窗格</span>（Extrusion Pane）</a>中创建新集合（如果窗格不可见，可通过主菜单<span class="menuselection">窗格 ‣ 拉伸</span>打开）。可以定义多个拉伸集合。工具栏上的“拉伸体”选择器用于在已定义集合之间切换。一次只能激活一个集合。</p>
+</div>
+<div class="section" id="define-the-2d-geometry">
+<h3>定义二维几何形状</h3>
+<p><em>拉伸</em>窗格有两种视图模式：“构建”视图（<img alt="constview" src="../../../../../_images/construction_active.png"/>）和“拉伸”视图（<img alt="extruview" src="../../../../../_images/extrusion_active.png"/>）。前者用于定义二维几何形状，后者用于定义线性拉伸，下文下一节将介绍。</p>
+<p>通过绘制点及点之间的边来定义二维几何形状。点可通过坐标定义，也可“徒手”定义。边可以是直线、曲线或圆弧。曲线可通过控制点调整为任意形状，所含控制点数量可按需要增加。使用分割工具还可沿边进一步细化。</p>
+<div class="figure align-center" id="id14">
+<img alt="../../../../../_images/extrude1.png" src="../../../../../_images/extrude1.png"/>
+<p class="caption"><span class="caption-text">图 12：定义点（左）和边（右）。沿边的“叉号”预览网格划分。绘制一条边时，默认先为其分配三个网格单元。</span></p>
+</div>
+<p>当若干边组合成三角形或四边形时，可以将其定义为块体。形状一经“成块”，便可对其划分或重新划分网格，或进行分组。在 <span class="codename">FLAC3D</span> 中将拉伸体生成为网格时，只有拉伸集合中已成块的部分才会创建网格单元。</p>
+<div class="figure align-center" id="id15">
+<a class="reference internal image-reference" href="../../../../../_images/extrude2.png"><img alt="../../../../../_images/extrude2.png" src="../../../../../_images/extrude2.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 13：一组点和边组合成四边形或三角形（左）；随后以交互方式将其转化为块体（右）。</span></p>
+</div>
+</div>
+<div class="section" id="zoning-and-other-operations">
+<h3>网格划分与其他操作</h3>
+<p>通过指定各边所需网格单元数量，沿边设置网格划分。网格单元设置将按需在模型中传递。可对块体应用倍增系数，将网格划分按整数倍加密。</p>
+<p>此外，还提供自动网格划分功能，可通过定义统一网格单元长度、几何体最大跨度方向所需网格单元数量，或几何体内网格单元总数，一次对二维几何形状中的所有块体划分网格。</p>
+<p><strong>分组</strong>：可以在“构建”视图中选择一个或多个点、边或块体，并将其赋予分组，也可在“拉伸”视图中为线段和节点赋予分组。完成后，从已分组点、边或块体生成的任何网格单元，都会归入指定名称的网格单元分组。“构建”视图中指定的分组位于“Construction”槽位，“拉伸”视图中指定的分组位于“Extrusion”槽位。此外，每个块体生成的网格单元会自动在“Block”槽位获得一个唯一名称，而“拉伸”视图中的每个线段会在“Segment”槽位获得一个唯一名称。</p>
+<p><strong>分割</strong>：分割工具可用于分割边或块体。执行分割操作时，分割会根据需要传播到所有现有边和块体。</p>
+<p><strong>描摹</strong>：可以导入位图或矢量（DXF）图像，调整其大小和方向，并用作构建二维几何形状的“描摹”参考。对于后者，DXF 保留其对象属性，因此在构建拉伸体的点和边时可以捕捉到它。</p>
+</div>
+<div class="section" id="define-the-extrusion">
+<h3>定义拉伸</h3>
+<p>绘制二维几何形状并定义块体后，切换到“拉伸”视图，定义拉伸范围及其划分（分块），从而完成拉伸体。这是一维操作：用户在水平线上设置点以划分块体，随后通过各线段定义该线段所代表块体内部的网格划分。</p>
+<div class="figure align-center" id="id16">
+<img alt="../../../../../_images/extrude3.png" src="../../../../../_images/extrude3.png"/>
+<p class="caption"><span class="caption-text">图 14：在“拉伸”视图中确定拉伸范围，并将其划分为带网格的块体。</span></p>
+</div>
+<p>第三维完全指定后，即可从拉伸集合创建网格单元。也可以选择将拉伸集合的三维块体集合导出到<a class="reference internal" href="../../../../body/doc/manual/building-blocks_pane/building-blocks.html#building-blocks-pane"><span class="std std-ref">构建块窗格</span>（Building Blocks Pane）</a>中的新<em>构建块</em>集合（见下一主题<a class="reference internal" href="#buildingblocksbasedgrids"><span class="std std-ref">基于构建块的网格</span>（Building Blocks-Based Grids）</a>），以便在由集合生成网格单元之前进一步编辑和细化。</p>
+<div class="figure align-center" id="id17">
+<img alt="../../../../../_images/extrude4.png" src="../../../../../_images/extrude4.png"/>
+<p class="caption"><span class="caption-text">图 15：从拉伸集合创建的网格单元。</span></p>
+</div>
+<p>将上图与<a class="reference internal" href="#twotunnels-grid-example"><span class="std std-ref">为仰拱高程相同的两条隧道创建网格</span>（creating a grid for two tunnels with the same invert elevation）</a>示例中的<a class="reference internal" href="#twotunnels-example-finalgrid"><span class="std std-ref">最终网格</span>（final grid）</a>比较。可以看到，所得网格相近，但这里在拉伸体顶部添加了地形，并使网格划分沿拉伸方向渐变。</p>
+</div>
+</div>
+<div class="section" id="building-blocks-based-grids">
+<span id="buildingblocksbasedgrids"></span><h2>基于构建块的网格</h2>
+<p><a class="reference internal" href="../../../../body/doc/manual/building-blocks_pane/building-blocks.html#building-blocks-pane"><span class="std std-ref">构建块窗格</span>（Building Blocks Pane）</a>提供了一种创建网格的功能：将三维“构建块”相互拼合，再划分网格。</p>
+<p>在 <span class="math">\(i\)</span> <a class="reference internal" href="../../../../body/doc/manual/building-blocks_pane/building-blocks.html#building-blocks-pane"><span class="std std-ref">构建块</span>（Building Blocks）</a>窗格中处理拉伸体时，所有改变模型状态的操作都会生成为命令。这些命令会在 <span class="math">\(i\)</span> <a class="reference internal" href="../../../../../common/docproject/source/manual/program_guide/mechanics/commands/console_pane/consolepane.html#theconsolepane"><span class="std std-ref">控制台</span>（Console）</a>窗格中回显，并记录在 <span class="math">\(i\)</span> <a class="reference internal" href="../../../../../common/docproject/source/manual/program_guide/mechanics/savedstates/staterecord_pane/staterecordoverview.html#staterecordpane"><span class="std std-ref">状态记录</span>（State Record）</a>窗格中。可以完全通过 <span class="math">\(i\)</span> <a class="reference internal" href="../../../../body/doc/manual/building-blocks_pane/building-blocks.html#building-blocks-pane"><span class="std std-ref">构建块</span>（Building Blocks）</a>窗格创建网格单元，然后从保存文件而非创建数据文件开始下一阶段建模；有时这种方式更合适。用于创建几何模型状态的命令始终随保存文件存储。不过，使用数据文件通常更有优势，因为它更小，而且在必要时重建几何体更方便。可以使用 <span class="math">\(i\)</span> <a class="reference internal" href="../../../../../common/docproject/source/manual/program_guide/mechanics/savedstates/staterecord_pane/staterecordoverview.html#staterecordpane"><span class="std std-ref">状态记录</span>（State Record）</a>窗格，将用于创建拉伸体的所有命令导出到数据文件。这些命令的文档见<a class="reference internal" href="../../elements/extrude/extrude.html#extrude"><span class="std std-ref">拉伸</span>（Extrude）</a>一节。</p>
+<p><span class="math">\(i\)</span> <a class="reference internal" href="../../../../body/doc/manual/building-blocks_pane/building-blocks.html#building-blocks-pane"><span class="std std-ref">构建块</span>（Building Blocks）</a>窗格所提供工具的用法，在本文档的 <span class="math">\(i\)</span> <a class="reference internal" href="../../../../body/doc/manual/building-blocks_pane/building-blocks.html#building-blocks-pane"><span class="std std-ref">构建块</span>（Building Blocks）</a>一节中有详细说明。以下内容概述如何用它创建网格。</p>
+<div class="section" id="create-a-building-blocks-set">
+<h3>创建构建块集合</h3>
+<p>开始使用构建块前，必须在<a class="reference internal" href="../../../../body/doc/manual/building-blocks_pane/building-blocks.html#building-blocks-pane"><span class="std std-ref">构建块窗格</span>（Building Blocks Pane）</a>中创建新集合（如果窗格不可见，可通过主菜单<span class="menuselection">窗格 ‣ 构建块</span>打开）。可以定义多个集合。单击窗格空白区域的任意位置，即可创建初始集合。工具栏的<em>块体集合</em>选择器用于在已定义集合间切换。一次只能激活一个集合。</p>
+</div>
+<div class="section" id="snap-blocks-together">
+<h3>将块体吸附拼接</h3>
+<p>初始化新集合时，会提供一个块体（假定已在前一对话框中勾选相应复选框）。可以使用<em>添加块体</em>工具（<img alt="addblocks" src="../../../../../_images/add_blocks_active.png"/>）添加块体，逐步构建集合：先选择现有块体上要添加块体的面，再滚动鼠标滚轮选择待添加块体的类型。四边形面上可添加六面体“砖体”，或两种方向之一的“楔体”。三角形面上可添加“楔体”或“四面体”。</p>
+<div class="figure align-center" id="id18">
+<img alt="../../../../../_images/bblocks1.png" src="../../../../../_images/bblocks1.png"/>
+<p class="caption"><span class="caption-text">图 16：左：使用“添加块体”工具选择现有块体的一个面；中：滚动鼠标滚轮切换可添加的块体类型；右：单击所需的“预览块体”，将其放置到位。</span></p>
+</div>
+<p>块体由点（顶点）、边和面组成。可以对整个块体或其组成部分进行操作。创建块体时，默认沿每条边划分三个网格单元。</p>
+<div class="figure align-center" id="id19">
+<img alt="../../../../../_images/bblocks2.png" src="../../../../../_images/bblocks2.png"/>
+<p class="caption"><span class="caption-text">图 17：在基本“选择”模式下，显示块体的组成部分（面、边、点）。面上灰色填充的网格表示块体的网格划分。</span></p>
+</div>
+<p>可以按需要并在合理范围内，单独或成组地移动、缩放、旋转块体或其同类组成部分（例如，一组点可以移动或旋转，但由于点没有尺寸，不能调整大小；类似地，单个点不能旋转）。可通过屏幕控件手动完成这些操作；也可以在<a class="reference internal" href="../../../../../common/docproject/source/manual/program_guide/programwindow/controlpanel/controlpanel_overview.html#controlpaneloverview"><span class="std std-ref">控制面板</span>（Control Panel）</a>中，对选定对象指定各项性质（位置、旋转等）。</p>
+<div class="figure align-center" id="id20">
+<img alt="../../../../../_images/bblocks3.png" src="../../../../../_images/bblocks3.png"/>
+<p class="caption"><span class="caption-text">图 18：选择并移动块体的一条边。</span></p>
+</div>
+<p>尽管<a class="reference internal" href="../../../../body/doc/manual/building-blocks_pane/building-blocks.html#building-blocks-pane"><span class="std std-ref">构建块窗格</span>（Building Blocks Pane）</a>还有许多其他功能（在下文各节介绍），但最简单情况下，仅按上述步骤就可以构建整个网格。当几何形状完成并按需设置网格划分后，按下<em>构建块</em>窗格中的“生成网格单元”按钮（<img alt="zoneit" src="../../../../../_images/generate_zones_active.png"/>），即可生成网格单元，并在<em>模型</em>窗格中显示。</p>
+<div class="figure align-center" id="id21">
+<img alt="../../../../../_images/bblocks4.png" src="../../../../../_images/bblocks4.png"/>
+<p class="caption"><span class="caption-text">图 19：由构建块集合生成的网格单元。请注意，构建块集合中每个块体内的网格单元均按块体自动归为一组（这里以网格单元着色表示）。</span></p>
+</div>
+</div>
+<div class="section" id="refinement-operations-and-utilities">
+<h3>细化操作与实用工具</h3>
+<p>上述简单图示说明了<em>构建块</em>功能的基本概念。借助其他工具和操作，构建基于构建块的网格时可以实现复杂得多的几何形状，其中部分功能包括：</p>
+<ul class="simple">
+<li>导入 CAD 数据（DXF、STL 等），可构建与现有三维几何形状吻合的构建块集合（可视为描摹）。<ul>
+<li>CAD 数据是支持点捕捉的对象，便于塑造块体以适应导入的几何形状。</li>
+</ul>
+</li>
+<li>可以分割边；分割会自动传播到现有块体。</li>
+<li>添加控制点后，可以将边弯曲为任意形状。</li>
+<li>可按需隐藏／显示块体。</li>
+<li>可以复制和粘贴块体。</li>
+<li>未连接的块体可以通过匹配相同类型的面相互吸附拼接。</li>
+<li>可以复制构成一个层的选定块体组，并为其指定变化的厚度。</li>
+<li>可以以交互方式设置／修改对象性质，也可通过<a class="reference internal" href="../../../../../common/docproject/source/manual/program_guide/programwindow/controlpanel/controlpanel_overview.html#controlpaneloverview"><span class="std std-ref">控制面板</span>（Control Panel）</a>精确指定。</li>
+<li>可以“循环切换”三角形面上网格单元的方向。</li>
+<li>同类对象可以归为一组；从这些对象派生的网格单元在生成时将保留该分组赋值。</li>
+<li>网格划分有多种控制方式（见下一主题）。</li>
+<li>提供预先构建的形状与几何体库。</li>
+</ul>
+<p>如上所述，本主题仅用于概述<em>构建块</em>功能。有关上述功能的详细说明及使用指导，见<a class="reference internal" href="../../../../body/doc/manual/building-blocks_pane/building-blocks.html#building-blocks-pane"><span class="std std-ref">构建块窗格</span>（Building Blocks Pane）</a>各主题。</p>
+<div class="figure align-center" id="id22">
+<a class="reference internal image-reference" href="../../../../../_images/bblocks5.png"><img alt="../../../../../_images/bblocks5.png" src="../../../../../_images/bblocks5.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 20：预建块体库中的“圆柱部件”块体。</span></p>
+</div>
+</div>
+<div class="section" id="zoning">
+<h3>网格划分</h3>
+<p>沿块体边设置网格划分。“网格单元”属性指定沿边应有多少个网格单元。可使用比值或系数，在需要较小网格单元的边端部设置更细的尺寸。可为块体设置倍增系数，使块体内现有网格单元数量按给定倍数增加。自动网格划分功能允许一次设置整个构建块集合的网格划分。其选项包括：全体采用统一网格单元尺寸；指定沿模型最大尺寸方向使用的网格单元数量；或指定集合中的网格单元总数。</p>
+<div class="figure align-center" id="id23">
+<img alt="../../../../../_images/bblocks6.png" src="../../../../../_images/bblocks6.png"/>
+<p class="caption"><span class="caption-text">图 21：“带墙体的圆柱隧道 90 度转弯”预建块体。通过比值设置，加密了隧道周围的网格单元。隧道上方块体已隐藏，以便访问和查看块体集合内部。</span></p>
+</div>
+</div>
+</div>
+<div class="section" id="grids-from-outside-flac3d">
+<span id="thirdpartygrids"></span><h2>来自 <span class="codename">FLAC3D</span> 外部的网格</h2>
+<p>除内置网格生成方法外，还可以导入在 <span class="codename">FLAC3D</span> 之外由第三方应用创建的网格。目前，<span class="codename">FLAC3D</span> 支持直接导入三种不同文件格式：</p>
+<ul class="simple">
+<li><span class="codename">FLAC3D</span> 网格文件（*.f3grid）</li>
+<li><em>ANSYS</em> 文件（*.lis）（请注意，此格式文件通常成对出现：先加载节点文件，再加载单元文件。）</li>
+<li><em>ABAQUS</em> 文件（*.inp）</li>
+</ul>
+<p><span class="codename">FLAC3D</span> 网格文件是 Itasca 开发的格式，相对于其他格式具有两个主要优点：</p>
+<ul class="simple">
+<li>可导出并保留元数据，即网格单元、面和网格点的分组及附加变量赋值。</li>
+<li>提供二进制版本，文件更小，导入更快。</li>
+</ul>
+<p>可以通过 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.import.html#command:zone.import" title="Import a grid from a file.  The file named  s  is imported. A path can
+be part of the file name. If no extension is specified,  .f3grid  is assumed...">导入网格（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">import</span></code>）</a> 命令、主菜单中的<span class="menuselection">文件 ‣ 网格</span>项，将这些文件导入 <span class="codename">FLAC3D</span> 模型；对于 *.f3grid 文件，还可在<a class="reference internal" href="../../../../../common/docproject/source/manual/program_guide/mechanics/projects/openintoprojectdialog.html#theopenintoprojectdialog"><span class="std std-ref">打开到项目</span>（Open into Project）</a>对话框中选择文件进行导入。</p>
+<p>导入后，文件应作为条目出现在 <span class="math">\(i\)</span> <a class="reference internal" href="../../../../../common/docproject/source/manual/program_guide/mechanics/projects/project_pane/projectsoverview.html#theprojectpane"><span class="std std-ref">项目</span>（Project）</a>窗格的“数据文件”部分，并添加到为归档或传递项目而创建的任何打包文件中。</p>
+<p>几乎所有第三方网格划分程序都支持以 <em>ANSYS</em> 或 <em>ABAQUS</em> 格式（或两者）导出。如果您已有高级网格生成工具，或因使用经验而偏好某种工具，可以继续使用这些工具创建 <span class="codename">FLAC3D</span> 模型。一些示例包括：</p>
+<ul class="simple">
+<li><a class="reference external" href="https://cubit.sandia.gov/">CUBIT</a></li>
+<li><a class="reference external" href="http://www.altairhyperworks.com/product/HyperMesh">HyperMesh</a></li>
+<li><a class="reference external" href="http://truegrid.com/home.html">TrueGrid</a></li>
+</ul>
+<p>Itasca 提供一款与广泛使用的 CAD 程序 <a class="reference external" href="https://www.rhino3d.com/">Rhino 软件（Rhino）</a> 配合的强大网格生成工具，名为<a class="reference internal" href="#rhinogriddle">Griddle 网格工具（<span class="std std-ref">Griddle</span>）</a>。其简要概述见<a class="reference internal" href="#rhinogriddle"><span class="std std-ref">来自 Rhino/Griddle 的网格</span>（Grids from Rhino/Griddle）</a>。</p>
+<div class="section" id="grids-from-rhino-griddle">
+<span id="rhinogriddle"></span><h3>来自 <em>Rhino/Griddle</em> 的网格</h3>
+<p><em>Rhinoceros</em>（<em>Rhino</em>）是基于 NURBS 曲线和曲面表示的 CAD 软件，可在三维空间中创建由网格曲面组成的封闭体积。<a class="footnote-reference" href="#id2" id="id1">[1]</a> <em>Griddle</em> 是 Itasca 功能强大的自动网格生成器，可创建供 <span class="codename">FLAC3D</span> 或 <em>3DEC</em> 使用的全四面体或以六面体为主的非结构网格。这些工具一并销售，但与 <span class="codename">FLAC3D</span> <em>分开</em>销售。它们是为 <span class="codename">FLAC3D</span> 创建复杂网格的最先进方法。当 <span class="codename">FLAC3D</span> 模型所需网格超出 <span class="codename">FLAC3D</span> 内置功能时，应考虑这些工具。本主题为可能需要这样做的 <span class="codename">FLAC3D</span> 用户提供简要介绍。</p>
+<p>使用 <em>Rhino/Griddle</em> 创建复杂网格的流程很直接。首先，在 <em>Rhino</em> 中构建或导入模型几何形状。接着，应用 <em>Rhino</em> 的表面网格划分。然后使用 <em>Griddle</em>，自动将表面<em>重新</em>划分为所需密度和类型（三角形、四边形）的网格。随后调用 <em>Griddle</em> 体网格划分器，用网格单元填充几何体（全四面体或以六面体为主）。工作流程如下图所示。</p>
+<div class="figure align-center" id="id24">
+<img alt="../../../../../_images/rhinogriddle1.png" src="../../../../../_images/rhinogriddle1.png"/>
+<p class="caption"><span class="caption-text">图 22：从左到右：在 <em>Rhino</em> 中描述初始体积；使用 <em>Rhino</em> 自带网格划分工具对表面进行初始划分；使用 <em>Griddle</em> 按用户要求重新划分表面；以重新划分的表面为基础对体积划分网格单元，再导入 <span class="codename">FLAC3D</span>。</span></p>
+</div>
+<p>为获得高质量数值解，一般优先采用全六面体网格。不过，<em>Rhino/Griddle</em> 能够创建以六面体为主的网格，即主要由六面体单元组成，必要时也使用楔体、棱锥和四面体单元以适应几何形状；如果这能大幅降低网格复杂性带来的难度，则可能是更好的权衡。</p>
+<p>考虑以下两个网格。第一个为全六面体网格。为生成它，必须将基础几何体分解（分块）为六面体、四面体和棱柱实体。该步骤耗时较长。本例的网格生成总时间为五小时。</p>
+<div class="figure align-center">
+<img alt="../../../../../_images/rhinogriddle2.png" src="../../../../../_images/rhinogriddle2.png"/>
+</div>
+<p>第二个网格以六面体为主。使用 <em>Griddle</em> 时，仅以隧道和土层的边界面作为输入，无需将模型分解为简单基本体形状。因此，该网格生成总时间不足一小时。</p>
+<div class="figure align-center">
+<img alt="../../../../../_images/rhinogriddle3.png" src="../../../../../_images/rhinogriddle3.png"/>
+</div>
+</div>
+</div>
+<div class="section" id="grid-generation-additional-facilities">
+<span id="gridadditional"></span><h2>网格生成：附加功能</h2>
+<p>这些附加网格创建功能有一个共同点：都以现有网格作为进一步修改的起点。因此，可以与其他任何网格生成方式组合使用。</p>
+<p><a class="reference internal" href="#griddensifying"><span class="std std-ref">加密</span>（Densify）</a>操作将网格单元细分为多个网格单元，使用户可在特别关注的区域，对粗网格进行更精细的离散。</p>
+<p>将<a class="reference internal" href="../../../../../3dec/docproject/source/modeling/problemsolving/workingwithgeometricdata.html#commandfiltering"><span class="std std-ref">基于几何的筛选</span>（Geometry-based filtering）</a>与<a class="reference internal" href="#griddensifying"><span class="std std-ref">加密</span>（Densification）</a>结合，可生成<a class="reference internal" href="#geometrydensifying"><span class="std std-ref">八叉树网格</span>（Octree meshes）</a>。</p>
+<p>最后，可以从现有网格单元表面向不规则几何表面拉伸新网格单元。这可用于创建复杂分层（只要各层不相交）或不规则地表地形。见<a class="reference internal" href="#geometrytopography"><span class="std std-ref">地表地形与分层</span>（Surface Topography and Layering）</a>。</p>
+<div class="section" id="densifying-grids">
+<span id="griddensifying"></span><h3>网格加密</h3>
+<p>先生成简单网格，再通过 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.densify.html#command:zone.densify" title="|...">加密网格单元（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">densify</span></code>）</a> 命令加密。以此方式创建的新网格单元和面，会复制原对象的分组赋值及附加变量值，但会失去所有材料模型、应力和其他状态信息。</p>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">也可以在<a class="reference internal" href="../../../../../common/docproject/source/manual/program_guide/mechanics/modelpane/modelpane.html#model-pane"><span class="std std-ref">模型窗格</span>（Model Pane）</a>中以交互方式加密网格单元。选择一组网格单元后，在操作列表中选择“加密”（<img alt="densify" src="../../../../../_images/densifyzones_active1.png"/>）选项。</p>
+</div>
+<div class="figure align-center" id="id25">
+<a class="reference internal image-reference" href="../../../../../_images/densify1.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/densify1.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 25：原始网格。</span></p>
+</div>
+<p>以下示例给出将现有网格单元每条边分为两段、从而加密简单网格的命令。上图为原始网格；示例后的图为加密网格。</p>
+<p><strong>通过细分原始网格单元的每条边加密网格</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">zone create</span><span class="n"> wedge size </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">4</span>
+<span class="n">plot </span><span class="s">'Wedge'</span><span class="n"> export bitmap filename </span><span class="s">'densify1.png'</span>
+<span class="c">;</span>
+<span class="nb">zone densify</span><span class="n"> segments </span><span class="m m-Double">2</span>
+<span class="n">plot </span><span class="s">'Wedge'</span><span class="n"> export bitmap filename </span><span class="s">'densify2.png'</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id26">
+<a class="reference internal image-reference" href="../../../../../_images/densify2.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/densify2.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 26：通过细分网格单元各边得到的加密网格。</span></p>
+</div>
+<p>除指定划分段数外，还可以通过 <span class="cmdkey">edge-limit</span> 关键字指定细化网格单元的最大长度。无论如何使用 <span class="cmdkey">edge-limit</span> 或 <span class="cmdkey">segments</span>，<span class="codename">FLAC3D</span> 始终通过将网格单元边划分为整数段来加密网格。下一示例说明如何将边长限值设为 0.5，从而加密 <span class="math">\(z\)</span> 坐标在 2 至 4 之间范围内的网格。</p>
+<p><strong>通过指定边长限值加密网格</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">4</span>
+<span class="n">plot </span><span class="s">'Brick'</span><span class="n"> export bitmap filename </span><span class="s">'densify3.png'</span>
+<span class="c">;</span>
+<span class="nb">zone densify</span><span class="n"> edge</span><span class="o">-</span><span class="n">limit </span><span class="m m-Double">0.5</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">2</span><span class="n"> </span><span class="m m-Double">4</span>
+<span class="nb">zone attach</span><span class="n"> by</span><span class="o">-</span><span class="n">face</span>
+<span class="c">;</span>
+<span class="n">plot </span><span class="s">'Brick'</span><span class="n"> export bitmap filename </span><span class="s">'densify4.png'</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id27">
+<a class="reference internal image-reference" href="../../../../../_images/densify3.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/densify3.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 27：原始网格。</span></p>
+</div>
+<p>本例中，<a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.attach.html#kwd:zone.attach.by-face" title="Searches the mesh for all surface faces in the range.  For this purpose a surface
+face...">单元附着按面（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">attach</span> <span class="pre">by-face</span></code>）</a> 命令用于将各子网格的面刚性连接，形成单一网格。如果不同网格单元的面沿边网格点数量不同，应始终在 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.densify.html#command:zone.densify" title="|...">加密网格单元（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">densify</span></code>）</a> 命令后使用 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.attach.html#kwd:zone.attach.by-face" title="Searches the mesh for all surface faces in the range.  For this purpose a surface
+face...">单元附着按面（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">attach</span> <span class="pre">by-face</span></code>）</a> 命令。上图为本例原始网格，下图为加密网格。</p>
+<div class="figure align-center" id="id28">
+<a class="reference internal image-reference" href="../../../../../_images/densify4.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/densify4.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 28：通过设置最大长度加密后的网格。</span></p>
+</div>
+<p>有时，几何集合中的几何数据定义了需要加密的空间。下一示例给出对两个几何集合之间空间进行加密的方法。关于利用几何数据识别模型对象的一般概述和说明，见<a class="reference internal" href="workinggeometricdata.html#workinggeometricdata"><span class="std std-ref">使用几何数据</span>（Working with Geometric Data）</a>。</p>
+<p>本例中，每个几何集合由两个多边形定义。<a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.densify.html#command:zone.densify" title="|...">加密网格单元（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">densify</span></code>）</a> 命令使用 <span class="cmdkey">geometry</span> 范围元素，选择满足以下条件的网格单元：从其形心沿 (0,0,1) 方向发出的射线，与组成 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information...">几何集 setA（<span class="varstring"><span class="null">setA</span></span>）</a> 或 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information...">几何集 setB（<span class="varstring"><span class="null">setB</span></span>）</a> 的任意多边形相交一次。详细信息见 <a class="reference internal" href="../../../../../common/module/doc/manual/range_manual/range_commands/rangephrasereference.html#kwd:range.geometry-space" title="Select objects by their location in relation to the polygons in the geometry
+set named  s .  A direction vector is specified, and a ray is emitted from
+the location of the object in that direction.  The number of times that ray
+intersects geometry polygons is counted.  Objects can be selected with a given
+count value...">几何空间范围（<code class="xref fish fish-cmd docutils literal"><span class="pre">range</span> <span class="pre">geometry-space</span></code>）</a> 文档。</p>
+<p>这里使用 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.attach.html#kwd:zone.attach.by-face" title="Searches the mesh for all surface faces in the range.  For this purpose a surface
+face...">单元附着按面（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">attach</span> <span class="pre">by-face</span></code>）</a> 命令将各子网格的面刚性连接，为所有网格单元形成单一网格。接下来两图分别绘制原始网格和加密网格。</p>
+<p><strong>使用几何信息加密网格</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="c">;</span>
+<span class="nb">geometry set</span><span class="n"> </span><span class="s">"setA"</span><span class="n"> polygon create by</span><span class="o">-</span><span class="n">positions </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">5</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">                                                </span><span class="p">(</span><span class="m m-Double">5</span><span class="p">,</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="nb">geometry set</span><span class="n"> </span><span class="s">"setA"</span><span class="n"> polygon create by</span><span class="o">-</span><span class="n">positions </span><span class="p">(</span><span class="m m-Double">5</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span><span class="n">  </span><span class="sx">...</span>
+<span class="n">                                                </span><span class="p">(</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">5</span><span class="p">,</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="nb">geometry set</span><span class="n"> </span><span class="s">"setB"</span><span class="n"> polygon create by</span><span class="o">-</span><span class="n">positions </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">5</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span><span class="n">   </span><span class="sx">...</span>
+<span class="n">                                                </span><span class="p">(</span><span class="m m-Double">5</span><span class="p">,</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span>
+<span class="nb">geometry set</span><span class="n"> </span><span class="s">"setB"</span><span class="n"> polygon create by</span><span class="o">-</span><span class="n">positions </span><span class="p">(</span><span class="m m-Double">5</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">10</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                                </span><span class="p">(</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">10</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">5</span><span class="p">,</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span>
+<span class="n">plot </span><span class="s">'Brick2'</span><span class="n"> export bitmap filename </span><span class="s">'densify5.png'</span>
+
+<span class="nb">zone densify</span><span class="n"> segments </span><span class="m m-Double">2</span><span class="n"> range geometry</span><span class="o">-</span><span class="n">space </span><span class="s">"setA"</span><span class="n"> set </span><span class="s">"setB"</span><span class="n"> count </span><span class="m m-Double">1</span>
+<span class="nb">zone attach</span><span class="n"> by</span><span class="o">-</span><span class="n">face</span>
+<span class="c">;</span>
+<span class="n">plot </span><span class="s">'Brick2'</span><span class="n"> export bitmap filename </span><span class="s">'densify6.png'</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id29">
+<a class="reference internal image-reference" href="../../../../../_images/densify5.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/densify5.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 29：原始网格。</span></p>
+</div>
+<div class="figure align-center" id="id30">
+<a class="reference internal image-reference" href="../../../../../_images/densify6.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/densify6.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 30：使用几何数据加密后的网格。</span></p>
+</div>
+</div>
+<div class="section" id="geometry-based-densification-octree-meshing">
+<span id="geometrydensifying"></span><h3>基于几何体的加密：八叉树网格生成</h3>
+<p>当精确贴合表面在物理上并不重要时，常依据几何集合中的几何数据进行网格加密，近似表示极不规则边界处的材料属性变化。矿体和其他类型地质结构通常属于这一类。</p>
+<p><a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.densify.html#command:zone.densify" title="|...">加密网格单元（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">densify</span></code>）</a> 命令可根据网格单元与几何表面的距离选取网格单元并细分。将其与 <a class="reference internal" href="../../../../../common/module/doc/manual/range_manual/range_commands/rangephrasereference.html#kwd:range.geometry-distance" title="Select objects that fall within a certain distance of points, edges, and polygons
+defined in the geometry set named  s .   This geometric element accepts
+the  extra  keyword.  If the  extent  keyword is used, then objects
+that actually intersect elements in the geometry set are considered to be at
+a distance of  0.0 .  The following keywords are available...">几何距离范围（<code class="xref fish fish-cmd docutils literal"><span class="pre">range</span> <span class="pre">geometry-distance</span></code>）</a> 范围元素结合，并使用 <span class="cmdkey">repeat</span> 关键字，即可通过一条命令创建八叉树网格。</p>
+<p>例如，命令</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">zone densify</span><span class="n"> segments </span><span class="m m-Double">2</span><span class="n"> gradient</span><span class="o">-</span><span class="n">limit edge</span><span class="o">-</span><span class="n">limit </span><span class="m m-Double">0.05</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">            repeat range geometry</span><span class="o">-</span><span class="n">distance </span><span class="s">'intcylinder'</span><span class="n"> gap </span><span class="m m-Double">0.0</span><span class="n"> extent</span>
+</pre></div>
+</div>
+<p>可根据与“intcylinder”几何集合的接近程度生成八叉树网格。</p>
+<p>必须清楚上述各关键字的作用。</p>
+<ul class="simple">
+<li><span class="cmdkey">segments</span> 关键字表示每一级加密均在各方向将网格单元分为 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">2</span></span></a> 份，因此每个原始网格单元生成八个新网格单元。</li>
+<li><span class="cmdkey">gradient-limit</span> 关键字影响被标记为加密的网格单元。它确保相邻网格单元尺寸的最大差异为一级加密。</li>
+<li><span class="cmdkey">edge-limit</span> 关键字与下文介绍的 <span class="cmdkey">repeat</span> 配合，表示边长超过 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.05</span></span></a> 的网格单元将被标记为需要加密。</li>
+<li><span class="cmdkey">repeat</span> 关键字表示先对网格单元进行一轮加密，然后如果有任何网格单元被加密，就选择一份+新的+网格单元列表进行加密。重复此操作，直到不再存在需要加密的网格单元，原因可能是它们不在范围内，或其尺寸已小于指定的 <span class="cmdkey">edge-limit</span>。</li>
+<li><a class="reference internal" href="../../../../../common/module/doc/manual/range_manual/range_commands/rangephrasereference.html#kwd:range.geometry-distance" title="Select objects that fall within a certain distance of points, edges, and polygons
+defined in the geometry set named  s .   This geometric element accepts
+the  extra  keyword.  If the  extent  keyword is used, then objects
+that actually intersect elements in the geometry set are considered to be at
+a distance of  0.0 .  The following keywords are available...">几何距离范围（<code class="xref fish fish-cmd docutils literal"><span class="pre">range</span> <span class="pre">geometry-distance</span></code>）</a> 选择与 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information...">内部圆柱（<span class="varstring"><span class="null">intcylinder</span></span>）</a> 几何集合的距离在 <span class="cmdkey">gap</span> 之内的网格单元。本例中 <span class="cmdkey">gap</span> 为零，因此选择实际与表面相交的网格单元。</li>
+<li><span class="cmdkey">extent</span> 关键字表示，应根据网格单元的+笛卡尔坐标包围范围+判断其与表面的距离，而非仅依据网格单元形心。如果不使用该关键字，则必须指定非零 <span class="cmdkey">gap</span>，才可能使网格单元落入范围。</li>
+</ul>
+<p>该命令的结果如下所示。</p>
+<div class="figure align-center" id="id31">
+<a class="reference internal image-reference" href="../../../../../_images/octree11.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/octree11.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 31：通过 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.densify.html#command:zone.densify" title="|...">加密网格单元（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">densify</span></code>）</a> 生成的八叉树网格。</span></p>
+</div>
+<p>请记住，在使用 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.attach.html#kwd:zone.attach.by-face" title="Searches the mesh for all surface faces in the range.  For this purpose a surface
+face...">单元附着按面（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">attach</span> <span class="pre">by-face</span></code>）</a> 命令将悬挂节点连接到相邻面之前，不应运行该网格。另请注意，网格单元尺寸梯度较大，可能增加达到平衡所需时间，并改变模型趋于平衡的路径。</p>
+<p>以下数据文件给出更接近实际的示例：以简单矩形网格为起点，创建复杂矿体的八叉树网格。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="p">(</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">15</span><span class="p">,</span><span class="m m-Double">10</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">25000</span><span class="p">,</span><span class="m m-Double">20000</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                  point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">35000</span><span class="p">,</span><span class="m m-Double">20000</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                  point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">25000</span><span class="p">,</span><span class="m m-Double">35000</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                  point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">25000</span><span class="p">,</span><span class="m m-Double">20000</span><span class="p">,</span><span class="m m-Double">10000</span><span class="p">)</span>
+<span class="nb">geometry import</span><span class="n"> </span><span class="s">'orebody.stl'</span>
+<span class="nb">zone densify</span><span class="n"> segments </span><span class="m m-Double">2</span><span class="n"> gradient</span><span class="o">-</span><span class="n">limit edge</span><span class="o">-</span><span class="n">limit </span><span class="m m-Double">50</span><span class="n"> repeat </span><span class="sx">...</span>
+<span class="n">             range geometry</span><span class="o">-</span><span class="n">distance </span><span class="s">'orebody'</span><span class="n"> gap </span><span class="m m-Double">0.0</span><span class="n"> extent</span>
+<span class="nb">zone group</span><span class="n"> </span><span class="s">'orebody'</span><span class="n"> range geometry</span><span class="o">-</span><span class="n">space </span><span class="s">'orebody'</span><span class="n"> count odd</span>
+</pre></div>
+</div>
+<p>该操作的结果如下图所示。最后一条 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.group.html#command:zone.group" title='Add group name  s  to the zones in the range. Use of the group logic is
+described in  group_manual . This command may take the form  zone.group 
+ "slotname = groupname"  — quotation marks required, spaces at equals
+sign ignored — where  slotname  is the slot assignment and  groupname 
+is the group name...'><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">group</span></code></a> 命令使用 <a class="reference internal" href="../../../../../common/module/doc/manual/range_manual/range_commands/rangephrasereference.html#kwd:range.geometry-space" title="Select objects by their location in relation to the polygons in the geometry
+set named  s .  A direction vector is specified, and a ray is emitted from
+the location of the object in that direction.  The number of times that ray
+intersects geometry polygons is counted.  Objects can be selected with a given
+count value...">几何空间范围（<code class="xref fish fish-cmd docutils literal"><span class="pre">range</span> <span class="pre">geometry-space</span></code>）</a> 范围元素，选择几何表面“内部”的网格单元。</p>
+<div class="figure align-center" id="id32">
+<a class="reference internal image-reference" href="../../../../../_images/octree21.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/octree21.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 32：通过 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.densify.html#command:zone.densify" title="|...">加密网格单元（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">densify</span></code>）</a> 生成的八叉树网格。</span></p>
+</div>
+</div>
+<div class="section" id="surface-topography-and-layering">
+<span id="geometrytopography"></span><h3>地表地形与分层</h3>
+<p><span class="codename">FLAC3D</span> 提供 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.generate.html#kwd:zone.generate.from-topography" title="Generates zones by extruding surface faces in the range until they meet polygons
+in a geometric set...">按地形生成单元命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">generate</span> <span class="pre">from-topography</span></code>）</a> 命令，用于在现有网格的外表面与表征地形的几何集合之间生成网格。通过从指定范围内的面，沿射线方向向指定几何集合拉伸，创建网格单元。此方法可用于创建一系列不规则且互不相交的层，更常用于在顶部添加一层与不规则地形表面吻合的网格单元。以下给出几个简单用例。</p>
+<p>要创建与地形表面吻合的网格，必须指定<a class="reference internal" href="workinggeometricdata.html#workinggeometricdata"><span class="std std-ref">几何集合</span>（geometry set）</a>。创建几何集合最简单的方法是使用 <a class="reference internal" href="../../../../../common/geometry/doc/manual/commands/cmd_geometry.import.html#command:geometry.import" title="Import geometric data.  s  is the file name...">导入几何对象（<code class="xref fish fish-cmd docutils literal"><span class="pre">geometry</span> <span class="pre">import</span></code>）</a> 命令。还有<a class="reference internal" href="../../../../../common/geometry/doc/manual/commands/commands.html#geometry-commands"><span class="std std-ref">其他命令</span>（Additional commands）</a>可操作边、多边形和节点，以及对整个几何集合执行其他操作。</p>
+<p>使用 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.generate.html#kwd:zone.generate.from-topography" title="Generates zones by extruding surface faces in the range until they meet polygons
+in a geometric set...">按地形生成单元命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">generate</span> <span class="pre">from-topography</span></code>）</a> 命令前，必须已有初始网格。只有满足以下所有条件的网格单元面才会被选择：</p>
+<ul class="simple">
+<li>面必须位于指定范围内。</li>
+<li>面必须位于已有网格的表面，内部面一律忽略。</li>
+<li>面的外法向矢量与射线的夹角必须小于 89.427 度。这将排除与射线平行的面（夹角为 90 度），以及朝向与射线相对相反方向的面（夹角大于 90 度且不大于 180 度）。</li>
+</ul>
+<p>下一示例的数据文件首先从 STL 格式文件 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information...">surface1.stl 几何文件（<span class="varstring"><span class="null">surface1.stl</span></span>）</a> 导入几何数据，并将其放入名为 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information...">几何集 surface1（<span class="varstring"><span class="null">surface1</span></span>）</a> 的几何集合。（默认情况下，几何集合名与刚导入的文件名相同。）然后创建分组名为 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information...">图层 1（<span class="varstring"><span class="null">Layer1</span></span>）</a> 的背景网格。几何集合和背景网格见下图。可以看到，投影到 <span class="math">\(x\)</span>-<span class="math">\(y\)</span> 平面时，几何集合完全覆盖背景网格，因此范围内有效面上的任意节点，沿射线方向拉伸时都会与几何集合存在交点。</p>
+<p class="h4 rubric">创建网格和几何集合</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">geometry import</span><span class="n"> </span><span class="s">'surface1.stl'</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">50</span><span class="n"> </span><span class="m m-Double">40</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  point </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="n">    </span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">4000</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">15000</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">4000</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">12000</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">4000</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="n">    </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">2000</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  group </span><span class="s">'Layer1'</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id33">
+<a class="reference internal image-reference" href="../../../../../_images/topo1.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/topo1.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 33：现有网格和几何集合。</span></p>
+</div>
+<p>接着添加 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.generate.html#kwd:zone.generate.from-topography" title="Generates zones by extruding surface faces in the range until they meet polygons
+in a geometric set...">按地形生成单元命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">generate</span> <span class="pre">from-topography</span></code>）</a> 命令，并在命令中指定 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information...">几何集 surface1（<span class="varstring"><span class="null">surface1</span></span>）</a> 几何集合。未指定射线方向，因此采用默认方向 (0, 0, 1)。<span class="cmdkey">segment</span> 数量为 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">8</span></span></a>，因此将在选定面与几何表面之间创建 8 个网格单元。新创建的网格单元将在 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information...">默认（<span class="varstring"><span class="null">Default</span></span>）</a> 槽位中赋予分组名 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information...">图层 2（<span class="varstring"><span class="null">Layer2</span></span>）</a>。该命令未为面指定范围，因此现有网格（<a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information...">图层 1（<span class="varstring"><span class="null">Layer1</span></span>）</a> 组）表面的所有面均参与向几何集合拉伸。但本例会忽略四个侧面上的网格单元面，其法向向量垂直于射线方向 (0, 0, 1)，以及底面上法向向量与射线方向相反（夹角为 180 度）的面，因此实际上仅使用 Layer1 组顶面上的面创建新网格。完成后的网格见下图，正确体现了几何集合的地形。</p>
+<p class="h4 rubric">添加地表地形网格单元</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">geometry import</span><span class="n"> </span><span class="s">'surface1.stl'</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">50</span><span class="n"> </span><span class="m m-Double">40</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  point </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="n">    </span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">4000</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">15000</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">4000</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">12000</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">4000</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="n">    </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">2000</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  group </span><span class="s">'Layer1'</span>
+<span class="nb">zone generate</span><span class="n"> from</span><span class="o">-</span><span class="n">topography geometry</span><span class="o">-</span><span class="n">set </span><span class="s">'surface1'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                              segments </span><span class="m m-Double">8</span><span class="n"> group </span><span class="s">'Layer2'</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id34">
+<a class="reference internal image-reference" href="../../../../../_images/topo2.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/topo2.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 34：通过 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.generate.html#kwd:zone.generate.from-topography" title="Generates zones by extruding surface faces in the range until they meet polygons
+in a geometric set...">按地形生成单元命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">generate</span> <span class="pre">from-topography</span></code>）</a> 命令创建的网格。</span></p>
+</div>
+<p>下一示例为 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.generate.html#kwd:zone.generate.from-topography" title="Generates zones by extruding surface faces in the range until they meet polygons
+in a geometric set...">按地形生成单元命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">generate</span> <span class="pre">from-topography</span></code>）</a> 命令添加两个新关键字。第一个是 <span class="cmdkey">ratio</span>，设为 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.6</span></span></a>。它改变靠近表面时的网格单元尺寸分布；本例中，每个网格单元的尺寸为下一个的 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.6</span></span></a> 倍。第二个是 <span class="cmdkey">face-group</span>，为新创建的网格单元表面赋予分组名，以便后续引用。</p>
+<p class="h4 rubric">使网格单元向表面渐变</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">geometry import</span><span class="n"> </span><span class="s">'surface1.stl'</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">50</span><span class="n"> </span><span class="m m-Double">40</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  point </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="n">    </span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">4000</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">15000</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">4000</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">12000</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">4000</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="n">    </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">2000</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  group </span><span class="s">'Layer1'</span>
+<span class="nb">zone generate</span><span class="n"> from</span><span class="o">-</span><span class="n">topography geometry</span><span class="o">-</span><span class="n">set </span><span class="s">'surface1'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                              segments </span><span class="m m-Double">8</span><span class="n"> ratio </span><span class="m m-Double">0.6</span><span class="n"> group </span><span class="s">'Layer2'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                              face</span><span class="o">-</span><span class="n">group </span><span class="s">'Surface'</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id35">
+<a class="reference internal image-reference" href="../../../../../_images/topo3.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/topo3.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 35：通过 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.generate.html#kwd:zone.generate.from-topography" title="Generates zones by extruding surface faces in the range until they meet polygons
+in a geometric set...">按地形生成单元命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">generate</span> <span class="pre">from-topography</span></code>）</a> 命令创建的网格（ratio=0.6）。</span></p>
+</div>
+<p>下一示例对背景网格上的面应用范围。该范围仅限于形心坐标满足 0 ≤ <span class="math">\(x\)</span> ≤ 5000 和 0 ≤ <span class="math">\(y\)</span> ≤ 50000 的面。应强调，<a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.generate.html#kwd:zone.generate.from-topography" title="Generates zones by extruding surface faces in the range until they meet polygons
+in a geometric set...">按地形生成单元命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">generate</span> <span class="pre">from-topography</span></code>）</a> 中的范围选择的是<strong>网格单元面</strong>。</p>
+<p class="h4 rubric">限制表面区域</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">geometry import</span><span class="n"> </span><span class="s">'surface1.stl'</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">50</span><span class="n"> </span><span class="m m-Double">40</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  point </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="n">    </span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">4000</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">15000</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">4000</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">12000</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">4000</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="n">    </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">2000</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  group </span><span class="s">'Layer1'</span>
+<span class="nb">zone generate</span><span class="n"> from</span><span class="o">-</span><span class="n">topography geometry</span><span class="o">-</span><span class="n">set </span><span class="s">'surface1'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                              segments </span><span class="m m-Double">8</span><span class="n"> ratio </span><span class="m m-Double">0.6</span><span class="n"> group </span><span class="s">'Layer2'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                              range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">5000</span><span class="n"> position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">5000</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id36">
+<a class="reference internal image-reference" href="../../../../../_images/topo4.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/topo4.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 36：通过 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.generate.html#kwd:zone.generate.from-topography" title="Generates zones by extruding surface faces in the range until they meet polygons
+in a geometric set...">按地形生成单元命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">generate</span> <span class="pre">from-topography</span></code>）</a> 命令创建的网格（对面应用了范围）。</span></p>
+</div>
+<p>在某些情况下，几何表面可能无法覆盖选定面沿射线方向的投影区域。对此，<span class="codename">FLAC3D</span> 先在几何集合中找到距从相关网格点发出的射线最近的点 A，再找到“虚拟”交点 B，使 A 和 B 到投影平面的距离相同。完成后的网格见下方第二幅图。</p>
+<p class="h4 rubric">未覆盖网格单元范围的表面</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">geometry import</span><span class="n"> </span><span class="s">'surface1.stl'</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">50</span><span class="n"> </span><span class="m m-Double">40</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">            point </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">10000</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">10000</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">4000</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="n"> </span><span class="m m-Double">15000</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">10000</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">4000</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">            point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">10000</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">12000</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">4000</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="o">-</span><span class="m m-Double">10000</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">10000</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">2000</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">            group </span><span class="s">'Layer1'</span>
+<span class="nb">zone generate</span><span class="n"> from</span><span class="o">-</span><span class="n">topography geometry</span><span class="o">-</span><span class="n">set </span><span class="s">'surface1'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                              segments </span><span class="m m-Double">8</span><span class="n"> ratio </span><span class="m m-Double">0.6</span><span class="n"> group </span><span class="s">'Layer2'</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id37">
+<a class="reference internal image-reference" href="../../../../../_images/topo5.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/topo5.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 37：通过 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.generate.html#kwd:zone.generate.from-topography" title="Generates zones by extruding surface faces in the range until they meet polygons
+in a geometric set...">按地形生成单元命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">generate</span> <span class="pre">from-topography</span></code>）</a> 命令创建的网格（投影到垂直射线的平面时，几何集合未完全覆盖背景网格）。</span></p>
+</div>
+<p>可以多次使用 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.generate.html#kwd:zone.generate.from-topography" title="Generates zones by extruding surface faces in the range until they meet polygons
+in a geometric set...">按地形生成单元命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">generate</span> <span class="pre">from-topography</span></code>）</a> 命令创建多层网格。每次使用 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.generate.html#kwd:zone.generate.from-topography" title="Generates zones by extruding surface faces in the range until they meet polygons
+in a geometric set...">按地形生成单元命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">generate</span> <span class="pre">from-topography</span></code>）</a> 命令时，最新网格都会被视为背景网格。还可使用 <span class="cmdkey">zone-face</span> 关键字标记新网格单元的表面，以用于下一层。</p>
+<p>下一示例通过简单的 <a class="reference internal" href="../../../../../common/geometry/doc/manual/commands/cmd_geometry.set.html#command:geometry.set" title="Specify the current geometric set (or create a new set named  s  and make
+it the current set, if one with that name does not exist). All nodes, edges
+and polygons are contained inside a geometric set. These sets may be referred
+to by ID number or by a string name. If never specified, the set is named  Default .
+This is a synonym for the  geometry.select  command...">设置当前几何集命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">geometry</span> <span class="pre">set</span></code>）</a> 命令创建第二个几何集合（名为 surface2）。然后使用 <a class="reference internal" href="../../../../../common/geometry/doc/manual/commands/cmd_geometry.polygon.create.html#command:geometry.polygon.create" title="Create a polygon in the current geometry set. If the  set  keyword is
+given then the edge is created in that set. A list of edges, a list of nodes
+or a list of points in space can be input. If...">创建几何多边形命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">geometry</span> <span class="pre">polygon</span> <span class="pre">create</span></code>）</a> 在其中创建四边形多边形。接着发出第二条 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.generate.html#kwd:zone.generate.from-topography" title="Generates zones by extruding surface faces in the range until they meet polygons
+in a geometric set...">按地形生成单元命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">generate</span> <span class="pre">from-topography</span></code>）</a> 命令，填充不规则表面（标记为 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information...">表面（<span class="varstring"><span class="null">Surface</span></span>）</a>）与 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information...">表面 2（<span class="varstring"><span class="null">surface2</span></span>）</a> 集合中多边形之间的空间。</p>
+<p>请注意，如有需要，后续可以用标记为 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information...">表面（<span class="varstring"><span class="null">Surface</span></span>）</a> 的面生成接触面。</p>
+<p class="h4 rubric">使用多个几何集合创建网格</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">geometry import</span><span class="n"> </span><span class="s">'surface1.stl'</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">50</span><span class="n"> </span><span class="m m-Double">40</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  point </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="n">    </span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">4000</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">15000</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">4000</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">12000</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">4000</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="n">    </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">2000</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  group </span><span class="s">'Layer1'</span>
+<span class="nb">zone generate</span><span class="n"> from</span><span class="o">-</span><span class="n">topography geometry</span><span class="o">-</span><span class="n">set </span><span class="s">'surface1'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                              segments </span><span class="m m-Double">8</span><span class="n"> ratio </span><span class="m m-Double">0.8</span><span class="n"> group </span><span class="s">'Layer2'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                              face</span><span class="o">-</span><span class="n">group </span><span class="s">'Surface'</span>
+<span class="c">;  创建下一层</span>
+<span class="nb">geometry select</span><span class="n"> </span><span class="s">'surface2'</span>
+<span class="nb">geometry polygon</span><span class="n"> create by</span><span class="o">-</span><span class="n">positions </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">3000</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">15000</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">3000</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                     </span><span class="p">(</span><span class="m m-Double">15000</span><span class="p">,</span><span class="m m-Double">12000</span><span class="p">,</span><span class="m m-Double">3000</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">12000</span><span class="p">,</span><span class="m m-Double">3000</span><span class="p">)</span>
+<span class="nb">zone generate</span><span class="n"> from</span><span class="o">-</span><span class="n">topography geometry</span><span class="o">-</span><span class="n">set </span><span class="s">'surface2'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                              segments </span><span class="m m-Double">8</span><span class="n"> ratio </span><span class="m m-Double">1.2</span><span class="n"> group </span><span class="s">'Layer3'</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                              range group </span><span class="s">'Surface'</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id38">
+<a class="reference internal image-reference" href="../../../../../_images/topo6.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/topo6.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 38：通过多条 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.generate.html#kwd:zone.generate.from-topography" title="Generates zones by extruding surface faces in the range until they meet polygons
+in a geometric set...">按地形生成单元命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">generate</span> <span class="pre">from-topography</span></code>）</a> 命令创建的网格。</span></p>
+</div>
+<p class="endnotesection rubric">尾注</p>
+<table class="docutils footnote" frame="void" id="id2" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>见 <a class="reference external" href="https://en.wikipedia.org/wiki/Rhinoceros_3D">Rhino 维基百科页面（https://en.wikipedia.org/wiki/Rhinoceros_3D）</a>。</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../flac3dhome.html"><span class="codename">FLAC3D</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../modeling.html"><span class="codename">FLAC3D</span> Modeling</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="problemsolving.html">Problem Solving with <span class="codename">FLAC3D</span></a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="projectsetup.html" title="previous chapter"> Approach and Project Setup</a> |    
+       <a href="identifyingregions.html" title="next chapter">Identifying Regions of the Model</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Grid Generation" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

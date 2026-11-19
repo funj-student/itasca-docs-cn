@@ -1,0 +1,222 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>网格离散 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="numericalimplementation.html" rel="next" title="Numerical Implementation"/>
+<link href="formulation.html" rel="prev" title="Formulation of a 3D Explicit Finite Volume Model"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="grid-discretization">
+<span id="griddiscretization"></span><h1>网格离散</h1>
+<p>在三维常应变率单元中，
+四面体的优点是<em>不会</em>产生沙漏变形
+（即由节点速度组合产生、不产生应变率因而也不产生节点力增量的变形模式）。
+然而，在塑性框架下使用时，
+这些单元不能提供足够的变形模式（见 Nagtegaal 等 1974）。
+例如，在特定情况下，它们无法像某些重要本构规律所要求的那样在不改变体积的情况下单独变形。
+在这些情况下，已知这些单元会表现出比理论预期更刚硬的响应。
+为克服该问题，<span class="codename">FLAC3D</span> 中采用了<em>混合离散</em>过程。</p>
+<p>混合离散技术的原理是通过适当调整四面体应变率张量的第一不变量，
+赋予单元更大的体积柔性。<a class="footnote-reference" href="#id2" id="id1">[*]</a>
+该技术的应用方式取决于物体的初始离散是划分为六面体网格单元还是划分为四面体。
+在 Marti 和 Cundall（1982）开创的方法中，
+在四面体离散之上叠加较粗的<em>网格单元</em>离散，
+某网格单元中特定四面体的第一应变率不变量
+按该网格单元内所有四面体的体积平均值计算。
+该方法如<a href="#fig-theory-md1">图 1（Figure  1）</a>所示。
+在图中所示的特定变形模式中，
+各个常应变率单元将经历与不可压缩塑性流动理论不相容的体积变化。
+然而在该示例中，四面体集合（即网格单元）的体积保持不变，
+应用混合离散过程可使每个单独的四面体反映网格单元的这一性质，
+从而使其行为与理论预测相协调。</p>
+<div class="section" id="mixed-discretization-for-a-hexahedral-grid">
+<span id="md"></span><h2>六面体网格的混合离散</h2>
+<div class="figure align-center" id="id3">
+<span id="fig-theory-md1"></span><a class="reference internal image-reference" href="../../../../../_images/theory-md1.png"><img alt="../../../../../_images/theory-md1.png" src="../../../../../_images/theory-md1.png" style="width: 450px;"/></a>
+<p class="caption"><span class="caption-text">图 1：混合离散最为有效的变形模式。</span></p>
+</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p>在 <span class="codename">FLAC3D</span> 中，一个网格单元对应 <span class="math">\(n_t\)</span> 个四面体的集合，
+如<a href="#fig-theory-md2">图 2（Figure  2）</a>中 <span class="math">\(n_t\)</span> = 5 的情形所示。
+考虑某一特定网格单元，先估算该单元内局部编号为 <span class="math">\(l\)</span> 的四面体的应变率张量，
+再将其分解为偏量和体积部分：</p>
+<div class="math" id="equation-eqtheory-md-xiijl">
+<span class="eqno">(1)</span>\[ {\xi}_{ij}^{[l]} = {\eta}_{ij}^{[l]} + {{{\xi}^{[l]}}\over{3}}{\delta}_{ij}\]</div>
+<p>其中 <span class="math">\(η^{[l]}\)</span> 为偏应变率张量，
+<span class="math">\(ξ^{[l]}\)</span> 为应变率第一不变量，</p>
+<div class="math" id="equation-eqtheory-md-xil">
+<span class="eqno">(2)</span>\[ {\xi}^{[l]} =  {\xi}_{ii}^{[l]}\]</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id4">
+<span id="fig-theory-md2"></span><a class="reference internal image-reference" href="../../../../../_images/theory-md2.png"><img alt="../../../../../_images/theory-md2.png" src="../../../../../_images/theory-md2.png" style="width: 450px;"/></a>
+<p class="caption"><span class="caption-text">图 2：一个 8 节点网格单元，含 2 个覆盖层，每层 5 个四面体。</span></p>
+</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p>随后网格单元的第一不变量按该单元内所有四面体第一不变量的体积平均值计算：</p>
+<div class="math" id="equation-eqtheory-md-xiz">
+<span class="eqno">(3)</span>\[ {\xi}^z = {{\sum_{k=1}^{n_t} {\xi}^{[k]} V^{[k]}}\over{\sum_{k=1}^{n_t}V^{[k]}}}\]</div>
+<p>其中 <span class="math">\(V^{[k]}\)</span> 为四面体 <span class="math">\(k\)</span> 的体积。最后，四面体应变率张量的分量由下式计算</p>
+<div class="math" id="equation-eqtheory-md-xiijl2">
+<span class="eqno">(4)</span>\[ {\xi}_{ij}^{[l]} = {\eta}_{ij}^{[l]} + {{{\xi}^z}\over{3}} {\delta}_{ij}\]</div>
+<p>当发生屈服时，剪胀本构规律会产生平均法向应力的变化。
+为使技术一致，由施加应变率增量后导出的应力张量第一不变量
+也必须按网格单元的体积平均值计算。
+在此过程中，先估算某网格单元中特定四面体 <span class="math">\(l\)</span> 的应力张量，
+并将其分解为偏量和体积部分：</p>
+<div class="math" id="equation-eqtheory-md-sijl">
+<span class="eqno">(5)</span>\[ {\sigma}_{ij}^{[l]} = s_{ij}^{[l]} + {\sigma}^{[l]} {\delta}_{ij}\]</div>
+<p>其中 [<span class="math">\(s\)</span>]<span class="math">\(^{[l]}\)</span> 为偏应力张量，
+<span class="math">\(σ^{[l]}\)</span> 为平均法向应力。</p>
+<div class="math" id="equation-eqtheory-md-sl">
+<span class="eqno">(6)</span>\[ {\sigma}^{[l]} =  {{1}\over{3}} {\sigma}_{ii}^{[l]}\]</div>
+<p>网格单元第一不变量取其全部四面体的体积加权平均值：</p>
+<div class="math" id="equation-eqtheory-md-sz">
+<span class="eqno">(7)</span>\[ {\sigma}^z = {{\sum_{k=1}^{n_t}{\sigma}^{[k]} V^{[k]}}\over{\sum_{k=1}^{n_t}V^{[k]}}}\]</div>
+<p>最后，四面体应力率张量分量按以下关系计算：</p>
+<div class="math" id="equation-eqtheory-md-sijl2">
+<span class="eqno">(8)</span>\[ {\sigma}_{ij}^{[l]} = s_{ij}^{[l]} + {\sigma}^z {\delta}_{ij}\]</div>
+<p>在 <span class="codename">FLAC3D</span> 中，离散过程从较粗的网格开始：先定义网格单元，然后（在内部）离散为四面体。
+例如，一个八节点网格单元可离散为两种（且仅两种）不同的五四面体构型
+（对应于<a href="#fig-theory-md2">图 2（Figure  2）</a>中的覆盖层 1 和 2。
+节点力的计算（基于应变率和应力的计算）
+可使用一个覆盖层或两个覆盖层的组合来进行。
+两覆盖层方法的优点是确保对称加载时网格单元的响应对称。
+在这种情况下，混合离散在两个覆盖层的组合上进行，
+节点力计算通过对两个覆盖层取平均来求得。</p>
+</div>
+<div class="section" id="nodal-mixed-discretization-for-a-tetrahedral-grid">
+<span id="nmd"></span><h2>四面体网格的节点混合离散</h2>
+<p>节点混合离散（NMD）是混合离散格式的一种变体，
+其中体积行为的平均在节点基础上而不是网格单元基础上进行。
+该过程应用于基于三角形或四面体的网格；不需要将单元集合成网格单元。
+此外，本构模型照常按单元调用（不像 Bonet 和 Burton 1998 所描述的平均节点压力（ANP）公式表述那样，为体积行为在节点基础上进行调用）。
+该过程包括对应变的节点混合离散和对应力的节点混合离散。
+下面考虑这两个步骤。</p>
+<p>首先回顾 <span class="codename">FLAC</span> 和 <span class="codename">FLAC3D</span> 中所体现的一般计算序列：</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>根据应力、施加荷载和体积力计算节点力。速度和位移线性变化，单元内应力和应变恒定。</li>
+<li>应用运动方程，推导新的节点速度和位移。</li>
+<li>根据节点速度推导单元应变率。</li>
+<li>利用材料本构关系，由应变率推导新应力。</li>
+</ol>
+</div></blockquote>
+<p>在 NMD 技术中，该计算序列得到遵循。
+然而，如下所述，对应力执行了一个平均过程（第 4 步结束时）。</p>
+<p id="nmd-stress">首先，体积应力 <span class="math">\(\sigma\)</span> 的<em>节点</em>值按周围单元值的加权平均计算：</p>
+<div class="math" id="equation-eqtheory-nmd-dotsnp">
+<span class="eqno">(9)</span>\[ \sigma_n = {{\sum_{e = 1}^{m_n} \sigma V_e} \over {\sum_{e = 1}^{m_n} V_e}}\]</div>
+<p>其中 <span class="math">\(m_n\)</span> 为节点 <span class="math">\(n\)</span> 周围的单元，<span class="math">\(V_e\)</span> 为单元 <span class="math">\(e\)</span> 的体积。
+在得到节点值 <span class="math">\(\sigma_n\)</span> 之后，
+通过对节点值取平均计算单元 <span class="math">\(\bar{\sigma}\)</span> 的平均值：</p>
+<div class="math" id="equation-eqtheory-nmd-dotpbar">
+<span class="eqno">(10)</span>\[ \bar{\sigma} = {1 \over d} \sum_{n = 1}^d \sigma_n\]</div>
+<p>其中对于 <span class="codename">FLAC</span> 中的三角形该值为 3，对于 <span class="codename">FLAC3D</span> 中的四面体 <span class="math">\(d\)</span> = 4。</p>
+<p>最后，通过在返回值中用 <span class="math">\(\bar{\sigma}\)</span> 代替 <span class="math">\(\sigma\)</span>，
+对本构模型计算出的应力进行修正：</p>
+<div class="math" id="equation-eqtheory-nmd-sij">
+<span class="eqno">(11)</span>\[ \sigma_{ij} =&gt; \sigma_{ij} + (\sigma - \bar{\sigma}) \delta_{ij}\]</div>
+<p>需要注意的是，NMD 技术中涉及的平均处理
+与本构模型的公式表述无关，
+后者不受影响。</p>
+<p>此外，由于平均过程的执行方式，
+所得的四面体公式表述在 <span class="math">\(\sigma\)</span> 均匀（因而对所有单元相等）的分片试验情形中给出正确的行为。</p>
+<p>NMD 的节点平均过程，消除了线性速度单元过度约束的运动学条件。</p>
+<table class="docutils footnote" frame="void" id="id2" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[*]</a></td><td>该不变量用于衡量常应变率四面体的膨胀速率。</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../flac3dhome.html"><span class="codename">FLAC3D</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../theory.html"><span class="codename">FLAC3D</span> Theory and Background</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="theoreticalbackground.html">Theoretical Background</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="formulation.html" title="previous chapter"> Formulation of a 3D Explicit Finite Volume Model</a> |    
+       <a href="numericalimplementation.html" title="next chapter">Numerical Implementation</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Grid Discretization" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

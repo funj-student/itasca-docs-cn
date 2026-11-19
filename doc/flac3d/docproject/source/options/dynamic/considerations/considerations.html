@@ -1,0 +1,1098 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>动力建模注意事项 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="../../../../../zone/test3d/Dynamic/ShearWaveOnVerticalBar/ShearWaveOnVerticalBar.html" rel="next" title="Shear Wave Propagation in a Vertical Bar"/>
+<link href="../../../../../zone/test3d/Dynamic/ShearWaveOnStiffWallInSoftSoil/ShearWaveOnStiffWallInSoftSoil.html" rel="prev" title="Shear Wave On Stiff Wall In Soft Soil: Dynamic Multi-Stepping"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="dynamic-modeling-considerations">
+<span id="dyn-considerations"></span><h1>动力建模注意事项</h1>
+<p>为动力分析准备 <span class="codename">FLAC3D</span> 模型时，用户应考虑三个方面：
+1) 动力荷载与边界条件；
+2) 波在模型中的传播；以及
+3) 力学阻尼。
+本节就为动力分析准备 <span class="codename">FLAC3D</span> 数据文件时如何处理各个方面提供指导。<a class="reference internal" href="../solving/solving.html#dyn-solving"><span class="std std-ref">求解动力问题</span>（Solving Dynamic Problems）</a>和<a class="reference internal" href="../../../projects/verifications/verifications.html#verification-problems"><span class="std std-ref">验证问题</span>（Verification Problems）</a>说明了此处讨论的大多数功能的使用方法。</p>
+<div class="section" id="dynamic-loading-and-boundary-conditions">
+<span id="dynamic-boundary-conditions"></span><h2>动力荷载与边界条件</h2>
+<p><span class="codename">FLAC3D</span> 通过在模型边界或内部网格点处施加动力输入边界条件，来模拟承受外部和/或内部动力荷载的材料区域。通过指定安静（黏性）边界或自由场边界条件，可以减少模型边界处的波反射。动力荷载与边界条件的类型示意于 <a href="#dynamic-typesofloading">图  1（Figure  1）</a>；各条件将在后续各节中讨论。</p>
+<div class="section" id="application-of-dynamic-input">
+<span id="dynamic-application-of-input"></span><h3>动力输入的施加</h3>
+<p>在 <span class="codename">FLAC3D</span> 中，动力输入可按以下方式之一施加：</p>
+<blockquote>
+<div><ul class="simple">
+<li>加速度历程；</li>
+<li>速度历程；</li>
+<li>应力（或压力）历程；或</li>
+<li>力历程。</li>
+</ul>
+</div></blockquote>
+<p>动力输入通常使用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/zoneface/cmd_zone.face.apply.html#command:zone.face.apply" title="This command is used to apply boundary conditions at surface faces of the model.
+ To apply conditions to zones rather than at faces, see the  zone.apply 
+command.  To apply conditions at individual gridpoints, see the  zone.gridpoint.fix 
+command...">施加网格单元面条件（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">face</span> <span class="pre">apply</span></code>）</a> 命令施加到模型边界上。也可使用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/zonegridpoint/cmd_zone.gridpoint.fix.html#command:zone.gridpoint.fix" title="Fix a property at all gridpoints in the range. If a fixed displacement is required,
+the appropriate velocities should be initialized to zero. (Zero velocity is
+the default on start-up.) To provide a boundary condition to a surface of the
+model, see the  zone.face.apply  command..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">gridpoint</span> <span class="pre">fix</span></code></a> 命令将加速度、速度和力施加到内部网格点。请注意，若唯一的动力源位于模型内部，则不需要 <a href="#dynamic-typesofloading">图  1（Figure  1）</a> 所示的自由场边界（见 <a class="reference internal" href="#dynamic-freefield"><span class="std std-ref">自由场边界</span>（Free-Field Boundaries）</a>）。</p>
+<p>输入的历程函数被视为对 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/zoneface/cmd_zone.face.apply.html#command:zone.face.apply" title="This command is used to apply boundary conditions at surface faces of the model.
+ To apply conditions to zones rather than at faces, see the  zone.apply 
+command.  To apply conditions at individual gridpoints, see the  zone.gridpoint.fix 
+command...">施加网格单元面条件（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">face</span> <span class="pre">apply</span></code>）</a> 命令所指定值的乘数。历程乘数通过 <span class="cmdkey">history</span> 关键字指定，可以是以下两种形式之一：</p>
+<blockquote>
+<div><ul class="simple">
+<li>由 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/zoneface/cmd_zone.face.apply.html#kwd:table" title="Specify a multiplier that is a table named  s .  By default the x-axis
+value is the current step number.  The optional  time  keyword may be
+used to specify which processes accumulated  time-total  should be used
+to provide the x-axis value.  The available keywords are:...">表格插值取值（<code class="xref fish fish-cmd docutils literal"><span class="pre">table</span></code>）</a> 命令定义的表；或</li>
+<li>一个 <span class="codename">FISH</span> 函数。</li>
+</ul>
+</div></blockquote>
+<div class="figure align-center" id="dynamic-typesofloading">
+<img alt="../../../../../../_images/dynamic-typesofloading.png" src="../../../../../../_images/dynamic-typesofloading.png"/>
+<p class="caption"><span class="caption-text">图 1：<span class="codename">FLAC3D</span> 中可用的动力荷载与边界条件类型。</span></p>
+</div>
+<p>采用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/zoneface/cmd_zone.face.apply.html#kwd:table" title="Specify a multiplier that is a table named  s .  By default the x-axis
+value is the current step number.  The optional  time  keyword may be
+used to specify which processes accumulated  time-total  should be used
+to provide the x-axis value.  The available keywords are:...">表格插值取值（<code class="xref fish fish-cmd docutils literal"><span class="pre">table</span></code>）</a> 输入时，乘数值与相应的时间值以单个数值对的形式录入指定的表；每对中的第一个数被假定为动力时间值。相邻表项之间的时间间隔不必对所有表项都相同。<a class="reference internal" href="../../../../../../common/kernel/doc/manual/table_manual/table_commands/cmd_table.import.html#command:table.import" title="Read file  sfile  into table  s ...">导入表格数据（<code class="xref fish fish-cmd docutils literal"><span class="pre">table</span> <span class="pre">import</span></code>）</a> 命令可将包含时间历程（例如地震记录）的文件导入指定的 <span class="codename">FLAC3D</span> 表。若使用 <span class="codename">FISH</span> 函数提供乘数，则该函数必须在函数内部使用 <span class="codename">FLAC3D</span> 标量变量 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_fish/zone_intrinsics/fish_zone.dynamic.time.total.html#function:zone.dynamic.time.total" title="Get/set the total accumulated zone module dynamic time.  This accumulates the
+timesteps of every cycle the zone dynamic module is active...">单元动力学总时间（<code class="xref fish fish-func docutils literal"><span class="pre">zone.dynamic.time.total</span></code>）</a> 访问动力时间，并计算与该时间对应的乘数值。<a class="reference internal" href="../../../../../zone/test3d/Dynamic/ShearWaveOnVerticalBar/ShearWaveOnVerticalBar.html#shearwave"><span class="std std-ref">竖杆中剪切波的传播</span>（Shear Wave
+Propagation in a Vertical Bar）</a>示例给出了由 <span class="codename">FISH</span> 函数导出动力荷载的例子。</p>
+<p>动力输入可沿 <span class="math">\(x\)</span> 向、<span class="math">\(y\)</span> 向或 <span class="math">\(z\)</span> 向施加，分别对应于模型的 <span class="math">\(x\)</span>、<span class="math">\(y\)</span>、<span class="math">\(z\)</span> 轴；也可沿模型边界的法向和切向施加。</p>
+<p>将速度或加速度输入施加到模型边界时的一个限制是：这些边界条件不能与安静（黏性）边界条件施加在同一边界上（比较 <a href="#dynamic-typesofloading">图  1（Figure  1）</a>-a 与 <a href="#dynamic-typesofloading">图  1（Figure  1）</a>-b），否则 <a class="reference internal" href="#dynamic-quiet"><span class="std std-ref">安静边界</span>（quiet boundary）</a>的效果将被抵消。要在安静边界处输入地震动，需采用应力边界条件（即将速度记录转换为应力记录并施加到安静边界）。速度波可按以下公式转换为施加的应力：</p>
+<div class="math" id="equation-dyneq-quiet1">
+<span id="dynamic-normal-stress-from-velocity"></span><span class="eqno">(1)</span>\[\sigma_n = 2 (\rho\ C_p)\ v_n\]</div>
+<p>或</p>
+<div class="math" id="equation-dyneq-quiet2">
+<span class="eqno">(2)</span>\[\sigma_s = 2 (\rho\ C_s)\ v_s\]</div>
+<table border="1" class="colwidths-auto blank docutils">
+<tbody valign="top">
+<tr class="row-odd"><td>其中：</td>
+<td><span class="math">\(\sigma_n\)</span></td>
+<td>=</td>
+<td>施加的法向应力；</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td><span class="math">\(\sigma_s\)</span></td>
+<td>=</td>
+<td>施加的剪应力；</td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td><span class="math">\(\rho\)</span></td>
+<td>=</td>
+<td>质量密度；</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td><span class="math">\(C_p\)</span></td>
+<td>=</td>
+<td>介质中 <span class="math">\(p\)</span> 波的传播速度；</td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td><span class="math">\(C_s\)</span></td>
+<td>=</td>
+<td>介质中 <span class="math">\(s\)</span> 波的传播速度；</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td><span class="math">\(v_n\)</span></td>
+<td>=</td>
+<td>输入的法向质点速度；以及</td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td><span class="math">\(v_s\)</span></td>
+<td>=</td>
+<td>输入的剪切质点速度。</td>
+</tr>
+</tbody>
+</table>
+<p><span class="math">\(C_p\)</span> 由下式给出</p>
+<div class="math" id="equation-dyneq-wavep">
+<span id="dynamic-eq-pwave"></span><span class="eqno">(3)</span>\[C_p = \sqrt{K+4G/3\over\rho}\]</div>
+<p>而 <span class="math">\(C_s\)</span> 由下式给出</p>
+<div class="math" id="equation-dyneq-waves">
+<span id="dynamic-eq-swave"></span><span class="eqno">(4)</span>\[C_s = \sqrt{G/\rho}\]</div>
+<p>这些公式假定为平面波条件。方程<a class="reference internal" href="#equation-dyneq-quiet1">(1)</a>和<a class="reference internal" href="#equation-dyneq-quiet2">(2)</a>中的因子二反映了这样一个事实：施加的应力必须是无限介质中所观测到的应力的两倍，因为一半的输入能量被黏性边界吸收。该公式与 Joyner 和 Chen（1975）的公式类似。</p>
+<p>以下示例演示在安静边界处输入波：</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../zone/test3d/Dynamic/ShearWaveOnVerticalBar/ShearWaveOnVerticalBar.html">竖杆中的剪切波传播（Shear Wave Propagation in a Vertical Bar）</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="baseline-correction">
+<span id="dynamic-baseline-correction"></span><h3>基线校正</h3>
+<p>若将现场“原始”加速度记录或速度记录用作时间历程，则 <span class="codename">FLAC3D</span> 模型在运动结束后可能出现持续速度或残余位移。这是因为完整时间历程的积分可能不为零。例如，<a href="#dynamic-baselinecorrection">图  2（Figure  2）</a>a 中的理想化速度波形在积分后可能产生 <a href="#dynamic-baselinecorrection">图  2（Figure  2）</a>b 中的位移波形。应执行“基线校正”过程，不过若不进行该过程，<span class="codename">FLAC3D</span> 模拟的物理过程通常不会受到影响。可以确定一个低频波（例如 <a href="#dynamic-baselinecorrection">图  2（Figure  2）</a>c），将其叠加到原始历程后可使最终位移为零（<a href="#dynamic-baselinecorrection">图  2（Figure  2）</a>d）。<a href="#dynamic-baselinecorrection">图  2（Figure  2）</a>c 中的低频波可以是多项式或周期函数，其自由参数经调整以获得所需结果。此类基线校正函数的示例在<a class="reference internal" href="../../../../../zone/test3d/Dynamic/DamFoundation/damfoundation.html#damfoundation-dynamic-conditions"><span class="std std-ref">动力条件与模拟</span>（Dynamic Conditions and Simulation）</a>中作为 <span class="codename">FISH</span> 函数给出。</p>
+<p>基线校正通常只适用于复杂波形，例如由现场量测得到的波形。使用简单的合成波形时，很容易在生成合成波形的过程中确保最终位移为零。通常在地震分析中，输入波为加速度记录。可采用基线校正程序强制最终速度和位移均为零。标准基线校正程序可参阅地震工程方面的教科书。</p>
+<p>对输入记录进行基线校正的另一种替代方法是：若整个模型存在残余位移，则在计算结束时施加一次位移平移。这可以通过对网格施加固定速度将残余位移减小到零来实现。该操作不会影响模型变形的力学机理。</p>
+<p>用于执行基线校正的计算机程序可从若干网站获取（例如 <a class="reference external" href="http://nsmp.wr.usgs.gov/processing.html">USGS 强震计划数据处理页面（http://nsmp.wr.usgs.gov/processing.html）</a>）。</p>
+<div class="figure align-center" id="dynamic-baselinecorrection">
+<img alt="../../../../../../_images/dynamic-baselinecorrection.png" src="../../../../../../_images/dynamic-baselinecorrection.png"/>
+<p class="caption"><span class="caption-text">图 2：基线校正过程。</span></p>
+</div>
+</div>
+<div class="section" id="quiet-boundaries">
+<span id="dynamic-quiet"></span><h3>安静边界</h3>
+<p>岩土力学问题的建模涉及的介质，在分析尺度上更适合表示为无界介质。深部地下开挖通常假定为被无限介质包围，而地表和近地表结构则假定位于半空间之上。依赖于有限空间区域离散化的数值方法要求在人工数值边界处施加适当条件。在静力分析中，固定边界或弹性边界（例如由边界元技术表示）可以合理地置于距所关注区域一定距离处。然而在动力问题中，此类边界条件会使向外传播的波反射回模型，无法实现必要的能量辐射。采用更大的模型可以减轻该问题，因为材料阻尼会吸收从远处边界反射回来的波中的大部分能量。但这一方案会带来巨大的计算负担。另一种方案是采用安静（或吸收）边界。已提出多种公式。Lysmer 和 Kuhlemeyer（1969）提出的黏性边界被用于 <span class="codename">FLAC3D</span>。它基于在模型边界的法向和切向设置独立的阻尼器。该方法对于以大于 30° 的入射角接近边界的体波几乎完全有效。对于更小的入射角或面波，仍有能量吸收，但并不完美。不过该方案的优点是它在时域中运算。其有效性已在有限元和有限差分模型中得到了验证（Kunar 等 1977）。White 等（1977）提出的该技术的一种变体也被广泛使用。</p>
+<p>更高效的能量吸收（尤其是对瑞利波而言）需要使用频率相关单元，而这类单元只能用于频域分析（例如 Lysmer 和 Waas 1972）。这些边界通常称为“一致边界”，涉及计算耦合所有边界自由度的动力刚度矩阵。可采用边界元法推导这些矩阵（例如 Wolf 1985）。Roesset 和 Ettouney（1977）记录了不同类型的基本边界、黏性边界和一致边界性能的对比研究。</p>
+<p>Lysmer 和 Kuhlemeyer（1969）提出的安静边界方案是在边界的法向和切向独立设置阻尼器。这些阻尼器提供黏性法向和切向面力，由下式给出：</p>
+<div class="math" id="equation-dynamic-tn">
+<span class="eqno">(5)</span>\[t_n = - \rho\;C_p\;v_n\]</div>
+<div class="math" id="equation-dynamic-ts">
+<span class="eqno">(6)</span>\[t_s = - \rho\;C_s\;v_s\]</div>
+<p>其中 <span class="math">\(v_n\)</span> 和 <span class="math">\(v_s\)</span> 是边界处速度的法向分量和切向分量，<span class="math">\(\rho\)</span> 是质量密度，<span class="math">\(C_p\)</span> 和 <span class="math">\(C_s\)</span> 分别是 <span class="math">\(p\)</span> 波和 <span class="math">\(s\)</span> 波波速。</p>
+<p>这些黏性项可以直接引入位于边界上的网格点的运动方程。然而 <span class="codename">FLAC3D</span> 中采用了另一种方法，即按施加边界荷载的同样方式，在每个时步计算并施加面力 <span class="math">\(t_n\)</span> 和 <span class="math">\(t_s\)</span>。这比前一种方法更方便，且测试表明该实现同样有效。唯一潜在的问题涉及数值稳定性，因为黏性力是由滞后半个时步的速度计算得到的。在迄今的实际分析中，使用无反射边界并未要求减小计算时步。小尺寸网格单元对时步的限制通常更为重要。</p>
+<p>动力分析从某种地应力（原位）条件开始。若在生成静力应力状态时使用了固定边界，则可将该边界条件替换为安静边界；边界网格点将被释放，边界反力将被自动计算并在整个动力加载阶段保持。但应避免在动力阶段改变静力荷载。例如，若在底边界指定安静边界之后再开挖隧道，整个模型将开始向上运动。这是因为总重力不再与边界改为安静边界时计算得到的底部总反力相平衡。若静力求解期间使用了<em>应力</em>边界条件，则在动力阶段施加安静边界时，必须在同一边界上施加符号相反的应力边界条件。这样可使边界处的反力在动力计算中保持正确。</p>
+<p>安静边界条件可沿全局坐标方向施加，也可使用带相应关键字的 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/zoneface/cmd_zone.face.apply.html#command:zone.face.apply" title="This command is used to apply boundary conditions at surface faces of the model.
+ To apply conditions to zones rather than at faces, see the  zone.apply 
+command.  To apply conditions at individual gridpoints, see the  zone.gridpoint.fix 
+command...">施加网格单元面条件（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">face</span> <span class="pre">apply</span></code>）</a> 命令沿倾斜边界的法向和切向施加（一个分量为 <span class="cmdkey">quiet-normal</span>、<span class="cmdkey">quiet-dip</span>、<span class="cmdkey">quiet-strike</span>，三个分量则为 <span class="cmdkey">quiet</span>）。使用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/zoneface/cmd_zone.face.apply.html#command:zone.face.apply" title="This command is used to apply boundary conditions at surface faces of the model.
+ To apply conditions to zones rather than at faces, see the  zone.apply 
+command.  To apply conditions at individual gridpoints, see the  zone.gridpoint.fix 
+command...">施加网格单元面条件（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">face</span> <span class="pre">apply</span></code>）</a> 命令设置安静边界条件时，请记住方程<a class="reference internal" href="#equation-dynamic-tn">(5)</a>和<a class="reference internal" href="#equation-dynamic-ts">(6)</a>所用的材料性质取自紧邻边界的网格单元。因此，在给出 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/zoneface/cmd_zone.face.apply.html#command:zone.face.apply" title="This command is used to apply boundary conditions at surface faces of the model.
+ To apply conditions to zones rather than at faces, see the  zone.apply 
+command.  To apply conditions at individual gridpoints, see the  zone.gridpoint.fix 
+command...">施加网格单元面条件（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">face</span> <span class="pre">apply</span></code>）</a> 命令时，边界网格单元必须已具有适当的材料性质，以便存储正确的安静边界性质。</p>
+<p>当动力源位于网格内部时，安静边界最为适用。当动力源作为边界条件施加在顶部或底部时，不应在网格的侧边界使用安静边界，因为波能量会从侧面“泄漏”。在这种情况下，应对侧面施加自由场边界（见下文）。</p>
+</div>
+<div class="section" id="free-field-boundaries">
+<span id="dynamic-freefield"></span><h3>自由场边界</h3>
+<p>对坝等地表结构的地震响应进行数值分析，需要对与基础相邻的材料区域进行离散化。地震输入通常表示为向上穿过下伏材料传播的平面波。模型侧面的边界条件必须考虑在无结构情况下会存在的自由场运动。在某些情况下，简单的基本侧边界可能就足够了。例如，若在水平边界 AC（如 <a href="#dynamic-surfacestructure-freefield">图  3（Figure  3）</a> 所示）上仅施加剪切波，则可以仅沿竖直方向固定 AB 和 CD 边界（见<a class="reference internal" href="../../../../../zone/test3d/Dynamic/ShearWaveFreeFieldBoundModel/ShearWaveFreeFieldBoundModel.html#freefield"><span class="std std-ref">具有自由场边界的模型上的剪切波加载</span>（Shear
+Wave Loading of a Model with Free-Field Boundaries）</a>中的示例）。这些边界应置于足够远处，以尽量减小波反射并实现自由场条件。对于材料阻尼较高的土体，以相对较小的距离即可获得该条件（Seed 等 1975）。然而当材料阻尼较低时，所需的距离可能导致模型不切实际。另一种替代方法是“强制”自由场运动，使边界保持其无反射特性（即源自结构的向外波被适当地吸收）。该方法曾用于连续体有限体积程序 NESSI（Cundall 等 1980）。<span class="codename">FLAC3D</span> 中开发了一种与此类似的技术，即与主网格分析并行执行自由场计算。</p>
+<p>主网格的侧向边界通过黏性阻尼器与自由场网格耦合，以模拟安静边界（见 <a href="#dynamic-surfacestructure-freefield">图  3（Figure  3）</a>），并且自由场网格的不平衡力被施加到主网格边界上。这两种条件由方程<a class="reference internal" href="#equation-dyneq-fx">(7)</a>、<a class="reference internal" href="#equation-dyneq-fy">(8)</a>和<a class="reference internal" href="#equation-dyneq-fz">(9)</a>表示，适用于法向沿 <span class="math">\(x\)</span> 轴方向的某一边界平面上的自由场边界。其他侧面和角部边界可写出类似的表达式：</p>
+<div class="math" id="equation-dyneq-fx">
+<span class="eqno">(7)</span>\[F_x=-\rho C_p(v_x^m-v_x^{\rm ff}) A + F_x^{\rm ff}\]</div>
+<div class="math" id="equation-dyneq-fy">
+<span class="eqno">(8)</span>\[F_y=-\rho C_s(v_y^m-v_y^{\rm ff}) A + F_y^{\rm ff}\]</div>
+<div class="math" id="equation-dyneq-fz">
+<span class="eqno">(9)</span>\[F_z=-\rho C_s(v_z^m-v_z^{\rm ff}) A + F_z^{\rm ff}\]</div>
+<table border="1" class="colwidths-auto blank docutils">
+<tbody valign="top">
+<tr class="row-odd"><td>其中：</td>
+<td><span class="math">\(\rho\)</span></td>
+<td>=</td>
+<td>沿模型竖直边界的材料密度；</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td><span class="math">\(C_p\)</span></td>
+<td>=</td>
+<td>侧边界处的 <span class="math">\(p\)</span> 波波速；</td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td><span class="math">\(C_s\)</span></td>
+<td>=</td>
+<td>侧边界处的 <span class="math">\(s\)</span> 波波速；</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td><span class="math">\(A\)</span></td>
+<td>=</td>
+<td>自由场网格点的影响面积；</td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td><span class="math">\(v_x^m\)</span></td>
+<td>=</td>
+<td>侧边界处主网格中网格点的 <span class="math">\(x\)</span> 向速度；</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td><span class="math">\(v_y^m\)</span></td>
+<td>=</td>
+<td>侧边界处主网格中网格点的 <span class="math">\(y\)</span> 向速度；</td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td><span class="math">\(v_z^m\)</span></td>
+<td>=</td>
+<td>侧边界处主网格中网格点的 <span class="math">\(z\)</span> 向速度；</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td><span class="math">\(v_x^{\rm ff}\)</span></td>
+<td>=</td>
+<td>侧向自由场中网格点的 <span class="math">\(x\)</span> 向速度；</td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td><span class="math">\(v_y^{\rm ff}\)</span></td>
+<td>=</td>
+<td>侧向自由场中网格点的 <span class="math">\(y\)</span> 向速度；</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td><span class="math">\(v_z^{\rm ff}\)</span></td>
+<td>=</td>
+<td>侧向自由场中网格点的 <span class="math">\(z\)</span> 向速度；</td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td><span class="math">\(F_x^{\rm ff}\)</span></td>
+<td>=</td>
+<td>自由场网格点力，由该网格点周围自由场网格单元的 <span class="math">\(\sigma_{xx}^{\rm ff}\)</span> 应力贡献；</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td><span class="math">\(F_y^{\rm ff}\)</span></td>
+<td>=</td>
+<td>自由场网格点力，由该网格点周围自由场网格单元的 <span class="math">\(\sigma_{xy}^{\rm ff}\)</span> 应力贡献；以及</td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td><span class="math">\(F_z^{\rm ff}\)</span></td>
+<td>=</td>
+<td>自由场网格点力，由该网格点周围自由场网格单元的 <span class="math">\(\sigma_{xz}^{\rm ff}\)</span> 应力贡献。</td>
+</tr>
+</tbody>
+</table>
+<p>这样，向上传播的平面波在边界处不会发生畸变，因为自由场网格提供了与无限模型相同的条件。若主网格是均匀的且没有地表结构，则侧向阻尼器不起作用，因为自由场网格执行与主网格相同的运动。然而，若主网格的运动与自由场不同（例如由于地表结构辐射次生波），则阻尼器会以类似于安静边界的方式吸收能量。</p>
+<div class="figure align-center" id="dynamic-surfacestructure-freefield">
+<img alt="../../../../../../_images/dynamic-surfacestructure-freefield.png" src="../../../../../../_images/dynamic-surfacestructure-freefield.png"/>
+<p class="caption"><span class="caption-text">图 3：地表结构地震分析与自由场网格的模型。</span></p>
+</div>
+<p>要在 <span class="codename">FLAC3D</span> 中施加自由场边界，模型的方向必须满足：底面水平且其法向沿 <span class="math">\(z\)</span> 轴方向，侧面竖直且其法向沿 <span class="math">\(x\)</span> 轴或 <span class="math">\(y\)</span> 轴方向。若入射地震波的传播方向不竖直，则可旋转坐标轴，使 <span class="math">\(z\)</span> 轴与传播方向一致。此时，重力将与 <span class="math">\(z\)</span> 轴成一定角度作用，而水平自由面将相对于模型边界倾斜。</p>
+<p>自由场模型由模型侧边界上的四个平面自由场网格以及角部的四个柱状自由场网格组成（见 <a href="#dynamic-freefield-geometry">图  4（Figure  4）</a>）。平面网格的生成与侧边界上的主网格单元相匹配，从而使自由场与主网格的网格点之间一一对应。四个角部自由场柱为平面自由场网格充当自由场边界。平面自由场网格是二维计算，假定在垂直于平面的方向上无限延伸。柱状自由场网格是一维计算，假定在两个水平方向上均无限延伸。平面网格和柱状网格均由标准 <span class="codename">FLAC3D</span> 网格单元组成，其网格点以能够实现无限延伸假定的方式受到约束。</p>
+<div class="figure" id="dynamic-freefield-geometry">
+<a class="reference internal image-reference" href="../../../../../../_images/freefield-geometry.png"><img alt="../../../../../../_images/freefield-geometry.png" src="../../../../../../_images/freefield-geometry.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 4：<span class="codename">FLAC3D</span> 模型中的侧边与角部自由场边界。</span></p>
+</div>
+<p>在施加自由场边界之前，模型应处于静力平衡状态。调用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.dynamic.html#kwd:zone.dynamic.free-field" title="Controls the free-field boundary condition (available only for dynamic option;
+see  dynamic-freefield )...">单元动力自由场（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">dynamic</span> <span class="pre">free-field</span></code>）</a> 命令时，动力分析之前的静力平衡条件会自动传递到自由场。自由场条件施加到侧向边界网格点上。与自由场相邻的模型网格单元中的所有网格单元数据（包括模型类型和当前状态变量）都会复制到自由场区域。自由场应力赋值为相邻网格单元的平均应力。模型底部的动力边界条件应在施加自由场<em>之前</em>指定。施加自由场时，这些底部条件会自动传递到自由场。请注意，自由场是连续的；若主网格包含延伸至模型边界的接触面，则该接触面将<em>不会</em>延伸到自由场中。</p>
+<p>给出 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.dynamic.html#kwd:zone.dynamic.free-field" title="Controls the free-field boundary condition (available only for dynamic option;
+see  dynamic-freefield )...">单元动力自由场（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">dynamic</span> <span class="pre">free-field</span></code>）</a> 命令后，每当绘制主网格时，自由场网格都会自动绘制。</p>
+<p>自由场中可存在任意模型或非线性行为，也可存在流体耦合和自由场内的流动。</p>
+<p>下面是一个使用自由场边界的简单示例的链接，该示例用于 <a href="#dynamic-freefield-geometry">图  4（Figure  4）</a> 所示的模型。</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../zone/test3d/Dynamic/ShearWaveFreeFieldBoundModel/ShearWaveFreeFieldBoundModel.html">带自由场边界模型的剪切波加载（Shear Wave Loading of a Model with Free-Field Boundaries）</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="deconvolution-and-selection-of-dynamic-boundary-conditions">
+<span id="dyn-deconvolution"></span><h3>动力边界条件的反卷积与选择</h3>
+<p>为抗震分析编制的设计地震动通常以露头运动的形式给出，且往往是岩石露头运动。<a class="footnote-reference" href="#id3" id="id1">[1]</a> 然而对于 <span class="codename">FLAC3D</span> 分析，地震输入必须施加在模型底部而非地表，如 <a href="#dynamic-seismicinput">图  5（Figure  5）</a> 所示。于是问题就出现了：“为使设计运动得到正确模拟，应在 <span class="codename">FLAC3D</span> 模型底部施加怎样的输入运动？”</p>
+<p>深度处合适的输入运动可通过“反卷积”分析计算，所用工具为等效线性程序 <em>SHAKE</em> 或 <em>DEEPSOIL</em> 等一维波传播程序。这一看似简单的分析常常引起相当大的困惑，导致 <span class="codename">FLAC3D</span> 模型的地震动输入不当。下文介绍使用 <em>SHAKE</em> 将设计地震动调整为适用于 <span class="codename">FLAC3D</span> 输入的方法。地震动输入到 <span class="codename">FLAC3D</span> 通常采用以下方式之一：</p>
+<blockquote>
+<div><ul class="simple">
+<li>刚性基底，即在 <span class="codename">FLAC3D</span> 网格底部指定加速度-时间历程。</li>
+<li>柔性基底，即在 <span class="codename">FLAC3D</span> 网格底部采用安静（吸收）边界。</li>
+</ul>
+</div></blockquote>
+<div class="figure" id="dynamic-seismicinput">
+<img alt="../../../../../../_images/dynamic-seismicinput.png" src="../../../../../../_images/dynamic-seismicinput.png"/>
+<p class="caption"><span class="caption-text">图 5：<span class="codename">FLAC3D</span> 的地震输入。</span></p>
+</div>
+<p>对于刚性基底，为沿网格底部的网格点指定加速度（或速度、位移）的时间历程。虽然使用简单，但刚性基底的一个潜在缺点是模型底部的运动被完全规定。因此，底部的作用就如同固定位移边界，会将向下传播的波反射回模型。所以，除非在基底处意在模拟很大的动力阻抗反差（例如高速基岩之上的低速沉积层），否则刚性基底不是适用于一般情况的合适边界。</p>
+<p>对于柔性基底模拟，沿 <span class="codename">FLAC3D</span> 网格底部指定安静边界。参见<a class="reference internal" href="#dynamic-quiet"><span class="std std-ref">安静边界</span>（quiet boundaries）</a>一节。请注意，若在安静基底上的某网格点记录加速度历程，该记录未必与输入历程一致。输入应力-时间历程规定了进入 <span class="codename">FLAC3D</span> 模型的向上传播波运动，但基底处的实际运动将是向上运动与从 <span class="codename">FLAC3D</span> 模型反射回来的向下运动的叠加。</p>
+<p><em>SHAKE</em>（Schnabel 等 1972）是广泛用于场地反应分析的一维波传播程序。<em>SHAKE</em> 计算剪切波在水平黏弹性层剖面中的竖向传播。在每一层内，波动方程的解可表示为上行波列与下行波列之和。<em>SHAKE</em> 的解以各层内这些上行和下行运动为变量来表述，如 <a href="#dynamic-layeredsystem">图  6（Figure  6）</a> 所示。</p>
+<div class="figure align-center" id="id5">
+<span id="dynamic-layeredsystem"></span><img alt="../../../../../../_images/dynamic-layeredsystem.png" src="../../../../../../_images/dynamic-layeredsystem.png"/>
+<p class="caption"><span class="caption-text">图 6：由 SHAKE 分析的层状体系（层性质为剪切模量 <span class="math">\(G\)</span>、密度 <span class="math">\(\rho\)</span> 和阻尼比 <span class="math">\(\zeta\)</span>）。</span></p>
+</div>
+<p>一层中的波与相邻层中的波之间的关系，可通过强制层间界面处应力和位移连续来求解。这些关于两种弹性材料界面处反射波和透射波的著名关系式（Kolsky 1963）可用递推公式表示。这样，一层中的上行和下行运动便可由相邻层中的上行和下行运动计算得出。</p>
+<p>为满足自由面处剪应力为零的条件，顶层中的上行和下行运动必须相等。从顶层开始反复使用递推公式，即可确定体系任意两层运动之间的传递函数。因此，若给定了体系中某一层的运动，便可计算任意其他层的运动。</p>
+<p><em>SHAKE</em> 的输入和输出并非以上行波列和下行波列表示，而是以 a) 两层之间界面处的运动（称为“层内”运动）或 b) 自由面处的运动（称为“露头”运动）表示。层内运动是上行波列与下行波列的叠加。露头运动是在该位置自由面处会发生的运动。因此，露头运动恰好是上行波列运动的两倍。如有需要，取露头运动的一半即可计算上行运动。此后，在任意点处，可由层内运动减去上行运动来计算下行运动。</p>
+<p><em>SHAKE</em> 的解在频域中给出，并借助傅里叶变换在时域之间相互转换。下文讨论的反卷积分析说明了 <em>SHAKE</em> 在线性弹性情形下的应用。参见<a class="reference internal" href="../../../../../zone/test3d/Dynamic/F3ShakeLinearElasticCase/F3ShakeLinearElasticCase.html#f3shakelinear"><span class="std std-ref">层状线弹性土沉积层中 FLAC3D 与 SHAKE 的对比</span>（Comparison of FLAC3D to SHAKE for a Layered, Linear-Elastic Soil Deposit）</a>。<em>SHAKE</em> 还可以通过等效线性方法近似处理非线性土体行为。分析迭代进行，以获得与各层计算所得有效应变相协调的剪切模量和阻尼值。参见<a class="reference internal" href="../../../../../zone/test3d/Dynamic/F3ShakeNonLinearElasticCase/F3ShakeNonLinearElasticCase.html#f3shakenonlinear"><span class="std std-ref">层状非线性弹性土中 FLAC3D 与 SHAKE 的对比</span>（Comparison of FLAC3D to SHAKE for a Layered, Nonlinear-Elastic Soil）</a>。</p>
+<p><em>DEEPSOIL</em>（Hashssh 等 2017）是一款一维场地反应分析程序，可执行：a) 含或不含孔隙水压力产生的一维非线性时域分析；b) 包含卷积和反卷积的一维等效线性频域分析；以及 c) 一维线性时域和频域分析。</p>
+<p><em>刚性基底的反卷积</em>——刚性基底的反卷积过程在 <a href="#dynamic-decov-rigid">图  7（Figure  7）</a> 中以二维 <span class="codename">FLAC</span> 模拟为例说明。同样的过程也适用于 <span class="codename">FLAC3D</span>。目标是确定施加到 <span class="codename">FLAC</span> 的合适基底输入运动，使目标设计运动能在 <span class="codename">FLAC</span> 模型顶面重现。所模拟的剖面由三个厚 20 m 的弹性层组成，其剪切波速度和密度如图所示。<em>SHAKE</em> 模型包含这三个弹性层以及与底层性质相同的弹性半空间。<span class="codename">FLAC</span> 模型由一列线弹性单元组成。目标地震作为露头运动输入到 <em>SHAKE</em> 柱的顶部。然后提取半空间顶部的运动作为层内运动，并将其作为加速度-时间历程施加到 <span class="codename">FLAC</span> 模型底部。Mejia 和 Dawson（2006）表明，<span class="codename">FLAC</span> 模型表面由此得到的加速度与目标运动几乎完全相同。<em>SHAKE</em> 的层内运动适用于刚性基底输入，因为如上所述，层内运动就是该位置处的实际运动，即上行波与下行波的叠加。</p>
+<p><em>柔性基底的反卷积</em>——柔性基底的反卷积过程在 <a href="#dynamic-decov-compliant">图  8（Figure  8）</a> 中以 <span class="codename">FLAC</span> 模拟为例说明。同样，该过程也适用于 <span class="codename">FLAC3D</span>。<em>SHAKE</em> 和 <span class="codename">FLAC</span> 模型与刚性基底算例中的模型相同，只是对 <span class="codename">FLAC</span> 网格底部施加了安静边界。为通过安静基底施加，需从半空间顶部的 <em>SHAKE</em> 中提取上行波运动（即露头运动的 1/2）。对该加速度-时间历程进行积分以获得速度，然后利用方程<a class="reference internal" href="#equation-dyneq-waves">(4)</a>将其转换为应力历程。同样，Mejia 和 Dawson（2006）表明，<span class="codename">FLAC</span> 模型表面由此得到的加速度与目标运动几乎完全相同。作为对计算所得加速度的额外检验，他们还表明柔性基底和刚性基底两种情形下的反应谱均与目标运动的反应谱高度吻合。</p>
+<p>对于 <em>反卷积</em>分析，Idriss（2019 年 ASCE Terzaghi 讲座）发现，一种有用的做法是：先以较低的截止频率（例如约 5 Hz，取决于振动水平）完成分析以获得应变相容性质，然后将所得的应变相容模量和阻尼值用于一次迭代以及所需的截止频率（通常为 20 至 30 Hz）。</p>
+<div class="figure" id="dynamic-decov-rigid">
+<a class="reference internal image-reference" href="../../../../../../_images/dynamic-decov-rigid.png"><img alt="../../../../../../_images/dynamic-decov-rigid.png" src="../../../../../../_images/dynamic-decov-rigid.png" style="width: 95%;"/></a>
+<p class="caption"><span class="caption-text">图 7：刚性基底的反卷积过程（据 Mejia 和 Dawson 2006）。</span></p>
+</div>
+<div class="figure" id="dynamic-decov-compliant">
+<a class="reference internal image-reference" href="../../../../../../_images/dynamic-decov-compliant.png"><img alt="../../../../../../_images/dynamic-decov-compliant.png" src="../../../../../../_images/dynamic-decov-compliant.png" style="width: 95%;"/></a>
+<p class="caption"><span class="caption-text">图 8：柔性基底的反卷积过程（据 Mejia 和 Dawson 2006）。</span></p>
+</div>
+<p>尽管上述示例有助于说明反卷积的基本思想，但它并非实践中遇到的典型情况。<a href="#dynamic-decov-compliant-p2">图  9（Figure  9）</a> 所示的情形更为常见：一层或多层土体（预期表现为非线性）覆盖在基岩（假定表现为线性）之上。此情形下的 <span class="codename">FLAC</span> 或 <span class="codename">FLAC3D</span> 模型通常包含土体各层以及弹性基岩基底。为计算正确的 <span class="codename">FLAC3D</span> 柔性基底输入，需按图中所示构建 <em>SHAKE</em> 模型。<em>SHAKE</em> 模型包含一层与 <span class="codename">FLAC3D</span> 网格弹性基底厚度相同的基岩层，以及下伏的具有基岩性质的弹性半空间。目标运动作为基岩顶部（A 点）的露头运动输入到 <em>SHAKE</em> 模型。将该运动指定为露头运动，意味着 A 点正下方层中的上行波运动将设为等于目标运动的 1/2。<span class="codename">FLAC3D</span> 输入所需的上行运动在 B 点提取，为露头运动的 1/2。</p>
+<p>对于柔性基底情形，实际上无需在 <em>SHAKE</em> 模型中包含土体各层，因为这些层不会影响 A 点与 B 点之间的上行波列。事实上，对于这种简单情形，并不真正需要进行正式的反卷积分析，因为 B 点的上行运动将与 A 点几乎相同。除时间偏移外，唯一的差异来自两点之间的材料阻尼，而对于基岩而言该差异通常很小。因此，对于这种非常常见的情形，<span class="codename">FLAC3D</span> 的正确输入运动就是目标运动的 1/2。（请注意，必须使用方程<a class="reference internal" href="#equation-dyneq-waves">(4)</a>将上行波运动转换为应力-时间历程，其中包含因子 2，以计入被黏性阻尼器吸收的应力。）</p>
+<p>对于刚性基底分析，需要 B 点处的层内运动。由于该层内运动包含从地表反射回来的下行波，因此必须在 <em>SHAKE</em> 模型中包含非线性土层。然而，土体非线性在 <span class="codename">FLAC3D</span> 和 <em>SHAKE</em> 中的模拟方式差别很大。因此，难以计算刚性基底分析所需的合适 <span class="codename">FLAC3D</span> 输入运动。</p>
+<p>实践中遇到的另一种典型情况示于 <a href="#dynamic-decov-compliant-p3">图  10（Figure  10）</a>。此处土体剖面很深，模型并非将 <span class="codename">FLAC3D</span> 网格一直延伸到基岩，而是将底部终止于土体剖面之内。请注意，网格必须延伸至土体反应基本呈线性的深度以下。同样，设计运动作为露头运动输入到基岩顶部（A 点），而 <span class="codename">FLAC3D</span> 输入所需的上行运动在 B 点提取。与前一示例相同，对于柔性基底分析，无需在 <em>SHAKE</em> 模型中包含 B 点以上的土层。这些层对 A 点与 B 点之间的上行运动没有影响。与前一情形不同的是，A 点和 B 点的上行运动可能差别很大，这取决于基岩与线性土层之间的阻抗反差。因此，不宜跳过反卷积分析而直接使用目标运动。</p>
+<p>刚性基底仅适用于模型底部阻抗反差很大的情形。然而，使用 <em>SHAKE</em> 计算 <span class="codename">FLAC3D</span> 模型刚性基底所需的输入运动时，<em>仅</em>对表现出较低非线性水平的模型，才能使目标地表运动与 <span class="codename">FLAC3D</span> 计算得到的地表运动良好吻合。输入运动已包含基底以上所有层的影响，因为它包含下行波。</p>
+<div class="figure" id="dynamic-decov-compliant-p2">
+<a class="reference internal image-reference" href="../../../../../../_images/dynamic-decov-compliant-p2.png"><img alt="../../../../../../_images/dynamic-decov-compliant-p2.png" src="../../../../../../_images/dynamic-decov-compliant-p2.png" style="width: 95%;"/></a>
+<p class="caption"><span class="caption-text">图 9：典型情形下柔性基底的反卷积过程（据 Mejia 和 Dawson 2006）。</span></p>
+</div>
+<div class="figure" id="dynamic-decov-compliant-p3">
+<a class="reference internal image-reference" href="../../../../../../_images/dynamic-decov-compliant-p3.png"><img alt="../../../../../../_images/dynamic-decov-compliant-p3.png" src="../../../../../../_images/dynamic-decov-compliant-p3.png" style="width: 95%;"/></a>
+<p class="caption"><span class="caption-text">图 10：另一典型情形下柔性基底的反卷积过程（据 Mejia 和 Dawson 2006）。</span></p>
+</div>
+<p>若使用刚性基底的 <span class="codename">FLAC3D</span> 模型来模拟更符合实际的体系（例如表现出强烈非线性的场地，或地表结构、嵌埋结构的影响），则必须采用不同的方法。在第一种情况下，<em>SHAKE</em> 在估算基底运动时未考虑真实的非线性反应。在第二种情况下，来自结构的次生波会从刚性基底反射，造成人为的共振效应。</p>
+<p>柔性基底几乎总是更可取的选项，因为下行波会被吸收。此时选择安静基底条件，仅使用 <em>SHAKE</em> 中的上行波来计算输入应力历程。由于在安静 <span class="codename">FLAC3D</span> 基底处仅使用上行波，因此无需对网格内部非线性或结构产生的次生波作任何假定，因为入射波不受这些因素影响；而出射波则被柔性基底吸收。</p>
+<p>尽管刚性基底反射的存在在复杂的非线性 <span class="codename">FLAC3D</span> 分析中并不总是显而易见，但它们可能对分析结果产生重大影响，尤其是在采用循环退化或液化土模型时。Mejia 和 Dawson（2006）给出了二维 <span class="codename">FLAC</span> 模拟的示例，说明在具有刚性基底的模型中计算得到了非物理的波反射。其中一个示例（见 <a href="#dynamic-decov-embankment">图  11（Figure  11）</a>）展示了刚性边界带来的困难。刚性基底导致的非物理振荡通过与 <a href="#dynamic-decov-example-acc">图  12（Figure  12）</a> 中柔性基底结果的对比予以展示。两种情形（刚性和柔性）的输入均由同一地表运动反卷积得到。</p>
+<div class="figure" id="dynamic-decov-embankment">
+<a class="reference internal image-reference" href="../../../../../../_images/dynamic-decov-embankment.png"><img alt="../../../../../../_images/dynamic-decov-embankment.png" src="../../../../../../_images/dynamic-decov-embankment.png" style="width: 95%;"/></a>
+<p class="caption"><span class="caption-text">图 11：采用刚性基底和柔性基底分析的堤坝（据 Mejia 和 Dawson 2006）。</span></p>
+</div>
+<div class="figure align-center" id="dynamic-decov-example-acc">
+<a class="reference internal image-reference" href="../../../../../../_images/dynamic-decov-example-acc.png"><img alt="../../../../../../_images/dynamic-decov-example-acc.png" src="../../../../../../_images/dynamic-decov-example-acc.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 12：堤坝顶部的计算加速度（据 Mejia 和 Dawson 2006）。</span></p>
+</div>
+</div>
+</div>
+<div class="section" id="hydrodynamic-pressures">
+<span id="dynamic-hydrodynamic-pressures"></span><h2>动水压力</h2>
+<p>水库中的水与混凝土坝之间的动力相互作用会对坝在强震期间的表现产生显著影响。Westergaard（1933）为描述这种相互作用的各类方法建立了数学基础，该方法在工程实践中被普遍采用。尽管计算机的出现使流体-结构系统耦合微分方程的数值求解成为可能，但 Westergaard 提出的公式仍广泛用于较小坝体的稳定分析以及大坝设计中的初步计算。</p>
+<div class="figure" id="hydrodynamic-pressure-image">
+<a class="reference internal image-reference" href="../../../../../../_images/hydrodynamic-pressure.png"><img alt="../../../../../../_images/hydrodynamic-pressure.png" src="../../../../../../_images/hydrodynamic-pressure.png" style="width: 95%;"/></a>
+<p class="caption"><span class="caption-text">图 13：作用在具有竖直上游面的刚性坝上的动水压力。</span></p>
+</div>
+<p>作用在刚性混凝土坝上、水深为 <span class="math">\(H\)</span> 时的动水压力如 <a href="#hydrodynamic-pressure-image">图  13（Figure  13）</a> 所示。该压力可由流体的运动方程导出。雷诺数很小的流体的运动方程可写为</p>
+<div class="math" id="equation-eomforafluid">
+<span class="eqno">(10)</span>\[c^2 \left( \frac{\delta^2 \Phi}{\delta x_1^2} + \frac{\delta^2 \Phi}{\delta x_2^2} \right) = \frac{\delta^2 \Phi}{\delta t^2}\]</div>
+<p>其中 <span class="math">\(c\)</span> 是水中的声速，<span class="math">\(\Phi\)</span> 是速度势。水压力可写成速度势的函数：</p>
+<div class="math">
+\[p = \rho_w \frac{\delta \Phi}{\delta t}\]</div>
+<p>其中 <span class="math">\(\rho_w\)</span> 是水的密度。</p>
+<p>为简化荷载条件，另作如下假定：</p>
+<blockquote>
+<div><ul class="simple">
+<li>假定水不可压缩，这使方程<a class="reference internal" href="#equation-eomforafluid">(10)</a>简化为拉普拉斯方程：<span class="math">\(\frac{\delta^2 \Phi}{\delta x_1^2} + \frac{\delta^2 \Phi}{\delta x_2^2} = 0\)</span>。</li>
+<li>假定水库自由面处于静止状态。因此，在 <span class="math">\(x_2 = H\)</span> 处 <span class="math">\(\frac{\delta \Phi}{\delta t} = 0\)</span>。</li>
+<li>假定水库无限长。因此 <span class="math">\(x_1 \rightarrow \infty, \Phi \rightarrow 0\)</span>。</li>
+<li>假定动水运动仅为水平方向：在 <span class="math">\(x_2 = 0\)</span> 处 <span class="math">\(\frac{\delta \Phi}{x_2} = 0\)</span>。</li>
+<li>坝的上游面竖直且坝为刚性：在 <span class="math">\(x_1 = 0\)</span> 处 <span class="math">\(\frac{\delta \Phi}{x_1} = f(t)\)</span>。</li>
+</ul>
+</div></blockquote>
+<p>在上述假定下，方程<a class="reference internal" href="#equation-eomforafluid">(10)</a>的解可对任意加速度 <span class="math">\(\ddot{x}_0 (t)\)</span> 以无穷傅里叶级数的形式求得：</p>
+<div class="math" id="equation-eomforafluidfourier">
+<span class="eqno">(11)</span>\[p(0,x_2,t) = 8 \ddot{x}_0 \rho_w H \sum_{n=1}^{\infty} \frac{(-1)^{n+1}}{((2n-1)\pi)^2}\;e^{\frac{-(2n-1)x_1}{4H}} \cos\big(\frac{(2n-1)x_2}{4H})\]</div>
+<p>方程<a class="reference internal" href="#equation-eomforafluidfourier">(11)</a>可近似为</p>
+<div class="math" id="equation-eomforafluidapprox">
+<span class="eqno">(12)</span>\[p(0,x_2,t) = \rho_w \ddot{x}_0(t) H \frac{C_m}{2} \left( 1 - \frac{x^2_2}{H^2} + \sqrt{1-\frac{x^2_2}{H^2}} \right)\]</div>
+<p>其中 <span class="math">\(C_m\)</span> = 0.743，<span class="math">\(\ddot{x}\)</span> 是坝面处的水平加速度。</p>
+<p>方程<a class="reference internal" href="#equation-eomforafluidapprox">(12)</a>在 <span class="codename">FLAC3D</span> 中通过调整坝上游面上的网格点质量以计入动水压力来实现。由网格点相关的惯性力与水库水的动水压力共同产生的等效压力 <span class="math">\(\bar{p}\)</span>（在该网格点所关联的面积上取平均）可写为</p>
+<div class="math">
+\[\bar{p}(0,x_2,t) = \rho_e\;c\;\ddot{x}_0 (t) \frac{A_g}{\Delta x_2}\]</div>
+<p>其中 <span class="math">\(A_g\)</span> 是该网格点所关联的面积，<span class="math">\(\Delta x_2\)</span> 是坝上游面上为该网格点施加水荷载的接触长度，<span class="math">\(\rho_ec\)</span> 是该网格点的等效密度，由下式给出</p>
+<div class="math">
+\[\rho_ec = \rho_c + \rho_sc\]</div>
+<p>其中</p>
+<div class="math" id="equation-westergaardeq">
+<span class="eqno">(13)</span>\[\rho_sc = \rho_w \frac{H \delta x_2}{A_g} \frac{C_m}{2} \left( 1 - \frac{x^2_2}{H_2} + \sqrt{1 - \frac{x^2_2}{H^2}} \right)\]</div>
+<p><span class="math">\(\rho_c\)</span> 是混凝土密度，因此网格点质量为 <span class="math">\(m_g = A_g \rho_c\)</span>。缩放后的网格点质量 <span class="math">\(m_sg = A_g \rho_ec\)</span> 仅用于水平方向的运动计算；质量增加的效果不影响竖向力。</p>
+<p>通过加入该项（由方程<a class="reference internal" href="#equation-westergaardeq">(13)</a>确定）来调整网格点质量，以计入动水压力。该调整量存储在可使用 <span class="codename">FISH</span> 网格点函数 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_fish/zone.gridpoint_intrinsics/fish_gp.mass.add.html#function:gp.mass.add" title="Get/set the added mass vector for the gridpoint.  This mass is added to the
+inertial mass of the gridpoint during equations of motion.  Returns a vector,
+unless an optional component argument  i  is supplied, in which case it
+returns the component value...">节点附加质量（<code class="xref fish fish-func docutils literal"><span class="pre">gp.mass.add</span></code>）</a> 修改的位置。这些条件使用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/zoneface/cmd_zone.face.westergaard.html#command:zone.face.westergaard" title="Applies the Westergaard approximation for the dynamic response of water to the
+surface faces in the range.  This operates by changing the inertial mass of
+the gridpoints connected to the surface faces in the range.  This command is
+only available if  model.configure.dynamic  has been specified..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">face</span> <span class="pre">westergaard</span></code></a> 命令施加。</p>
+<p>下面提供一个简单示例，用以说明动水压力的效果，并将 Westergaard 近似解与使用 <span class="codename">FLAC3D</span> 网格单元显式模拟水所得的结果进行对比。</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../zone/test3d/Dynamic/HydroDynamicPressure/HydroDynamicPressure.html">作用在大坝上的动水压力（Hydrodynamic Pressure Acting on a Dam）</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="wave-transmission">
+<span id="dyn-wave-transmission"></span><h2>波传播</h2>
+<div class="section" id="accurate-wave-propagation">
+<span id="dynamic-accurate-wave-propagation"></span><h3>波传播的精度</h3>
+<p>在动力分析中，传播波的数值畸变会随建模条件而出现。输入波的频率成分和体系的波速特性都会影响波传播的数值精度。Kuhlemeyer 和 Lysmer（1973）指出，为准确表示波通过模型的传播，空间单元尺寸 <span class="math">\(\Delta l\)</span> 必须小于与输入波最高频率成分对应的波长的约十分之一至八分之一。例如：</p>
+<div class="math" id="equation-dynamic-eq-element-size">
+<span id="dynamic-eq-element-size"></span><span class="eqno">(14)</span>\[\Delta l \le {\lambda \over 10}\]</div>
+<p>其中 <span class="math">\(\lambda\)</span> 是与含有可观能量的最高频率成分对应的波长。</p>
+</div>
+<div class="section" id="filtering">
+<span id="dynamic-filtering"></span><h3>滤波</h3>
+<p>对于峰值速度高、上升时间短的动力输入，Kuhlemeyer 和 Lysmer 的要求可能需要非常精细的空间网格以及相应的小时步。其后果是，原本合理的分析可能因耗时和耗内存而难以承受。在此类情况下，可以通过认识到输入历程的大部分功率集中在较低频率成分中（例如使用“datafiles\FISH\Library”中的“fft.fis”）来调整输入。通过对历程滤波并去除高频成分，可以使用较粗的网格而不显著影响结果。</p>
+<p>滤波过程可采用低通滤波程序（如快速傅里叶变换技术）完成。例如，<a href="#dynamic-filter1">图  14（Figure  14）</a> 所示的未滤波速度记录表示一个含有极高频尖峰的典型波形。该输入的最高频率超过 50 Hz，但如傅里叶幅值随频率变化的功率谱密度图（<a href="#dynamic-filter2">图  15（Figure  15）</a>）所示，大部分功率（约 99%）由 15 Hz 及更低频率的成分构成。因此可以推断，用 15 Hz 低通滤波器对该速度历程滤波后，损失的功率不足 1%。按 15 Hz 滤波后的输入示于 <a href="#dynamic-filter3">图  16（Figure  16）</a>，傅里叶幅值绘于 <a href="#dynamic-filter4">图  17（Figure  17）</a>。未滤波与滤波后输入的功率差小于 1%，而峰值速度降低了 38%，上升时间从 0.035 秒变为 0.09 秒。应以不同滤波水平的输入进行分析，以评价滤波器对模型结果的影响。</p>
+<p>若使用违反方程<a class="reference internal" href="#equation-dynamic-eq-element-size">(14)</a>的输入历程进行模拟，输出中将出现非物理的虚假“振铃”（叠加振荡）。输入谱<em>必须</em>在施加到 <span class="codename">FLAC3D</span> 网格之前进行滤波。这一限制适用于所有对连续体进行离散化的数值模型；它并非 <span class="codename">FLAC3D</span> 所独有的特性。任何离散化介质能够传递的频率都有上限，为使结果有意义就必须遵守该上限。时域程序的使用者常向数值网格施加陡峭脉冲或阶跃波形；这是<em>不可</em>接受的，因为这些波形的频谱延伸到无穷。替代做法很简单：施加具有有限频谱的光滑脉冲。另一种做法是使用人工黏性，将陡峭波前分散到若干网格单元上（见<a class="reference internal" href="#consideration-artificial-viscosity"><span class="std std-ref">人工黏性</span>（Artificial Viscosity）</a>），但该方法严格来说只适用于各向同性应变分量。</p>
+<div class="figure" id="dynamic-filter1">
+<img alt="../../../../../../_images/dynamic-filter11.png" src="../../../../../../_images/dynamic-filter11.png"/>
+<p class="caption"><span class="caption-text">图 14：未滤波的速度历程。</span></p>
+</div>
+<div class="figure" id="dynamic-filter2">
+<img alt="../../../../../../_images/dynamic-filter21.png" src="../../../../../../_images/dynamic-filter21.png"/>
+<p class="caption"><span class="caption-text">图 15：未滤波的功率谱密度图。</span></p>
+</div>
+<div class="figure" id="dynamic-filter3">
+<img alt="../../../../../../_images/dynamic-filter31.png" src="../../../../../../_images/dynamic-filter31.png"/>
+<p class="caption"><span class="caption-text">图 16：15 Hz 滤波后的速度历程。</span></p>
+</div>
+<div class="figure" id="dynamic-filter4">
+<img alt="../../../../../../_images/dynamic-filter41.png" src="../../../../../../_images/dynamic-filter41.png"/>
+<p class="caption"><span class="caption-text">图 17：15 Hz 滤波的结果。</span></p>
+</div>
+</div>
+</div>
+<div class="section" id="mechanical-damping-and-material-response">
+<span id="dynamic-mechanical-damping"></span><h2>力学阻尼与材料响应</h2>
+<p>天然动力系统在系统内部对振动能量均具有一定程度的阻尼；否则，系统在受到驱动力作用时会无休止地振荡。阻尼部分源于完整材料内部摩擦以及沿接触面（若存在）滑移所造成的能量损失。</p>
+<p><span class="codename">FLAC3D</span> 采用动力算法求解两大类力学问题：准静态问题和动力问题。两类问题的求解都使用阻尼，但准静态问题需要更大的阻尼才能快速收敛到平衡。静力解的阻尼在<a class="reference internal" href="../../../theory/theoreticalbackground/formulation.html#mechanical-damping"><span class="std std-ref">力学阻尼</span>（Mechanical Damping）</a>中讨论。</p>
+<p>对于动力分析，数值模拟中的阻尼应在量值和形式上再现天然系统在动力荷载作用下的能量损失。在土和岩石中，天然阻尼主要是滞回性的（即与频率无关——见 Gemant 和 Jackson 1937，以及 Wegel 和 Walther 1935）。由于至少存在两个问题（见 Cundall 1976，以及<a class="reference internal" href="../relation/relation.html#dynamic-characteristics-nonlinear"><span class="std std-ref">完全非线性方法的特性</span>（Characteristics of Fully Nonlinear Method）</a>中的讨论），在数值上再现这类阻尼比较困难。第一，当多个波形叠加时，许多简单滞回函数并不能同样地阻尼所有分量。第二，滞回函数会导致路径相关性，使结果难以解释。然而，若能找到一种本构模型足以合理地表示真实材料中发生的滞回，则<em>无需附加阻尼</em>。这一意见针对的是用 C++ 编写自有本构模型的用户；内建模型被认为不足以模拟动力滞回，因而不能完全省略附加阻尼。</p>
+<p>由于若干原因，在数值模拟中使用材料“真实”的应力/应变响应并不现实。例如：1) 尚无描述完整材料响应的定律；2) 现有的、能够反映许多重要方面的定律含有许多材料参数，需要大量标定工作。</p>
+<p>在时域程序中，常用<a class="reference internal" href="#dynamic-rayleigh-damping"><span class="std std-ref">瑞利阻尼</span>（Rayleigh damping）</a>在有限频率范围内提供近似与频率无关的阻尼。尽管<a class="reference internal" href="#dynamic-rayleigh-damping"><span class="std std-ref">瑞利阻尼</span>（Rayleigh damping）</a>包含两个黏性元件（其吸收的能量与频率有关），但通过调整可使频率相关效应在所关注的频率处相互抵消。</p>
+<p><a class="reference internal" href="#dynamic-hysteretic-damping"><span class="std std-ref">滞回阻尼</span>（Hysteretic damping）</a>是另一种阻尼选项。这种阻尼形式允许将随应变变化的模量和阻尼函数直接纳入 <span class="codename">FLAC3D</span> 模拟。这使得可以在不因本构模型选择而作任何折中的情况下，直接将等效线性方法的计算与完全非线性方法进行比较。</p>
+<p>对于常规工程设计，必须采用循环能量耗散的近似表示。在 <span class="codename">FLAC3D</span> 中使用 Mohr-Coulomb 等简单塑性模型时，可在瑞利阻尼和滞回阻尼之间选择。此处对两种方法作一些总体比较，以便作出选择。总体而言，滞回阻尼是两者中更符合实际的一种，且不会导致时步减小。进一步讨论见<a class="reference internal" href="#dynamic-integration-of-damping-schemes"><span class="std std-ref">岩土材料阻尼方案与非线性材料模型的集成</span>（Integration of Damping Schemes and Nonlinear Material
+Models for Geo-materials）</a>。</p>
+<p>对于低循环应变水平和相当均匀的条件，只要两者设定的阻尼水平与所经历的循环应变水平相协调，瑞利阻尼和滞回阻尼会给出相似的结果。在以下两种情形下结果会有所不同：</p>
+<blockquote>
+<div><p>1. 当体系不均匀时（例如各层性质差别很大），不同位置和不同时刻的循环应变水平可能不同。采用滞回阻尼时，这些不同的应变水平会在时间和空间上产生符合实际的不同阻尼水平，而恒定均匀的瑞利阻尼参数只能再现平均响应。可以采用迭代（应变相容）方案调整瑞利阻尼参数，以计入阻尼的空间变化，正如<a class="reference internal" href="../relation/relation.html#dynamic-characteristics-equivalent-linear"><span class="std std-ref">等效线性方法</span>（equivalent-linear method）</a>中所做的那样。也可以随时间调整瑞利阻尼参数，但可能会遇到一些实际困难。</p>
+<p>2. 当接近屈服时，瑞利阻尼和滞回阻尼都不能计及大范围屈服的能量耗散。因此，不可逆应变发生在两种方案之外，耗散由屈服模型（例如 Mohr-Coulomb）表示。在这种条件下，瑞利阻尼的质量比例项可能抑制屈服，因为破坏模式中发生的刚体运动会被错误地抵抗。在这种情况下，滞回阻尼可能产生更大的永久应变，但通常认为这一情况比使用瑞利阻尼更符合实际。</p>
+</div></blockquote>
+<p>我们注意到，滞回阻尼在循环应变水平极低时几乎不提供能量耗散，这可能不符合实际。为避免低水平振荡，建议在动力模拟中使用滞回阻尼时，加入少量的（例如 0.2%）刚度比例瑞利阻尼。</p>
+<p><span class="codename">FLAC3D</span> 中的另一种阻尼形式——<span class="codename">FLAC3D</span> 静力求解方案中所体现的<a class="reference internal" href="#dynamic-local-damping"><span class="std std-ref">局部阻尼</span>（local damping）</a>——也可用于动力计算，但需采用适合波传播的阻尼系数。动力问题中的局部阻尼可作为计入滞回阻尼的一种近似方法。然而，随着波形复杂程度的提高（即频率成分数目增加），它变得越来越不符合实际。局部阻尼无法正确捕捉多频率循环荷载的能量损失。</p>
+<p><span class="codename">FLAC3D</span> 中还提供第四种阻尼形式，即<a class="reference internal" href="#consideration-artificial-viscosity"><span class="std std-ref">人工黏性</span>（artificial viscosity）</a>。这种阻尼可用于涉及陡峭动力波前的分析。</p>
+<div class="section" id="rayleigh-damping">
+<span id="dynamic-rayleigh-damping"></span><h3>瑞利阻尼</h3>
+<p>瑞利阻尼最初用于结构和弹性连续体的分析，以阻尼体系的固有振型。因此，其方程以矩阵形式表达。</p>
+<p>采用阻尼矩阵 <span class="math">\(C\)</span>，其各分量分别与质量矩阵 <span class="math">\(M\)</span> 和刚度矩阵 <span class="math">\(K\)</span> 成比例：</p>
+<div class="math" id="equation-dynamic-rayleigh-1">
+<span class="eqno">(15)</span>\[C = \alpha\ M + \beta\ K\]</div>
+<p>其中 <span class="math">\(\alpha\)</span> 是质量比例阻尼常数；<span class="math">\(\beta\)</span> 是刚度比例阻尼常数。</p>
+<p>质量比例项类似于将每个 <span class="codename">FLAC3D</span> 网格点与“地面”相连的阻尼器。刚度比例项类似于跨接在每个 <span class="codename">FLAC3D</span> 网格单元上的阻尼器（对应变率作出响应）。尽管两项都与频率有关，但如下文所述，通过适当选择参数，可在有限频率范围内获得近似与频率无关的响应。</p>
+<p>对于多自由度体系，系统任意角频率 <span class="math">\(\omega_i\)</span> 处的临界阻尼比 <span class="math">\(\xi_i\)</span> 可由下式求得（Bathe 和 Wilson 1976）</p>
+<div class="math" id="equation-dynamic-rayleigh-2">
+<span class="eqno">(16)</span>\[\alpha + \beta\ \omega_i^2 = 2\ \omega_i\ \xi_i\]</div>
+<p>或</p>
+<div class="math" id="equation-dynamic-rayleigh-3">
+<span class="eqno">(17)</span>\[\xi_i = {{1} \over {2}}\ \bigl( {{\alpha} \over {\omega_i}} + \beta\ \omega_i \bigr)\]</div>
+<p>临界阻尼比 <span class="math">\(\xi_i\)</span> 也称为振型 <span class="math">\(i\)</span>（角频率 <span class="math">\(\omega_i\)</span>）的临界阻尼分数。</p>
+<p><a href="#rayleigh-damping-variation">图  18（Figure  18）</a> 给出了归一化临界阻尼比随角频率 <span class="math">\(\omega_i\)</span> 的变化。图中给出三条曲线：仅质量分量、仅刚度分量以及两者之和。如图所示，在较低角频率范围内质量比例阻尼占主导，而在较高角频率时刚度比例阻尼占主导。表示两者之和的曲线在下列频率处达到最小值：</p>
+<div class="math" id="equation-dynamic-rayleigh-4">
+<span class="eqno">(18)</span>\[\xi_{\min} = (\alpha\ \beta)^{1/2}\]</div>
+<div class="math" id="equation-dynamic-rayleigh-5">
+<span class="eqno">(19)</span>\[\omega_{\min} = (\alpha\thinspace /\thinspace \beta)^{1/2}\]</div>
+<p>或</p>
+<div class="math" id="equation-dynamic-rayleigh-6">
+<span class="eqno">(20)</span>\[\alpha = \xi_{\min}\ \omega_{\min}\]</div>
+<div class="math" id="equation-dynamic-rayleigh-7">
+<span class="eqno">(21)</span>\[\beta = \xi_{\min}\thinspace /\thinspace \omega_{\min}\]</div>
+<p>于是中心频率定义为</p>
+<div class="math" id="equation-dynamic-rayleigh-8">
+<span class="eqno">(22)</span>\[f_{\min} = \omega_{\min}\thinspace /\thinspace 2 \pi\]</div>
+<p>请注意，在频率 <span class="math">\(\omega_{\min}\)</span>（或 <span class="math">\(f_{\min}\)</span>）处（且<em>仅</em>在该频率处），质量阻尼和刚度阻尼各提供总阻尼力的一半。</p>
+<div class="figure" id="rayleigh-damping-variation">
+<a class="reference internal image-reference" href="../../../../../../_images/rayleigh-damping-variation.png"><img alt="../../../../../../_images/rayleigh-damping-variation.png" src="../../../../../../_images/rayleigh-damping-variation.png" style="width: 95%;"/></a>
+<p class="caption"><span class="caption-text">图 18：归一化临界阻尼比随角频率的变化。</span></p>
+</div>
+<p>在 <span class="codename">FLAC3D</span> 中，瑞利阻尼通过参数 <span class="math">\(f_{\min}\)</span>（单位为赫兹，即每秒循环次数）和 <span class="math">\(\xi_{\min}\)</span> 指定，二者均由 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.dynamic.html#kwd:zone.dynamic.damping.rayleigh" title="For dynamic calculations, a certain fraction of critical damping is usually...">单元动力阻尼瑞利（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">dynamic</span> <span class="pre">damping</span> <span class="pre">rayleigh</span></code>）</a> 命令指定。</p>
+<p>刚度比例阻尼会减小显式求解方案的临界时步（见 Belytschko 1983）。随着与最高固有频率对应的阻尼比增大，时步会减小（见<a class="reference internal" href="../formulation/formulation.html#dynamic-timestep"><span class="std std-ref">动力时步</span>（Dynamic Timestep）</a>）。这可能导致动力模拟的运行时间大幅增加。</p>
+<p>在 <span class="codename">FLAC3D</span> 中，内部时步计算已计入刚度比例阻尼，但若大应变计算生效（<a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.largestrain.html#command:model.large-strain" title="Sets the program to use the numerical formulation for large-strain deformation.
+ The default is  off .  See the section ref-Large- and Small-Strain Modes
+&lt;largeandsmallstrainmodes&gt;- for discussion of the additional calculations done
+in this formulation.   [cs: has Common trouble]...">设置大变形模式命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">large-strain</span></code>）</a>）且网格发生非常大的变形，仍可能出现不稳定性。此时必须（通过 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.dynamic.html#kwd:model.dynamic.timestep.fix" title="Set the timestep to be the fixed value  f . All timestep calculations are
+skipped.  Setting a value greater than the calculated critical timestep will
+result in an error...">模型动力时步固定（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">dynamic</span> <span class="pre">timestep</span> <span class="pre">fix</span></code>）</a> 命令）手动减小时间步。</p>
+<p>对于 <a href="#rayleigh-damping-variation">图  18（Figure  18）</a> 所示的情形，<span class="math">\(\omega_{\min} = 10\)</span> 弧度/秒。显然，阻尼比在至少 3:1 的频率范围（例如从 5 到 15）内几乎保持恒定。由于地质介质中的阻尼通常与频率无关（如<a class="reference internal" href="#dynamic-mechanical-damping"><span class="std std-ref">动力力学阻尼</span>（Dynamic Mechanical Damping）</a>中所述），<span class="math">\(\omega_{\min}\)</span> 通常取为数值模拟中出现的频率范围的中心——即模型的固有频率或主要输入频率。由此可近似模拟滞回阻尼。</p>
+<p>为计算网格点力，在一个时步内将代表瑞利阻尼刚度比例分量的黏性应力增量加到总应力增量上。因此，</p>
+<div class="math" id="equation-dynamic-rayleigh-9">
+<span class="eqno">(23)</span>\[\bigl\{\sigma_v \bigr\}=\bigl\{\sigma_n\bigr\} + {\beta\over{\Delta t}}\bigl\{\sigma_n - \sigma_o\bigr\}\]</div>
+<p>其中 <span class="math">\(\sigma_v\)</span> 是用于导出网格点力的组合应力张量的一个分量，<span class="math">\(\sigma_n\)</span> 是本构律返回的对应分量，<span class="math">\(\sigma_o\)</span> 是调用本构律之前该分量的值。记号 <span class="math">\(\bigl\{\)</span> <span class="math">\(\bigr\}\)</span> 表示所有分量构成的向量。</p>
+<p>黏性应力不计入累积的总应力（<span class="math">\(\sigma_n\)</span>）。</p>
+<p>该公式不需要刚度矩阵。无论本构模型是线性还是非线性，瑞利阻尼都直接作用于其切线模量。</p>
+<p>当 <span class="codename">FLAC3D</span> 网格单元内发生塑性破坏时，刚度比例阻尼会被关闭。但质量比例阻尼仍保持有效。若模型中发生大量破坏，质量比例项可能抑制屈服。在这种情况下，宜将瑞利阻尼排除在塑性流动强烈的区域之外（即使用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.dynamic.html#kwd:zone.dynamic.damping.rayleigh" title="For dynamic calculations, a certain fraction of critical damping is usually...">单元动力阻尼瑞利（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">dynamic</span> <span class="pre">damping</span> <span class="pre">rayleigh</span></code>）</a> 命令在选定区域设置瑞利阻尼，如<a class="reference internal" href="#dynamic-spatial-variation-damping"><span class="std std-ref">阻尼的空间变化</span>（Spatial Variation in Damping）</a>所述）。</p>
+</div>
+<div class="section" id="example-application-of-rayleigh-damping">
+<h3>瑞利阻尼应用示例</h3>
+<p>为说明瑞利阻尼在 <span class="codename">FLAC3D</span> 中的工作方式，以下简单示例考察了四种阻尼情形的结果以作比较。</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../zone/test3d/Dynamic/MechanicalDamping/MechanicalDamping.html">重力作用下的块体——考察阻尼选项（Block Under Gravity — Examining Damping Options）</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="guidelines-for-selecting-rayleigh-damping-parameters">
+<span id="dynamic-rayleigh-damping-guidelines"></span><h3>瑞利阻尼参数选取准则</h3>
+<p><em>阻尼比</em>，<span class="math">\(\xi_{\min}\)</span></p>
+<p>动力分析中通常试图做到的是，以正确的量级再现材料<em>与频率无关</em>的阻尼。对于地质材料，阻尼通常落在临界阻尼的 2% 至 5% 范围内；对于结构体系，2% 至 10% 具有代表性（Biggs 1964）。不同材料的建议阻尼值另见 Newmark 和 Hall（1982）。在使用塑性本构模型（例如 Mohr-Coulomb）的分析中，塑性流动期间可能发生相当多的能量耗散。因此，对于许多涉及大应变的动力分析，可能只需要很小的阻尼百分比（例如 0.5%）。此外，对于涉及塑性流动的应力/应变循环，耗散会随幅值增大而增加。<span class="math">\(\xi_{\min}\)</span> 应调整为与正确的物理阻尼比一致。</p>
+<p>可使用等效线性程序 <em>SHAKE</em>（Schnabel、Lysmer 和 Seed 1972）估算材料阻尼，以表示土体的非弹性循环行为。对层状土沉积层，利用各层的剪切波速和密度进行等效线性分析，然后确定与应变相容的阻尼比和剪切模量折减系数。对每一层估算平均阻尼比和剪切模量折减系数；所估算的阻尼比即为 <span class="codename">FLAC3D</span> 瑞利阻尼的输入值。</p>
+<p><em>中心频率</em>，<span class="math">\(f_{\min}\)</span></p>
+<p>瑞利阻尼与频率有关，但具有一段跨越约 3:1 频率范围的“平坦”区，如 <a href="#rayleigh-damping-variation">图  18（Figure  18）</a> 所示。对于任一特定问题，对典型速度记录进行谱分析可能得到如 <a href="#dynamic-velocity-spectrum">图  19（Figure  19）</a> 所示的响应。<a class="footnote-reference" href="#id4" id="id2">[2]</a></p>
+<div class="figure" id="dynamic-velocity-spectrum">
+<a class="reference internal image-reference" href="../../../../../../_images/velocity-spectrum.png"><img alt="../../../../../../_images/velocity-spectrum.png" src="../../../../../../_images/velocity-spectrum.png" style="width: 95%;"/></a>
+<p class="caption"><span class="caption-text">图 19：速度谱随频率的变化曲线。</span></p>
+</div>
+<p>若最高主要频率是最低主要频率的三倍，则存在一个 3:1 的跨度（范围），其中包含谱中大部分动力能量。动力分析中的思路是调整瑞利阻尼的 <span class="math">\(f_{\min}\)</span>，使其 3:1 范围与问题中主要频率的范围一致。主要频率既不是输入频率，也不是系统的固有振型，而是两者的组合。其思路是尽量使问题中<em>重要</em>频率处的阻尼合适。</p>
+<p>对于许多问题，重要频率与系统的固有振荡振型有关。此类问题的例子包括坝等地表结构的抗震分析，或地下开挖的动力分析。与系统固有振荡振型相关的基本频率 <span class="math">\(f\)</span> 为</p>
+<div class="math" id="equation-dynamic-eq-frequency">
+<span id="dynamic-eq-frequency"></span><span class="eqno">(24)</span>\[f = {{C} \over {\lambda}}\]</div>
+<p>其中 <span class="math">\(C\)</span> 是与该振荡振型相关的传播速度，<span class="math">\(\lambda\)</span> 是与该振荡振型相关的最长波长。</p>
+<p>对于连续弹性体系（例如一维弹性杆），<span class="math">\(p\)</span> 波的传播速度 <span class="math">\(C_p\)</span> 由方程<a class="reference internal" href="#equation-dyneq-wavep">(3)</a>给出，<span class="math">\(s\)</span> 波则由方程<a class="reference internal" href="#equation-dyneq-waves">(4)</a>给出。若杆的剪切运动产生最低固有振型，则上式采用 <span class="math">\(C_s\)</span>；否则，若平行于杆轴的运动产生最低固有振型，则采用 <span class="math">\(C_p\)</span>。</p>
+<p>最长波长（或称特征长度、基本波长）取决于边界条件。考虑一个单位长度的实心杆，其边界条件如 <a href="#dynamic-fundamental-wavelength">图  20（Figure  20）</a>a 所示。情形 (1)、(2) 和 (3) 的基本振型如 <a href="#dynamic-fundamental-wavelength">图  20（Figure  20）</a>b 所示。若无法以这种方式估算某特定系统基本振型的波长，则可先进行零阻尼的试算（例如见<a class="reference internal" href="../../../../../zone/test3d/Dynamic/MechanicalDamping/MechanicalDamping.html#mechanicaldamping"><span class="std std-ref">力学阻尼</span>（Mechanical Damping）</a>）。可由速度或位移的时程估算代表性的自振周期。<a class="reference internal" href="../../../../../zone/test3d/Dynamic/NaturalPeriodsElasticColumn/NaturalPeriodsElasticColumn.html#naturalperiods"><span class="std std-ref">弹性柱的自振周期</span>（Natural Periods of an Elastic Column）</a>给出了一个通过无阻尼模拟估算自振周期的简单示例。</p>
+<div class="figure" id="dynamic-fundamental-wavelength">
+<a class="reference internal image-reference" href="../../../../../../_images/fundamental-wavelength.png"><img alt="../../../../../../_images/fundamental-wavelength.png" src="../../../../../../_images/fundamental-wavelength.png" style="width: 95%;"/></a>
+<p class="caption"><span class="caption-text">图 20：不同端部条件下杆件基本波长的对比。</span></p>
+</div>
+</div>
+<div class="section" id="hysteretic-damping">
+<span id="dynamic-hysteretic-damping"></span><h3>滞回阻尼</h3>
+<p><a class="reference internal" href="../relation/relation.html#dynamic-characteristics-equivalent-linear"><span class="std std-ref">等效线性方法</span>（equivalent-linear method）</a>多年来一直用于计算承受地震激励的场地中土和岩石内的波传播（及反应谱）。该方法并不<em>直接</em>捕捉任何非线性效应，因为它在求解过程中假定线性；随应变变化的模量和阻尼函数仅以平均意义计入，以近似某些非线性<em>效应</em>（阻尼和材料软化）。尽管 <span class="codename">FLAC3D</span> 等完全非线性程序原则上能够模拟正确的物理过程，但难以说服设计人员和审批机构接受完全非线性模拟。原因之一是 <span class="codename">FLAC3D</span> 可用的本构模型要么过于简单（例如弹塑性模型，无法再现土中出现的连续屈服），要么过于复杂（例如 Wang 模型 [Wang 等 2001]，需要许多参数和漫长的标定过程）。此外，还需要直接采用等效线性方法所用的同样的退化曲线（示例见 <a href="#dynamic-reduction-curve-sand">图  21（Figure  21）</a> 和 <a href="#dynamic-reduction-curve-clay"> 22</a>），以便工程师能从使用这些方法轻松过渡到使用完全非线性方法。</p>
+<p>将此类循环数据纳入 <span class="codename">FLAC3D</span> 滞回阻尼模型的另一个动机是，这样便可消除对瑞利阻尼等附加阻尼的需求。瑞利阻尼在程序用户中不受欢迎，因为它常常导致时步大幅减小，进而增加求解时间。</p>
+<p>此处介绍可选的滞回阻尼；它可单独使用，也可与瑞利阻尼或局部阻尼等其他阻尼方案配合使用。（它还可与部分内建本构模型一起使用，但具有非线性弹性模量的模型除外，例如修正 Cam-Clay。）</p>
+<p>滞回阻尼公式并不是一个完整的本构模型：它应作为某个内建非线性模型的补充，而不应作为模拟屈服的主要手段。若所采用的模型同时体现塑性屈服和充分的滞回响应，则没有理由再添加更多阻尼；<span class="codename">FLAC3D</span> 中的滞回阻尼选项仅旨在为那些在未屈服时缺乏固有阻尼的模型提供阻尼。此外，当滞回阻尼生效时，除可能用于（以较低水平，例如 0.2%）消除高频噪声外，瑞利阻尼应不再需要。</p>
+<div class="figure" id="dynamic-reduction-curve-sand">
+<a class="reference internal image-reference" href="../../../../../../_images/modulus-reduction-curve-sand.png"><img alt="../../../../../../_images/modulus-reduction-curve-sand.png" src="../../../../../../_images/modulus-reduction-curve-sand.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 21：砂的模量折减曲线（Seed 与 Idriss 1970——“上限范围”）。
+数据集来自 SHAKE-91 程序下载所附带的文件。
+（<a class="reference external" href="https://nisee.berkeley.edu/elibrary/getpkg?id=SHAKE91">SHAKE91 程序页面（https://nisee.berkeley.edu/elibrary/getpkg?id=SHAKE91）</a>）</span></p>
+</div>
+<div class="figure" id="dynamic-reduction-curve-clay">
+<a class="reference internal image-reference" href="../../../../../../_images/modulus-reduction-curve-clay.png"><img alt="../../../../../../_images/modulus-reduction-curve-clay.png" src="../../../../../../_images/modulus-reduction-curve-clay.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 22：黏土的模量折减曲线（Sun 等 1988——“上限范围”）。
+数据集来自 SHAKE-91 程序下载所附带的文件。
+（<a class="reference external" href="https://nisee.berkeley.edu/elibrary/getpkg?id=SHAKE91">SHAKE91 程序页面（https://nisee.berkeley.edu/elibrary/getpkg?id=SHAKE91）</a>）</span></p>
+</div>
+</div>
+<div class="section" id="hysteretic-damping-formulation-implementation-and-calibration">
+<span id="dynamic-hysteretic-formulation"></span><h3>滞回阻尼的公式、实现与标定</h3>
+<div class="section" id="formulation">
+<h4>公式</h4>
+<p>如 <a href="#dynamic-reduction-curve-sand">图  21（Figures  21）</a> 和 <a href="#dynamic-reduction-curve-clay"> 22</a> 所示的模量退化曲线意味着应力/应变曲线是非线性的。若假定为理想土体，即应力仅取决于应变（而不取决于循环次数或时间），则可从退化曲线导出一个增量本构关系，由 <span class="math">\(\bar {\tau} / \gamma = M_s\)</span> 描述，其中 <span class="math">\(\bar {\tau}\)</span> 是归一化剪应力，<span class="math">\(\gamma\)</span> 是剪应变，<span class="math">\(M_s\)</span> 是归一化割线模量。</p>
+<div class="math" id="equation-normalized-shear-stress">
+<span class="eqno">(25)</span>\[\bar {\tau} = M_s \gamma\]</div>
+<div class="math" id="equation-normalized-tangent-modulus">
+<span class="eqno">(26)</span>\[M_t = {{d \bar {\tau}} \over {d \gamma}} = M_s + \gamma {{d M_s} \over {d \gamma}}\]</div>
+<p>其中 <span class="math">\(M_t\)</span> 为归一化切线模量。非线性模拟中的增量剪切模量随后由 <span class="math">\(G_o M_t\)</span> 给出。它用来替代给定的剪切模量 <span class="math">\(G_o\)</span>（即以 <span class="cmdkey">shear</span> 名称赋值的属性）。</p>
+<p>为处理二维和三维应变路径，采用与 Finn 模型所述类似的方法（见<a class="reference internal" href="../../../../../../common/models/finn/doc/modelfinn.html#finn-simple-formulations"><span class="std std-ref">简单模型公式</span>（Simple Model Formulations）</a>），即将剪应变分解为应变空间中的各分量，并通过当前增量与先前平均路径的点积符号变化来检测应变反向。沿用 Finn 模型的公式（将 <span class="math">\(\epsilon\)</span> 替换为 <span class="math">\(\gamma\)</span>，其余记号相同）：</p>
+<div class="math" id="equation-dynamic-hys-gamma1">
+<span class="eqno">(27)</span>\[\gamma_1 := \gamma_1 + 2 \Delta e_{12}\]</div>
+<div class="math" id="equation-dynamic-hys-gamma2">
+<span class="eqno">(28)</span>\[\gamma_2 := \gamma_2 + 2 \Delta e_{23}\]</div>
+<div class="math" id="equation-dynamic-hys-gamma3">
+<span class="eqno">(29)</span>\[\gamma_3 := \gamma_3 + 2 \Delta e_{31}\]</div>
+<div class="math" id="equation-dynamic-hys-gamma4">
+<span class="eqno">(30)</span>\[\gamma_4 := \gamma_4 + {2(\Delta e_{11} - \Delta e_{22}) \over \sqrt{6}}\]</div>
+<div class="math" id="equation-dynamic-hys-gamma5">
+<span class="eqno">(31)</span>\[\gamma_5 := \gamma_5 + {2(\Delta e_{22} - \Delta e_{33}) \over \sqrt{6}}\]</div>
+<div class="math" id="equation-dynamic-hys-gamma6">
+<span class="eqno">(32)</span>\[\gamma_6 := \gamma_6 + {2(\Delta e_{33} - \Delta e_{11}) \over \sqrt{6}}\]</div>
+<div class="math" id="equation-dynamic-hys-vi">
+<span class="eqno">(33)</span>\[v_i = \gamma_i^\circ - \gamma_i^{\circ\circ}\]</div>
+<div class="math" id="equation-dynamic-hys-z">
+<span class="eqno">(34)</span>\[z = \sqrt{v_i\ v_i}\]</div>
+<div class="math" id="equation-dynamic-hys-ni">
+<span class="eqno">(35)</span>\[n_i^\circ = {{v_i} \over {z}}\]</div>
+<div class="math" id="equation-dynamic-hys-d">
+<span class="eqno">(36)</span>\[d = (\gamma_i - \gamma_i^\circ)\, n_i^\circ\]</div>
+<p>当 <span class="math">\(|d|\)</span> 经过最大值时检测到反向，并按方程<a class="reference internal" href="#equation-strain-reversal-11">(37)</a>和<a class="reference internal" href="#equation-strain-reversal-12">(38)</a>更新前一次反向的应变值。请注意，此处没有 Finn 模型中所用的“潜伏”期（见<a class="reference internal" href="../../../../../../common/models/finn/doc/modelfinn.html#finn-simple-formulations"><span class="std std-ref">简单模型公式</span>（Simple Model Formulations）</a>）；检测反向之前不需要经过最小时步数。</p>
+<div class="math" id="equation-strain-reversal-11">
+<span class="eqno">(37)</span>\[\gamma^{oo}_i = \gamma^o_i\]</div>
+<div class="math" id="equation-strain-reversal-12">
+<span class="eqno">(38)</span>\[\gamma^o_i = \gamma_i\]</div>
+<p>在两次反向之间，剪模量乘以 <span class="math">\(M_t\)</span>，其中方程<a class="reference internal" href="#equation-normalized-tangent-modulus">(26)</a>中取 <span class="math">\(\gamma = |d|\)</span>。该乘数作用于所有内建本构模型所用的剪模量，但横观各向同性弹性、修正 Cam-clay 和蠕变材料模型除外。</p>
+</div>
+<div class="section" id="implementation">
+<h4>实现</h4>
+<p>上述公式在 <span class="codename">FLAC3D</span> 中通过修改应变率计算来实现：在调用任何本构模型函数之前，先计算平均应变率张量（对所有子网格取平均）。在此阶段调用滞回逻辑，返回一个模量乘数，并将其传递给被调用的本构模型。随后模型使用乘数 <span class="math">\(M_t\)</span> 调整正在处理的整个网格单元的切线剪模量视值。</p>
+<p>除了通过对模量退化曲线（见下文）应用方程<a class="reference internal" href="#equation-normalized-tangent-modulus">(26)</a>得到的“骨干曲线”之外，还采用两条 Masing（1926）规则来规定反向点处的行为。这些规则实质上是：1) 在反向时开始一个新的（但反向的）函数，这意味着初始卸载模量为 <span class="math">\(G\)</span>；2) 加载的第一个四分之一循环相对于所有其他循环按一半缩放。尽管 Pyke（2004）认为“两条 Masing 规则都不成立”，但为确保得到可重复的闭合滞回环，仍需作出某些简化假定。真实土体偏离这种理想行为，在本背景下并不被认为十分重要，因为该公式<em>并非作为完整的本构模型</em>，而只是提供滞回阻尼以替代瑞利阻尼。</p>
+<p>另一条规则处理子循环：滞回逻辑包含后进先出（FILO）的压栈堆栈，用于在反向点记录所有状态信息（例如应力、应变、切线模量和前一反向点），并分别针对正向和负向应变方向。若应变水平回到并超过堆栈中记录的先前值（符号相应），则从堆栈中弹出该状态信息，使行为（并因此切线乘数）恢复到该次反向之前所采用的状态。</p>
+<p>这些规则的运作方式在以下简单示例中说明：</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../zone/test3d/Dynamic/ShearWithStrainRateReversal/ShearWithStrainRateReversal.html">应变率反向条件下受剪切加载的单网格单元试样（One-Zone Sample Loaded in Shear with Strain Rate Reversal）</a></li>
+</ul>
+</div>
+<p>地震工程中所用的退化曲线通常以数值表形式给出，其中循环应变按对数间隔分布。由于此处需要模量折减曲线的导数（即用于方程<a class="reference internal" href="#equation-normalized-tangent-modulus">(26)</a>），若采用数值导数，则过粗的间隔（例如 <a href="#dynamic-reduction-curve-clay">图  22（Figure  22）</a> 所示曲线中的 11 个点）会导致不可接受的误差。因此，所实现的滞回模型仅使用连续函数表示模量折减曲线，以便计算解析导数。各种已实现的函数将在下一节中介绍。若退化曲线仅有表格形式，则必须先将其拟合为某一个内建函数形式，才能进行模拟。</p>
+<p>滞回阻尼功能通过以下命令启用：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">zone dynamic</span><span class="n"> damping hysteretic name </span><span class="o">&lt;</span><span class="n">v1 v2 v3 …</span><span class="o">&gt;</span><span class="n"> </span><span class="o">&lt;</span><span class="n">range</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>其中 <span class="cmdkey">name</span> 是拟合函数的名称（可选 <span class="cmdkey">default</span>、<span class="cmdkey">sigmoidal-3</span>、<span class="cmdkey">sigmoidal-4</span> 和 <span class="cmdkey">hardin</span>——见下面的讨论），v1、v2、v3、…… 是函数参数的数值。可选的范围可以是任何适用于网格单元的合法范围短语。</p>
+<p>可使用以下命令从任意范围的网格单元中移除滞回阻尼：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">zone dynamic</span><span class="n"> damping hysteretic </span><span class="sx">off</span><span class="n"> </span><span class="o">&lt;</span><span class="n">range</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>请注意，<a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.dynamic.html#kwd:zone.dynamic.damping.hysteretic" title="Hysteretic damping is invoked (see  dynamic-hysteretic-damping )...">单元动力滞回阻尼命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">dynamic</span> <span class="pre">damping</span> <span class="pre">hysteretic</span></code>）</a> 命令仅适用于已选择 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.dynamic" title="Fully dynamic analysis*...">模型配置动力分析命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">dynamic</span></code>）</a> 运行模式且 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.dynamic" title="Fully dynamic analysis*...">模型配置动力分析命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">dynamic</span></code>）</a> 生效的情形。滞回阻尼的运行独立于所有其他形式的阻尼，这些阻尼也可设置为与滞回阻尼“并行”运行。</p>
+<p><strong>切线模量函数</strong></p>
+<p>有多种内建函数可用于表示剪切模量折减系数 <span class="math">\(G/G_{\rm max}\)</span> 随循环应变（以<em>百分比</em>表示）的变化，具体取决于 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.dynamic.html#kwd:zone.dynamic.damping.hysteretic" title="Hysteretic damping is invoked (see  dynamic-hysteretic-damping )...">单元动力滞回阻尼命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">dynamic</span> <span class="pre">damping</span> <span class="pre">hysteretic</span></code>）</a> 命令上指定的关键字。</p>
+<p><em>默认模型</em>——<span class="cmdkey">default</span></p>
+<p>默认滞回模型的建立基于这样一个观察：模量随循环应变对数变化的 S 形曲线可用三次方程表示，且在低应变和高应变两端的斜率均为零。于是割线模量 <span class="math">\(M_s\)</span> 为</p>
+<div class="math" id="equation-default-secant-mod">
+<span class="eqno">(39)</span>\[M_s = s^2(3 - 2s)\]</div>
+<p>其中</p>
+<div class="math" id="equation-default-s">
+<span class="eqno">(40)</span>\[s = {{L_2 - L} \over {L_2-L_1}}\]</div>
+<p>而 <span class="math">\(L\)</span> 是对数应变，</p>
+<div class="math" id="equation-default-l">
+<span class="eqno">(41)</span>\[L ={\rm log}_{10} (\gamma)\]</div>
+<p>参数 <span class="math">\(L_1\)</span> 和 <span class="math">\(L_2\)</span> 是对数应变的极值（即切线斜率变为零的取值）。因此，给定 <span class="math">\(L_1 = -3\)</span> 和 <span class="math">\(L_2 = 1\)</span> 意味着 S 形曲线将从 0.001%（10<sup>-3</sup>）的较低循环应变延伸到 10%（10<sup>1</sup>）的较高循环应变。由于这些界限处斜率为零，使阻尼模型在超出该界限的应变下运行没有意义。（请注意，方程<a class="reference internal" href="#equation-default-secant-mod">(39)</a>仅假定在 <span class="math">\(0 \leq s \leq 1\)</span> 时适用，否则切线模量将设为零。）切线模量由下式给出</p>
+<div class="math" id="equation-default-mt1">
+<span class="eqno">(42)</span>\[M_t = M_s + \gamma {{d M_s} \over {d \gamma}}\]</div>
+<p>利用链式法则，</p>
+<div class="math" id="equation-default-dmsodg">
+<span class="eqno">(43)</span>\[{{d M_s} \over {d \gamma}} = {{d M_s} \over {ds}} \cdot {{ds} \over {dL}} \cdot {{dL} \over {d \gamma}}\]</div>
+<p>可得</p>
+<div class="math" id="equation-default-mt2">
+<span class="eqno">(44)</span>\[M_t = s^2 (3 - 2s) - {{6s(1-s)} \over {L_2 - L_1}} {\rm log}_{10}e\]</div>
+<p>还有进一步限制 <span class="math">\(s &gt; s_{\rm min}\)</span>，使切线模量始终为正（无应变软化）。因此，</p>
+<div class="math" id="equation-default-eq1">
+<span class="eqno">(45)</span>\[s^2_{\rm min} (3 - 2s_{\rm min}) = {{6s_{\rm min} (1 - s_{\rm min})} \over {L_2 - L_1}} {\rm log}_{10}e\]</div>
+<p>或</p>
+<div class="math" id="equation-default-eq2">
+<span class="eqno">(46)</span>\[2 s^2_{\rm min} - s_{\rm min} (A + 3) + A = 0\]</div>
+<p>其中 <span class="math">\(A = 6 {\rm log}_{10}e / (L_2 - L_1)\)</span>。最小的正根为</p>
+<div class="math" id="equation-default-root">
+<span class="eqno">(47)</span>\[s_{\rm min} = {{A + 3 - \sqrt{(A + 3)^2 - 8A}} \over 4}\]</div>
+<p>在应用该模型时，<span class="math">\(M_t = 0$ if $s &lt; s_{\rm min}\)</span>。</p>
+<p>可使用曲线拟合绘图软件（例如 SigmaPlot，<a class="reference external" href="http://www.systat.com/products/sigmaplot/">SigmaPlot 官网（http://www.systat.com/products/sigmaplot/）</a>）将默认模型函数拟合到退化曲线。例如，默认模型对 <a href="#dynamic-reduction-curve-sand">图  21（Figures  21）</a> 和 <a href="#dynamic-reduction-curve-clay"> 22</a> 曲线的数值最佳拟合分别列于 <a href="#dynamic-hysteretic-sand-fit">表  3（Tables  3）</a> 和 <a href="#dynamic-hysteretic-clay-fit"> 4</a> 中。</p>
+<p><em>S 形模型</em>——<span class="cmdkey">sigmoidal-3</span>、<span class="cmdkey">sigmoidal-4</span></p>
+<p>S 形曲线在定义范围内单调，并具有适当的渐近行为。因此这些函数很适合表示模量退化曲线。两类 S 形模型（分别为 3 参数和 4 参数）为</p>
+<p><span class="cmdkey">sigmoidal-3</span> model</p>
+<div class="math" id="equation-sig3-secant-mod">
+<span class="eqno">(48)</span>\[M_s = {{a} \over {1 + {\rm exp}(-(L - x_o)/b)}}\]</div>
+<p><span class="cmdkey">sigmoidal-4</span> model</p>
+<div class="math" id="equation-sig4-secant-mod">
+<span class="eqno">(49)</span>\[M_s = y_o + {{a} \over {1 + {\rm exp}(-(L - x_o)/b)}}\]</div>
+<p>调用这些模型的命令行要求三个符号 <span class="math">\(a\)</span>、<span class="math">\(b\)</span> 和 <span class="math">\(x_o\)</span> 分别由参数 v1、v2 和 v3 定义（用于 <span class="cmdkey">sig3</span> 模型，方程<a class="reference internal" href="#equation-sig3-secant-mod">(48)</a>）。对于 <span class="cmdkey">sigmoidal-4</span> 模型（方程<a class="reference internal" href="#equation-sig4-secant-mod">(49)</a>），四个符号 <span class="math">\(a\)</span>、<span class="math">\(b\)</span>、<span class="math">\(x_o\)</span> 和 <span class="math">\(y_o\)</span> 分别通过参数 v1、v2、v3 和 v4 输入。两种模型对 <a href="#dynamic-reduction-curve-sand">图  21（Figures  21）</a> 和 <a href="#dynamic-reduction-curve-clay"> 22</a> 曲线的数值拟合分别列于 <a href="#dynamic-hysteretic-sand-fit">表  3（Tables  3）</a> 和 <a href="#dynamic-hysteretic-clay-fit"> 4</a> 中。</p>
+<p><em>Hardin/Drnevich 模型</em>——<span class="cmdkey">hardin</span></p>
+<p>Hardin 和 Drnevich（1972）提出了以下函数：</p>
+<div class="math" id="equation-hardin-secant-mod">
+<span class="eqno">(50)</span>\[M_s = {{1} \over {1 + {\gamma / \gamma_{\rm ref}}}}\]</div>
+<p>它具有一个有用的性质：当 <span class="math">\(\gamma = \gamma_{\rm ref}\)</span> 时模量折减系数为 0.5，因此唯一的参数 <span class="math">\(\gamma_{\rm ref}\)</span> 可由模量折减曲线与 <span class="math">\(G / G_{\rm max}\)</span> = 0.5 线相交处的应变（通过目测）确定。取 <span class="math">\(\gamma_{\rm ref}\)</span> = 0.06 可与 <a href="#dynamic-reduction-curve-sand">图  21（Figure  21）</a> 的曲线吻合，取 0.234 则与 <a href="#dynamic-reduction-curve-clay">图  22（Figure  22）</a> 的曲线吻合。</p>
+<table border="1" class="colwidths-given icg1 docutils" id="dynamic-hysteretic-sand-fit">
+<caption><span class="caption-text">表 3：对砂的 Seed 与 Idriss 数据的数值拟合</span></caption>
+<colgroup>
+<col width="28%"/>
+<col width="19%"/>
+<col width="19%"/>
+<col width="19%"/>
+<col width="14%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">数据集</th>
+<th class="head">默认</th>
+<th class="head">Sigmoidal-3</th>
+<th class="head">Sigmoidal-4</th>
+<th class="head">Hardin</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>砂——上限范围</td>
+<td><span class="math">\(L_1\)</span> = -3.325</td>
+<td><span class="math">\(a\)</span> = 1.014</td>
+<td><span class="math">\(a\)</span> = 0.9762</td>
+<td><span class="math">\(\gamma_{\rm ref}\)</span> = 0.060</td>
+</tr>
+<tr class="row-odd"><td>（Seed 与 Idriss 1970）</td>
+<td><span class="math">\(L_2\)</span> = 0.823</td>
+<td><span class="math">\(b\)</span> = -0.4792</td>
+<td><span class="math">\(b\)</span> = -0.4393</td>
+<td> </td>
+</tr>
+<tr class="row-even"><td> </td>
+<td> </td>
+<td><span class="math">\(x_o\)</span> = -1.249</td>
+<td><span class="math">\(x_o\)</span> = -1.285</td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td> </td>
+<td> </td>
+<td><span class="math">\(y_o\)</span> = 0.03154</td>
+<td> </td>
+</tr>
+</tbody>
+</table>
+<table border="1" class="colwidths-given icg1 docutils" id="dynamic-hysteretic-clay-fit">
+<caption><span class="caption-text">表 4：对黏土的 Sun 等数据的数值拟合</span></caption>
+<colgroup>
+<col width="28%"/>
+<col width="19%"/>
+<col width="19%"/>
+<col width="19%"/>
+<col width="14%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">数据集</th>
+<th class="head">默认</th>
+<th class="head">Sig3</th>
+<th class="head">Sig4</th>
+<th class="head">Hardin</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>黏土——上限范围</td>
+<td><span class="math">\(L_1\)</span> = -3.156</td>
+<td><span class="math">\(a\)</span> = 1.017</td>
+<td><span class="math">\(a\)</span> = 0.922</td>
+<td><span class="math">\(\gamma_{\rm ref}\)</span> = 0.234</td>
+</tr>
+<tr class="row-odd"><td>（Sun 等 1988）</td>
+<td><span class="math">\(L_2\)</span> = 1.904</td>
+<td><span class="math">\(b\)</span> = -0.5870</td>
+<td><span class="math">\(b\)</span> = -0.481</td>
+<td> </td>
+</tr>
+<tr class="row-even"><td> </td>
+<td> </td>
+<td><span class="math">\(x_o\)</span> = -0.633</td>
+<td><span class="math">\(x_o\)</span> = -0.745</td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td> </td>
+<td> </td>
+<td><span class="math">\(y_o\)</span> = 0.0823</td>
+<td> </td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="calibration-of-degradation-curves">
+<span id="dynamic-calibration-degradation-curve"></span><h4>退化曲线的标定</h4>
+<p>切线模量函数的标定既要将该函数的计算结果与目标剪切模量折减曲线比较，也要与目标阻尼比曲线比较。下面提供一个简单示例以供说明和讨论：</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../zone/test3d/Dynamic/SeveralCyclicStrainLevels/SeveralCyclicStrainLevels.html">在若干循环应变水平下加载的单网格单元试样（One-Zone Sample Exercised at Several Cyclic Strain Levels）</a></li>
+</ul>
+</div>
+<p>在大多数试图与实验室阻尼曲线和数值阻尼曲线相匹配的工作中都注意到，滞回公式在低循环应变水平下提供的阻尼低于实验室观测值。这可能导致低水平噪声，尤其是在高频段。尽管此类噪声几乎不影响系统的基本响应，但出于外观上的考虑，可通过加入少量瑞利阻尼将其消除。研究发现，0.2% 的瑞利阻尼（取适当的中心频率）通常足以消除残余振荡而不影响求解时步。</p>
+</div>
+<div class="section" id="simple-application">
+<h4>简单应用</h4>
+<p>下面给出的示例对受数字化地震激励的 20 m 厚土层建模，以表明在涉及波传播、多重嵌套滞回环以及相当大循环应变的情形下能够出现合理的行为。</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../zone/test3d/Dynamic/EarthquakeExcitation/EarthquakeExcitation.html">示例：均质土层的一维地震激励（Example: One-Dimensional Earthquake Excitation of a Uniform Layer）</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="observations">
+<h4>观察结果</h4>
+<p>已开发出一种在 <span class="codename">FLAC3D</span> 模拟中直接使用循环模量退化数据的方法。由此得到的模型能够再现等幅循环试验的结果，同时也能适应在应变空间和时间上任意变化的应变路径。因此，应当可以在不因本构模型选择而作任何折中的情况下，直接将等效线性方法的计算与完全非线性方法进行比较。所开发的方法并非要成为一个合理的土体模型；其目的是让等效线性方法的现有用户能够轻松升级到完全非线性方法。此外，新公式的滞回阻尼使用户能够避免使用瑞利阻尼及其不受欢迎的时步代价。<a class="reference internal" href="../../../../../zone/test3d/Dynamic/F3ShakeNonLinearElasticCase/F3ShakeNonLinearElasticCase.html#f3shakenonlinear"><span class="std std-ref">层状非线性弹性土沉积层中 FLAC3D 与 SHAKE 的对比</span>（Comparison of FLAC3D to SHAKE for a Layered, Nonlinear-Elastic Soil Deposit）</a>中给出了一个层状模型的比较，其中一个假定采用 <em>SHAKE</em> 的非线性弹性材料，另一个采用带滞回阻尼的 <span class="codename">FLAC3D</span>。</p>
+</div>
+</div>
+<div class="section" id="practical-issues-when-using-hysteretic-damping">
+<span id="dynamic-hysteretic-practical-issues"></span><h3>使用滞回阻尼时的实际问题</h3>
+<p>在动力模拟中应用滞回阻尼时，应检查以下条件。</p>
+<p><span class="bi">将滞回阻尼响应与实验室试验比较</span>——将配合屈服本构模型使用的滞回阻尼模型所得的表观阻尼响应与实验室结果的阻尼曲线相比较，通常没有意义，因为实验室试验在发生剪切破坏时很可能失稳，从而无法提供有意义的结果。建议将 <span class="codename">FLAC3D</span> 的滞回响应与在不包含破坏的应变范围内获得的循环试验结果相匹配，并将塑性参数（例如黏聚力和摩擦角）与静力实验室强度试验相匹配。<span class="codename">FLAC3D</span> 能够在地震响应的典型模拟中把两种情形下的响应结合起来。</p>
+<p><span class="bi">检查循环应变水平</span>——滞回阻尼不仅为动力应变增加能量损失，对于较大的循环应变，还会使<em>平均剪切模量减小</em>。这可能导致意外的结果（例如，由于共振频率向输入波的主导频率靠近，响应幅值反而<em>增大</em>）。</p>
+<p>在使用滞回阻尼运行动力模型之前，应先进行无阻尼的弹性模拟，以观察所出现的最大循环应变水平。若循环应变大到足以使给定模量折减曲线下的剪切模量过度减小，则滞回阻尼的使用就值得怀疑——它将超出其预期的适用范围。此时应检查模型性质和输入。若性质和输入合理，且大循环应变仅限于很小的区域，则可考虑将滞回阻尼排除在这些区域之外，在这些区域改用屈服模型（因为大应变意味着应发生屈服）。</p>
+<p><span class="bi">检查模量折减系数</span>——即使弹性条件下的循环应变很小，使用屈服模型也可能使应变增大。滞回阻尼公式<em>并非意在替代屈服本构模型</em>。它可以与屈服模型（例如 Mohr-Coulomb）配合使用，但若要获得有意义的结果，应避免在适用范围上发生冲突。</p>
+<p>当某网格单元发生塑性流动时，其滞回阻尼会被“关闭”（包括滞回阻尼计算所涉及的相应应变累积）。请注意，瑞利阻尼的刚度比例分量在塑性流动期间也会被关闭。</p>
+<p>即便如此，滞回阻尼逻辑所用的视模量仍可能降到很低的数值，从而造成不符合实际的响应。可通过监测模量折减系数来检查模量是否过低（或为零），该系数即滞回阻尼对小应变模量 <span class="math">\(G_o\)</span> 所乘的系数。（例如，使用 <span class="codename">FISH</span> 网格单元变量 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_fish/zone_intrinsics/fish_zone.hysteretic.html#function:zone.hysteretic" title="Get/set the hysteretic damping parameter  s  in zone  z .    s 
+can have the following possible values:  c0 ,  c1 ,  c2 ,
+ c3 ,  modfac ,  reduction-minimum ,  model ,  e1 ,
+ e2 ,  e3 ,  e4 ,  e5 , and  e6 ...">单元滞回阻尼参数（<code class="xref fish fish-func docutils literal"><span class="pre">zone.hysteretic</span></code>）</a> 来获取所选网格单元的这一系数。）</p>
+<p>为避免过低的折减系数造成不符合实际的过大变形，可设置截断选项。设置该截断折减系数的语法是使用关键字“reduction-minimum”后接用户定义的值，即：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">zone dynamic</span><span class="n"> damping hysteretic name </span><span class="o">&lt;</span><span class="n">v1 v2 v3 v4</span><span class="o">&gt;</span><span class="n"> </span><span class="o">&lt;</span><span class="n">reduction</span><span class="o">-</span><span class="n">minimum v5</span><span class="o">&gt;</span><span class="n"> </span><span class="o">&lt;</span><span class="n">range</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>在某些模拟中，在远离塑性流动区域的部位（例如模型底部附近）观察到了较大的模量折减。在这些情况下，采用单一的模量折减曲线似乎不符合实际。有证据表明（例如见 Darendeli 2001），退化曲线取决于平均应力水平：例如在深处（平均应力高），阻尼和模量折减较小。使滞回阻尼随深度变化，模拟应会更加符合实际。</p>
+<p><span class="bi">检查初始剪应力状态</span>——在实验室试验中，初始剪应力假定为零，因而滞回环通常是对称的。在实际应用中，初始剪应力不大可能为零（例如堤坝表面附近的土体单元中）。滞回阻尼的使用者必须就材料初始状态的最佳估计作出决定，因为 <span class="codename">FLAC3D</span> 中的滞回公式取决于剪应变的历史。可区分两种情形：</p>
+<blockquote>
+<div><p>1. 若在一组平衡应力施加<em>之后</em>才激活滞回阻尼，则初始剪应变将为零，剪应力的循环往复将倾向于以起始点为中心对称。</p>
+<p>2. 若在滞回阻尼生效的情况下通过对模型施加应变来建立初始应力，则随后剪应力的循环往复将倾向于不对称，因为应变的初始偏置会使应力/应变曲线在应力较高一侧的斜率更平缓。</p>
+</div></blockquote>
+<p>这些情形在<a class="reference internal" href="../../../../../zone/test3d/Dynamic/EarthquakeExcitation/EarthquakeExcitation.html#earthquakeexcitation"><span class="std std-ref">均质土层的一维地震激励</span>（One-Dimensional Earthquake Excitation of Uniform Layer）</a>示例中通过将初始模型修改为另外两种情形予以说明。</p>
+<p>在滞回阻尼生效的情况下采用完整的静力求解，以获得应力和应变相互协调的起始状态，这一做法可用于更复杂的模型，例如坡面区域含有初始剪应力的堤坝。该方法的一个缺点是，静力求解在接近平衡状态时可能包含许多逐渐衰减的振荡循环。尽管这些循环通常相当小（且几乎不影响所需的应力状态），但它们会使许多状态被存储在内存堆栈中（见<a class="reference internal" href="#dynamic-hysteretic-formulation"><span class="std std-ref">滞回阻尼的公式、实现与标定</span>（Hysteretic Damping Formulation,
+Implementation and Calibration）</a>）。这些已存储的状态会在动力加载早期从堆栈中删除，但它们占用内存，并在计算时间上带来一些初始开销。在 <span class="codename">FLAC3D</span> 的未来版本中，或许可以加入相应逻辑，使用户能在静力初始化结束时清空堆栈，同时保留最新的应力相容应变状态，以供带滞回阻尼的动力模拟使用。</p>
+</div>
+<div class="section" id="local-damping-for-dynamic-simulations">
+<span id="dynamic-local-damping"></span><h3>动力模拟中的局部阻尼</h3>
+<p>局部阻尼（见<a class="reference internal" href="../../../theory/theoreticalbackground/formulation.html#mechanical-damping"><span class="std std-ref">力学阻尼</span>（Mechanical Damping）</a>）最初是作为使静力模拟达到平衡的手段而设计的。然而，它的一些特性使其对动力模拟颇具吸引力。其工作方式是在振荡循环的某些时刻向网格点或结构节点增加或减少质量；由于增加的量等于减少的量，质量总体守恒。速度改变符号时增加质量，速度经过最大值或最小值点时减少质量。因此，每个振荡循环中会移除两次动能增量（在速度极值处）。所移除的能量 <span class="math">\(\Delta W\)</span> 与最大瞬时应变能 <span class="math">\(W\)</span> 成正比，且其比值 <span class="math">\(\Delta W/W\)</span> 与速率和频率无关。由于 <span class="math">\(\Delta W/W\)</span> 可与临界阻尼分数 <span class="math">\(D\)</span> 相关联（Kolsky 1963），可得表达式</p>
+<div class="math" id="equation-dynamic-local-damping">
+<span class="eqno">(51)</span>\[\alpha_{\rm L}=\pi D\]</div>
+<p>其中 <span class="math">\(\alpha_{\rm L}\)</span> 是局部阻尼系数。因此，使用局部阻尼比瑞利阻尼更简单，因为我们无需指定频率。示例<a class="reference internal" href="../../../../../zone/test3d/Dynamic/MechanicalDamping/MechanicalDamping.html#mechanicaldamping"><span class="std std-ref">重力作用下的块体</span>（Block Under Gravity）</a>将局部阻尼与其他选项进行了比较。</p>
+<p>局部阻尼的一种改进形式——<em>组合阻尼</em>——也可用于动力模式，但其性能尚不清楚。组合阻尼的公式见<a class="reference internal" href="../../../theory/theoreticalbackground/formulation.html#mechanical-damping"><span class="std std-ref">力学阻尼</span>（Mechanical Damping）</a>，调用它的命令为</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="n">zone</span><span class="p">.</span><span class="n">dynamic</span><span class="p">.</span><span class="n">damping</span><span class="p">.</span><span class="n">combined </span><span class="o">&lt;</span><span class="n">v1</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>注意：局部阻尼在简单情形下似乎能给出良好结果，因为它与频率无关，且无需估计所模拟系统的固有频率。然而，此类阻尼应谨慎使用，并应针对每个应用将其结果与瑞利阻尼的结果进行比较。有证据表明，对于复杂波形，局部阻尼会对高频成分欠阻尼，并可能引入高频“噪声”。还需注意，局部阻尼与时步有关。减小时间步将减少从系统中移除的能量。</p>
+<p>地震模拟中<em>不</em>推荐使用局部阻尼，因为这类阻尼无法完全正确地表示多次循环加载的能量损失。</p>
+</div>
+<div class="section" id="spatial-variation-in-damping">
+<span id="dynamic-spatial-variation-damping"></span><h3>阻尼的空间变化</h3>
+<p>在 <span class="codename">FLAC3D</span> 中，瑞利阻尼和局部阻尼均通过 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.dynamic.html#kwd:zone.dynamic.damping" title="This command selects the damping type for the dynamic analysis. Damping in dynamic
+analysis is described in the topic  dynamic_mechanical_damping ...">单元动力阻尼（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">dynamic</span> <span class="pre">damping</span></code>）</a> 命令指定。通过在命令中加入 <span class="cmdkey">range</span> 短语来筛选参与该命令的网格点，可以规定阻尼参数（以及阻尼类型）的空间变化。例如，若已知不同材料具有不同的临界阻尼分数，则可为每种材料指定不同的 <span class="math">\(\xi_{\min}\)</span> 值。这可通过修改<a class="reference internal" href="../../../../../zone/test3d/Dynamic/ShearWaveOnVerticalBar/ShearWaveOnVerticalBar.html#shearwave"><span class="std std-ref">柱中传播的波</span>（wave propagating in a column）</a>示例来演示。下面给出了该示例：</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../zone/test3d/Dynamic/Damping-SpatialVariation/Damping-SpatialVariation.html">阻尼的空间变化（Spatial Variation in Damping）</a></li>
+</ul>
+</div>
+<p>非均匀阻尼通过将 <span class="cmdkey">range</span> 与 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.dynamic.html#kwd:zone.dynamic.damping" title="This command selects the damping type for the dynamic analysis. Damping in dynamic
+analysis is described in the topic  dynamic_mechanical_damping ...">单元动力阻尼（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">dynamic</span> <span class="pre">damping</span></code>）</a> 命令结合使用来指定。可使用 <span class="cmdkey">gradient</span> 关键字使阻尼常数在空间上变化。例如，可用以下命令修改瑞利阻尼参数：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">zone dynamic</span><span class="n"> damping rayleigh </span><span class="m m-Double">0.05</span><span class="n"> gradient </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">0.05</span><span class="p">)</span><span class="n"> </span><span class="m m-Double">25.0</span><span class="n"> gradient </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">25</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>在此情形下，阻尼系数和中心频率在空间上都有变化。请注意，所有阻尼参数都归属于<span class="cmdkey">gridpoints</span>。特别地，作用于<em>网格单元</em>应变率的瑞利刚度比例项，是由相邻网格点处指定的值平均得到的。</p>
+</div>
+<div class="section" id="structural-element-damping-for-dynamic-simulations">
+<h3>动力模拟中的结构单元阻尼</h3>
+<p>通过给出 <a class="reference internal" href="../../../../../../common/sel/doc/manual/sel_manual/sel_commands/cmd_structure.damping.html#command:structure.damping" title="Set the structural element logic damping scheme. This command is depreciated.
+Use instead the command  structure.mechanical.damping  for static mode
+or  structure.dynamic.damping  for dynamic mode. The values of this setting
+can be printed using the  structure.list.information  command. The following
+keywords are available:..."><code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">damping</span></code></a> 命令，还可为结构单元单独指定瑞利阻尼、局部阻尼、组合阻尼和无阻尼。此后阻尼专门施加于模型中的所有结构单元。结构节点的默认阻尼为<em>无阻尼</em>。</p>
+<p>结构阻尼与网格中的阻尼作用方式类似。然而，若结构节点刚性附着于某网格单元，则采用该网格单元的阻尼值而非结构节点的阻尼值。对于结构节点附着于空（null）网格单元的特殊情形，该节点的阻尼为零。下面给出了示例：</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../common/sel/test3d/VerificationProblems/FreeVibration/FreeVibration.html">悬臂梁的自由振动（Free Vibration of a Cantilever Beam）</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="artificial-viscosity">
+<span id="consideration-artificial-viscosity"></span><h3>人工黏性</h3>
+<p><span class="codename">FLAC3D</span> 中实现了 von Neumann 和 Landshoff 人工黏性项，用于在涉及上升时间很快的波形（例如冲击波）的动力分析中控制阻尼。这些黏性阻尼项是 Wilkins（1980）中一维方程 (1) 和 (3) 的推广，并对应于 von Neumann 和 Richtmyer 最初的黏性公式（见 Wilkins 1980）。</p>
+<p>人工黏性方法最初是为流体动力学中冲击传播的数值计算而开发的。当剪应力分量与平均压力相比相当显著时，该方法可能不适用于弹性波或塑性波，因为该方法不会阻尼剪切波。二次 von Neumann 项 <span class="math">\(q_1\)</span> 的作用是将冲击分散到若干网格间距上，并阻尼波前之后的振荡。线性 Landshoff 项 <span class="math">\(q_2\)</span> 的作用是随着冲击的推进使冲击波前在更多网格单元上弥散。</p>
+<p>在 <span class="codename">FLAC3D</span> 的实现中，按网格单元使用标量黏性项 <span class="math">\(q_1\)</span> 和 <span class="math">\(q_2\)</span> 的线性组合 <span class="math">\(q\)</span>：</p>
+<div class="math" id="equation-artificial-viscosity-q">
+<span class="eqno">(52)</span>\[q = a_n q_1 + a_l q_2\]</div>
+<p>其中 <span class="math">\(a_n\)</span> 和 <span class="math">\(a_l\)</span> 是两个常数。黏性项的形式为</p>
+<div class="math" id="equation-artificial-viscosity-q1">
+<span class="eqno">(53)</span>\[q_1 = b \; {c_0}^2 \; \rho \; L^2 \; \dot\epsilon^2\]</div>
+<div class="math" id="equation-artificial-viscosity-q2">
+<span class="eqno">(54)</span>\[q_2 = b \; c_1 \; \rho \; L \; a \; \dot\epsilon\]</div>
+<table border="1" class="colwidths-auto blank docutils">
+<tbody valign="top">
+<tr class="row-odd"><td>其中：</td>
+<td><span class="math">\(L\)</span></td>
+<td>是网格单元的特征尺寸（网格单元面积的平方根）；</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td><span class="math">\(\dot\epsilon\)</span></td>
+<td>是网格单元的体积应变率；</td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td><span class="math">\(\rho\)</span></td>
+<td>是网格单元的密度；</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td><span class="math">\(a\)</span></td>
+<td>是材料的 <span class="math">\(p\)</span> 波波速：<span class="math">\(a = {\sqrt{{(K + 4G/3) / \rho}}}\)</span>，其中 <span class="math">\(K\)</span> 和 <span class="math">\(G\)</span> 是该网格单元的体积模量和剪切模量；</td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td><span class="math">\(c_0\)</span></td>
+<td>是设为 2 的常数；以及</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td><span class="math">\(c_1\)</span></td>
+<td>是设为 1 的常数。</td>
+</tr>
+</tbody>
+</table>
+<p>并且，为兼顾压缩冲击和剪胀冲击，我们指定</p>
+<div class="math" id="equation-artificial-viscosity-b">
+<span class="eqno">(55)</span>\[b = -sgn(\dot\epsilon)\]</div>
+<p>在求解运动方程之前，将各向同性黏性应力的贡献加到节点的不平衡力中。</p>
+<p>下面给出用于为 <span class="codename">FLAC3D</span> 模型激活人工阻尼的命令：</p>
+<p><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.dynamic.html#kwd:zone.dynamic.damping.artificial-viscosity" title="Sets the von Neumann ( f2 ) and Landshoff ( f2 ) constants, which...">单元动力人工黏性阻尼命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">dynamic</span> <span class="pre">damping</span> <span class="pre">artificial-viscosity</span></code>）</a> <span class="math">\(a_n\)</span> <span class="math">\(a_l\)</span></p>
+<p>其中 <span class="math">\(a_n\)</span> 和 <span class="math">\(a_l\)</span> 是上文定义的两个常数，在大多数情况下应取值为 1。</p>
+<p>请注意，阻尼项的存在会使稳定性条件略微更加严格，而这一点在实现中未被考虑。因此，在某些情况下可能必须减小时间步才能获得令人满意的数值稳定性。</p>
+<p>下面给出的示例说明了人工黏性对通过一列网格单元传播的具有陡峭波前的膨胀波的影响。</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../zone/test3d/Dynamic/ArtificialViscosity/ArtificialViscosity.html">示例：具有陡峭波前的人工波（Example: Artificial Wave with Sharp Front）</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="integration-of-damping-schemes-and-nonlinear-material-models-for-geo-materials">
+<span id="dynamic-integration-of-damping-schemes"></span><h3>岩土材料阻尼方案与非线性材料模型的集成</h3>
+<p>土和岩石中的能量耗散在很大程度上是滞回性的；每个剪应变加载/卸载循环的比损耗与执行该循环的速率无关，但取决于循环的幅值。理想情况下，这种行为应由适当的本构模型来再现，但恰当的非线性模型往往很复杂，包含许多材料参数。因此常改用 Mohr Coulomb 等较简单的模型，以再现地震加载期间可能发生的不可逆应变累积（例如崩塌或沿剪切面的滑移）。在此类模型中，必须加入附加阻尼，以计入响应弹性部分以及波通过场地传播期间的循环耗散。常用<a class="reference internal" href="#dynamic-rayleigh-damping"><span class="std std-ref">瑞利阻尼</span>（Rayleigh damping）</a>，但它只能在有限频率范围内提供（近似）与速率无关的阻尼，并且会导致临界时步大幅减小，进而使运行时间很长。</p>
+<p>以下讨论说明了将阻尼与简单材料模型相结合的几种方式。我们考虑使用<a class="reference internal" href="#dynamic-hysteretic-damping"><span class="std std-ref">滞回阻尼</span>（hysteretic damping）</a>，并加上塑性流动产生的阻尼。滞回阻尼基于初次加载的割线模量折减曲线（<em>骨干曲线</em>）以及卸载/再加载时提供能量耗散的 Masing 规则假定。滞回阻尼仅在弹性范围内施加，而由本构模型提供的天然阻尼在塑性范围内起作用。下面给出三种简单情形。第一，给出标准弹塑性 Mohr-Coulomb 模型所提供的能量耗散。第二，利用滞回（Hardin/Drnevich 模型）阻尼将阻尼纳入线弹性模型。第三，将 Hardin/Drnevich 模型与 Mohr-Coulomb 模型相结合。通过评价各情形下剪切模量和阻尼比的变化，对三种情形的能量耗散进行比较。</p>
+<div class="section" id="natural-damping-with-the-mohr-coulomb-model">
+<h4>Mohr-Coulomb 模型的天然阻尼</h4>
+<p>Mohr-Coulomb 等标准弹塑性模型能够产生剪切模量折减曲线和阻尼比曲线。考虑一个具有恒定剪切模量 <span class="math">\(G_{max}\)</span> 和恒定屈服应力 <span class="math">\(\tau_m\)</span> 的弹塑性模型，承受幅值为 <span class="math">\(|\gamma|\)</span> 的循环剪应变。在屈服以下，割线剪切模量 <span class="math">\(G\)</span> 就等于 <span class="math">\(G_{max}\)</span>。对于涉及屈服的循环激励，割线模量为</p>
+<div class="math" id="equation-dyneq-mc-nd1">
+<span class="eqno">(56)</span>\[G={\tau_m/|\gamma}|\]</div>
+<p>模量折减曲线给出比值 <span class="math">\(G/G_{max}\)</span> 与剪应变幅值 <span class="math">\(|\gamma|\)</span> 之间的关系；只需将方程<a class="reference internal" href="#equation-dyneq-mc-nd1">(56)</a>除以 <span class="math">\(G_{max}\)</span> 即可得到，并利用 <span class="math">\(\gamma_m\)</span> = <span class="math">\(\tau_m\)</span>/<span class="math">\(G_{max}\)</span>，对于 <span class="math">\(|\gamma| &gt; \gamma_m\)</span>，可得</p>
+<div class="math" id="equation-dyneq-mc-nd2">
+<span class="eqno">(57)</span>\[{G \over G_{max}} = {\gamma_m \over |\gamma|}\]</div>
+<p>幅值为 <span class="math">\(\gamma_c\)</span> &gt; <span class="math">\(\gamma_m\)</span> 的应力-应变循环（由初次加载加上一次卸载/再加载往复组成）示意于 <a href="#dynamic-loop-mc">图  23（Figure  23）</a>：</p>
+<div class="figure" id="dynamic-loop-mc">
+<img alt="../../../../../../_images/dynamic-loop-mc.png" src="../../../../../../_images/dynamic-loop-mc.png"/>
+<p class="caption"><span class="caption-text">图 23：剪应力/剪应变循环——Mohr-Coulomb 模型。</span></p>
+</div>
+<p>循环期间的最大储存能量 <span class="math">\(W\)</span>（假定 <span class="math">\(G\)</span> 代表弹性模量）为</p>
+<div class="math" id="equation-dyneq-mc-nd3">
+<span class="eqno">(58)</span>\[W={1 \over 2}{\tau_m \gamma_c}\]</div>
+<p>而耗散能（对应于滞回环所围面积）为</p>
+<div class="math" id="equation-dyneq-mc-nd4">
+<span class="eqno">(59)</span>\[\Delta W=4\tau_m(\gamma_c-\gamma_m)\]</div>
+<p>因此，</p>
+<div class="math" id="equation-dyneq-mc-nd5">
+<span class="eqno">(60)</span>\[{\Delta W\over W}={8(\gamma_c-\gamma_m)\over\gamma_c}\]</div>
+<p>以 <span class="math">\(D\)</span> 表示阻尼比，并注意到对于较小的 <span class="math">\(D\)</span> 值（Kolsky 1963），</p>
+<div class="math" id="equation-dyneq-mc-nd6">
+<span class="eqno">(61)</span>\[D \approx {1 \over 4 \pi}{\Delta W \over W}\]</div>
+<p>或者，将方程<a class="reference internal" href="#equation-dyneq-mc-nd3">(58)</a>和<a class="reference internal" href="#equation-dyneq-mc-nd4">(59)</a>代入方程<a class="reference internal" href="#equation-dyneq-mc-nd6">(61)</a>，得</p>
+<div class="math" id="equation-dyneq-mc-nd7">
+<span class="eqno">(62)</span>\[D={2 \over \pi} {{(\gamma_c-\gamma_m)}\over \gamma_c}\]</div>
+<p>我们将由方程<a class="reference internal" href="#equation-dyneq-mc-nd2">(57)</a>得到的归一化模量（<span class="math">\(G/G_{max}\)</span>）和由方程<a class="reference internal" href="#equation-dyneq-mc-nd4">(59)</a>得到的阻尼 <span class="math">\(D\)</span> 相对于方程<a class="reference internal" href="#equation-dyneq-mc-nd7">(62)</a>中的归一化循环应变 <span class="math">\(\gamma/\gamma_m\)</span> 绘图。可以看出，即使是一个简单模型（此处的“简单”是就动力问题而言），其模量和阻尼的演化也能在有限的循环应变范围内与试验结果相匹配。</p>
+<div class="figure" id="dynamic-mc-gogmax-damping">
+<img alt="../../../../../../_images/dynamic-mc-gogmax-damping.png" src="../../../../../../_images/dynamic-mc-gogmax-damping.png"/>
+<p class="caption"><span class="caption-text">图 24：弹塑性 Mohr-Coulomb 模型的模量和阻尼比随循环应变的变化。</span></p>
+</div>
+</div>
+<div class="section" id="hysteretic-damping-with-the-linear-elastic-model">
+<h4>线弹性模型的滞回阻尼</h4>
+<p>对于采用<a class="reference internal" href="#dynamic-hysteretic-formulation"><span class="std std-ref">滞回阻尼的公式、实现与标定</span>（Hysteretic Damping Formulation, Implementation, and Calibration）</a>中所述 Hardin/Drnevich 函数的滞回阻尼模型，骨干曲线由下式给出</p>
+<div class="math" id="equation-dyneq-hardin-1">
+<span class="eqno">(63)</span>\[{\tau \over G_{max}} = {{\gamma} \over {1 + {\gamma \over \gamma_{ref}}}}\]</div>
+<p>其中 <span class="math">\(\gamma_{ref}\)</span> 是 Hardin/Drnevich 函数的常数。<span class="math">\(\gamma_{ref}\)</span> 是 <span class="math">\(\tau/G_{max}\)</span> 的极限值：</p>
+<div class="math" id="equation-dyneq-hardin-2">
+<span class="eqno">(64)</span>\[\gamma_{ref} = {\tau_m \over G_{max}}\]</div>
+<p>初次加载沿该曲线进行。对于卸载/再加载，适用 Masing 规则。对于幅值为 <span class="math">\(\gamma_c\)</span> 的等幅循环剪切加载情形，Masing 规则给出卸载时的关系为</p>
+<div class="math" id="equation-dyneq-hardin-3">
+<span class="eqno">(65)</span>\[\tau_{down} = -G_{max} {{\gamma_c - \gamma} \over {1 + {{\gamma_c - \gamma}\over{2\gamma_{ref}}}}} + \tau_c\]</div>
+<p>再加载时为</p>
+<div class="math" id="equation-dyneq-hardin-4">
+<span class="eqno">(66)</span>\[\tau_{up} = G_{max} {{\gamma_c + \gamma} \over {1 + {{\gamma_c + \gamma}\over{2\gamma_{ref}}}}} - \tau_c\]</div>
+<p>其中</p>
+<div class="math" id="equation-dyneq-hardin-5">
+<span class="eqno">(67)</span>\[\tau_c = G_{max}  {{\gamma_c} \over {1 + {{\gamma_c}\over{\gamma_{ref}}}}}\]</div>
+<p>初次加载曲线以及一次卸载/再加载循环所描绘的滞回环示意于 <a href="#dynamic-loop-hardin">图  25（Figure  25）</a>。</p>
+<div class="figure" id="dynamic-loop-hardin">
+<img alt="../../../../../../_images/dynamic-loop-hardin.png" src="../../../../../../_images/dynamic-loop-hardin.png"/>
+<p class="caption"><span class="caption-text">图 25：剪应力/剪应变循环——带 Hardin/Drnevich 滞回阻尼的弹性模型。</span></p>
+</div>
+<p>一个完整卸载-再加载循环所耗散的能量由下列积分给出</p>
+<div class="math" id="equation-dyneq-hardin-6">
+<span class="eqno">(68)</span>\[\Delta W = \int_{-\gamma_c}^{\gamma_c} (\tau_{up} - \tau_{down})d\gamma\]</div>
+<p>将方程<a class="reference internal" href="#equation-dyneq-hardin-3">(65)</a>和<a class="reference internal" href="#equation-dyneq-hardin-4">(66)</a>代入方程<a class="reference internal" href="#equation-dyneq-hardin-6">(68)</a>并完成积分后，可得</p>
+<div class="math" id="equation-dyneq-hardin-7">
+<span class="eqno">(69)</span>\[\Delta W = 4 G_{max}\gamma_{ref}^2 \biggl\{2 \bigl[{\gamma_c\over\gamma_{ref}} - ln(1 + {\gamma_c\over\gamma_{ref}}) \bigr] - {\Bigl({\gamma_c\over\gamma_{ref}}\Bigr)^2 \over {1+{\gamma_c\over\gamma_{ref}}}} \biggr\}\]</div>
+<p>一个循环中的最大储存能量为</p>
+<div class="math" id="equation-dyneq-hardin-8">
+<span class="eqno">(70)</span>\[W = {1 \over 2} \tau_c \gamma_c\]</div>
+<p>其中 <span class="math">\(\tau_c\)</span> 由方程<a class="reference internal" href="#equation-dyneq-hardin-5">(67)</a>给出。</p>
+<p>阻尼比 <span class="math">\(D\)</span> 由方程<a class="reference internal" href="#equation-dyneq-hardin-6">(68)</a>和<a class="reference internal" href="#equation-dyneq-hardin-7">(69)</a>与方程<a class="reference internal" href="#equation-dyneq-hardin-8">(70)</a>联立得到：</p>
+<div class="math" id="equation-dyneq-hardin-9">
+<span class="eqno">(71)</span>\[D = {2 \over \pi} \biggl\{2 {{1+ {\gamma_c\over\gamma_{ref}}}\over \Bigl({\gamma_c\over\gamma_{ref}}\Bigr)^2} \bigl[{\gamma_c\over\gamma_{ref}} - ln(1 + {\gamma_c\over\gamma_{ref}}) \bigr]     - 1\biggr\}\]</div>
+<p>此外，我们注意到应用洛必达法则可得</p>
+<div class="math" id="equation-dyneq-hardin-10">
+<span class="eqno">(72)</span>\[\lim_{{\gamma_c\over\gamma_{ref}} \rightarrow \infty} D = 2/\pi\]</div>
+<p>值得注意的是，对于 Hardin/Drnevich 滞回阻尼与弹性模型的组合，阻尼比不依赖于 <span class="math">\(G_{max}\)</span>。此外，<span class="math">\(\gamma_{ref}\)</span> 越小，<span class="math">\(D\)</span> 越大。对于等体积、等幅的弹性循环剪切试验，使用滞回阻尼所产生的响应与所执行的循环次数无关。</p>
+</div>
+<div class="section" id="hysteretic-damping-with-the-mohr-coulomb-model">
+<span id="hysteretic-damping-mc"></span><h4>Mohr-Coulomb 模型的滞回阻尼</h4>
+<p>在 <span class="codename">FLAC3D</span> 中将滞回阻尼与弹塑性模型一起使用时，模量折减技术施加于弹性范围，而天然阻尼施加于塑性范围。此处我们将 Hardin/Drnevich 滞回阻尼与 Mohr-Coulomb 模型相结合。Mohr-Coulomb 模型具有恒定的切线弹性剪切模量 <span class="math">\(G_{max}\)</span> 和恒定的屈服应力 <span class="math">\(\tau_m\)</span>。Hardin/Drnevich 模型用于在弹性范围内提供能量耗散（而<em>不</em>用于通过双曲线塑性模型模拟屈服）。因此，双曲线律的屈服水平必须高于 Mohr-Coulomb 的屈服应力。只要满足以下要求即可做到这一点：</p>
+<div class="math" id="equation-dyneq-mc-1">
+<span class="eqno">(73)</span>\[\gamma_{ref} &gt; \gamma_m\]</div>
+<p>其中</p>
+<div class="math" id="equation-dyneq-mc-2">
+<span class="eqno">(74)</span>\[\gamma_m = {\tau_m \over G_{max}}\]</div>
+<p>涉及 Mohr-Coulomb 屈服的初次加载曲线以及一次卸载/再加载循环所描绘的滞回环示意于 <a href="#dynamic-loop-mc-hys">图  26（Figure  26）</a>。</p>
+<div class="figure" id="dynamic-loop-mc-hys">
+<img alt="../../../../../../_images/dynamic-loop-mc-hys.png" src="../../../../../../_images/dynamic-loop-mc-hys.png"/>
+<p class="caption"><span class="caption-text">图 26：剪应力/剪应变循环——带 Hardin/Drnevich 滞回阻尼的 Mohr-Coulomb 模型。</span></p>
+</div>
+<p>弹性范围由 <span class="math">\(\gamma_c &lt; \gamma_m\)</span> 定义，其中剪应变 <span class="math">\(\gamma_m\)</span> 由以下关系求得（见方程<a class="reference internal" href="#equation-dyneq-hardin-1">(63)</a>）：</p>
+<div class="math" id="equation-dyneq-mc-3">
+<span class="eqno">(75)</span>\[{\tau_m \over G_{max}} = {{\gamma_m} \over {1 + {\gamma_m \over \gamma_{ref}}}}\]</div>
+<p>在弹性范围内（<span class="math">\(\gamma_c &lt; \gamma_m\)</span>），模量折减系数由方程<a class="reference internal" href="#equation-dyneq-hardin-1">(63)</a>给出，即</p>
+<div class="math" id="equation-dyneq-mc-4">
+<span class="eqno">(76)</span>\[{G \over G_{max}} = {1 \over {1 + {|\gamma| \over \gamma_{ref}}}}\]</div>
+<p>在塑性范围内（<span class="math">\(\gamma_c \ge \gamma_m\)</span>），关系为</p>
+<div class="math" id="equation-dyneq-mc-5">
+<span class="eqno">(77)</span>\[{G \over G_{max}} = {1 \over \biggl(1 + {\gamma_m \over \gamma_{ref}}\biggr){|\gamma|\over \gamma_m}}\]</div>
+<p>此外，在塑性范围内，一个循环所耗散的能量是方程<a class="reference internal" href="#equation-hardin-secant-mod">(50)</a>中滞回环所围的面积。该能量可表示为两项贡献之和：</p>
+<div class="math" id="equation-dyneq-mc-6">
+<span class="eqno">(78)</span>\[\Delta W = \Delta W_H + \Delta W_{MC}\]</div>
+<p>其中 <span class="math">\(\Delta W_H\)</span> 由方程<a class="reference internal" href="#equation-dyneq-hardin-7">(69)</a>给出</p>
+<div class="math" id="equation-dyneq-mc-7">
+<span class="eqno">(79)</span>\[\Delta W_H = 4 G_{max}\gamma_{ref}^2 \biggl\{2 \bigl[{\gamma_m\over\gamma_{ref}} - ln(1 + {\gamma_m\over\gamma_{ref}}) \bigr] - {\Bigl({\gamma_m\over\gamma_{ref}}\Bigr)^2 \over {1+{\gamma_m\over\gamma_{ref}}}} \biggr\}\]</div>
+<p>而 <span class="math">\(\Delta W_{MC}\)</span> 表示为（见方程<a class="reference internal" href="#equation-dyneq-mc-nd4">(59)</a>）</p>
+<div class="math" id="equation-dyneq-mc-8">
+<span class="eqno">(80)</span>\[\Delta W_{MC}=4\Bigl({{G_{max}} \over {1 + {\gamma_m \over \gamma_{ref}}}}\Bigr) {\gamma_m}^2 \bigl({\gamma_c \over \gamma_m} - 1\bigr)\]</div>
+<p>一个循环中的最大储存能量为</p>
+<div class="math" id="equation-dyneq-mc-9">
+<span class="eqno">(81)</span>\[W = {1 \over 2} {\tau_m \gamma_c}\]</div>
+<p>而阻尼比为</p>
+<div class="math" id="equation-dyneq-mc-10">
+<span class="eqno">(82)</span>\[D = {1 \over {4 \pi}} {{\Delta W_H + \Delta W_{MC}} \over {W}}\]</div>
+<p>将方程<a class="reference internal" href="#equation-dyneq-mc-7">(79)</a>和<a class="reference internal" href="#equation-dyneq-mc-8">(80)</a>代入方程<a class="reference internal" href="#equation-dyneq-mc-10">(82)</a>后，经整理可得</p>
+<div class="math" id="equation-dyneq-mc-11">
+<span class="eqno">(83)</span>\[D = {2 \over \pi} \biggl\{2 {{1+ {\gamma_m\over\gamma_{ref}}}\over \Bigl({\gamma_m\over\gamma_{ref}}\Bigr)^2} \bigl[{\gamma_m\over\gamma_{ref}} - ln(1 + {\gamma_m\over\gamma_{ref}}) \bigr] - 1\biggr\} {1 \over {\gamma_c\over\gamma_{ref}}} + {{2 \over \pi}{(\gamma_c-\gamma_m)\over \gamma_c}}\]</div>
+<p>通过在循环应变范围内计算 <span class="math">\(G/G_{max}\)</span> 和 <span class="math">\(D\)</span> 的表达式，对三种阻尼情形的能量耗散进行比较。列于“datafiles\Dynamic\Damping-Compare\Damping-Compare.dat”中的 <span class="codename">FISH</span> 函数在循环剪应变 <span class="math">\(\gamma_c\)</span> 从 0.0001 至 4.0 的范围内执行该计算。<span class="math">\(\gamma_m\)</span> 取 0.01，<span class="math">\(\gamma_{ref}\)</span> 取 0.02。基于方程<a class="reference internal" href="#equation-dyneq-mc-nd2">(57)</a>、<a class="reference internal" href="#equation-dyneq-hardin-1">(63)</a>、<a class="reference internal" href="#equation-dyneq-mc-4">(76)</a>和<a class="reference internal" href="#equation-dyneq-mc-5">(77)</a>得到的 <span class="math">\(G/G_{max}\)</span> 随 log <span class="math">\(\gamma_c/\gamma_m\)</span> 变化的结果绘于 <a href="#dampingcompare1">图  27（Figures  27）</a>。基于方程<a class="reference internal" href="#equation-dyneq-mc-nd7">(62)</a>、<a class="reference internal" href="#equation-dyneq-hardin-9">(71)</a>和<a class="reference internal" href="#equation-dyneq-mc-11">(83)</a>得到的 <span class="math">\(D\)</span> 随 log <span class="math">\(\gamma_c/\gamma_m\)</span> 变化的结果绘于 <a href="#dampingcompare2">图  28（Figure  28）</a>。</p>
+<p>结果表明，加入滞回阻尼会使剪切模量从初始值 <span class="math">\(G_{max}\)</span> 降低，并使阻尼比增大（与仅有弹性的响应相比）。三种情形下阻尼比均随剪应变幅值单调增大，并趋近于渐近值 <span class="math">\(2 / \pi\)</span>。该示例的项目文件可在“datafiles\Dynamic\Damping-Compare\Damping-Compare.f3prj”中找到。</p>
+<div class="figure" id="dampingcompare1">
+<a class="reference internal image-reference" href="../../../../../../_images/damping-compare-damp.png"><img alt="../../../../../../_images/damping-compare-damp.png" src="../../../../../../_images/damping-compare-damp.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 27：三种阻尼情形下归一化剪切模量随对数归一化剪应变的变化。</span></p>
+</div>
+<div class="figure" id="dampingcompare2">
+<a class="reference internal image-reference" href="../../../../../../_images/damping-compare-gmod.png"><img alt="../../../../../../_images/damping-compare-gmod.png" src="../../../../../../_images/damping-compare-gmod.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 28：三种阻尼情形下阻尼比随对数归一化剪应变的变化。</span></p>
+</div>
+<p class="endnotesection rubric">尾注</p>
+<table class="docutils footnote" frame="void" id="id3" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>本节经许可摘编自 Mejia 和 Dawson（2006）的文献。</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id4" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>基于快速傅里叶变换的谱分析以 <span class="codename">FISH</span> 函数的形式提供于 FISH 库中——见“FFT.FIS”。</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../flac3dhome.html"><span class="codename">FLAC3D</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../options.html">Options</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../dynamic.html">Dynamic Analysis</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../../../../../zone/test3d/Dynamic/ShearWaveOnStiffWallInSoftSoil/ShearWaveOnStiffWallInSoftSoil.html" title="previous chapter"> Shear Wave On Stiff Wall In Soft Soil:  Dynamic Multi-Stepping</a> |    
+       <a href="../../../../../zone/test3d/Dynamic/ShearWaveOnVerticalBar/ShearWaveOnVerticalBar.html" title="next chapter">Shear Wave Propagation in a Vertical Bar</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Dynamic Modeling Considerations" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

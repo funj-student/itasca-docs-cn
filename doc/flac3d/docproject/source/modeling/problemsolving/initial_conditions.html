@@ -1,0 +1,493 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>初始条件 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="equilibrium.html" rel="next" title="Reaching Equilibrium"/>
+<link href="boundary_conditions.html" rel="prev" title="Boundary Conditions"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="hide sectionname docutils container">
+<span class="codename">FLAC3D</span> Modeling • Problem Solving with <span class="codename">FLAC3D</span></div>
+<div class="section" id="initial-conditions">
+<span id="id1"></span><h1>初始条件</h1>
+<p>所有土木或采矿工程项目中，在任何开挖或施工开始之前，地层内均存在原位应力状态。在 <span class="codename">FLAC3D</span> 中，通过设置初始条件尝试重现这一原位状态。理想情况下，初始状态信息来自现场测量。但若无法获取，可针对一系列可能条件运行模型。尽管可能条件的范围潜在地是无限的，仍存在若干约束因素（例如，系统必须平衡，且任何位置均不得违反所选屈服准则）。</p>
+<p>对于具有自由表面的均匀土层或岩层，竖向应力通常等于 <span class="math">\(gρz\)</span>，其中 <span class="math">\(g\)</span> 为重力加速度、<span class="math">\(ρ\)</span> 为材料质量密度、<span class="math">\(z\)</span> 为地表以下深度。但原位水平应力更难估计。一种常见但错误的观点认为，水平应力与竖向应力之间存在某个“自然”比值，由 <span class="math">\(ν/(1-\ν)\)</span> 给出，其中 <span class="math">\(ν\)</span> 为泊松比。该公式基于以下假设推导：突然对一块侧向运动受限的弹性材料施加重力。由于反复构造运动、材料破坏、上覆层移除，以及断层和局部化形成的锁定应力，这种条件在实践中几乎从不成立（见<a class="reference internal" href="../../../../../common/docproject/source/manual/program_guide/methodology/localizationandpath.html#pathdependence"><span class="std std-ref">局部化、物理不稳定性与路径相关性</span>（Localization, Physical Instability, and Path-Dependence）</a>）。当然，如果充分了解某一体积材料的历史，就可以数值模拟整个过程，以得到拟建工程的初始条件，但这种方法通常不可行。一般采用折中方式：在网格中赋予一组应力，然后运行 <span class="codename">FLAC3D</span> 直到达到平衡状态。必须认识到，任意给定系统都有无穷多个平衡状态。</p>
+<p>以下主题将考察逐渐复杂的情况，以及指定初始条件的方法。鼓励用户尝试所提供的各个数据文件。</p>
+<div class="section" id="uniform-stresses-no-gravity">
+<span id="inits-uniform"></span><h2>均匀应力——无重力</h2>
+<p>对于深部地下开挖，开挖从顶部到底部的重力应力变化，相对于作用在所模拟岩体体积上的应力量级很小，因此可忽略。可以省略 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.gravity.html#command:model.gravity" title="Set the gravity as a vector or float. Gravity is set in units of acceleration.
+ Body force is calculated as the product of the gravity vector and the real
+mass of an object...">设置重力命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">gravity</span></code>）</a> 命令，使重力加速度默认为零。可通过 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.initialize.html#command:zone.initialize" title="Initialize a variable on all zones in the range..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">initialize</span></code></a> 命令赋予初始均匀应力。例如，以下命令</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">zone initialize</span><span class="n"> stress</span><span class="o">-</span><span class="n">xx </span><span class="o">-</span><span class="m m-Double">5e6</span><span class="n"> </span>
+<span class="nb">zone initialize</span><span class="n"> stress</span><span class="o">-</span><span class="n">yy </span><span class="o">-</span><span class="m m-Double">1e7</span>
+<span class="nb">zone initialize</span><span class="n"> stress</span><span class="o">-</span><span class="n">zz </span><span class="o">-</span><span class="m m-Double">5e6</span>
+</pre></div>
+</div>
+<p>将整个网格中的应力分量 <span class="math">\(\sigma_{xx}\)</span>、<span class="math">\(\sigma_{yy}\)</span> 和 <span class="math">\(\sigma_{zz}\)</span> 分别设为压应力 -5 × 10<sup>6</sup>、-10<sup>7</sup> 和 -5 × 10<sup>6</sup>。如果希望将应力限制在某个子网格，可添加范围参数。</p>
+<p><span class="cmdkey">stress</span> 关键字可用于一次性初始化整个应力张量。这仅能用于均匀应力场。以下命令几乎是等效的：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">zone initialize</span><span class="n"> stress xx </span><span class="o">-</span><span class="m m-Double">5e6</span><span class="n"> yy </span><span class="o">-</span><span class="m m-Double">1e7</span><span class="n"> zz </span><span class="o">-</span><span class="m m-Double">5e6</span>
+</pre></div>
+</div>
+<p>区别在于，<span class="cmdkey">stress</span> 关键字会初始化范围内每个网格单元的<em>全部</em>六个应力分量。未明确赋值的分量假定为零。</p>
+<p><a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.initialize.html#command:zone.initialize" title="Initialize a variable on all zones in the range..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">initialize</span></code></a> 命令将所有应力设置为给定值，但不保证应力处于平衡。至少可能存在两个问题。第一，应力可能违反赋予网格的非线性模型的屈服准则。此时，一开始循环就会出现塑性流动，应力会重新调整。应先试算一步并检查响应，确认是否存在这一可能性（例如，创建网格单元绘图项，将“着色依据”设为“标签”，再将“标签”设为“状态”）。第二，网格边界上的规定应力可能不等于给定初始应力。此时，循环一开始，边界网格点就会运动。同样，应检查输出，确认是否存在这种情况（例如绘制网格单元矢量绘图项，将“数值”设为“速度”）。下例给出一组命令，使初始应力与规定边界应力平衡。</p>
+<p><strong>处于平衡的初始应力与边界应力</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">6</span><span class="n"> </span><span class="m m-Double">6</span><span class="n"> </span><span class="m m-Double">6</span>
+<span class="nb">zone face skin</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">zone initialize</span><span class="n"> stress xx</span><span class="p">=</span><span class="o">-</span><span class="m m-Double">5e6</span><span class="n"> yy</span><span class="p">=</span><span class="o">-</span><span class="m m-Double">1e7</span><span class="n"> zz</span><span class="p">=</span><span class="o">-</span><span class="m m-Double">2e7</span>
+<span class="nb">zone face apply</span><span class="n"> stress</span><span class="o">-</span><span class="n">xx</span><span class="p">=</span><span class="o">-</span><span class="m m-Double">5e6</span><span class="n"> range group </span><span class="s">'East'</span><span class="n"> or </span><span class="s">'West'</span>
+<span class="nb">zone face apply</span><span class="n"> stress</span><span class="o">-</span><span class="n">yy</span><span class="p">=</span><span class="o">-</span><span class="m m-Double">1e7</span><span class="n"> range group </span><span class="s">'North'</span><span class="n"> or </span><span class="s">'South'</span>
+<span class="nb">zone face apply</span><span class="n"> stress</span><span class="o">-</span><span class="n">zz</span><span class="p">=</span><span class="o">-</span><span class="m m-Double">2e7</span><span class="n"> range group </span><span class="s">'Top'</span><span class="n"> or </span><span class="s">'Bottom'</span>
+</pre></div>
+</div>
+<p>当然，如果边界由速度控制而非应力控制，初始应力会自动处于平衡，无需 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/zoneface/cmd_zone.face.apply.html#command:zone.face.apply" title="This command is used to apply boundary conditions at surface faces of the model.
+ To apply conditions to zones rather than at faces, see the  zone.apply 
+command.  To apply conditions at individual gridpoints, see the  zone.gridpoint.fix 
+command...">施加网格单元面条件（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">face</span> <span class="pre">apply</span></code>）</a> 命令。有关边界条件，尤其是 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.apply.html#command:zone.apply" title="Create or modify zone apply conditions.  This command is used to apply conditions
+to the volume represented by zones — i.e., body forces or fluid/thermal sources.
+ For application of boundary conditions on surfaces represented by zone faces,
+see the  zone.face.apply  command. The user must specify the condition
+type, the numerical value, optional modifiers, and an optional  range 
+over which the condition is to be applied. If no range is specified, then the
+command..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">apply</span></code></a> 和 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/zoneface/cmd_zone.face.apply.html#command:zone.face.apply" title="This command is used to apply boundary conditions at surface faces of the model.
+ To apply conditions to zones rather than at faces, see the  zone.apply 
+command.  To apply conditions at individual gridpoints, see the  zone.gridpoint.fix 
+command...">施加网格单元面条件（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">face</span> <span class="pre">apply</span></code>）</a> 命令的更多详细信息，见<a class="reference internal" href="boundary_conditions.html#boundary-conditions"><span class="std std-ref">边界条件</span>（Boundary Conditions）</a>。</p>
+</div>
+<div class="section" id="stresses-with-gradients-uniform-material">
+<span id="inits-graduniform"></span><h2>带梯度的应力——均匀材料</h2>
+<p>靠近地表时，应力随深度的变化不能忽略。<a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.gravity.html#command:model.gravity" title="Set the gravity as a vector or float. Gravity is set in units of acceleration.
+ Body force is calculated as the product of the gravity vector and the real
+mass of an object...">设置重力命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">gravity</span></code>）</a> 命令告知 <span class="codename">FLAC3D</span>，重力加速度作用于网格。必须理解，<a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.gravity.html#command:model.gravity" title="Set the gravity as a vector or float. Gravity is set in units of acceleration.
+ Body force is calculated as the product of the gravity vector and the real
+mass of an object...">设置重力命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">gravity</span></code>）</a> 命令不会直接使网格中出现应力；它仅使<em>体力</em>作用于所有网格点。这些体力对应每个网格点周围材料的重量。如果没有初始应力，这些力会使材料在步进过程中沿力的方向运动，直到网格单元应力产生大小相等、方向相反的力。给定适当边界条件（例如底部固定、侧面滚动边界）时，模型实际上会自行生成与所施加重力相容的重力应力。但这一过程效率较低，因为可能需要数百步才能达到平衡。更好的方法是初始化内部应力，使其同时满足平衡和重力梯度。</p>
+<p><a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.initialize-stresses.html#command:zone.initialize-stresses" title="Initialize zone stresses based on the density of the zones above them and gravity..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">initialize-stresses</span></code></a> 命令会自动初始化重力应力场。必须先发出 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.gravity.html#command:model.gravity" title="Set the gravity as a vector or float. Gravity is set in units of acceleration.
+ Body force is calculated as the product of the gravity vector and the real
+mass of an object...">设置重力命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">gravity</span></code>）</a> 命令，并为所有网格单元赋予 <span class="cmdkey">density</span>。无论几何形状多么不规则，<a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.initialize-stresses.html#command:zone.initialize-stresses" title="Initialize zone stresses based on the density of the zones above them and gravity..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">initialize-stresses</span></code></a> 都能计算应力。它查找所有影响重力荷载的数值变化，并跟踪从给定网格单元沿重力反方向移动时会穿过哪些变化位置。</p>
+<p><strong>具有重力梯度的初始应力状态</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">zone initialize-stresses</span><span class="n"> ratio </span><span class="m m-Double">0.5</span>
+<span class="nb">zone face apply</span><span class="n"> stress</span><span class="o">-</span><span class="n">normal </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">1000</span><span class="o">*</span><span class="m m-Double">10</span><span class="o">*</span><span class="m m-Double">10</span><span class="o">*</span><span class="m m-Double">0.5</span><span class="ni">]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                gradient </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[</span><span class="m m-Double">1000</span><span class="o">*</span><span class="m m-Double">10</span><span class="o">*</span><span class="m m-Double">0.5</span><span class="ni">]</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+</pre></div>
+</div>
+<p><span class="cmdkey">ratio</span> 关键字指定水平应力比 <span class="math">\(K_0\)</span>，用于确定本例中相等的 <span class="math">\(\sigma_{xx}\)</span> 和 <span class="math">\(\sigma_{yy}\)</span> 应力。请注意，如果使用应力边界条件，则必须与 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.initialize-stresses.html#command:zone.initialize-stresses" title="Initialize zone stresses based on the density of the zones above them and gravity..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">initialize-stresses</span></code></a> 计算的应力相容。本例可使用行内 <span class="codename">FISH</span>，使荷载和梯度计算清晰简单。最大竖向压应力为高度 * 密度 * 重力 * 比值，梯度为密度 * 重力 * 比值。请注意，此简单模型为 10 m × 10 m × 10 m 的均质材料盒体，顶面自由。</p>
+<p>对于此特定情况，以下 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.initialize.html#command:zone.initialize" title="Initialize a variable on all zones in the range..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">initialize</span></code></a> 命令在功能上与 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.initialize-stresses.html#command:zone.initialize-stresses" title="Initialize zone stresses based on the density of the zones above them and gravity..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">initialize-stresses</span></code></a> 相同</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model </span><span class="ss">solve</span>
+<span class="nb">zone initialize</span><span class="n"> stress</span><span class="o">-</span><span class="n">xx </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">1000</span><span class="o">*</span><span class="m m-Double">10</span><span class="o">*</span><span class="m m-Double">10</span><span class="o">*</span><span class="m m-Double">0.5</span><span class="ni">]</span><span class="n"> gradient </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[</span><span class="m m-Double">1000</span><span class="o">*</span><span class="m m-Double">10</span><span class="o">*</span><span class="m m-Double">0.5</span><span class="ni">]</span><span class="p">)</span>
+<span class="nb">zone initialize</span><span class="n"> stress</span><span class="o">-</span><span class="n">yy </span><span class="ni">[</span><span class="o">-</span><span class="m m-Double">1000</span><span class="o">*</span><span class="m m-Double">10</span><span class="o">*</span><span class="m m-Double">10</span><span class="o">*</span><span class="m m-Double">0.5</span><span class="ni">]</span><span class="n"> gradient </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="ni">[</span><span class="m m-Double">1000</span><span class="o">*</span><span class="m m-Double">10</span><span class="o">*</span><span class="m m-Double">0.5</span><span class="ni">]</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>本例中，水平应力及其梯度等于竖向应力及其梯度的一半，但也可设为任何不违反屈服准则（本例为 Mohr-Coulomb）的值。准备好此类数据文件后，应执行一个计算步并绘制速度场；如果内部应力与边界应力不匹配，会表现为一个或多个边界的系统性运动。微小而杂乱的速度可以忽略（见<a class="reference internal" href="interpretation.html#interp-gpvelocities"><span class="std std-ref">结果解释：网格点速度</span>（Interpretation: Gridpoint
+Velocities）</a>）。一步之后的不平衡力将非常小，但可能不精确为零，这是舍入误差造成的。</p>
+<div class="figure align-center" id="id2">
+<a class="reference internal image-reference" href="../../../../../_images/Equilibrium.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/Equilibrium.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 1：均匀梯度下平衡的竖向应力。</span></p>
+</div>
+<p>请注意，使用 <span class="cmdkey">gradient</span> 关键字指定的梯度，将应力关联到网格单元形心（即形心的全局位置通过梯度决定应力值）。因此，尽管上例施加的 <span class="math">\(\sigma_{xx}\)</span> 应力从 -5.0 × 10<sup>6</sup> 变化至 -4.5 × 10<sup>6</sup>，本例实际网格单元应力却从 -4.975 × 10<sup>6</sup> 变化至 -4.525 × 10<sup>6</sup>。绘制应力等值线时，可以将网格单元应力从形心插值到边界，也可以不插值；边界上的应力<em>并不</em>精确等于边界网格单元内的应力。要查看差异，可绘制网格单元绘图项，将“着色依据”设为“等值线”、“数值”设为“应力”、“分量”设为“zz”。然后改变“方法”属性的选择（选项为“常量”“体积平均”“反距离加权”和“多项式外推”），观察结果。“方法”设为“常量”时，显示网格单元中的<em>实际</em>应力。</p>
+</div>
+<div class="section" id="stresses-with-gradients-nonuniform-material">
+<span id="inits-gradnonuniform"></span><h2>带梯度的应力——非均匀材料</h2>
+<p>当较复杂模型中存在不同密度材料时，通常应使用 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.initialize-stresses.html#command:zone.initialize-stresses" title="Initialize zone stresses based on the density of the zones above them and gravity..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">initialize-stresses</span></code></a> 确定初始应力。考虑一个具有自由表面、侧面为滚动边界且底部固定的盒形分层系统。假定材料密度分布如下：</p>
+<blockquote>
+<div><p>深度 0 至 10 m：1600 kg/m<sup>3</sup></p>
+<p>深度 10 至 15 m：2000 kg/m<sup>3</sup></p>
+<p>深度 15 至 25 m：2200 kg/m<sup>3</sup></p>
+</div></blockquote>
+<p>以下数据文件可生成平衡状态。</p>
+<p><strong>非均匀材料中的初始应力梯度</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">; 创建网格单元</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  point </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">20</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">20</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">25</span><span class="p">)</span>
+<span class="nb">zone face skin</span><span class="n">                  </span>
+<span class="c">; 本构模型和参数</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">zone property</span><span class="n"> bulk </span><span class="m m-Double">5e9</span><span class="n"> shear </span><span class="m m-Double">3e9</span>
+<span class="nb">zone initialize</span><span class="n"> density </span><span class="m m-Double">1600</span><span class="n"> range position</span><span class="o">-</span><span class="n">z  </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">zone initialize</span><span class="n"> density </span><span class="m m-Double">2000</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">10</span><span class="n"> </span><span class="m m-Double">15</span>
+<span class="nb">zone initialize</span><span class="n"> density </span><span class="m m-Double">2200</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">15</span><span class="n"> </span><span class="m m-Double">25</span>
+<span class="c">; 边界条件</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'East'</span><span class="n"> or </span><span class="s">'West'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'North'</span><span class="n"> or </span><span class="s">'South'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'Bottom'</span>
+<span class="nb">zone face apply</span><span class="n"> stress</span><span class="o">-</span><span class="n">normal </span><span class="o">-</span><span class="m m-Double">1e6</span><span class="n"> range group </span><span class="s">'Top'</span>
+<span class="c">; 初始条件</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">zone initialize-stresses</span><span class="n"> ratio </span><span class="m m-Double">0.25</span><span class="n"> </span><span class="m m-Double">0.5</span><span class="n"> overburden </span><span class="o">-</span><span class="m m-Double">1e6</span>
+<span class="nb">model </span><span class="ss">solve</span>
+</pre></div>
+</div>
+<p>如果不使用 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.initialize-stresses.html#command:zone.initialize-stresses" title="Initialize zone stresses based on the density of the zones above them and gravity..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">initialize-stresses</span></code></a>，则必须根据各材料接触面上方已知覆土，手动计算该接触面处的应力。对于简单分层材料，这尚可处理：利用<a class="reference internal" href="boundary_conditions.html#bounds-eq1"><span class="std std-ref">梯度公式</span>（gradient formula）</a>计算 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.initialize.html#command:zone.initialize" title="Initialize a variable on all zones in the range..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">initialize</span></code></a> 命令中 <span class="cmdkey">stress-zz</span> 后的数值。<span class="cmdkey">gradient</span> 值就是各层中由重力梯度造成的变化。本例在表面添加了 -1e6 的覆土荷载，并在 <span class="math">\(\sigma_{xx}\)</span> 和 <span class="math">\(\sigma_{yy}\)</span> 方向采用不同水平应力比。</p>
+<div class="figure align-center" id="id3">
+<a class="reference internal image-reference" href="../../../../../_images/Grav2.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/Grav2.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 2：非均匀密度及所得平衡竖向应力。</span></p>
+</div>
+<p>更复杂情况下，如果由于某种原因 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.initialize-stresses.html#command:zone.initialize-stresses" title="Initialize zone stresses based on the density of the zones above them and gravity..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">initialize-stresses</span></code></a> 不适用，则需要使用 <span class="codename">FISH</span> 函数，根据已知材料性质分布计算初始近似应力值。</p>
+</div>
+<div class="section" id="stress-initialization-in-a-nonuniform-material">
+<span id="init-sinitialization"></span><h2>非均匀材料中的应力初始化</h2>
+<p><span class="codename">FLAC3D</span> 网格中存在<em>内部</em>不均匀性，不应改变应力初始化方式。但可能需要轻微调整，因为网格不规则时，各力不能完全平衡。例如，网格内部可以变形为圆柱形，以便在后续计算阶段“开挖”隧道。此时会存在极轻微的初始力不平衡，但可通过少量计算步将其消除，如本例所示。</p>
+<p><strong>非均匀网格的初始应力状态</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">; 创建网格</span>
+<span class="nb">zone create</span><span class="n"> radial</span><span class="o">-</span><span class="n">cylinder size </span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">8</span><span class="n"> </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> fill </span><span class="sx">...</span>
+<span class="n">            point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">10</span><span class="p">)</span>
+<span class="nb">zone face skin</span><span class="n">            </span>
+<span class="c">; 本构模型和参数</span>
+<span class="nb">zone cmodel</span><span class="n"> elastic</span>
+<span class="nb">zone property</span><span class="n"> shear </span><span class="m m-Double">3e8</span><span class="n"> bulk </span><span class="m m-Double">5e8</span><span class="n"> density </span><span class="m m-Double">2500</span>
+<span class="c">; 边界条件</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'East'</span><span class="n"> or </span><span class="s">'West'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'North'</span><span class="n"> or </span><span class="s">'South'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'Bottom'</span>
+<span class="c">; 初始条件</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">zone initialize-stresses</span>
+<span class="nb">model </span><span class="ss">solve</span>
+</pre></div>
+</div>
+<p>一个计算步后，不平衡力比约为 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">3.5e-3</span></span></a>。还需约 200 步，才能将其降至 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">1e-5</span></span></a>。该调整产生的最终网格单元应力和位移如下所示。</p>
+<div class="figure align-center">
+<a class="reference internal image-reference" href="../../../../../_images/Nonuniform.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/Nonuniform.png" style="width: 85%;"/></a>
+</div>
+<p>自由表面几何形状不规则时，情况更加复杂。下一示例使用 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.generate.html#kwd:zone.generate.from-topography" title="Generates zones by extruding surface faces in the range until they meet polygons
+in a geometric set...">按地形生成单元命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">generate</span> <span class="pre">from-topography</span></code>）</a> 命令生成后图所示的“山脉”。</p>
+<p><strong>不规则表面的初始应力状态</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">; 创建网格单元</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">30</span><span class="n"> </span><span class="m m-Double">30</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> point </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">580</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">680</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">100</span><span class="p">)</span>
+<span class="nb">geometry import</span><span class="n"> </span><span class="s">'test.stl'</span>
+<span class="nb">zone generate</span><span class="n"> from</span><span class="o">-</span><span class="n">topography direction </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> geometry</span><span class="o">-</span><span class="n">set </span><span class="s">'test'</span><span class="n"> segments </span><span class="m m-Double">20</span>
+<span class="nb">zone face skin</span>
+<span class="c">; 本构模型和参数</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">zone property</span><span class="n"> bulk </span><span class="m m-Double">3e8</span><span class="n"> shear </span><span class="m m-Double">2e8</span><span class="n"> density </span><span class="m m-Double">1000</span>
+<span class="c">; 边界条件</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'East'</span><span class="n"> or </span><span class="s">'West'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'North'</span><span class="n"> or </span><span class="s">'South'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'Bottom'</span>
+<span class="c">; 初始条件</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">zone initialize-stresses</span><span class="n"> ratio </span><span class="m m-Double">0.5</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> elastic</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id4">
+<a class="reference internal image-reference" href="../../../../../_images/Irregular1.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/Irregular1.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 4：<span class="codename">FLAC3D</span> 不规则地形网格中的初始化应力。</span></p>
+</div>
+<div class="figure align-center" id="id5">
+<a class="reference internal image-reference" href="../../../../../_images/Irregular2.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/Irregular2.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 5：循环计算至平衡后的应力。</span></p>
+</div>
+<p><a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.initialize-stresses.html#command:zone.initialize-stresses" title="Initialize zone stresses based on the density of the zones above them and gravity..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">initialize-stresses</span></code></a> 命令计算模型的近似竖向应力分布，该分布非常接近实际平衡。如果水平应力比设为 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0</span></span></a>，初始化后只需约 200 步即可达到完全平衡。但对于这样的地表地形，采用非零应力比时会出现问题。在底部附近完全正确的水平应力比，靠近边坡表面时通常过高。这可能需要一些时间才能达到平衡，还可能导致边坡表面产生不真实的位移甚至损伤。</p>
+<p>对于此情况，没有简单方法计算更接近平衡的初始应力。不过，可采用多种不同方法辅助处理：</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>在不同高程和区域使用多条 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.initialize-stresses.html#command:zone.initialize-stresses" title="Initialize zone stresses based on the density of the zones above them and gravity..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">initialize-stresses</span></code></a> 命令，并采用不同的 <span class="cmdkey">ratio</span> 值。</li>
+<li>以弹性方式求解模型。</li>
+<li>达到初始平衡后重置位移（无论如何，这通常都是良好做法）。</li>
+<li>允许发生塑性流动以消除应力集中，然后重新赋予本构模型以重置状态变量。</li>
+</ol>
+</div></blockquote>
+<p>还可能有许多其他方案，尤其是对于非线性、路径相关材料。不存在唯一“正确”的初始状态：选择可能取决于认为现场曾发生的地质过程类型。</p>
+</div>
+<div class="section" id="compaction-within-a-nonuniform-grid">
+<span id="init-compaction"></span><h2>非均匀网格内的压密</h2>
+<p>使用非均匀网格，使模型在重力作用下达到平衡时，有时会观察到令人困惑的结果。采用 Mohr-Coulomb 或其他非线性本构模型时，即使边界笔直、自由表面平坦，最终应力状态和位移分布也不均匀。以下示例的数据文件说明此效应（后图显示生成的位移向量和竖向应力等值线）。</p>
+<p><strong>非均匀网格中初始化的非均匀应力</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">; 创建网格单元</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">8</span><span class="n"> </span><span class="m m-Double">8</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> ratio </span><span class="m m-Double">1.2</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">1</span>
+<span class="nb">zone face skin</span>
+<span class="c">; 本构模型和参数</span>
+<span class="nb">zone cmodel</span><span class="n"> assign mohr</span><span class="o">-</span><span class="n">coulomb</span>
+<span class="nb">zone property</span><span class="n"> bulk </span><span class="m m-Double">2e8</span><span class="n"> shear </span><span class="m m-Double">1e8</span><span class="n"> friction </span><span class="m m-Double">30</span><span class="n"> density </span><span class="m m-Double">2000</span><span class="n"> </span>
+<span class="c">; 边界条件</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'East'</span><span class="n"> or </span><span class="s">'West'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'North'</span><span class="n"> or </span><span class="s">'South'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'Bottom'</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> </span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'initial'</span>
+
+<span class="c">; -- 以下各行将生成非均匀分布：</span>
+<span class="nb">model </span><span class="ss">solve</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'nonuniform'</span>
+
+<span class="c">; -- 以下各行直接设置应力：</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'initial'</span>
+<span class="nb">zone initialize-stresses</span><span class="n"> ratio </span><span class="m m-Double">0.75</span>
+<span class="nb">model </span><span class="ss">solve</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'direct'</span>
+
+<span class="c">; -- 以下各行按弹性方式初始化：</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'initial'</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> elastic</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'uniform'</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id6">
+<a class="reference internal image-reference" href="../../../../../_images/CompactNonuniform.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/CompactNonuniform.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 6：非均匀应力和位移。</span></p>
+</div>
+<p>由于竖直侧面设有滚动边界，我们可能期望材料在两侧等量下移。但网格在原点附近更细。<span class="codename">FLAC3D</span> 试图使所有网格单元的局部时间步相等，因此会增大 <span class="math">\(x\)</span> = 0 边界附近网格点的惯性质量，以补偿较小的网格单元尺寸。于是这些网格点的加速度比 <span class="math">\(x\)</span> = 8 边界附近更小。这不会影响线性材料的最终状态，却会使路径相关材料出现非均匀性。对于无黏聚力的 Mohr-Coulomb 材料，这类似于从某个高度将砂倒入容器，却期望最终状态均匀。实际上，由于围压不会立即形成，会产生大量塑性流动。即使网格均匀，这种方法也不理想，因为水平应力取决于过程的动力学。</p>
+<p>最佳解决办法是使用 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.initialize-stresses.html#command:zone.initialize-stresses" title="Initialize zone stresses based on the density of the zones above them and gravity..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">initialize-stresses</span></code></a> 命令设置初始应力，使其符合期望的 <span class="math">\(K\)</span><sub>0</sub> 值（水平与竖向应力之比）。例如，如果在前一数据文件的 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令前添加以下一行，该命令将立即停止</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model restore</span><span class="n"> </span><span class="s">'initial'</span>
+</pre></div>
+</div>
+<p>在 <span class="math">\(K\)</span><sub>0</sub> = 0.75 时达到稳定状态，无需步进。</p>
+<p>如果由于某种原因希望用 <span class="codename">FLAC3D</span> 计算最终状态，可以使用 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#kwd:model.solve.elastic" title="Perform a mechanical calculation in two steps: first, assuming elastic behavior;
+then, using the actual strength values of the material. The cohesion and tensile
+strength for all materials in the model are set to high values for the first
+step. For the second step, the cohesion and tensile strength are reset to their
+original values. If the optional  only  keyword is provided, then only
+the elastic portion (i.e., the first step) is undertaken. This keyword...">模型弹性求解命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span> <span class="pre">elastic</span></code>）</a> 选项。它先在不允许本构模型发生任何塑性破坏的情况下，将模型求解至平衡，然后重新启用破坏，并确保模型仍保持平衡。</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model restore</span><span class="n"> </span><span class="s">'initial'</span>
+</pre></div>
+</div>
+<p>下图显示这种情况下的位移向量和竖向应力等值线。压密过程中不允许材料屈服，但达到平衡后恢复原有性质。</p>
+<div class="figure align-center" id="id7">
+<a class="reference internal image-reference" href="../../../../../_images/CompactUniform.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/CompactUniform.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 7：均匀应力和位移。</span></p>
+</div>
+</div>
+<div class="section" id="initial-stresses-following-a-model-change">
+<span id="inits-afterchange"></span><h2>模型改变后的初始应力</h2>
+<p>某些情况下，达到期望应力分布的过程中使用一种本构模型，而后续模拟使用另一种本构模型。如果用另一种非空本构模型替换原本构模型，受影响网格单元中的应力会保留，如本例所示：</p>
+<p><strong>模型改变后的初始应力</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">; 创建网格单元</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">5</span>
+<span class="nb">zone face skin</span>
+<span class="nb">zone group</span><span class="n"> </span><span class="s">'Switch'</span><span class="n"> range position </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">2</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span>
+<span class="c">; 本构模型和属性</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">zone property</span><span class="n"> shear </span><span class="m m-Double">2e8</span><span class="n"> bulk </span><span class="m m-Double">3e8</span><span class="n"> density </span><span class="m m-Double">2000</span>
+<span class="c">; 边界条件</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'Bottom'</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">zone initialize-stresses</span>
+<span class="nb">model </span><span class="ss">solve</span>
+<span class="nb">zone cmodel</span><span class="n"> assign mohr</span><span class="o">-</span><span class="n">coulomb range group </span><span class="s">'Switch'</span>
+<span class="nb">zone property</span><span class="n"> shear </span><span class="m m-Double">2e8</span><span class="n"> bulk </span><span class="m m-Double">3e8</span><span class="n"> friction </span><span class="m m-Double">35</span><span class="n"> range group </span><span class="s">'Switch'</span>
+<span class="nb">model </span><span class="ss">step</span><span class="n"> </span><span class="m m-Double">1000</span>
+</pre></div>
+</div>
+<p>运行到此处时，初始弹性模型产生的应力仍然存在，并作为采用新莫尔—库仑模型区域的初始应力。</p>
+<div class="figure align-center" id="id8">
+<a class="reference internal image-reference" href="../../../../../_images/Change.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/Change.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 8：本构模型更改区域及破坏产生的位移。</span></p>
+</div>
+<p>应记住两点：</p>
+<blockquote>
+<div><p><strong>第一</strong>，如果对任何网格单元赋予空模型（即使随后被其他模型替换），受影响网格单元中的所有应力都会被移除。</p>
+<p><strong>第二</strong>，如果用一种模型替换另一种模型，而新模型中的应力在物理上应为零，则必须用 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.initialize.html#command:zone.initialize" title="Initialize a variable on all zones in the range..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">initialize</span></code></a> 命令将应力重置为零。例如，采出岩石并以充填料替代时就会出现这种情况；充填料具有自己的应力状态，与被替换岩石无关。</p>
+</div></blockquote>
+</div>
+<div class="section" id="stress-and-pore-pressure-initialization-with-a-phreatic-surface">
+<span id="inits-porepressure"></span><h2>存在潜水面时的应力与孔隙压力初始化</h2>
+<p>孔隙压力的初始化方式与应力相同。但无论是否指定 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.fluid" title="Fluid-flow analysis...">配置流体计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">fluid</span></code>）</a>，初始化的都是<em>网格点</em>孔隙压力，而非<em>网格单元</em>孔隙压力。网格单元孔隙压力由网格点孔隙压力平均得到，随后用于计算本构模型所需的有效应力。</p>
+<p>手动初始化部分饱和网格可能令人困惑；必须记住两点：</p>
+<blockquote>
+<div><ul class="simple">
+<li>如果网格<em>未</em>配置地下水计算，则潜水面（孔隙压力 = 0）以下指定的密度必须为<strong>湿</strong>密度，潜水面以上必须为<strong>干</strong>密度。用户负责为这些区域提供正确密度值。</li>
+<li>如果网格<em>已经</em>配置地下水计算（<a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.fluid" title="Fluid-flow analysis...">配置流体计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">fluid</span></code>）</a>），则所有位置均指定<em>干</em>密度，流体的贡献由孔隙率、饱和度和流体密度自动计算。</li>
+</ul>
+</div></blockquote>
+<p>如果为各情况指定了适当材料性质（对于 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.fluid" title="Fluid-flow analysis...">配置流体计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">fluid</span></code>）</a> 为干密度／孔隙率／饱和度／流体密度，其他情况为湿／干密度分布），则 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.initialize-stresses.html#command:zone.initialize-stresses" title="Initialize zone stresses based on the density of the zones above them and gravity..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">initialize-stresses</span></code></a> 命令将自动计算包含流体重量的正确竖向应力。</p>
+<p>请注意，使用 <span class="cmdkey">ratio</span> 关键字计算的 <span class="math">\(\kappa_0\)</span> 是基于<em>有效</em>应力。使用 <span class="cmdkey">total</span> 关键字可按总应力计算水平应力比。</p>
+<p>以下简短示例说明各个情况。</p>
+<p id="inits-pp-ex1"><strong>存在潜水面时的应力与孔隙压力初始化——网格未配置地下水计算</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">; 创建网格单元</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">8</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> </span>
+<span class="nb">zone face skin</span>
+<span class="c">; 力学本构模型和属性</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">zone property</span><span class="n"> bulk </span><span class="m m-Double">1e9</span><span class="n"> shear </span><span class="m m-Double">5e8</span><span class="n"> density </span><span class="m m-Double">2000</span>
+<span class="nb">zone property</span><span class="n"> density </span><span class="m m-Double">2500</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> </span><span class="c">; 湿密度</span>
+<span class="nb">zone property</span><span class="n"> density </span><span class="m m-Double">2250</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">6</span><span class="n"> </span><span class="c">; 部分饱和密度</span>
+<span class="c">; 边界条件</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'East'</span><span class="n"> or </span><span class="s">'West'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'North'</span><span class="n"> or </span><span class="s">'South'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'Bottom'</span>
+<span class="c">; 初始条件</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">zone water</span><span class="n"> density </span><span class="m m-Double">1e3</span><span class="n"> </span>
+<span class="nb">zone water</span><span class="n"> plane origin </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span><span class="n"> normal </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span>
+<span class="nb">zone initialize-stress</span><span class="n"> ratio </span><span class="m m-Double">0.5</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> </span><span class="c">; 立即处于平衡状态</span>
+</pre></div>
+</div>
+<p>本例在潜水面处及其以下，将密度分别调整为部分饱和及湿密度值。</p>
+<p id="inits-pp-ex2"><strong>存在潜水面时的应力与孔隙压力初始化——网格已配置地下水计算</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">model config</span><span class="n"> fluid</span>
+<span class="c">; 创建网格单元</span>
+<span class="nb">zone create</span><span class="n"> brick  size </span><span class="m m-Double">8</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">10</span><span class="n"> </span>
+<span class="nb">zone face skin</span>
+<span class="c">; 力学本构模型和属性</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">zone property</span><span class="n"> bulk </span><span class="m m-Double">1e9</span><span class="n"> shear </span><span class="m m-Double">5e8</span><span class="n"> density </span><span class="m m-Double">2000</span>
+<span class="c">; 流体本构模型和属性</span>
+<span class="nb">zone fluid</span><span class="n"> cmodel assign isotropic</span>
+<span class="nb">zone fluid</span><span class="n"> property porosity </span><span class="m m-Double">0.5</span><span class="n"> permeability </span><span class="m m-Double">1e-10</span><span class="n"> </span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> fluid</span><span class="o">-</span><span class="n">modulus </span><span class="m m-Double">2e9</span>
+<span class="nb">zone initialize</span><span class="n"> fluid</span><span class="o">-</span><span class="n">density </span><span class="m m-Double">1e3</span>
+<span class="c">; 边界条件</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'East'</span><span class="n"> or </span><span class="s">'West'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'North'</span><span class="n"> or </span><span class="s">'South'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'Bottom'</span>
+<span class="c">; 初始条件</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">zone water</span><span class="n"> density </span><span class="m m-Double">1e3</span><span class="n"> </span>
+<span class="nb">zone water</span><span class="n"> plane origin </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">5</span><span class="p">)</span><span class="n"> normal </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> saturation </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">5.1</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">zone initialize-stress</span><span class="n"> ratio </span><span class="m m-Double">0.5</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> </span><span class="c">; 立即处于平衡状态</span>
+</pre></div>
+</div>
+<p>本例需注意几点。第一，潜水面以上的饱和度需要明确初始化为零。第二，如上所述，所有位置均给定干密度。第三，使用 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.water.html#command:zone.water" title="This command initializes pore pressures, changing the effective stresses.  |flac3d|
+uses effective stresses (i.e., total stresses plus pore pressure) in constitutive
+models. Pore pressures are defined at gridpoints, and zone pore pressures are
+then calculated as the average of the zone gridpoints. If  model.configure.fluid 
+is not set, pore pressures are not affected by zone volume changes, there is
+no flow of water, and the dry density must be specified for zones above the
+water..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">water</span></code></a> 命令初始化孔隙压力，这要求单独提供流体密度，与 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.initialize.html#kwd:zone.initialize.fluid-density" title="fluid mass density in zone (only available if  model.configure.fluid  has
+been specified)...">单元初始化流体密度（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">initialize</span> <span class="pre">fluid-density</span></code>）</a> 命令中的设置相独立。</p>
+</div>
+<div class="section" id="initialization-of-velocities">
+<span id="init-velocities"></span><h2>速度初始化</h2>
+<p>到目前为止，我们主要讨论应力初始化。通常不明确设置网格<em>内部</em>的速度；初始时其默认为零。但如果物体边界指定了速度加载条件，有时初始化整个物体的速度有助于尽量减小对系统的冲击。例如，在采用刚性压板的模拟三轴试验中，可以初始化速度，使整个试样内具有初始线性梯度，如下例所示。</p>
+<p><strong>三轴试验中的速度梯度</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">; 创建网格单元</span>
+<span class="nb">zone create</span><span class="n"> cylinder point </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                     point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                     size </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">4</span>
+<span class="nb">zone reflect</span><span class="n"> normal </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="nb">zone reflect</span><span class="n"> normal </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="nb">zone face skin</span>
+<span class="c">; 本构模型和参数</span>
+<span class="nb">zone cmodel</span><span class="n"> assign mohr</span><span class="o">-</span><span class="n">coulomb</span>
+<span class="nb">zone property</span><span class="n"> bulk </span><span class="m m-Double">1.19e10</span><span class="n"> shear </span><span class="m m-Double">1.1e10</span>
+<span class="nb">zone property</span><span class="n"> cohesion </span><span class="m m-Double">2.72e5</span><span class="n"> friction </span><span class="m m-Double">44</span><span class="n"> tension </span><span class="m m-Double">2e5</span>
+<span class="c">; 边界条件</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="o">-</span><span class="m m-Double">1e-4</span><span class="n"> range group </span><span class="s">'North'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'South'</span>
+<span class="nb">zone face apply</span><span class="n"> stress</span><span class="o">-</span><span class="n">normal </span><span class="o">-</span><span class="m m-Double">1e5</span><span class="n"> range group </span><span class="s">'East'</span><span class="n"> </span>
+<span class="c">; 初始化速度，使响应平滑。</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> gradient </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">1e-4</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span>
+</pre></div>
+</div>
+<p>如果不施加线性梯度，内部网格点会受到初始冲击，因为它们必须加速，才能在整个试样中产生负速度。由于仅两端固定，内部网格点的后续运动不受控制。</p>
+<div class="figure align-center" id="id9">
+<a class="reference internal image-reference" href="../../../../../_images/Vel.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/Vel.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 9：简单三轴试样中初始化的速度。</span></p>
+</div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../flac3dhome.html"><span class="codename">FLAC3D</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../modeling.html"><span class="codename">FLAC3D</span> Modeling</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="problemsolving.html">Problem Solving with <span class="codename">FLAC3D</span></a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="boundary_conditions.html" title="previous chapter"> Boundary Conditions</a> |    
+       <a href="equilibrium.html" title="next chapter">Reaching Equilibrium</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Initial Conditions" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

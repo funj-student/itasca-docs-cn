@@ -1,0 +1,688 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>三维显式有限体积模型的公式表述 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="griddiscretization.html" rel="next" title="Grid Discretization"/>
+<link href="theoreticalbackground.html" rel="prev" title="Theoretical Background"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="hide sectionname docutils container">
+<span class="codename">FLAC3D</span> Theory and Background • Theoretical Background</div>
+<div class="section" id="formulation-of-a-3d-explicit-finite-volume-model">
+<span id="formulation"></span><h1>三维显式有限体积模型的公式表述</h1>
+<p><span class="codename">FLAC3D</span> 是一个显式有限体积程序，用于数值研究连续三维介质在达到平衡或稳定塑性流动时的力学行为。所观测到的响应一方面来自特定的数学模型，另一方面来自特定的数值实现。下面讨论这两个主题。</p>
+<div class="section" id="mathematical-model-description">
+<h2>数学模型说明</h2>
+<p>介质的力学由一般原理（应变定义、运动定律）以及定义理想化材料的本构方程导出。所得的数学表达式是一组偏微分方程，将力学变量（应力）与运动学变量（应变率、速度）联系起来，需要在给定特定边界条件和初始条件下针对特定几何和性质进行求解。</p>
+<p>该模型的一个重要方面是包含运动方程，尽管 <span class="codename">FLAC3D</span> 主要关注介质在接近平衡状态时的应力和变形状态。数值实现部分表明，惯性项被用作以数值稳定方式达到平衡状态的手段。</p>
+<div class="section" id="conventions">
+<span id="theory-conventions"></span><h3>约定</h3>
+<p>在 <span class="codename">FLAC3D</span> 所采用的拉格朗日公式表述中，
+介质中的一点分别由位置、位移、速度和加速度的矢量分量
+<span class="math">\(x_i\)</span>、<span class="math">\(u_i\)</span> 和 <span class="math">\(dv_i\)</span> <span class="math">\(/\ dt\)</span>，<span class="math">\(i\)</span> = 1,3 来表征。</p>
+<p>作为记号约定，粗体字母表示矢量或张量，具体取决于上下文。
+符号 <span class="math">\(a_i\)</span> 表示矢量 [<span class="math">\(a\)</span>] 在笛卡尔参考坐标系中的分量 <span class="math">\(i\)</span>；<span class="math">\(A_{ij}\)</span> 是张量 [<span class="math">\(A\)</span>] 的分量（<span class="math">\(i,j\)</span> ）。
+此外，<span class="math">\(α_i\)</span> 是 <span class="math">\(α\)</span> 对 <span class="math">\(x_i\)</span> 的偏导数。
+（<span class="math">\(α\)</span> 可以是标量变量、矢量或张量分量。）</p>
+<p>按定义，拉力和伸长为正。</p>
+<p>适用爱因斯坦求和约定，但<em>仅</em>对取值为 1、2、3 的指标 <span class="math">\(i\)</span>、<span class="math">\(j\)</span> 和 <span class="math">\(k\)</span> 适用。</p>
+</div>
+<div class="section" id="stress">
+<h3>应力</h3>
+<p>介质中给定点的应力状态由对称应力张量 <span class="math">\(σ_{ij}\)</span> 表征。
+单位法向为 [<span class="math">\(n\)</span>] 的面上的面力矢量 [<span class="math">\(t\)</span>] 由 Cauchy 公式给出（拉力为正）：</p>
+<div class="math" id="equation-eqtheory-traction">
+<span class="eqno">(1)</span>\[ t_i = \sigma_{ij} n_j\]</div>
+</div>
+<div class="section" id="rate-of-strain-and-rate-of-rotation">
+<span id="theory-rate-of-strain-and-rotation"></span><h3>应变率与旋转率</h3>
+<p>设介质质点以速度 [<span class="math">\(v\)</span>] 运动。
+在无限小时间 <span class="math">\(dt\)</span> 内，介质经历由平移 <span class="math">\(v_i\)</span><span class="math">\(dt\)</span> 确定的无限小应变，
+应变率张量的相应分量可写为</p>
+<div class="math" id="equation-eqtheory-strainrate">
+<span class="eqno">(2)</span>\[{\xi}_{ij} = {{1}\over{2}} (v_{i,j} + v_{j,i})\]</div>
+<p>其中偏导数是对当前位置矢量 [<span class="math">\(x\)</span>] 的分量取的。</p>
+<p>为备后用，应变率张量的第一不变量给出了单元体积剪胀率的量度。
+除由张量 <span class="math">\(ξ\)</span><span class="math">\(ij\)</span> 表征的变形率外，
+体积单元还经历由平移速度 [<span class="math">\(v\)</span>] 确定的瞬时刚体位移，
+以及以角速度进行的旋转。</p>
+<div class="math" id="equation-eqtheory-omega">
+<span class="eqno">(3)</span>\[{\Omega}_i = - {{1}\over{2}} {e}_{ijk} {\omega}_{jk}\]</div>
+<p>其中 <span class="math">\(e_{ijk}\)</span> 为置换符号，[<span class="math">\(ω\)</span>] 为旋转率张量，其分量定义为</p>
+<div class="math" id="equation-eqtheory-rotationrate">
+<span class="eqno">(4)</span>\[ {\omega}_{ij} =  {{1}\over{2}} (v_{i,j} - v_{j,i})\]</div>
+</div>
+<div class="section" id="equations-of-motion-and-equilibrium">
+<h3>运动方程与平衡</h3>
+<p>应用动量原理的连续介质形式，可得 Cauchy 运动方程：</p>
+<div class="math" id="equation-eqtheory-momentun">
+<span class="eqno">(5)</span>\[ \sigma_{ij,j} + \rho b_i = \rho {{dv_i}\over{dt}}\]</div>
+<p>其中 <span class="math">\(ρ\)</span> 为介质的单位体积质量，[<span class="math">\(b\)</span>] 为单位质量体力，
+而 <span class="math">\(d\)</span>[<span class="math">\(v\)</span>]/<span class="math">\(dt\)</span> 为速度的材料导数。
+在数学模型中，这些定律由作用于介质单元体积上的力决定其运动。
+请注意，在介质处于静力平衡的情况下，
+加速度 <span class="math">\(d\)</span>[<span class="math">\(v\)</span>]/<span class="math">\(dt\)</span> 为零，
+方程<a class="reference internal" href="#equation-eqtheory-momentun">(5)</a>简化为平衡的偏微分方程：</p>
+<div class="math" id="equation-eqtheory-momentun0">
+<span class="eqno">(6)</span>\[ \sigma_{ij,j} + \rho b_i = 0\]</div>
+</div>
+<div class="section" id="boundary-and-initial-conditions">
+<h3>边界条件和初始条件</h3>
+<p>边界条件由施加的边界面力
+（见方程<a class="reference internal" href="#equation-eqtheory-traction">(1)</a>）和/或速度（以引起给定位移）组成。
+此外，可能存在体力。
+另外，还需要指定物体的初始应力状态。</p>
+</div>
+<div class="section" id="constitutive-equations">
+<h3>本构方程</h3>
+<p>运动方程<a class="reference internal" href="#equation-eqtheory-momentun">(5)</a>
+连同应变率的定义（方程<a class="reference internal" href="#equation-eqtheory-strainrate">(2)</a>）
+构成九个方程，含十五个未知量
+（应力张量和应变率张量的 6 + 6 个分量以及速度矢量的三个分量）。
+本构方程提供另外六个关系式，
+用以定义所考虑特定材料的性质。
+它们通常给出为如下形式</p>
+<div class="math" id="equation-eqtheory-sigmacheck">
+<span class="eqno">(7)</span>\[ [\check \sigma] = H_{ij}({\sigma}_{ij}, {\xi}_{ij}, \kappa)\]</div>
+<p>其中 <span class="math">\([\check \sigma]\)</span> 为共旋应力率张量，
+[<span class="math">\(H\)</span>] 为给定函数，<span class="math">\(κ\)</span> 为考虑加载历史的参数。
+共旋应力率 <span class="math">\([\check \sigma]\)</span> 等于应力的材料导数，
+其形式如同随材料点固连并随之以等于材料角速度 [<span class="math">\(Ω\)</span>] 瞬时值的角速度旋转的参考系中的观察者所见。
+其分量定义为</p>
+<div class="math" id="equation-eqtheory-sigmacheck2">
+<span class="eqno">(8)</span>\[ [\check \sigma] = {{d {\sigma}_{ij}}\over{dt}} - {\omega}_{ik}{\sigma}_{kj} + {\sigma}_{ik} {\omega}_{kj}\]</div>
+<p>其中 <span class="math">\(dσ_{ij}\)</span>/<span class="math">\(dt\)</span> 为 [<span class="math">\(σ\)</span>] 的材料时间导数，[<span class="math">\(ω\)</span>] 为旋转率张量。</p>
+</div>
+</div>
+<div class="section" id="numerical-formulation">
+<span id="sec-theory-numform"></span><h2>数值公式</h2>
+<p><span class="codename">FLAC3D</span> 中的求解方法由以下三种途径来表征：</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>有限体积途径（变量的空间一阶导数和时间一阶导数由有限体积近似，假定变量分别在有限空间间隔和有限时间间隔内呈线性变化。）；</li>
+<li>离散模型途径（连续介质由离散等效体代替——
+其中所有涉及的力（施加力和相互作用力）均集中在用于表示介质的三维网格的节点上。）；以及</li>
+<li>动力求解途径（运动方程中的惯性项被用作数值手段，以达到所考虑系统的平衡状态。）</li>
+</ol>
+</div></blockquote>
+<p>借助这些途径，连续介质的运动定律被转换为节点处牛顿定律的离散形式。
+所得的常微分方程组随后在时间上采用显式有限差分方法进行数值求解。</p>
+<p>在推导等效介质时涉及的空间导数是那些出现在以速度表示的应变率定义中的导数。
+为定义速度变化及相应的空间间隔，
+介质被离散为四面体形状的常应变率单元，
+其顶点即为上述网格的节点。
+<a href="#fig-theory-tet">图 1（Figure  1）</a> 示例性地给出了一个四面体：</p>
+<div class="figure align-center" id="id2">
+<span id="fig-theory-tet"></span><img alt="../../../../../_images/theory-tet.svg" src="../../../../../_images/theory-tet.svg"/><p class="caption"><span class="caption-text">图 1：四面体</span></p>
+</div>
+<div class="section" id="finite-volume-approximation-to-space-derivatives">
+<span id="sec-fdatsd"></span><h3>空间导数的有限体积近似</h3>
+<p>下面推导四面体应变率张量分量的有限体积公式表述，作为运动方程节点公式表述的准备。
+四面体的节点在局部用 1 至 4 编号，且按惯例，面 <span class="math">\(n\)</span> 与节点 <span class="math">\(n\)</span> 相对。
+（见<a href="#fig-theory-tet">图 1（Figure  1）</a>。）</p>
+<p>对四面体应用高斯散度定理，可写为</p>
+<div class="math" id="equation-eqtheory-gauss">
+<span class="eqno">(9)</span>\[ \int_V v_{i,j} dV = \int_S v_i n_j dS\]</div>
+<p>其中积分分别取在四面体的体积和表面上，
+[<span class="math">\(n\)</span>] 为垂直于表面的外法向单位矢量。</p>
+<p>对于常应变率四面体，速度场为线性，[<span class="math">\(n\)</span>] 在每个面的表面上为常量。
+因此，积分后方程<a class="reference internal" href="#equation-eqtheory-gauss">(9)</a>给出</p>
+<div class="math" id="equation-eqtheory-v">
+<span class="eqno">(10)</span>\[ V v_{i,j} = \sum_{f=1}^4 {\overline{v_i}}^{(f)} n_j^{(f)} S^{(f)}\]</div>
+<p>其中上标（<span class="math">\(f\)</span>）表示相应变量在面 <span class="math">\(f\)</span> 上的值，
+<span class="math">\({\overline{v_i}}\)</span> 为速度分量 <span class="math">\(i\)</span> 的平均值。
+对于线性速度变化，有</p>
+<div class="math" id="equation-eqtheory-vbar">
+<span class="eqno">(11)</span>\[ {\overline{v_i}}^{(f)} = {{1}\over{3}} \sum_{l = 1,l \neq f}^4 v_i^l\]</div>
+<p>其中上标 <span class="math">\(l\)</span> 表示节点 <span class="math">\(l\)</span> 处的值。</p>
+<p>将方程<a class="reference internal" href="#equation-eqtheory-vbar">(11)</a>代入<a class="reference internal" href="#equation-eqtheory-v">(10)</a>，并按节点贡献重新整理各项，可得</p>
+<div class="math" id="equation-eqtheory-v2">
+<span class="eqno">(12)</span>\[ V v_{i,j} = {{1}\over{3}} \sum_{l=1}^4 v_i^l\sum_{f = 1, f \neq l}^{4} n_j^{(f)}  S^{(f)}\]</div>
+<p>如果在方程<a class="reference internal" href="#equation-eqtheory-gauss">(9)</a>中用 1 替换 <span class="math">\(v_i\)</span>，则由散度定理可得</p>
+<div class="math" id="equation-eqtheory-0">
+<span class="eqno">(13)</span>\[ \sum_{f = 1}^{4} n_j^{(f)}  S^{(f)} = 0\]</div>
+<p>利用最后这个关系式，并将方程<a class="reference internal" href="#equation-eqtheory-v2">(12)</a>除以 <span class="math">\(V\)</span>，得到</p>
+<div class="math" id="equation-eqtheory-vij">
+<span class="eqno">(14)</span>\[ v_{i,j} = - {{1}\over{3V}} \sum_{l=1}^4 v_i^l\ n_j^{(l)}\ S^{(l)}\]</div>
+<p>而应变率张量的分量可表示为</p>
+<div class="math" id="equation-eqtheory-xiij">
+<span id="eqtheory-xiijl"></span><span class="eqno">(15)</span>\[ {\xi}_{ij} = - {{1}\over{6V}} \sum_{l = 1}^{4}\left( v_i^l\ n_j^{(l)} + v_j^l\ n_i^{(l)} \right)\ S^{(l)}\]</div>
+</div>
+<div class="section" id="nodal-formulation-of-the-equations-of-motion">
+<span id="sec-nodalformulationof"></span><h3>运动方程的节点公式表述</h3>
+<p>下面通过对任一时刻的等效静力问题应用虚功定理，推导运动方程的节点公式表述。
+对节点惯性项形式的近似做法是，将这些项用作达到平衡方程（方程<a class="reference internal" href="#equation-eqtheory-momentun0">(6)</a>）对应解的手段。</p>
+<p>固定时间 <span class="math">\(t\)</span>，我们考虑一个等效静力问题，其在任一时刻由平衡方程控制</p>
+<div class="math" id="equation-eqtheory-static">
+<span class="eqno">(16)</span>\[ \sigma_{ij,j} + \rho B_i = 0\]</div>
+<p>其中体力定义为（方程<a class="reference internal" href="#equation-eqtheory-momentun">(5)</a>）</p>
+<div class="math" id="equation-eqtheory-bodyforce">
+<span class="eqno">(17)</span>\[ B_i =  \rho \left( b_i -  {{dv_i}\over{dt}}\right)\]</div>
+<p>在本文所采用的有限体积近似框架下，
+介质由承受体力 <span class="math">\([B]\)</span> 的常应变四面体连续集合来表示。
+作用于单个四面体、并与其应力和等效体力处于“静力”平衡的节点力 <span class="math">\([f]^n\)</span>（其中 <span class="math">\(n\)</span> = (1,4)）
+通过应用虚功定理导出。
+在施加虚节点速度 <span class="math">\(δ[v]^n\)</span> 之后
+（它将在四面体内部产生线性速度场 <span class="math">\(δ[v]\)</span> 和常应变率 <span class="math">\(δ[ξ]\)</span>），
+令节点力 <span class="math">\([f]^n\)</span> 和体力 <span class="math">\([B]\)</span> 所做外功率
+等于应力 <span class="math">\(σ_{ij}\)</span> 在该速度下所做内功率。</p>
+<p>按照 <a class="reference internal" href="#theory-conventions"><span class="std std-ref">约定</span>（conventions）</a> 中的记号
+（上标表示变量的节点值）
+以及关于指标 <span class="math">\(i\)</span> 和 <span class="math">\(j\)</span> 的爱因斯坦求和约定，
+外功率可表示为</p>
+<div class="math" id="equation-eqtheory-e">
+<span class="eqno">(18)</span>\[ E = \sum_{n = 1}^{4} \delta\ v_i^n\ f_i^n +\int_V \delta\ v_i\ B_i\ d V\]</div>
+<p>而内功率由下式给出</p>
+<div class="math" id="equation-eqtheory-i">
+<span class="eqno">(19)</span>\[ I = \int_V \delta\ {\xi}_{ij}\ {\sigma}_{ij}\ d V\]</div>
+<p>利用方程<a class="reference internal" href="#equation-eqtheory-xiij">(15)</a>，对于常应变率四面体可写为</p>
+<div class="math" id="equation-eqtheory-i2">
+<span class="eqno">(20)</span>\[ I = - {{1}\over{6}} \sum_{l = 1}^4 \left( \delta\ v_i^l\ {\sigma}_{ij}\ n_j^{(l)} +  \delta\ v_j^l\ {\sigma}_{ij}\ n_i^{(l)} \right) S^{(l)}\]</div>
+<p>应力张量是对称的，定义分量为下式的矢量 <span class="math">\(T^l\)</span></p>
+<div class="math" id="equation-eqtheory-til">
+<span id="eqtheory-till"></span><span class="eqno">(21)</span>\[ T_i^l =  {\sigma}_{ij}\ n_j^{(l)}\ S^{(l)}\]</div>
+<p>可得</p>
+<div class="math" id="equation-eqtheory-i3">
+<span class="eqno">(22)</span>\[ I = - {{1}\over{3}} \sum_{l = 1}^4   \delta\ v_i^l\ T_i^l\]</div>
+<p>将方程<a class="reference internal" href="#equation-eqtheory-bodyforce">(17)</a>代入<a class="reference internal" href="#equation-eqtheory-e">(18)</a>后，外功率可表示为</p>
+<div class="math" id="equation-eqtheory-e2">
+<span class="eqno">(23)</span>\[ E = \sum_{n = 1}^{4} \delta\ v_i^n\ f_i^n + E^b + E^I\]</div>
+<p>其中 <span class="math">\(E^b\)</span> 和 <span class="math">\(E^I\)</span> 分别为体力 <span class="math">\(ρb_i\)</span> 和惯性力的外功率贡献。
+对于四面体内的常量体力 <span class="math">\(ρb_i\)</span>，可写为</p>
+<div class="math" id="equation-eqtheory-eb">
+<span class="eqno">(24)</span>\[ E^b = \rho\ b_i\ \int_V \delta\ v_i\ d V\]</div>
+<p>而 <span class="math">\(E^I\)</span> 可表示为</p>
+<div class="math" id="equation-eqtheory-ei">
+<span class="eqno">(25)</span>\[ E^I = -  \int_V \rho\ \delta\ v_i {{d v_i}\over {d t}} dV\]</div>
+<p>根据前面所作的有限体积近似，速度场在四面体内部呈线性变化。
+为描述它，我们采用局部参考坐标系 <span class="math">\(xʹ\)</span><sub>1</sub>、<span class="math">\(xʹ\)</span><sub>2</sub>、<span class="math">\(xʹ\)</span><sub>3</sub>，
+原点位于四面体质心，并写出</p>
+<div class="math" id="equation-eqtheory-dvi">
+<span class="eqno">(26)</span>\[ \delta\ v_i = \sum_{n=1}^4  \delta\ v_i^n\ N^n\]</div>
+<p>其中 <span class="math">\(N^n\)</span>（<span class="math">\(n\)</span> = 1,4）为如下形式的线性函数</p>
+<div class="math" id="equation-eqtheory-nn">
+<span class="eqno">(27)</span>\[ N^n =  c_0^n + c_1^n\ {x'}_1 + c_2^n\ {x'}_2 + c_3^n\ {x'}_3\]</div>
+<p>而 <span class="math">\(c^n_0\)</span>、<span class="math">\(c^n_1\)</span>、<span class="math">\(c^n_2\)</span>、<span class="math">\(c^n_3\)</span>（其中 <span class="math">\(n\)</span> = 1,4）
+是通过求解方程组确定的常数</p>
+<div class="math" id="equation-eqtheory-nn2">
+<span class="eqno">(28)</span>\[ N^n \left( {x'}_1^j, {x'}_2^j, {x'}_3^j\right) = \delta_{nj}\]</div>
+<p>其中 <span class="math">\(δ_{nj}\)</span> 为 Kronecker delta。
+按质心的定义，
+所有形如 <span class="math">\(\int_V {x'}_j dV\)</span> 的积分均为零，
+将方程<a class="reference internal" href="#equation-eqtheory-dvi">(26)</a>代入方程<a class="reference internal" href="#equation-eqtheory-eb">(24)</a>中的 <span class="math">\(δv_i\)</span>，
+并利用方程<a class="reference internal" href="#equation-eqtheory-nn">(27)</a>可得，</p>
+<div class="math" id="equation-eqtheory-eb2">
+<span class="eqno">(29)</span>\[ E^b = \rho\ b_i \sum_{n=1}^{4} \delta\ v_i^n\ c_0^n\ V\]</div>
+<p>利用 Cramer 法则由方程<a class="reference internal" href="#equation-eqtheory-nn2">(28)</a>求解 <span class="math">\(c^n_0\)</span>，
+并利用质心的性质，可得</p>
+<div class="math" id="equation-eqtheory-c0n">
+<span class="eqno">(30)</span>\[ c_0^n = {{1}\over{4}}\]</div>
+<p>由方程<a class="reference internal" href="#equation-eqtheory-eb2">(29)</a>和<a class="reference internal" href="#equation-eqtheory-c0n">(30)</a>可写出</p>
+<div class="math" id="equation-eqtheory-eb3">
+<span class="eqno">(31)</span>\[ E^b = \sum_{n=1}^4  \delta\ v_i^n {{\rho\ b_i\ V}\over{4}}\]</div>
+<p>此外，将方程<a class="reference internal" href="#equation-eqtheory-dvi">(26)</a>代入方程<a class="reference internal" href="#equation-eqtheory-ei">(25)</a>中的 <span class="math">\(δv_i\)</span> 可得</p>
+<div class="math" id="equation-eqtheory-ei2">
+<span class="eqno">(32)</span>\[ E^I = -  \sum_{n=1}^4  \delta\ v_i^n  \int_V \rho\ N^n{{d v_i}\over{d t}} d V\]</div>
+<p>最后，将 <span class="math">\(E^b\)</span> 的表达式方程<a class="reference internal" href="#equation-eqtheory-eb3">(31)</a>
+和 <span class="math">\(E^I\)</span> 的方程<a class="reference internal" href="#equation-eqtheory-ei2">(32)</a>代入，
+方程<a class="reference internal" href="#equation-eqtheory-e2">(23)</a>变为</p>
+<div class="math" id="equation-eqtheory-e3">
+<span class="eqno">(33)</span>\[ E =\sum_{n=1}^4  \delta\ v_i^n  \left[ f_i^n +{{\rho\ b_i\ V}\over{4}} - \int_V \rho\ N^n {{d v_i}\over{d t}} d V\right]\]</div>
+<p>在等效问题的框架下，为使四面体处于静力平衡，内功率
+（见方程<a class="reference internal" href="#equation-eqtheory-i3">(22)</a>）应等于方程<a class="reference internal" href="#equation-eqtheory-e3">(33)</a>所表示的外功率，且对<em>任意</em>虚速度均成立。
+因此，重新整理各项后必有</p>
+<div class="math" id="equation-eqtheory-eq1">
+<span class="eqno">(34)</span>\[ - f_i^n = {{T_i^n}\over{3}}  + {{\rho\ b_i\ V}\over{4}} -\int_V \rho\ N^n {{d v_i}\over{d t}} d V\]</div>
+<p>当四面体内加速度场围绕平均值的空间变化较小时，
+方程<a class="reference internal" href="#equation-eqtheory-eq1">(34)</a>中的最后一项可表示为</p>
+<div class="math" id="equation-eqtheory-eq2">
+<span class="eqno">(35)</span>\[ \int_V \rho\ N^n {{d v_i}\over{d t}} d V = {\left( {{d v_i}\over{d t}}\right)}^n \int_V \rho\ N^n\ d V\]</div>
+<p>此外，当四面体内 <span class="math">\(ρ\)</span> 为常量时，利用上述质心性质
+（见方程<a class="reference internal" href="#equation-eqtheory-nn">(27)</a>和<a class="reference internal" href="#equation-eqtheory-c0n">(30)</a>）可写出</p>
+<div class="math" id="equation-eqtheory-eq3">
+<span class="eqno">(36)</span>\[ \int_V \rho\ N^n {{d v_i}\over{d t}} d V ={{\rho\ V}\over{4}} {\left( {{d v_i}\over{d t}} \right)}^n\]</div>
+<p>在本分析的语境下，上述惯性项中涉及的质量 <span class="math">\(ρV\)</span>/4 由虚拟节点质量 <span class="math">\(m^n\)</span> 代替，
+其值将在下面确定，以确保系统在趋于平衡过程中数值稳定。
+因此，方程<a class="reference internal" href="#equation-eqtheory-eq3">(36)</a>变为</p>
+<div class="math" id="equation-eqtheory-eq4">
+<span class="eqno">(37)</span>\[ \int_V \rho\ N^n {{d v_i}\over{d t}} d V = m^n{\left( {{d v_i}\over{d t}} \right)}^n\]</div>
+<p>而方程<a class="reference internal" href="#equation-eqtheory-eq1">(34)</a>可写为</p>
+<div class="math" id="equation-eqtheory-fin">
+<span class="eqno">(38)</span>\[ - f_i^n = {{T_i^n}\over{3}}  + {{\rho\ b_i\ V}\over{4}} - m^n{\left( {{d v_i}\over{d t}} \right) }^n\]</div>
+<p>等效系统的平衡条件现在可通过要求以下条件成立来建立：在每个节点处，
+所有贡献四面体的静力等效力 -[<span class="math">\(f\)</span>]
+与施加荷载和集中力的节点贡献 [<span class="math">\(P\)</span>] 之和为零。
+为表达这些条件，我们采用一种记号，其中带上标 &lt;<span class="math">\(l\)</span>&gt; 的变量
+表示该变量在全局节点编号中标号为 <span class="math">\(l\)</span> 的节点处的值。
+符号 [[.]]<span class="math">\(^{&lt;l&gt;}\)</span> 用于表示在该节点相交的所有四面体在全局节点 <span class="math">\(l\)</span> 处贡献之和。
+按这些约定，可写出节点处牛顿定律的如下表达式：</p>
+<div class="math" id="equation-eqtheory-fil">
+<span class="eqno">(39)</span>\[ F_i^{&lt;l&gt;} = M^{&lt;l&gt;} {\left( {{d v_i}\over{d t}} \right) }^{&lt;l&gt;}\;\;\; l=1,n_n\]</div>
+<p>其中 <span class="math">\(n_n\)</span> 为介质表示中涉及的总节点数，节点质量 <span class="math">\(M^{&lt;l&gt;}\)</span> 定义为</p>
+<div class="math" id="equation-eqtheory-ml">
+<span class="eqno">(40)</span>\[ M^{&lt;l&gt;} = {[[m]]}^{&lt;l&gt;}\]</div>
+<p>而<em>不平衡力</em> <span class="math">\([F]^{&lt;l&gt;}\)</span> 由下式给出</p>
+<div class="math" id="equation-eqtheory-fil2">
+<span id="eqtheory-fil2l"></span><span class="eqno">(41)</span>\[ F_i^{&lt;l&gt;} = {[[ {{T_i}\over{3}}  +{{\rho\ b_i\ V}\over{4}} ]]}^{&lt;l&gt;} + P_i^{&lt;l&gt;}\]</div>
+<p>当介质达到平衡时，该力等于零。</p>
+</div>
+<div class="section" id="explicit-finite-difference-approximation-to-time-derivatives">
+<span id="eqtheory-efdattd"></span><h3>时间导数的显式有限差分近似</h3>
+<p>考虑本构方程（方程<a class="reference internal" href="#equation-eqtheory-sigmacheck">(7)</a>）
+以及变形率与节点速度之间的关系式（方程<a class="reference internal" href="#equation-eqtheory-xiij">(15)</a>），
+方程<a class="reference internal" href="#equation-eqtheory-fil">(39)</a>可形式地表示为如下形式的常微分方程组</p>
+<div class="math" id="equation-eqtheory-dvildt">
+<span class="eqno">(42)</span>\[ {{{d v_i}\over{d t}}^{&lt;l&gt;}} = {{1}\over{{M}^{&lt;l&gt;}}} {F_i^{&lt;l&gt;}} \ \left( t,  { \left\{ v_i^{&lt;1&gt;}, v_i^{&lt;2&gt;}, v_i^{&lt;3&gt;},...,v_i^{&lt;p&gt;} \right\} }^{&lt;l&gt;}, \kappa \right) \;\;\; l=1,n_n\]</div>
+<p>其中记号 {}<span class="math">\(^{&lt;l&gt;}\)</span> 表示全局节点 <span class="math">\(l\)</span> 处计算中所涉及的节点速度值的子集
+（见方程<a class="reference internal" href="#equation-eqtheory-fil">(39)</a>）
+在 <span class="codename">FLAC3D</span> 中，该方程组采用时间上的显式有限差分公式表述进行数值求解。在这种方法中，
+假定材料节点的速度在时间间隔 <span class="math">\(Δt\)</span> 内线性变化，
+方程<a class="reference internal" href="#equation-eqtheory-dvildt">(42)</a>左端的导数用中心有限差分计算，
+因此速度存储的时刻相对于位移和力偏移半个时步。
+节点速度用以下递推关系计算</p>
+<div class="math" id="equation-eqtheory-vilhalf">
+<span id="eqtheory-vilhalfl"></span><span class="eqno">(43)</span>\[ v_i^{&lt;l&gt;}(t + {\Delta t \over 2}) =  v_i^{&lt;l&gt;}(t - {\Delta t \over 2}) + {{\Delta t}\over{{M}^{&lt;l&gt;}}} {F_i^{&lt;l&gt;}} \left( t, { \left\{ v_i^{&lt;1&gt;}, v_i^{&lt;2&gt;}, v_i^{&lt;3&gt;},...,v_i^{&lt;p&gt;} \right\} }^{&lt;l&gt;}, \kappa \right)\]</div>
+<p>相应地，节点位置也用中心有限差分近似以类似方式更新，</p>
+<div class="math" id="equation-eqtheory-xilhalf">
+<span id="eqtheory-xilhalfl"></span><span class="eqno">(44)</span>\[ x_i^{&lt;l&gt;} (t + \Delta t) =  x_i^{&lt;l&gt;}(t) + \Delta t  v_i^{&lt;l&gt;}(t + {\Delta t \over 2})\]</div>
+<p>当采用方程<a class="reference internal" href="#equation-eqtheory-vilhalf">(43)</a>和<a class="reference internal" href="#equation-eqtheory-xilhalf">(44)</a>所体现的有限差分格式时，一阶误差项消失
+（即该格式具有二阶精度）。</p>
+<p>程序中节点位移由以下关系计算</p>
+<div class="math" id="equation-eqtheory-uilhalf">
+<span id="eqtheory-uilhalfl"></span><span class="eqno">(45)</span>\[ u_i^{&lt;l&gt;}(t + \Delta t) =  u_i^{&lt;l&gt;}(t) + \Delta t  v_i^{&lt;l&gt;}(t + {\Delta t \over 2})\]</div>
+<p>其中 <span class="math">\(u_i^{&lt;l&gt;}(0) =0\)</span>。</p>
+</div>
+<div class="section" id="constitutive-equations-in-incremental-form">
+<span id="eqtheory-sec-ceiif"></span><h3>增量形式的本构方程</h3>
+<p>在 <span class="codename">FLAC3D</span> 中，假定速度在时间间隔 <span class="math">\(Δt\)</span> 内保持不变。
+采用本构方程<a class="reference internal" href="#equation-eqtheory-sigmacheck">(7)</a>的如下增量表达式：</p>
+<div class="math" id="equation-eqtheory-dsijcheck">
+<span id="eqtheory-dsijcheckl"></span><span class="eqno">(46)</span>\[ \Delta {\check \sigma_{ij}} = H_{ij}^* ({\sigma}_{ij},{\xi}_{ij} \Delta t)\]</div>
+<p>其中 <span class="math">\(\Delta \check\sigma_{ij}\)</span> 为共旋应力增量，
+<span class="math">\(H^*_{ij}\)</span> 为给定函数。</p>
+<p>对于 <span class="math">\(Δt\)</span> 期间的小位移和小位移梯度，可写出</p>
+<div class="math" id="equation-eqtheory-xiijdt">
+<span id="eqtheory-xiijdt"></span><span class="eqno">(47)</span>\[ {\xi}_{ij} \Delta t = \Delta \epsilon_{ij}\]</div>
+<p>其中 <span class="math">\(Δ_{ij}\)</span> 为与时刻 <span class="math">\(t\)</span> 的构形相关的应变变化。</p>
+<p>应力增量 <span class="math">\(Δσ_{ij}\)</span> 由 <span class="math">\(\Delta{\check{\sigma}}_{ij}\)</span> 计算，使用</p>
+<div class="math" id="equation-eqtheory-dsij">
+<span id="eqtheory-dsijl"></span><span class="eqno">(48)</span>\[ \Delta {\sigma}_{ij} =  \Delta {\check{\sigma}}_{ij} + \Delta{\sigma}_{ij}^C\]</div>
+<p>其中 <span class="math">\(Δσ^C_{ij}\)</span> 为定义的应力修正
+（见方程<a class="reference internal" href="#equation-eqtheory-sigmacheck2">(8)</a>）</p>
+<div class="math" id="equation-eqtheory-dsijc">
+<span id="eqtheory-dsijcl"></span><span class="eqno">(49)</span>\[ \Delta {\sigma}_{ij}^C = ({\omega}_{ik}\ {\sigma}_{kj} - {\sigma}_{ik}\ {\omega}_{kj}) \Delta t\]</div>
+<p>旋转率张量的分量使用方程<a class="reference internal" href="#equation-eqtheory-rotationrate">(4)</a>
+和有限差分公式表述方程<a class="reference internal" href="#equation-eqtheory-vij">(14)</a>计算：</p>
+<div class="math" id="equation-eqtheory-omegaij2">
+<span id="eqtheory-omegaij2l"></span><span class="eqno">(50)</span>\[ {\omega}_{ij} =  - {{1}\over{6V}} \sum_{l=1}^4 \left( v_i^l n_j^{(l)} - v_j^l n_i^{(l)} \right)  S^{(l)}\]</div>
+<p>本构函数 <span class="math">\(H^*\)</span> 的具体形式在 <a class="reference internal" href="../../../../../common/docproject/source/manual/program_guide/models/models.html#constitutivemodels"><span class="std std-ref">本构模型</span>（Constitutive Models）</a> 中描述，
+其中还讨论了它们在 <span class="codename">FLAC3D</span> 中的数值实现问题。</p>
+</div>
+<div class="section" id="large-and-small-strain-modes">
+<span id="largeandsmallstrainmodes"></span><h3>大应变模式与小应变模式</h3>
+<p>上述数值公式表述可描述大应变变形，涉及大位移、大位移梯度和大旋转。
+在 <span class="codename">FLAC3D</span> 中这被称为<em>大应变模式</em>。</p>
+<p>在旋转足够小、以致分量 <span class="math">\(ω_{ij}\)</span> - <span class="math">\(δ_{ij}\)</span> 相对于 1 很小的应用中，
+[<span class="math">\(ω\)</span>] 可由 [<span class="math">\(I\)</span>] 代替，
+方程<a class="reference internal" href="#equation-eqtheory-dsij">(48)</a>中的应力修正可以略去。
+此外，对于小位移和小位移梯度，
+应变率张量定义式方程<a class="reference internal" href="#equation-eqtheory-strainrate">(2)</a>中涉及的空间导数
+可相对于初始构形计算，
+且节点坐标无需更新（见方程<a class="reference internal" href="#equation-eqtheory-xilhalf">(44)</a>）。</p>
+<p>在 <span class="codename">FLAC3D</span> 中，<em>小应变模式</em>假定位移、位移梯度和旋转均为小量。
+在该模式中，节点坐标不更新，也不考虑应力旋转修正。</p>
+</div>
+<div class="section" id="mechanical-timestep-determination-for-numerical-stability">
+<span id="mechtimestepdetermination"></span><h3>为数值稳定而确定力学时步</h3>
+<p>除非数值格式稳定，否则差分方程（方程<a class="reference internal" href="#equation-eqtheory-vilhalf">(43)</a>）不会给出有效答案。
+通过将理想化介质视为由线性弹簧连接的集中质量（位于节点处）集合，可以获得关于此问题的一些物理认识，
+这一概念化可基于以下理由作出。质量-弹簧系统的运动方程可用矩阵记号表示为</p>
+<div class="math" id="equation-eqtheory-globalmatrix">
+<span class="eqno">(51)</span>\[ \{ P^* \} -[K] \{ u \} = [M] \left\{  {{dv}\over{dt}} \right\}\]</div>
+<p>其中花括号表示节点值矢量，{<span class="math">\(P*\)</span>} 为外力，[<span class="math">\(K\)</span>] 为弹簧刚度矩阵，
+而 [<span class="math">\(M\)</span> ] 为对角节点质量矩阵。
+如果将方程<a class="reference internal" href="#equation-eqtheory-fil">(39)</a>中的不平衡力解释为方程<a class="reference internal" href="#equation-eqtheory-globalmatrix">(51)</a>中的施加力和弹簧反力，
+与理想化介质的类比就是直接的。</p>
+<p>用有限差分格式研究振动的质量-弹簧系统时，
+所用时步不得超过与整个系统最小特征周期相关的临界时步。
+因此，数值格式的稳定准则必须为有限差分格式中所用时步的取值提供上限。</p>
+<p>要推导出给出系统临界时步量度的关系式，需要了解系统的特征周期。
+然而在实践中，整体特征值分析不切实际，通常也不用于此目的
+（见 Press 等 1986）。在 <span class="codename">FLAC3D</span> 中，如下文所示，执行的是这一稳定性分析的局部化变体。
+该数值方法的一个重要方面是，对整个系统采用统一的<em>单位</em>时步 <span class="math">\(Δt\)</span>：</p>
+<div class="math" id="equation-eqtheory-dteq1">
+<span class="eqno">(52)</span>\[ \Delta t = 1\]</div>
+<p>而方程<a class="reference internal" href="#equation-eqtheory-fil">(39)</a>右端的节点质量被视为变量，
+并加以调整以满足局部稳定条件。</p>
+<div class="figure align-center" id="id3">
+<span id="fig-theory-massspringsystem"></span><a class="reference internal image-reference" href="../../../../../_images/theory-massspringsystem.png"><img alt="../../../../../_images/theory-massspringsystem.png" src="../../../../../_images/theory-massspringsystem.png" style="width: 324.53px; height: 177.62px;"/></a>
+<p class="caption"><span class="caption-text">图 2：质量-弹簧系统 1。</span></p>
+</div>
+<p>首先，考虑<a href="#fig-theory-massspringsystem">图 2（Figure  2）</a>所示的一维质量-弹簧系统。
+具有给定初始位移的集中质量的运动由以下微分方程控制</p>
+<div class="math" id="equation-eqtheory-springeq">
+<span class="eqno">(53)</span>\[ -kx = m {{d^2 x}\over{{dt}^2}}\]</div>
+<p>其中 <span class="math">\(k\)</span> 为弹簧刚度，<span class="math">\(m\)</span> 为集中质量。
+该方程的二阶有限差分格式所对应的临界时步由下式给出（Bathe and Wilson 1976）：</p>
+<div class="math" id="equation-eqtheory-springdt">
+<span class="eqno">(54)</span>\[ \Delta t = {{T}\over{\pi}}\]</div>
+<p>其中 <span class="math">\(T\)</span> 为系统的周期——即</p>
+<div class="math" id="equation-eqtheory-springt">
+<span class="eqno">(55)</span>\[ T = 2 \pi \sqrt{{m\over k}}\]</div>
+<p><span class="flag3">[CS：此处发现这段代码片段，不明原因。暂（隐藏）保留在原处，直至弄清原因：：简短占位。此处为理论部分第 1.2 节（及小节）。]</span></p>
+<div class="figure align-center" id="id4">
+<span id="fig-theory-massspringsystem2"></span><a class="reference internal image-reference" href="../../../../../_images/theory-massspringsystem2.png"><img alt="../../../../../_images/theory-massspringsystem2.png" src="../../../../../_images/theory-massspringsystem2.png" style="width: 500.48999999999995px; height: 329.51px;"/></a>
+<p class="caption"><span class="caption-text">图 3：质量-弹簧系统 2。</span></p>
+</div>
+<p>现在考虑<a href="#fig-theory-massspringsystem">图 2（Figure  2）</a>-a 中无限系列的质量和弹簧。
+由对称性，可通过研究<a href="#fig-theory-massspringsystem">图 2（Figure  2）</a>-b 中所示的系统来分析该集合的行为，
+该系统又等效于刚度为 4<span class="math">\(k\)</span> 的单个质量-弹簧系统
+（<a href="#fig-theory-massspringsystem">图 2（Figure  2）</a>-c）
+由方程<a class="reference internal" href="#equation-eqtheory-springdt">(54)</a>和<a class="reference internal" href="#equation-eqtheory-springt">(55)</a>导出的极限稳定准则
+具有如下形式</p>
+<div class="math" id="equation-eqtheory-springm">
+<span class="eqno">(56)</span>\[ m = k {(\Delta t)}^2\]</div>
+<p>取 <span class="math">\(Δt\)</span> = 1 时，如果集中质量的大小大于或等于弹簧刚度，系统将稳定。在局部分析中，
+通过将 <span class="math">\(m\)</span> 解释为局部节点 <span class="math">\(l\)</span> 处的节点质量贡献 <span class="math">\(m^l\)</span>，
+并将 <span class="math">\(k\)</span> 解释为相应的节点刚度贡献 <span class="math">\(k^l\)</span>，<a class="reference internal" href="#equation-eqtheory-springm">(56)</a>的有效性被推广到一个四面体。
+由无限系列准则导出的节点质量贡献为所考虑的系统提供了上限值。
+节点刚度贡献按下述局部刚度矩阵的简单对角化技术导出。</p>
+<p>局部节点 <span class="math">\(l\)</span> 处的四面体内力贡献等于 <span class="math">\(T^l_{i}\)</span>/3
+（见方程<a class="reference internal" href="#equation-eqtheory-fil2">(41)</a>）
+该力被解释为形如 <span class="math">\(-k^l_{ij}\)</span><span class="math">\(u^l_{j}\)</span> 的弹簧反力
+（见方程<a class="reference internal" href="#equation-eqtheory-globalmatrix">(51)</a>）
+在一个时间间隔 <span class="math">\(dt\)</span> 上取变分，可写出</p>
+<div class="math" id="equation-eqtheory-dtilo3">
+<span class="eqno">(57)</span>\[ {{d T_i^l}\over{3}} = - k_{ij}^l\ v_j^l\ d t\]</div>
+<p>利用<a class="reference internal" href="#equation-eqtheory-til">(21)</a>，该关系式变为</p>
+<div class="math" id="equation-eqtheory-dsijo3njlsl">
+<span class="eqno">(58)</span>\[ {{d\ {\sigma}_{ij}}\over{3}} n_j^{(l)}\ S^{(l)}= - k_{ij}^l\ v_j^l\ d t\]</div>
+<p>当节点 <span class="math">\(l\)</span> 处沿方向 <span class="math">\(q\)</span> 的速度分量为单位值、
+其余所有节点速度分量均为零时，由方程<a class="reference internal" href="#equation-eqtheory-dsijo3njlsl">(58)</a>可得
+局部刚度矩阵的对角项</p>
+<div class="math" id="equation-eqtheory-kqqdt">
+<span class="eqno">(59)</span>\[ k_{qq} dt = - {{d {\sigma}_{qj}}\over{3}} n_j^{(l)} S^{(l)}\]</div>
+<p>其中按惯例，对取 1 至 3 的重复指标 <span class="math">\(q\)</span> 不进行求和。</p>
+<p>采用 Hooke 定律的小应变增量形式来描述小时段内的应力-应变本构关系，可写出</p>
+<div class="math" id="equation-eqtheory-kqqdt2">
+<span class="eqno">(60)</span>\[ k_{qq}\ d t = - {{{\xi}_{qq}\ {\alpha}_1\ d t}\over{3}} n_q^{(l)}\ S^{(l)}\]</div>
+<p>其中 <span class="math">\(α\)</span><sub>1</sub> = <span class="math">\(K\)</span> + 4/3<span class="math">\(G\)</span>，<span class="math">\(K\)</span> 为体积模量，<span class="math">\(G\)</span> 为剪切模量。</p>
+<p>将所选的节点速度值代入关于 <span class="math">\(ξ\)</span> 的有限差分公式表述方程<a class="reference internal" href="#equation-eqtheory-xiij">(15)</a>，可得</p>
+<div class="math" id="equation-eqtheory-xiqq">
+<span class="eqno">(61)</span>\[ {\xi}_{qq} = - {{1}\over{3V}} n_q^{(l)}\ S^{(l)}\]</div>
+<p>将该表达式代入方程<a class="reference internal" href="#equation-eqtheory-kqqdt2">(60)</a>可得</p>
+<div class="math" id="equation-eqtheory-kqq">
+<span class="eqno">(62)</span>\[ k_{qq} = {{\alpha_1}\over{9V}} {\left[ n_q^{(l)}\ S^{(l)} \right]}^2\]</div>
+<p>现在我们定义节点刚度贡献的上限值为</p>
+<div class="math" id="equation-eqtheory-scalekl">
+<span class="eqno">(63)</span>\[ k^l = max(k_{11}, k_{22}, k_{33})\]</div>
+<p>由方程<a class="reference internal" href="#equation-eqtheory-springm">(56)</a>和方程<a class="reference internal" href="#equation-eqtheory-dteq1">(52)</a>可得
+节点 <span class="math">\(l\)</span> 处四面体质量贡献的表达式：</p>
+<div class="math" id="equation-eqtheory-scaleml">
+<span id="eqtheory-scalemll"></span><span class="eqno">(64)</span>\[ m^l = {{{\alpha}_1}\over{9V}} max \left( {\left[ n_i^{(l)} S^{(l)} \right] }^2, i=1,3 \right)\]</div>
+<p>以提供数值稳定的解。</p>
+</div>
+<div class="section" id="mechanical-damping">
+<span id="id1"></span><h3>力学阻尼</h3>
+<p>运动方程必须加以阻尼，以提供静力或准静力（非惯性）解。
+<em>局部非黏性阻尼</em>是 <span class="codename">FLAC3D</span> 中静力分析的默认阻尼算法，
+本节对此进行描述。
+局部阻尼可使用 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.mechanical.html#kwd:zone.mechanical.damping.local" title="local damping (default is 0.8).  If the  alternate  keyword is specified,
+an experimental alternate implementation of local damping is used that produces
+less sensitivity to small changes in the model...">单元力学阻尼局部（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">mechanical</span> <span class="pre">damping</span> <span class="pre">local</span></code>）</a> &lt;<a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span></span></a>&gt; 命令控制，
+其中 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span></span></a> 为局部阻尼（默认值为 0.8）。
+局部阻尼也可在动力分析中实现
+（见 <a class="reference internal" href="../../options/dynamic/dynamic.html#id1"><span class="std std-ref">动力分析</span>（Dynamic Analysis）</a> 一节）。</p>
+<p><span class="codename">FLAC3D</span> 中提供了另一种阻尼算法，用于稳态解包含显著均匀运动的情形。
+例如，这可能出现在蠕变模拟中，或出现在计算轴向受荷桩极限承载力时。
+该阻尼称为<em>组合阻尼</em>，本节也对其进行描述。
+在这种特殊情况下，组合阻尼在消除动能方面比局部阻尼更高效。
+组合阻尼使用 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.mechanical.html#kwd:zone.mechanical.damping.combined" title="combined local damping (default is 0.8)...">单元力学组合阻尼命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">mechanical</span> <span class="pre">damping</span> <span class="pre">combined</span></code>）</a> &lt;<a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span></span></a>&gt; 命令调用。</p>
+<p>对于动力分析，还可使用<em>Rayleigh 阻尼</em>和<em>人工黏性阻尼</em>来控制阻尼。
+这些算法在<em>理论与背景</em>部分的 <a class="reference internal" href="#mechanical-damping"><span class="std std-ref">力学阻尼</span>（Mechanical Damping）</a> 一节中描述。</p>
+<div class="section" id="local-nonviscous-damping">
+<span id="damping-local"></span><h4>局部非黏性阻尼</h4>
+<p><span class="codename">FLAC3D</span> 中使用的局部非黏性阻尼与 Cundall（1987）中所述的类似。
+在方程<a class="reference internal" href="#equation-eqtheory-fil">(39)</a>给出的运动方程中增加一个阻尼力项，
+使阻尼后的运动方程可写为</p>
+<div class="math" id="equation-eqtheory-localdamp1">
+<span class="eqno">(65)</span>\[F_i^{&lt;l&gt;} + \mathcal{F}_{(i)}^{&lt;l&gt;} = M^{&lt;l&gt;} {\left( {{d v_i}\over{d t}} \right) }^{&lt;l&gt;} \;\;\; l=1,n_n\]</div>
+<p><span class="math">\(\mathcal{F}_{(i)}^{&lt;l&gt;}\)</span> 为阻尼力，由下式给出</p>
+<div class="math" id="equation-eqtheory-localdamp2">
+<span id="eqtheory-localdamp2l"></span><span class="eqno">(66)</span>\[\begin{split}\begin{align}
+   \mathcal{F}_{(i)}^{&lt;l&gt;}  &amp;= -\alpha \left| F_i^{&lt;l&gt;} \right| {\rm sign} \left( v_{(i)}^{&lt;l&gt;}  \right) \\ \\
+   {\rm sign}(y) &amp;=
+      \begin{cases}
+          +1, &amp; {\rm if} \;\; y &gt; 0 \\
+          -1, &amp; {\rm if} \;\; y &lt; 0 \\
+          0, &amp; {\rm if} \;\; y = 0
+      \end{cases}
+\end{align}\end{split}\]</div>
+<p>以广义不平衡力 <span class="math">\(F^{&lt;l&gt;}_i\)</span> 和广义速度 <span class="math">\(v^{&lt;l&gt;}_{(i)}\)</span> 表示。
+阻尼力由阻尼常数 <span class="math">\(α\)</span> 控制，其默认值为 0.8。</p>
+<p>这种形式的阻尼有三个优点：</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>只有加速运动才被阻尼；因此，稳态运动不会产生错误的阻尼力。</li>
+<li>阻尼常数 <span class="math">\(α\)</span> 是无量纲的。</li>
+<li>由于阻尼与频率无关，集合中具有不同自振周期的区域使用同一阻尼常数而被同等阻尼。</li>
+</ol>
+</div></blockquote>
+<p><span class="codename">FLAC3D</span> 中的局部非黏性阻尼公式表述类似于滞回阻尼，
+其中每循环的能量损失与循环执行的速率无关。
+下面的分析说明了这种相似性。</p>
+<p>考察方程<a class="reference internal" href="#equation-eqtheory-localdamp2">(66)</a>可以看出，阻尼力总是阻止运动，
+但它按合广义力缩放，
+而不像黏性阻尼那样按速度大小缩放。
+根据 <span class="math">\(F_i^{&lt;l&gt;}\)</span> 和 <span class="math">\(v_{(i)}^{&lt;l&gt;}\)</span> 的相对符号，
+方程<a class="reference internal" href="#equation-eqtheory-localdamp2">(66)</a>可写成两种形式。
+当二者符号相同时，运动方程为</p>
+<div class="math" id="equation-eqtheory-localdamp4">
+<span class="eqno">(67)</span>\[ {{d v_i}\over{d t}}^{&lt;l&gt;}  = {F_i^{&lt;l&gt;} (1 - \alpha) \over M^{&lt;l&gt;}}\]</div>
+<p>而当二者符号相反时，运动方程为</p>
+<div class="math" id="equation-eqtheory-localdamp5">
+<span class="eqno">(68)</span>\[ {{d v_i}\over{d t}}^{&lt;l&gt;}  = {F_i^{&lt;l&gt;} (1 + \alpha) \over M^{&lt;l&gt;}}\]</div>
+<p>这些方程可用表观质量表示为</p>
+<div class="math" id="equation-eqtheory-localdamp6">
+<span class="eqno">(69)</span>\[{{d v_i}\over{d t}}^{&lt;l&gt;}  = {F_i^{&lt;l&gt;} \over \mathcal{M}^+}\quad{\rm and}\quad{{d v_i}\over{d t}}^{&lt;l&gt;} = {F_i^{&lt;l&gt;}` \over \mathcal{M}^-}\]</div>
+<p>其中 <span class="math">\(\mathcal{M}^+ = {M^{&lt;l&gt;} / (1-\alpha)}\)</span> 和 <span class="math">\(\mathcal{M}^- = {M^{&lt;l&gt;} / (1+\alpha)}\)</span>。</p>
+<div class="figure align-center" id="id5">
+<span id="fig-theory-massspringmotion"></span><a class="reference internal image-reference" href="../../../../../_images/theory-massspringmotion.png"><img alt="../../../../../_images/theory-massspringmotion.png" src="../../../../../_images/theory-massspringmotion.png" style="width: 496.44px; height: 471.24px;"/></a>
+<p class="caption"><span class="caption-text">图 4：单质量-弹簧系统的运动。</span></p>
+</div>
+<p><a href="#fig-theory-massspringsystem">图 2（Figure  2）</a>中单自由度质量-弹簧系统的运动（给定初始位移使其在 <span class="math">\(t\)</span> = 0 时 <span class="math">\(x = a\)</span>）如<a href="#fig-theory-massspringmotion">图 4（Figure  4）</a>所示。
+对于这种运动，表观质量在每个循环中速度为零的两个时刻增加，在速度最大的两个时刻减小。
+阻尼的作用方式是每循环两次移除动能：在两个速度峰值点处，一部分运动质量被移除并舍弃。
+请注意，加速度没有不连续，因为在移除质量的瞬间加速度为零。</p>
+<p>每循环移除的能量由点 <span class="math">\(B\)</span> 处动能降量的两倍给出，即</p>
+<div class="math" id="equation-eqtheory-localdamp7">
+<span class="eqno">(70)</span>\[ \Delta W_{(i)} = 2 \left[ {1 \over 2} \left( \mathcal{M}_{(i)}^+ - \mathcal{M}_{(i)}^- \right) \left( v_{(i)}^{&lt;l&gt;} \right)^2 \right]\]</div>
+<p>而移除瞬间的平均动能为</p>
+<div class="math" id="equation-eqtheory-localdamp8">
+<span class="eqno">(71)</span>\[ W_{(i)} = {1 \over 4} \left( \mathcal{M}_{(i)}^+ + \mathcal{M}_{(i)}^- \right) \left( v_{(i)}^{&lt;l&gt;} \right)^2\]</div>
+<p>其中 <span class="math">\(v_{(i)}^{&lt;l&gt;}\)</span> 为方程<a class="reference internal" href="#equation-eqtheory-localdamp2">(66)</a>给出的广义速度。</p>
+<p>每循环损失的能量与最大储能之比称为“比损耗”（Kolsky 1963）。
+通过注意到对于单自由度系统或单模态振动，峰值动能与峰值储能相同，
+比损耗可以用 <span class="codename">FLAC3D</span> 中的阻尼常数表示。
+因此，比损耗可写为</p>
+<div class="math" id="equation-eqtheory-localdamp9">
+<span class="eqno">(72)</span>\[ {\Delta W_{(i)} \over W_{(i)}} ={  4\left( \mathcal{M}_{(i)}^+ - \mathcal{M}_{(i)}^-\right) \over \mathcal{M}_{(i)}^+ + \mathcal{M}_{(i)}^-} = 4\alpha\]</div>
+<p>对于小阻尼值，临界阻尼比 <span class="math">\(D\)</span> 可用比损耗表示为</p>
+<div class="math" id="equation-eqtheory-localdamp10">
+<span class="eqno">(73)</span>\[ D = { {\Delta W_{(i)} / W_{(i)}} \over 4\pi } = { \alpha \over \pi }\]</div>
+<p>对于默认值 <span class="math">\(α\)</span> = 0.8，临界阻尼比的近似值因此为 0.25。</p>
+<p>方程<a class="reference internal" href="#equation-eqtheory-localdamp9">(72)</a>可通过分别对一个网格单元和由三个网格单元组成的柱体突然施加重力荷载、
+并让每个系统振动至平衡来验证。
+两种试验给出的 <span class="math">\(Δ W/W\)</span> 值大致相同，证实阻尼与频率无关。
+然而，对于多个模态同时参与的系统，
+由 <span class="codename">FLAC3D</span> 计算的响应可能不会对每个模态显示出相同的阻尼。</p>
+</div>
+<div class="section" id="combined-damping">
+<span id="damping-combineddamping"></span><h4>组合阻尼</h4>
+<p>方程<a class="reference internal" href="#equation-eqtheory-localdamp2">(66)</a>所述的阻尼公式表述仅在速度分量改变符号时才被激活。
+在存在显著均匀运动（与需要阻尼的振动幅值相比）的情况下，
+可能不存在“过零点”，因而没有能量耗散。
+通过注意到对于作简谐运动的单自由度系统，不平衡力的导数与负速度成正比，
+可导出一种替代的（但效率较低的）公式表述。如果</p>
+<div class="math" id="equation-eqtheory-combineddamp1">
+<span class="eqno">(74)</span>\[ v = a \ sin(\omega t)\]</div>
+<p>then</p>
+<div class="math" id="equation-eqtheory-combineddamp2">
+<span class="eqno">(75)</span>\[ {{d^2 v}\over{dt^2}} = -a \ {\omega}^2 sin(\omega t)\]</div>
+<p>因此 <span class="math">\({d F \over dt}\)</span> 与 <span class="math">\(v\)</span> 成正比。
+然而对于振动系统，即使 <span class="math">\(v\)</span> 的平均值非零，<span class="math">\({d F \over dt}\)</span> 的平均值也为零。
+<span class="codename">FLAC3D</span> 中提供了称为“组合阻尼”的另一种阻尼形式。
+该格式的阻尼力由基于速度和 <span class="math">\({d F \over dt}\)</span> 的表达式各贡献一半组成：</p>
+<div class="math" id="equation-eqtheory-combineddamp3">
+<span class="eqno">(76)</span>\[ \mathcal{F}_{(i)}^{&lt;l&gt;}  = {{\alpha \left| F_i^{&lt;l&gt;} \right|} \over 2} \left[ {\rm sign} \left( {d F_{(i)}^{&lt;l&gt;} \over dt}  \right) - {\rm sign} \left( v_{(i)}^{&lt;l&gt;}  \right) \right]\]</div>
+<p>如果系统中除需要耗散的振动运动外还存在显著的刚体运动，则应使用这种形式的阻尼。
+然而，发现组合阻尼耗散能量的速率比基于速度的局部阻尼慢。
+因此，在大多数情况下优先采用局部阻尼。</p>
+<p>刚体运动的影响在 <a class="reference internal" href="#data-elasticblock"><span class="std std-ref">ElasticBlock.dat</span></a> 中演示，
+该文件模拟重力作用下的一个块体。
+相应的项目文件为 “ElasticBlock.f3prj”，位于 “datafiles\theory\elastic-block” 中。
+不过，下边界被约束为以恒定速度向上运动，
+且所有网格点在水平方向均被固定。
+最终的“平衡”状态应是重力引起的应力作用于物体中，
+此外所有网格点应以相同速度向上运动。
+从某一顶面网格点的速度历史（如<a href="#fig-elasticblock-undampled">图 5（Figure  5）</a>所示）可以看出，
+物体持续无限振动，未达到预期的稳态。</p>
+<p id="data-elasticblock"><strong>ElasticBlock.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">fish automatic-create</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">5</span><span class="n"> </span><span class="m m-Double">5</span>
+<span class="nb">zone cmodel</span><span class="n"> elastic</span>
+<span class="nb">zone property</span><span class="n"> shear </span><span class="m m-Double">1</span><span class="n"> bulk </span><span class="m m-Double">2</span>
+<span class="nb">zone initialize</span><span class="n"> density </span><span class="m m-Double">1</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">10</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">1.0</span>
+<span class="nb">history interval</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">zone history</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z position </span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">5</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'ini'</span>
+<span class="c">;</span>
+<span class="nb">model </span><span class="ss">step</span><span class="n"> </span><span class="m m-Double">1000</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'undamped'</span>
+<span class="c">;</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'ini'</span>
+<span class="nb">zone mechanical</span><span class="n"> damping combined</span>
+<span class="nb">model </span><span class="ss">step</span><span class="n"> </span><span class="m m-Double">1000</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'damped'</span>
+<span class="c">;</span>
+</pre></div>
+</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id6">
+<span id="fig-elasticblock-undampled"></span><a class="reference internal image-reference" href="../../../../../_images/elasticblock-undampled.png"><img alt="../../../../../_images/elasticblock-undampled.png" src="../../../../../_images/elasticblock-undampled.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 5：块体顶部 z 方向速度历史——局部阻尼。</span></p>
+</div>
+<p>当指定 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.mechanical.html#kwd:zone.mechanical.damping.combined" title="combined local damping (default is 0.8)...">单元力学组合阻尼命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">mechanical</span> <span class="pre">damping</span> <span class="pre">combined</span></code>）</a> 命令时，
+系统随后收敛到所有速度均等于施加速度的稳态
+（见<a href="#fig-elasticblock-dampled">图 6（Figure  6）</a>），
+且内部应力呈现与静力情形相同的重力梯度。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id7">
+<span id="fig-elasticblock-dampled"></span><a class="reference internal image-reference" href="../../../../../_images/elasticblock-dampled.png"><img alt="../../../../../_images/elasticblock-dampled.png" src="../../../../../_images/elasticblock-dampled.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 6：块体顶部 z 方向速度历史——组合阻尼。</span></p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../flac3dhome.html"><span class="codename">FLAC3D</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../theory.html"><span class="codename">FLAC3D</span> Theory and Background</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="theoreticalbackground.html">Theoretical Background</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="theoreticalbackground.html" title="previous chapter"> Theoretical Background</a> |    
+       <a href="griddiscretization.html" title="next chapter">Grid Discretization</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Formulation of a 3D Explicit Finite Volume Model" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

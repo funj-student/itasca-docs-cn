@@ -1,0 +1,279 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>数学模型说明 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="def_thermal-advection_property.html" rel="next" title="Advection-Conduction Properties"/>
+<link href="thermal.html" rel="prev" title="Thermal Analysis"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="mathematical-model-description">
+<span id="thermal-math-model-description"></span><h1>数学模型说明</h1>
+<div class="section" id="conventions-and-definitions">
+<h2>约定与定义</h2>
+<p>作为记号约定，符号 <span class="math">\(a_i\)</span> 表示笛卡尔参考坐标系中向量 <span class="math">\([a]\)</span> 的分量 <span class="math">\(i\)</span>；<span class="math">\(A_{ij}\)</span> 是张量 <span class="math">\([A]\)</span> 的分量 <span class="math">\((i,j)\)</span>。此外，<span class="math">\(f_{,i}\)</span> 用于表示 <span class="math">\(f\)</span> 对 <span class="math">\(x_i\)</span> 的偏导数。（<span class="math">\(f\)</span> 可以是标量变量或向量分量。）</p>
+<p>爱因斯坦求和约定<em>仅</em>适用于指标 <span class="math">\(i\)</span>、<span class="math">\(j\)</span> 和 <span class="math">\(k\)</span>，对于涉及空间维度的分量，它们取值为 1、2、3。当用于矩阵方程时，这些指标可取任意值。</p>
+<p>采用 SI 单位来说明参数的取值及变量的量纲（换算为其他单位制见<a class="reference internal" href="systems.html#thermal-systems"><span class="std std-ref">本节</span>（this section）</a>）。</p>
+<p>以下无量纲数在表征瞬态热传导时很有用：</p>
+<p><strong>特征长度</strong></p>
+<div class="math" id="equation-eqthermal-math-lc">
+<span class="eqno">(1)</span>\[L_c = {{volume \ of \ solid}\over{surface \  area  \ exchanging  \ heat}}\]</div>
+<p><strong>热扩散率</strong></p>
+<div class="math" id="equation-eqthermal-math-kappa">
+<span class="eqno">(2)</span>\[\kappa = {{k}\over{\rho\ C_v}}\]</div>
+<table border="1" class="colwidths-auto blank docutils">
+<tbody valign="top">
+<tr class="row-odd"><td>其中：</td>
+<td><span class="math">\(k\)</span></td>
+<td>是导热系数；</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td><span class="math">\(\rho\)</span></td>
+<td>是密度；以及</td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td><span class="math">\(C_v\)</span></td>
+<td>是等容比热。</td>
+</tr>
+</tbody>
+</table>
+<p><strong>特征时间</strong></p>
+<div class="math" id="equation-eqthermal-math-tc">
+<span class="eqno">(3)</span>\[t_c = {{L_c^2}\over{\kappa}}\]</div>
+</div>
+<div class="section" id="conduction">
+<h2>传导</h2>
+<p><span class="codename">FLAC3D</span> 中热传导所涉及的变量是温度和热流量的三个分量。这些变量通过能量平衡方程以及由傅里叶热传导定律导出的输运定律相互联系。将傅里叶定律代入能量平衡方程可得到热传导微分方程；给定具体的边界条件和初始条件，即可针对特定几何形状和性质求解该方程。热体积应变被引入增量形式的力学和流体本构律中，以计入热-应力和热-孔隙压力耦合。</p>
+<div class="section" id="energy-balance-equation">
+<h3>能量平衡方程</h3>
+<p>能量平衡的微分表达式具有以下形式</p>
+<div class="math" id="equation-eqthermal-math-energybalance">
+<span class="eqno">(4)</span>\[-q_{i,i} + q_v = {{\partial\zeta}\over{\partial t}}\]</div>
+<p>其中 <span class="math">\(q_i\)</span> 是 <span class="math">\([W/m^2]\)</span> 中的热流向量，<span class="math">\(q_v\)</span> 是 <span class="math">\([W/m^3]\)</span> 中的体积热源强度，<span class="math">\(\zeta\)</span> 是 <span class="math">\([J/m^3]\)</span> 中单位体积储存的热量。一般而言，温度变化可能由能量储存的变化和体积应变 <span class="math">\(\epsilon\)</span> 共同引起，联系这些参数的热本构律可表示为</p>
+<div class="math" id="equation-eqthermal-math-dtdt">
+<span class="eqno">(5)</span>\[{{\partial T}\over{\partial t}} = M_{th} \left( {{\partial \zeta}\over{\partial t}} - \beta_{th} {{\partial \epsilon}\over{\partial t}} \right)\]</div>
+<p>其中 <span class="math">\(M_{th}\)</span> 和 <span class="math">\(\beta_{th}\)</span> 为材料常数，<span class="math">\(T\)</span> 为温度。</p>
+<p>在 <span class="codename">FLAC3D</span> 中，我们考虑该定律的一个特例，其中 <span class="math">\(\beta_{th}\)</span> = 0，且 <span class="math">\(M_{th} = 1/(\rho C_v)\)</span>。<span class="math">\(\rho\)</span> 是介质的质量密度，单位为 <span class="math">\([kg/m^3]\)</span>；<span class="math">\(C_v\)</span> 是等容比热，单位为 <span class="math">\([J/kg\ ^{\circ}C]\)</span>。这里的假设是应变变化对温度的影响可忽略不计，对于涉及固体和液体的准静态力学问题，这是一个合理的假定。据此，</p>
+<div class="math" id="equation-eqthermal-dzetadt">
+<span class="eqno">(6)</span>\[{{\partial \zeta}\over{\partial t}} =  \rho\ C_v {{\partial T}\over{\partial t}}\]</div>
+<p>将式 <a class="reference internal" href="#equation-eqthermal-dzetadt">(6)</a> 代入式 <a class="reference internal" href="#equation-eqthermal-math-energybalance">(4)</a>，得到能量平衡方程</p>
+<div class="math" id="equation-eqthermal-math-energybalance2">
+<span id="eq-energybalance"></span><span class="eqno">(7)</span>\[-q_{i,i} +q_v = \rho C_v {{\partial T}\over{\partial t}}\]</div>
+<p>请注意，对于几乎所有固体和液体，等压比热与等容比热基本相同。因此 <span class="math">\(C_v\)</span> 和 <span class="math">\(C_p\)</span> 可以互换使用。</p>
+</div>
+<div class="section" id="transport-law">
+<h3>输运定律</h3>
+<p>定义热流向量与温度梯度之间关系的基本定律是傅里叶定律。对于静止、均匀、各向同性的固体，该本构律的形式为</p>
+<div class="math" id="equation-eqthermal-math-qi">
+<span id="eq-transportlaw"></span><span class="eqno">(8)</span>\[q_i = - k T_{,i}\]</div>
+<p>其中 <span class="math">\(T\)</span> 是温度 [<span class="math">\(^{\circ}\)</span>C]，<span class="math">\(k\)</span> 是导热系数，单位为 <span class="math">\([W/m ^{\circ}C]\)</span>。</p>
+<p id="thermal-isoconduct"><strong>各向同性热传导</strong></p>
+<p>对于各向同性传导，导热系数矩阵的形式为：</p>
+<div class="math" id="equation-eqthermal-math-isoconduct">
+<span class="eqno">(9)</span>\[\begin{split}\boldsymbol{k} = k \cdot
+           \begin{bmatrix}
+              1 &amp; 0 &amp; 0 \\
+              0 &amp; 1 &amp; 0 \\
+              0 &amp; 0 &amp; 1
+            \end{bmatrix}\end{split}\]</div>
+<p>这种情况下，一个导热系数标量参数就足够了。</p>
+<p>各向同性热传导热学模型的性质按字母顺序列于<a class="reference internal" href="def_thermal-isoconduct_property.html#def-thermal-isoconduct-property"><span class="std std-ref">此处</span>（here）</a>。</p>
+<p id="thermal-anisoconduct"><strong>各向异性热传导</strong></p>
+<p>对于各向异性传导，导热系数矩阵的形式为：</p>
+<div class="math" id="equation-eqthermal-math-ansoconduct1">
+<span class="eqno">(10)</span>\[\begin{split}\boldsymbol{k} =
+     \begin{bmatrix}
+         k_{xx} &amp; 0 &amp; 0 \\
+         0 &amp; k_{yy} &amp; 0 \\
+         0 &amp; 0 &amp; k_{zz}
+     \end{bmatrix}\end{split}\]</div>
+<p>这种情况下，需要三个对应于不同方向的导热系数参数。</p>
+<p>一般而言，</p>
+<div class="math" id="equation-eqthermal-math-ansoconduct2">
+<span class="eqno">(11)</span>\[\begin{split}\boldsymbol{k} =
+     \begin{bmatrix}
+         k_{xx} &amp; k_{xy} &amp; k_{xz} \\
+         k_{xy} &amp; k_{yy} &amp; k_{yz} \\
+         k_{xz} &amp; k_{yz} &amp; k_{zz}
+     \end{bmatrix}\end{split}\]</div>
+<p>这种情况下，需要六个导热系数参数。</p>
+<p>各向异性热传导热学模型的性质按字母顺序列于<a class="reference internal" href="def_thermal-anisoconduct_property.html#def-thermal-anisoconduct-property"><span class="std std-ref">此处</span>（here）</a>。</p>
+</div>
+<div class="section" id="boundary-and-initial-conditions">
+<h3>边界条件和初始条件</h3>
+<p>将方程<a class="reference internal" href="#equation-eqthermal-math-qi">(8)</a>中的 <span class="math">\(q_i\)</span> 代入方程<a class="reference internal" href="#equation-eqthermal-math-energybalance2">(7)</a>，可得热传导的微分方程。初始条件对应于给定的温度场。边界条件通常以温度或热流向量垂直于边界的分量来表示。在这一版本的 <span class="codename">FLAC3D</span> 中，考虑四类条件，分别对应于：(1) 给定温度；(2) 给定热流垂直于边界的分量；(3) 对流边界；以及 (4) 绝热（隔热）边界。</p>
+<p>在 <span class="codename">FLAC3D</span> 中，对流边界条件的形式为</p>
+<div class="math" id="equation-eqthermal-math-qn">
+<span class="eqno">(12)</span>\[q_n = h (T - T_e)\]</div>
+<p>其中 <span class="math">\(q_n\)</span> 是热流垂直于边界、沿外法线方向的分量，<span class="math">\(h\)</span> 是对流传热系数 <span class="math">\([W/m^2$ $^{\circ}C]\)</span>，<span class="math">\(T\)</span> 是边界表面的温度，<span class="math">\(T_e\)</span> 是周围流体的温度 [<span class="math">\(^{\circ}\)</span>C]。请注意，在 <span class="codename">FLAC3D</span> 所用的数值公式中，边界默认是绝热的。</p>
+</div>
+<div class="section" id="mechanical-coupling-thermal-strains">
+<span id="thermal-model-strains"></span><h3>力学耦合——热应变</h3>
+<p>求解热-应力问题需要重新表述增量应力-应变关系，其做法是从总应变增量中减去由温度变化引起的部分。由于在均质各向同性材料中自由热膨胀不产生角度畸变，因此剪切应变增量不受影响。与温度增量 <span class="math">\(\Delta T\)</span> 对应的自由膨胀所产生的热应变增量具有如下形式</p>
+<div class="math" id="equation-eqthermal-math-depsilonij">
+<span id="eq-110"></span><span class="eqno">(13)</span>\[\Delta \epsilon_{ij} = \alpha_t \Delta T \delta_{ij}\]</div>
+<p>其中 <span class="math">\(\alpha_t\ [1/^{\circ}C]\)</span> 是线性热膨胀系数，<span class="math">\(\delta_{ij}\)</span> 是克罗内克 delta。</p>
+<p>运动微分方程以及应变-速度关系式基于力学方面的考虑，在热力学分析中保持不变。</p>
+</div>
+<div class="section" id="fluid-coupling-thermally-induced-pore-pressures">
+<h3>流体耦合——热致孔隙压力</h3>
+<p>通过计入饱和基质热膨胀引起的孔隙压力变化，可将热传导与地下水计算耦合。该本构律的形式为（见<a class="reference internal" href="../../../theory/fluid-mechanical/fluid_therm_mech_form/fluid_therm_mech_form.html#fluid-therm-mech-form"><span class="std std-ref">FLAC3D 流体-热-力学公式——数学描述</span>（FLAC3D Fluid-Thermal-Mechanical-Formulation — Mathematical Description）</a>中的<a class="reference internal" href="../../../theory/fluid-mechanical/fluid_therm_mech_form/fluid_therm_mech_form.html#eqfluid-eq11"><span class="std std-ref">此方程</span>（this equation）</a>）</p>
+<div class="math" id="equation-eqthermal-math-dpdt">
+<span id="eq-111"></span><span class="eqno">(14)</span>\[{{\partial p}\over{\partial t}} = M \left( {{\partial \zeta}\over{\partial t}} - \alpha {{\partial \epsilon}\over{\partial t}} + \beta {{\partial T}\over{\partial t}} \right)\]</div>
+<p>其中 <span class="math">\(\zeta\)</span> 是流体含量的变化量，<span class="math">\(M\)</span> 是 Biot 模量，<span class="math">\(\alpha\)</span> 是 Biot 系数，<span class="math">\(\epsilon\)</span> 是体积应变，<span class="math">\(\beta\)</span> 是不排水体积热膨胀系数。在 <span class="codename">FLAC3D</span> 中，由温度变化 <span class="math">\(\Delta T\)</span> 引起的孔隙压力增量 <span class="math">\(\Delta p_{ther}\)</span> 具有如下形式</p>
+<div class="math" id="equation-eqthermal-math-dpther">
+<span id="eq-112"></span><span class="eqno">(15)</span>\[\Delta p_{ther} =\ M \beta \Delta T\]</div>
+<p><span class="math">\(\beta\ [1/^{\circ}C]\)</span> 定义为在不排水受限试验（无变形）中每单位温度变化所引起的孔隙压力变化量除以（<span class="math">\(3 \alpha_t\ M\)</span>）。对于理想多孔材料，该系数与颗粒的体积热膨胀系数 <span class="math">\(3 \alpha_t\)</span> 以及流体的体积热膨胀系数 <span class="math">\(3 \alpha_f\)</span> 通过下式相联系</p>
+<div class="math" id="equation-eqthermal-math-beta">
+<span class="eqno">(16)</span>\[\beta = 3[\alpha_t(\alpha - n) + \alpha_f n]\]</div>
+<p>其中 <span class="math">\(n\)</span> = 孔隙率。</p>
+<p>对于不可压缩固体组分（<span class="math">\(\alpha\)</span> = 1 且 <span class="math">\(M = {K_f} / {n}\)</span>），孔隙压力增量变为</p>
+<div class="math" id="equation-eqthermal-math-dpther2">
+<span class="eqno">(17)</span>\[\Delta p_{ther} =\ {K_f \over n} \beta \Delta T\]</div>
+<p>其中 <span class="math">\(K_f\)</span> = 流体体积模量。</p>
+<p>相应的总应力变化通过以下关系在本构律中予以考虑</p>
+<div class="math" id="equation-eqthermal-math-sigmaij">
+<span id="eq-115"></span><span class="eqno">(18)</span>\[\sigma_{ij} =\ - \Delta p_{ther} \delta_{ij}\]</div>
+</div>
+</div>
+<div class="section" id="advection">
+<h2>平流</h2>
+<p><span class="codename">FLAC3D</span> 实现中所考虑的多孔介质对流传热机制包括<em>强制对流</em>（热量由流体运动携带）和<em>自然对流</em>（考虑由温度变化引起密度差异所导致的流体运动）。</p>
+<p>其工作假定为局部热平衡（考虑低雷诺数流动）和密度变化很小（适用 Boussinesq 近似）。下面给出饱和流体流动过程的基本水热方程。</p>
+<div class="section" id="energy-balance-for-convective-diffusive-heat-transport">
+<h3>对流-扩散热输运的能量平衡</h3>
+<div class="math" id="equation-eqthermal-math-convective-diffusive">
+<span id="eq-116"></span><span class="eqno">(19)</span>\[c^T {{\partial T} \over {\partial t}} + \nabla \cdot {\bf q}^T + \rho_0 c_w {\bf q}_w \cdot \nabla T - q^T_v = 0\]</div>
+<p>其中 <span class="math">\(T\)</span> 是温度，<span class="math">\({\bf q}^T\)</span> 是热通量，<span class="math">\({\bf q}_w\)</span> 是流体比流量，<span class="math">\(q^T_v\)</span> 是体积热源强度，<span class="math">\(\rho_0\)</span> 和 <span class="math">\(c_w\)</span> 分别是流体的参考密度和比热，<span class="math">\(c^T\)</span> 是有效比热。有效比热定义为</p>
+<div class="math" id="equation-eqthermal-math-ct">
+<span class="eqno">(20)</span>\[c^T = \rho_d C_v + nS \rho_0 c_w\]</div>
+<p>其中 <span class="math">\(\rho_d\)</span> 和 <span class="math">\(C_v\)</span> 分别是固体基质的体积密度和体积比热，<span class="math">\(n\)</span> 是孔隙率，<span class="math">\(S\)</span> 是饱和度。</p>
+</div>
+<div class="section" id="fluid-mass-balance-slightly-compressible-fluid">
+<h3>流体质量平衡（微可压缩流体）</h3>
+<div class="math" id="equation-eqthermal-math-massbalance">
+<span class="eqno">(21)</span>\[{{\partial P} \over {\partial t}} = M \biggl(- \nabla \cdot {\bf q}_w - \alpha {{\partial \epsilon} \over {\partial t}} + \beta {{\partial T} \over {\partial t}} \biggr)\]</div>
+<p>其中 <span class="math">\(M\)</span> 是 Biot 模量，<span class="math">\(\epsilon\)</span> 是体积应变，<span class="math">\(\beta\)</span> 是多孔基质的体积热膨胀系数。请注意，出现在系数 <span class="math">\(\beta\)</span> 表达式中的项 <span class="math">\(n \beta_f\)</span>（其中 <span class="math">\(\beta_f\)</span> 是流体的体积热膨胀系数）在 Boussinesq 近似中通常被忽略，并且方程<a class="reference internal" href="#equation-eqthermal-math-massbalance">(21)</a>中的最后两项仅在考虑力学耦合时才出现。</p>
+</div>
+<div class="section" id="transport-laws">
+<h3>输运定律</h3>
+<p><strong>热输运（傅里叶定律）</strong></p>
+<div class="math" id="equation-eqthermal-math-qt">
+<span class="eqno">(22)</span>\[{\bf q}^T = - k^T \nabla T\]</div>
+<p>其中 <span class="math">\(k^T\)</span> 是有效导热系数，在平流公式中为各向同性。有效导热系数由固体和流体的导热系数 <span class="math">\(k^T_s\)</span> 和 <span class="math">\(k^T_w\)</span> 通过下式定义</p>
+<div class="math" id="equation-eqthermal-math-kt">
+<span class="eqno">(23)</span>\[k^T = k^T_s + n S k^T_w*\]</div>
+<p><strong>流体输运（达西定律）</strong></p>
+<div class="math" id="equation-eqthermal-math-qw">
+<span id="eq-121"></span><span class="eqno">(24)</span>\[{\bf q}_w = -{\bf k} \nabla (P - \rho_w {\bf g} \cdot {\bf x})\]</div>
+<p>其中 <span class="math">\({\bf k}\)</span> 是流体迁移系数（固有渗透率 <span class="math">\(\boldsymbol{\kappa}\)</span> 除以动力黏度 <span class="math">\(\mu_w\)</span>），<span class="math">\(\rho_w\)</span> 是流体密度。在该方程中，流体密度通过线性方程与温度变化相关联</p>
+<div class="math" id="equation-eqthermal-math-rhow">
+<span id="eq-122"></span><span class="eqno">(25)</span>\[\rho_w = \rho_0 [1 - \beta_f (T - T_0)]\]</div>
+<p>其中 <span class="math">\(\beta_f\)</span> 是流体的体积热膨胀系数，<span class="math">\(T_0\)</span> 是参考温度。</p>
+<p>在这些方程中，由温度变化引起的流体密度变化仅在其产生浮力时才有意义（即 Boussinesq 近似）。</p>
+</div>
+<div class="section" id="thermal-mechanical-pore-pressure-coupling">
+<h3>热-力学-孔隙压力耦合</h3>
+<p>与力学本构方程的耦合通过“有效”法向应变率（即总法向应变率减去热法向应变率分量）以及影响有效应力的孔隙压力变化来实现。平流逻辑可与 <span class="codename">FLAC3D</span> 可用的任何力学本构模型结合使用。在小应变弹性材料的示例中，力学本构关系为</p>
+<div class="math" id="equation-eqthermal-math-elastic">
+<span class="eqno">(26)</span>\[{{\partial \sigma_{ij}} \over {\partial t}} + \alpha {{\partial P} \over {\partial t}} \delta_{ij} = 2G \biggl({{\partial \epsilon_{ij}} \over {\partial t}} - \alpha_t {{\partial T} \over {\partial t}} \delta_{ij} \biggr) + \biggl(K - {2 \over 3} G \biggr) \cdot \biggl({{\partial \epsilon_{kk}} \over {\partial t}} - 3 \alpha_t {{\partial T} \over {\partial t}} \biggr) \delta_{ij}\]</div>
+<p>其中 <span class="math">\(\sigma_{ij}\)</span> 和 <span class="math">\(\epsilon_{ij}\)</span> 是总应力和总应变，<span class="math">\(\alpha\)</span> 是 Biot 系数，<span class="math">\(K\)</span> 和 <span class="math">\(G\)</span> 是体积模量和剪切模量，<span class="math">\(\alpha_t\)</span> 是固体基质的线性热膨胀系数，<span class="math">\(\delta_{ij}\)</span> 是克罗内克 delta。</p>
+</div>
+<div class="section" id="initial-and-boundary-conditions">
+<h3>初始条件与边界条件</h3>
+<p>在耦合模拟中，必须为所涉及的每个过程提供初始条件和边界条件。原则上，<span class="codename">FLAC3D</span> 手册中记载的流体和热边界条件的任意组合都可用于平流模拟：可以指定 Dirichlet 和 Neuman 边界条件，也可为流体和热计算指定点源和体积源。</p>
+<p>平流-传导热学模型的性质按字母顺序列于<a class="reference internal" href="def_thermal-advection_property.html#def-thermal-advection-property"><span class="std std-ref">此处</span>（here）</a>。</p>
+<div class="toctree-wrapper hide compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="def_thermal-advection_property.html">Advection-Conduction Properties</a></li>
+<li class="toctree-l1"><a class="reference internal" href="def_thermal-anisoconduct_property.html">Anisotropic Heat Conduction Properties</a></li>
+<li class="toctree-l1"><a class="reference internal" href="def_thermal-isoconduct_property.html">Isotropic Heat Conduction Properties</a></li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../flac3dhome.html"><span class="codename">FLAC3D</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../options.html">Options</a> »</li>
+<li class="nav-item nav-item-3"><a href="../thermalanalysis.html">Thermal Analysis</a> »</li>
+<li class="nav-item nav-item-4"><a accesskey="U" href="thermal.html">Thermal Analysis</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="thermal.html" title="previous chapter"> Thermal Analysis</a> |    
+       <a href="def_thermal-advection_property.html" title="next chapter">Advection-Conduction Properties</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Mathematical Model Description" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

@@ -1,0 +1,893 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>求解纯渗流与耦合渗流问题 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="../verification_examples/verification_examples.html" rel="next" title="Verification Examples"/>
+<link href="../boundary_conditions/boundary_conditions.html" rel="prev" title="Fluid-Flow Boundary Conditions, Initial Conditions, Sources and Sinks"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="hide sectionname docutils container">
+<span class="codename">FLAC3D</span> Theory and Background • Fluid-Mechanical Interaction</div>
+<div class="section" id="solving-flow-only-and-coupled-flow-problems">
+<span id="fluid-solving"></span><h1>求解纯渗流与耦合渗流问题</h1>
+<p><span class="codename">FLAC3D</span> 既能进行纯渗流分析，也能进行流体与力学耦合分析。耦合分析可使用 <span class="codename">FLAC3D</span> 中任一种内置力学模型。</p>
+<p>可采用多种建模策略处理耦合过程。其中一种假设赋予网格的孔隙压力保持不变；这种方法无需为渗流计算预留额外内存。与该模式有关的命令见<a class="reference internal" href="../calcmodes/calcmodes.html#fluid-gridnofluid"><span class="std std-ref">未配置流体渗流的网格</span>（Grid Not Configured for Fluid Flow）</a>。涉及流体流动的建模策略要求发出 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.fluid" title="Fluid-flow analysis...">配置流体计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">fluid</span></code>）</a> 命令，将网格配置为流体分析，并对所有可能发生流体流动的网格单元发出 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.fluid" title="Fluid-flow analysis...">配置流体计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">fluid</span></code>）</a> 命令。注意，在耦合分析中，力学上被置空的网格单元，其流体渗流模型不会自动置空。对于流体置空网格单元，必须发出 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.cmodel.assign.null" title="Assign the null fluid model...">单元流体本构模型指定空（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">cmodel</span> <span class="pre">assign</span> <span class="pre">null</span></code>）</a> 命令。与 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.fluid" title="Fluid-flow analysis...">配置流体计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">fluid</span></code>）</a> 模式有关的命令见<a class="reference internal" href="../calcmodes/calcmodes.html#fluid-gridwithfluid"><span class="std std-ref">已配置流体渗流的网格</span>（Grid Configured for Fluid Flow）</a>。</p>
+<p>以下各节将说明耦合分析的不同建模策略，较复杂的策略需要更多计算机内存和计算时间。一般而言，在能够再现当前问题中重要物理过程的前提下，应选用尽可能简单的选项。根据时间尺度选择方法的建议准则见<a class="reference internal" href="#fluid-selection-model-approach"><span class="std std-ref">完全耦合分析建模方法的选择</span>（Selection of a Modeling Approach for a Fully Coupled Analysis）</a>；各种建模策略见<a class="reference internal" href="#fluid-fixed-pp"><span class="std std-ref">固定孔隙压力</span>（Fixed Pore Pressure）</a>至<a class="reference internal" href="#fluid-coupled-flow-and-mechcal"><span class="std std-ref">渗流与力学耦合计算</span>（Coupled Flow and Mechanical Calculations）</a>。</p>
+<div class="section" id="time-scales">
+<span id="fluid-timescale"></span><h2>时间尺度</h2>
+<p>规划使用 <span class="codename">FLAC3D</span> 进行流体渗流或耦合渗流计算的模拟时，估算各个相关过程的时间尺度通常很有帮助。了解问题的时间尺度和扩散系数，有助于评估最大网格范围、最小网格单元尺寸、时间步大小以及总体可行性。此外，如果各过程的时间尺度差异很大，便可能采用简化的非耦合方法分析问题。（完全耦合分析中采用这种方法的详细讨论见<a class="reference internal" href="#fluid-selection-model-approach"><span class="std std-ref">完全耦合分析建模方法的选择</span>（Selection of a Modeling Approach for a Fully Coupled Analysis）</a>。）</p>
+<p>可通过下列特征时间的定义来理解时间尺度。这些定义源于量纲分析，并出现在连续源解析解的表达式中。可用它们估算 <span class="codename">FLAC3D</span> 分析的近似时间尺度。</p>
+<p><span class="bi">力学过程的特征时间</span></p>
+<div class="math" id="equation-eqfluid-solve-tcm">
+<span class="eqno">(1)</span>\[t_c^{m} = \sqrt{{\rho}\over{K_u + 4/3 G}} \ L_c\]</div>
+<p>其中，<span class="math">\(K_u\)</span> 为不排水体积模量，<span class="math">\(G\)</span> 为剪切模量，<span class="math">\(\rho\)</span> 为质量密度，<span class="math">\(L_c\)</span> 为特征长度（即介质的平均尺寸）。</p>
+<p><span class="bi">扩散过程的特征时间</span></p>
+<div class="math" id="equation-eqfluid-solve-tcf">
+<span class="eqno">(2)</span>\[t_c^{f} = {{L_c^2}\over{c}}\]</div>
+<p>其中，<span class="math">\(L_c\)</span> 为特征长度（即穿过介质的渗流路径的平均长度），<span class="math">\(c\)</span> 为扩散系数，定义为流动系数 <span class="math">\(k\)</span> 除以储水系数 <span class="math">\(S\)</span>：</p>
+<div class="math" id="equation-eqfluid-solve-c">
+<span class="eqno">(3)</span>\[c = {k \over S}\]</div>
+<p>根据起控制作用的过程，<span class="codename">FLAC3D</span> 中适用的储水系数有以下不同形式：</p>
+<ol class="arabic simple">
+<li><em>流体储水</em></li>
+</ol>
+<div class="math" id="equation-eqfluid-solve-s">
+<span class="eqno">(4)</span>\[S = {{1} \over{M}}\]</div>
+<ol class="arabic simple" start="2">
+<li><em>潜水储水</em></li>
+</ol>
+<div class="math" id="equation-eqfluid-solve-s2">
+<span class="eqno">(5)</span>\[S = {{1} \over{M}} + {n \over{\rho_w g L_p}}\]</div>
+<ol class="arabic simple" start="3">
+<li><em>弹性储水</em></li>
+</ol>
+<div class="math" id="equation-eqfluid-solve-s3">
+<span class="eqno">(6)</span>\[S = {{1} \over{M}} + {\alpha^2 \over{K + 4G/3}}\]</div>
+<p>其中，<span class="math">\(M\)</span> 为 Biot 模量，<span class="math">\(\alpha\)</span> 为 Biot 系数（对于不可压缩颗粒，<span class="math">\(M\)</span> = <span class="math">\(K_f/n\)</span> 且 <span class="math">\(\alpha\)</span> = 1），<span class="math">\(K\)</span> 为排水体积模量，<span class="math">\(G\)</span> 为剪切模量，<span class="math">\(\rho_w\)</span> 为流体密度，<span class="math">\(g\)</span> 为重力，<span class="math">\(L_p\)</span> 为特征储水长度（即介质中可用于储存流体的平均高度）。</p>
+<p>对于饱和纯渗流计算（刚性材料），<span class="math">\(S\)</span> 为流体储水，<span class="math">\(c\)</span> 为流体扩散系数（式 <a class="reference internal" href="#equation-eqfluid-solve-c">(3)</a> 和 <a class="reference internal" href="#equation-eqfluid-solve-s">(4)</a>）：</p>
+<div class="math" id="equation-eqfluid-solve-c2">
+<span class="eqno">(7)</span>\[c = k M\]</div>
+<p>对于非饱和渗流计算，<span class="math">\(S\)</span> 为潜水储水，扩散系数（由式 <a class="reference internal" href="#equation-eqfluid-solve-c">(3)</a> 和 <a class="reference internal" href="#equation-eqfluid-solve-s2">(5)</a> 得到）为</p>
+<div class="math" id="equation-eqfluid-solve-c3">
+<span class="eqno">(8)</span>\[c = {k \over { 1/M + n/(\rho_w g L_p) }}\]</div>
+<p>对于使用 <span class="codename">FLAC3D</span> 进行的饱和变形与扩散耦合分析，<span class="math">\(S\)</span> 为弹性储水，<span class="math">\(c\)</span> 为真实或广义<em>固结系数</em>，由式 <a class="reference internal" href="#equation-eqfluid-solve-c">(3)</a> 和 <a class="reference internal" href="#equation-eqfluid-solve-s3">(6)</a> 定义为</p>
+<div class="math" id="equation-eqfluid-solve-c4">
+<span class="eqno">(9)</span>\[c = {{k} \over {{1 \over M} + {\alpha^2 \over {K+ 4 G/3}} }}\]</div>
+<p>根据上述定义，有一些值得注意的性质：</p>
+<blockquote>
+<div><ol class="arabic">
+<li><p class="first">由于 <span class="codename">FLAC3D</span> 的显式时间步对应于信息从一个网格点传播到下一个网格点所需的最短时间，因此可在特征时间公式中以最小网格单元尺寸作为 <span class="math">\(L_c\)</span>，估算时间步大小。需要注意，即使在耦合模拟中，<span class="codename">FLAC3D</span> 的显式流体渗流时间步也使用<em>流体扩散系数</em>（式 <a class="reference internal" href="#equation-eqfluid-solve-c2">(7)</a>）计算。因此，可将式 <a class="reference internal" href="#equation-eqfluid-solve-c2">(7)</a> 代入式 <a class="reference internal" href="#equation-eqfluid-solve-tcf">(2)</a>，并以最小网格单元尺寸 <span class="math">\(L_z\)</span> 作为 <span class="math">\(L_c\)</span>，利用所得公式估算时间步大小：</p>
+<div class="math" id="equation-eqfluid-solve-dt">
+<span class="eqno">(10)</span>\[\Delta t = \min \left( {{L_z^2 } \over{k M}} \right)\]</div>
+</li>
+<li><p class="first">在饱和流体渗流问题中，减小体积模量（即 <span class="math">\(M\)</span> 或 <span class="math">\(K_f\)</span>）不仅会增大时间步，也会延长达到稳态所需的时间，因此总步数 <span class="math">\(n_t\)</span> 不变。利用式 <a class="reference internal" href="#equation-eqfluid-solve-tcf">(2)</a>、<a class="reference internal" href="#equation-eqfluid-solve-c2">(7)</a> 和 <a class="reference internal" href="#equation-eqfluid-solve-dt">(10)</a>，取模型特征时间 <span class="math">\(t_c\)</span> 与临界时间步 <span class="math">\(\Delta t\)</span> 之比，可估算该步数，得到</p>
+<div class="math" id="equation-eqfluid-solve-nt">
+<span class="eqno">(11)</span>\[n_t = {\left( {L_c \over L_z} \right)}^2\]</div>
+<p>其中，<span class="math">\(L_c\)</span> 和 <span class="math">\(L_z\)</span> 分别为模型和最小网格单元的特征长度。</p>
+</li>
+<li><p class="first">在非饱和流体渗流问题中，可通过调整流体模量（<span class="math">\(M\)</span> 或 <span class="math">\(K_f\)</span>）加快向稳态的收敛。应注意，不能过度减小 <span class="math">\(M\)</span>（或 <span class="math">\(K_f\)</span>）而导致数值不稳定。要求流体储水（用于计算临界时间步）始终小于一个网格单元高度 <span class="math">\(L_z\)</span> 内的潜水储水，即可推导出稳定条件：</p>
+<div class="math" id="equation-eqfluid-solve-m">
+<span class="eqno">(12)</span>\[M &gt; a L_z \rho_w g/n\]</div>
+<p>其中，<span class="math">\(a\)</span> 为调整系数，取值为 0.3。</p>
+</li>
+<li><p class="first">由式 <a class="reference internal" href="#equation-eqfluid-solve-tcf">(2)</a> 可知，为避免扩散问题中的任何边界影响，模型的特征长度 <span class="math">\(L_c\)</span> 必须大于尺寸 <span class="math">\(\sqrt{c t_s}\)</span>，其中 <span class="math">\(t_s\)</span> 为最大模拟时间，<span class="math">\(c\)</span> 为起控制作用的扩散系数。反之，最小模拟时间受关系式 <span class="math">\(t_{min} &gt; L_z^2/c\)</span> 控制。</p>
+</li>
+</ol>
+<ol class="arabic" id="fifthitem-fluidsolving" start="5">
+<li><p class="first">在耦合渗流问题中，真实扩散系数由刚度比 <span class="math">\(R_k\)</span>（即流体刚度与骨架刚度之比）控制：</p>
+<div class="math" id="equation-eqfluid-solve-rk">
+<span class="eqno">(13)</span>\[R_k = {{\alpha^2 M} \over {K + {4 \over 3} G}}\]</div>
+<p>采用此处对 <span class="math">\(R_k\)</span> 的定义，式 <a class="reference internal" href="#equation-eqfluid-solve-c5">(14)</a> 可写成两种形式：</p>
+<div class="math" id="equation-eqfluid-solve-c5">
+<span class="eqno">(14)</span>\[c = k M {1 \over{1 + R_k}}\]</div>
+<p>以及</p>
+<div class="math" id="equation-eqfluid-solve-c6">
+<span id="eq-eqfluid-solve-c6"></span><span class="eqno">(15)</span>\[c = {k \over{\alpha^2}} \left( K + {4 \over 3} G \right) {1 \over{1 + {1 \over R_k}}}\]</div>
+<p>若 <span class="math">\(R_k\)</span> 较小（相对于 1），式 <a class="reference internal" href="#equation-eqfluid-solve-c4">(9)</a> 表明，<span class="codename">FLAC3D</span> 的标准显式时间步（见式 <a class="reference internal" href="#equation-eqfluid-solve-dt">(10)</a>）可视为能够代表系统的扩散特性。例如，可使用式 <a class="reference internal" href="#equation-eqfluid-solve-nt">(11)</a> 对饱和条件下达到完全固结所需步数进行数量级估算。</p>
+<p>若 <span class="math">\(R_k\)</span> 较大（即 <span class="math">\(M\)</span> 相对于 <span class="math">\((K + 4G/3)/\alpha^2\)</span>（或 <span class="math">\(K_f &gt;&gt;&gt; (K + 4G/3)n\)</span>）较大），<span class="codename">FLAC3D</span> 的显式时间步会很小，而问题的扩散系数由骨架控制（见式 <a class="reference internal" href="#equation-eqfluid-solve-dt">(10)</a> 和 <a class="reference internal" href="#equation-eqfluid-solve-c5">(14)</a>）。可以减小 <span class="math">\(M\)</span>（或 <span class="math">\(K_f\)</span>），以增大时间步并更快计算到稳态。式 <a class="reference internal" href="#equation-eqfluid-solve-c5">(14)</a> 表明，若减小 <span class="math">\(M\)</span>（或 <span class="math">\(K_f\)</span>）使 <span class="math">\(R_k\)</span> = 20，则扩散系数与 <span class="math">\(M\)</span>（或 <span class="math">\(K_f\)</span>）为无穷大时的扩散系数之差应在 5% 以内（示例见<a class="reference internal" href="../../../../../zone/test3d/Fluid/1DConsolidation/1dconsolidation.html#dconsolidation"><span class="std std-ref">一维固结</span>（1D Consolidation）</a>）。时间尺度预计也能保持相同精度。注意，无论何种情况，<span class="math">\(K_f\)</span> 都不应高于流体的物理值（水为 2 × 10<sup>9</sup> Pa）。</p>
+</li>
+</ol>
+</div></blockquote>
+</div>
+<div class="section" id="selection-of-a-modeling-approach-for-a-fully-coupled-analysis">
+<span id="fluid-selection-model-approach"></span><h2>完全耦合分析建模方法的选择</h2>
+<p>使用 <span class="codename">FLAC3D</span> 进行<em>完全</em>耦合的准静态渗流力学分析通常耗时，甚至有时并无必要。在许多情况下，可进行一定程度的解耦，以简化分析并加快计算。以下示例说明了不同流体与力学耦合程度下 <span class="codename">FLAC3D</span> 建模方法的实施。以下三个主要因素有助于选择具体方法：</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>模拟时间尺度与扩散过程特征时间之比；</li>
+<li>对耦合过程施加的扰动的性质（流体或力学）；以及</li>
+<li>流体刚度与固体刚度之比。</li>
+</ol>
+</div></blockquote>
+<p>可用特征时间 <span class="math">\(t_c^{f}\)</span>（式 <a class="reference internal" href="#equation-eqfluid-solve-tcf">(2)</a>）、扩散系数 <span class="math">\(c\)</span>（式 <a class="reference internal" href="#equation-eqfluid-solve-c4">(9)</a>）以及刚度比 <span class="math">\(R_k\)</span>（式 <a class="reference internal" href="#equation-eqfluid-solve-rk">(13)</a>）的表达式量化这些因素。下文将详细讨论这些因素，<a class="reference internal" href="#fluid-recoom-proc-2-select-model-app"><span class="std std-ref">选择建模方法的建议步骤</span>（Recommended Procedure to Select a Modeling Approach）</a>给出了依据这些因素选择建模方法的建议流程。</p>
+<div class="section" id="time-scale">
+<h3>时间尺度</h3>
+<p>首先考虑时间尺度因素，从扰动开始时计时。定义 <span class="math">\(t_s\)</span> 为分析所需的时间尺度，<span class="math">\(t_c\)</span> 为耦合扩散过程的特征时间（达到稳态时间的估算值，使用式 <a class="reference internal" href="#equation-eqfluid-solve-tcf">(2)</a> 和式 <a class="reference internal" href="#equation-eqfluid-solve-c4">(9)</a> 定义）。</p>
+<p><span class="bi">短期行为</span></p>
+<blockquote>
+<div>若 <span class="math">\(t_s\)</span> 相对于耦合扩散过程的特征时间 <span class="math">\(t_c\)</span> 很短，则流体流动对模拟结果的影响很可能可以忽略，此时可使用 <span class="codename">FLAC3D</span> 进行不排水模拟（采用“干”或“湿”模拟均可，见<a class="reference internal" href="#fluid-noflow-mech-general-pp"><span class="std std-ref">无流动</span>（No Flow）</a>。湿模拟使用 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.fluid" title="Fluid-flow analysis...">配置流体计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">fluid</span></code>）</a> 和 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.active" title="The fluid process is  on  for zones, by default, when the  model.configure.fluid 
+command is given...">单元流体活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a> 进行）。数值模拟不涉及实际时间（即 <span class="math">\(t_s &lt;&lt;&lt; t_c\)</span>），但若为流体模量（<span class="math">\(M\)</span> 或 <span class="math">\(K_f\)</span>）赋予真实值，孔隙压力将因体积应变而变化。<a class="reference internal" href="#datafootinginstantpp"><span class="std std-ref">基础荷载模拟</span>（footing load simulation）</a>是这种方法的示例。</div></blockquote>
+<p><span class="bi">长期行为</span></p>
+<blockquote>
+<div>若 <span class="math">\(t_s &gt;&gt;&gt; t_c\)</span>，且在 <span class="math">\(t = t_s\)</span> 时以排水行为为主，则孔隙压力场可与力学场解耦。可先采用纯流体模拟（<a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.active" title="The fluid process is  on  for zones, by default, when the  model.configure.fluid 
+command is given...">单元流体活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>，<a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.mechanical.html#kwd:zone.mechanical.active" title="Sets mechanical calculation  off \ /\  on  (default is  on ).
+ The mechanical calculation may be turned off for a thermal-only calculation
+or a fluid flow-only calculation.  Note that in general it is preferable to
+set mechanical calculations off for the entire model with the  model.mechanical.active 
+command...">单元力学活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">mechanical</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>）确定稳态孔隙压力场（此时扩散系数不具代表性），然后令 <span class="math">\(K_f\)</span> = 0，在力学模式下将模型循环计算至平衡，以确定力学场（<a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.mechanical.html#kwd:zone.mechanical.active" title="Sets mechanical calculation  off \ /\  on  (default is  on ).
+ The mechanical calculation may be turned off for a thermal-only calculation
+or a fluid flow-only calculation.  Note that in general it is preferable to
+set mechanical calculations off for the entire model with the  model.mechanical.active 
+command...">单元力学活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">mechanical</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>，<a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.active" title="The fluid process is  on  for zones, by default, when the  model.configure.fluid 
+command is given...">单元流体活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>）。（严格而言，这种工程方法只对弹性材料有效，因为塑性材料具有路径依赖性。）</div></blockquote>
+<p>还可以用<em>不排水</em>或<em>排水</em>响应描述时间尺度。不排水的严格含义是与外界没有流体交换（其中，实验室试验中的<em>外界</em>是指<em>试样外部</em>，而数值模拟或现场条件中则指<em>其他单元</em>）。排水意味着与外界充分交换流体，即流体压力能够在各处消散。这两个词通常分别与短期和长期相对应，因为不排水试验通常可快速完成，而排水试验则需要较长时间使超额流体压力消散。在现场，短期意味着流体迁移量可以忽略，长期意味着压力已稳定（这需要较长时间）。</p>
+<p>注意，在未配置流体的情况下进行模拟，或虽已配置流体但关闭流体计算时，程序不会在内部完成因施加孔隙压力变化（例如降低地下水位引起的变化）而产生的总应力调整。不过，可以监测孔隙压力增量（例如使用 <span class="codename">FISH</span> 函数），并在循环计算至力学平衡之前用它减小总法向应力。如果地下水位在网格内发生移动，且模拟未配置流体，还需要调整饱和与非饱和质量密度。（关于此主题的更多信息，见<a class="reference internal" href="../verification_concepts/verification_concepts.html#fluid-verification-concepts"><span class="std std-ref">概念验证及特定应用的建模技术</span>（Verification of Concepts, and Modeling Techniques for Specific Applications）</a>。）</p>
+</div>
+<div class="section" id="nature-of-imposed-perturbation-to-the-coupled-process">
+<h3>对耦合过程施加的扰动的性质</h3>
+<p>对完全耦合渗流力学系统施加的扰动，可能源于流体渗流边界条件或力学边界条件的变化。例如，承压含水层内流向井的非稳态渗流由井处孔隙压力的变化驱动。修筑公路路堤引起的饱和地基固结则由路堤自重施加的力学荷载控制。若扰动源于孔隙压力变化，流体渗流过程很可能可以与力学过程解耦。下文将进一步详述，并在<a class="reference internal" href="../../../../../zone/test3d/Fluid/WellConfinedAquifer/wellconfinedaquifer.html#wellconfinedaquifer"><span class="std std-ref">浅层承压含水层中流向井的非稳态渗流</span>（Transient Fluid Flow to a Well in a Shallow Confined Aquifer）</a>中说明。若扰动由力学作用驱动，解耦程度则取决于下文所述的流体与固体刚度比。</p>
+</div>
+<div class="section" id="stiffness-ratio">
+<span id="sec-stiffnessratio-ff"></span><h3>刚度比</h3>
+<p>相对刚度 <span class="math">\(R_k\)</span>（见式 <a class="reference internal" href="#equation-eqfluid-solve-rk">(13)</a>）对用于求解渗流力学问题的建模方法有重要影响：</p>
+<p><span class="bi">相对刚硬的骨架</span>（<span class="math">\(R_k &lt;&lt;&lt; 1\)</span>）</p>
+<blockquote>
+<div><blockquote>
+<div>若骨架很刚硬（或流体很容易压缩），且 <span class="math">\(R_k\)</span> 很小，则孔隙压力扩散方程可以解耦，因为扩散系数由流体控制（Detournay and Cheng 1993）。建模技术将取决于驱动机制（流体或力学扰动）：</div></blockquote>
+<ol class="arabic simple">
+<li>在力学作用驱动的模拟中，可假设孔隙压力保持不变。在弹性模拟中，固体表现得如同没有流体一样；在塑性分析中，孔隙压力的存在可能影响破坏。这种建模方法用于边坡稳定性分析（见<a class="reference internal" href="#fluid-fixed-pp"><span class="std std-ref">固定孔隙压力</span>（Fixed Pore Pressure）</a>）。</li>
+<li>在孔隙压力驱动的弹性模拟中（例如抽取流体引起的沉降），体积应变不会显著影响孔隙压力场，因此可独立进行渗流计算（<a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.active" title="The fluid process is  on  for zones, by default, when the  model.configure.fluid 
+command is given...">单元流体活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>，<a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.mechanical.html#kwd:zone.mechanical.active" title="Sets mechanical calculation  off \ /\  on  (default is  on ).
+ The mechanical calculation may be turned off for a thermal-only calculation
+or a fluid flow-only calculation.  Note that in general it is preferable to
+set mechanical calculations off for the entire model with the  model.mechanical.active 
+command...">单元力学活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">mechanical</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>）。（此时，扩散系数是准确的，因为当 <span class="math">\(R_k &lt;&lt;&lt; 1\)</span> 时，式 <a class="reference internal" href="#equation-eqfluid-solve-c4">(9)</a> 中的广义固结系数与式 <a class="reference internal" href="#equation-eqfluid-solve-c2">(7)</a> 中的流体扩散系数相当。）通常，孔隙压力变化会影响应变，可随后在力学模式下将模型循环计算至平衡来研究这种影响（<a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.mechanical.html#kwd:zone.mechanical.active" title="Sets mechanical calculation  off \ /\  on  (default is  on ).
+ The mechanical calculation may be turned off for a thermal-only calculation
+or a fluid flow-only calculation.  Note that in general it is preferable to
+set mechanical calculations off for the entire model with the  model.mechanical.active 
+command...">单元力学活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">mechanical</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>，<a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.active" title="The fluid process is  on  for zones, by default, when the  model.configure.fluid 
+command is given...">单元流体活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>）。在力学循环计算期间，必须将流体模量（<span class="math">\(M\)</span> 或 <span class="math">\(K_f\)</span>）设为零，以防产生额外的孔隙压力。</li>
+</ol>
+</div></blockquote>
+<p><span class="bi">相对柔软的骨架</span>（<span class="math">\(R_k &gt;&gt;&gt; 1\)</span>）</p>
+<blockquote>
+<div><blockquote>
+<div>若骨架很柔软（或流体不可压缩），且 <span class="math">\(R_k\)</span> 很大，则系统是耦合的，其扩散系数由骨架控制。建模方法同样取决于驱动机制。</div></blockquote>
+<ol class="arabic simple">
+<li>在力学作用驱动的模拟中，计算可能耗时。如<a class="reference internal" href="#fluid-timescale"><span class="std std-ref">时间尺度</span>（Time Scale）</a>的注 5 所述，可以减小 <span class="math">\(M\)</span>（或 <span class="math">\(K_f\)</span>），使 <span class="math">\(R_k\)</span> = 20，而不显著影响响应。</li>
+<li>对于大多数实际的孔隙压力驱动系统，经验表明孔隙压力场与力学场之间的耦合较弱。若介质为弹性，可先在纯渗流模式下（<a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.active" title="The fluid process is  on  for zones, by default, when the  model.configure.fluid 
+command is given...">单元流体活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>，<a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.mechanical.html#kwd:zone.mechanical.active" title="Sets mechanical calculation  off \ /\  on  (default is  on ).
+ The mechanical calculation may be turned off for a thermal-only calculation
+or a fluid flow-only calculation.  Note that in general it is preferable to
+set mechanical calculations off for the entire model with the  model.mechanical.active 
+command...">单元力学活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">mechanical</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>）进行渗流计算，再在纯力学模式下（<a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.mechanical.html#kwd:zone.mechanical.active" title="Sets mechanical calculation  off \ /\  on  (default is  on ).
+ The mechanical calculation may be turned off for a thermal-only calculation
+or a fluid flow-only calculation.  Note that in general it is preferable to
+set mechanical calculations off for the entire model with the  model.mechanical.active 
+command...">单元力学活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">mechanical</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>，<a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.active" title="The fluid process is  on  for zones, by default, when the  model.configure.fluid 
+command is given...">单元流体活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>，并将流体模量设为零）进行数值模拟，使模型达到平衡。</li>
+</ol>
+<blockquote>
+<div>需要注意，为保持系统的真实扩散系数（从而保持其特征时间尺度），在渗流计算期间，必须将流体模量 <span class="math">\(M\)</span>（或 <span class="math">\(K_f\)</span>）调整为</div></blockquote>
+</div></blockquote>
+<div class="math" id="equation-eqfluid-solve-ma">
+<span id="eq-eqfluid-solve-ma"></span><span class="eqno">(16)</span>\[M^a = {{1} \over {{1 \over M} + {\alpha^2 \over {K+ {4 \over 3} G}} }}\]</div>
+<p>或</p>
+<div class="math" id="equation-eqfluid-solve-kfa">
+<span class="eqno">(17)</span>\[K_f^a = {{n} \over {{n \over K_f} + {1 \over {K+ 4 G/3}} }}\]</div>
+<p>（见式 <a class="reference internal" href="#equation-eqfluid-solve-c4">(9)</a>），而在力学计算期间将其设为零，以防体积应变引起进一步调整（Berchenko 1998）。</p>
+</div>
+<div class="section" id="recommended-procedure-to-select-a-modeling-approach">
+<span id="fluid-recoom-proc-2-select-model-app"></span><h3>选择建模方法的建议步骤</h3>
+<p>建议按<a href="#table-fluid-procedures">表 1（Table  1）</a>概述的流程，选择完全耦合分析的建模方法。首先，针对问题的具体条件和性质，确定扩散过程的特征时间（见<a class="reference internal" href="#fluid-timescale"><span class="std std-ref">时间尺度</span>（Time Scale）</a>），并与实际关注的时间尺度比较。其次，考虑系统扰动主要由孔隙压力还是力学作用驱动。第三，确定流体刚度与固体骨架刚度之比。<a href="#table-fluid-procedures">表 1（Table  1）</a>根据这三个因素的评估结果给出适用的建模方法。表中还给出了各情况下流体模量 <span class="math">\(M_a\)</span>（或 <span class="math">\(K_f^a\)</span>）所需的调整。最后，表中列出了手册中用于说明各建模方法的若干示例。</p>
+<span id="table-fluid-procedures"></span><table border="1" class="colwidths-given icg1 docutils" id="id1">
+<caption><span class="caption-text">表 1：完全耦合分析建模方法选择的建议流程</span></caption>
+<colgroup>
+<col width="11%"/>
+<col width="13%"/>
+<col width="11%"/>
+<col width="24%"/>
+<col width="18%"/>
+<col width="22%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">时间尺度</th>
+<th class="head">施加的过程扰动</th>
+<th class="head">流体与固体刚度之比</th>
+<th class="head">建模方法及主要计算命令</th>
+<th class="head">调整流体体积模量（<span class="math">\(M^a\)</span> 或 <span class="math">\(K_f^a\)</span>）</th>
+<th class="head">示例 (6)</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><span class="math">\(t_s &gt;&gt;&gt; t_c\)</span></td>
+<td>力学或孔隙压力</td>
+<td>任意 <span class="math">\(R_k\)</span></td>
+<td><em>有效应力</em>（1）</td>
+<td>无流体</td>
+<td><a class="reference internal" href="../../../../../zone/test3d/ExampleApplications/SlopeCurvature/slopecurvature.html#slopecurvature"><span class="std std-ref">曲率边坡稳定性</span>（Curvature Slope Stability）</a></td>
+</tr>
+<tr class="row-odd"><td>（稳态分析）</td>
+<td> </td>
+<td> </td>
+<td>无流体流动</td>
+<td> </td>
+<td> </td>
+</tr>
+<tr class="row-even"><td> </td>
+<td> </td>
+<td> </td>
+<td>或</td>
+<td> </td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td> </td>
+<td> </td>
+<td><em>有效应力</em>（2）</td>
+<td><span class="math">\(M^a\)</span> = 0.0（或 <span class="math">\(K_f^a\)</span> = 0.0）</td>
+<td> </td>
+</tr>
+<tr class="row-even"><td> </td>
+<td> </td>
+<td> </td>
+<td><a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.fluid" title="Fluid-flow analysis...">配置流体计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">fluid</span></code>）</a></td>
+<td> </td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td> </td>
+<td> </td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.active" title="The fluid process is  on  for zones, by default, when the  model.configure.fluid 
+command is given...">单元流体活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>（关闭）</td>
+<td> </td>
+<td> </td>
+</tr>
+<tr class="row-even"><td> </td>
+<td> </td>
+<td> </td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.mechanical.html#kwd:zone.mechanical.active" title="Sets mechanical calculation  off \ /\  on  (default is  on ).
+ The mechanical calculation may be turned off for a thermal-only calculation
+or a fluid flow-only calculation.  Note that in general it is preferable to
+set mechanical calculations off for the entire model with the  model.mechanical.active 
+command...">单元力学活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">mechanical</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>（开启）</td>
+<td> </td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td><span class="math">\(t_s &lt;&lt;&lt; t_c\)</span></td>
+<td>力学或孔隙压力</td>
+<td>任意 <span class="math">\(R_k\)</span></td>
+<td><em>孔隙压力产生</em>（3）</td>
+<td>为 <span class="math">\(M^a\)</span>（或 <span class="math">\(K_f^a\)</span>）取符合实际的值</td>
+<td><a class="reference internal" href="#datafootinginstantpp"><span class="std std-ref">饱和土上的基础——施加荷载</span>（Footing on Saturated Soil - Adding Load）</a></td>
+</tr>
+<tr class="row-even"><td>（不排水分析）</td>
+<td> </td>
+<td> </td>
+<td><a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.fluid" title="Fluid-flow analysis...">配置流体计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">fluid</span></code>）</a></td>
+<td> </td>
+<td><a class="reference internal" href="../../../../../zone/test3d/VerificationProblems/TriaxialCompressionTest/TriaxialCompressionTest.html#cam"><span class="std std-ref">Cam-Clay 试样的三轴压缩试验</span>（Triaxial Compression Test on a Cam-Clay Sample）</a></td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td> </td>
+<td> </td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.active" title="The fluid process is  on  for zones, by default, when the  model.configure.fluid 
+command is given...">单元流体活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>（关闭）</td>
+<td> </td>
+<td> </td>
+</tr>
+<tr class="row-even"><td> </td>
+<td> </td>
+<td> </td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.mechanical.html#kwd:zone.mechanical.active" title="Sets mechanical calculation  off \ /\  on  (default is  on ).
+ The mechanical calculation may be turned off for a thermal-only calculation
+or a fluid flow-only calculation.  Note that in general it is preferable to
+set mechanical calculations off for the entire model with the  model.mechanical.active 
+command...">单元力学活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">mechanical</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>（开启）</td>
+<td> </td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td><span class="math">\(t_s\)</span> 处于 <span class="math">\(t_c\)</span> 范围内</td>
+<td>孔隙压力</td>
+<td>任意 <span class="math">\(R_k\)</span></td>
+<td><em>流动-力学解耦</em>（4）</td>
+<td> </td>
+<td><a class="reference internal" href="../../../../../zone/test3d/Fluid/1DConsolidation/1dconsolidation.html#data1dconsolidation-uncoupled"><span class="std std-ref">一维固结——解耦</span>（1D Consolidation - Uncoupled）</a></td>
+</tr>
+<tr class="row-even"><td> </td>
+<td> </td>
+<td> </td>
+<td><a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.fluid" title="Fluid-flow analysis...">配置流体计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">fluid</span></code>）</a></td>
+<td> </td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td> </td>
+<td> </td>
+<td>第 1 步</td>
+<td><span class="math">\(M^a = {{1} \over {{1 \over M} + {\alpha^2 \over {K+ 4 G/3}} }}\)</span></td>
+<td> </td>
+</tr>
+<tr class="row-even"><td> </td>
+<td> </td>
+<td> </td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.active" title="The fluid process is  on  for zones, by default, when the  model.configure.fluid 
+command is given...">单元流体活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>（开启）</td>
+<td>（或 <span class="math">\(K_f^a = {{n} \over {{n \over K_f} + {1 \over {K+ 4 G/3}} }}\)</span>）</td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td> </td>
+<td> </td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.mechanical.html#kwd:zone.mechanical.active" title="Sets mechanical calculation  off \ /\  on  (default is  on ).
+ The mechanical calculation may be turned off for a thermal-only calculation
+or a fluid flow-only calculation.  Note that in general it is preferable to
+set mechanical calculations off for the entire model with the  model.mechanical.active 
+command...">单元力学活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">mechanical</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>（关闭）</td>
+<td> </td>
+<td> </td>
+</tr>
+<tr class="row-even"><td> </td>
+<td> </td>
+<td> </td>
+<td>第 2 步</td>
+<td><span class="math">\(M^a\)</span> = 0.0（或 <span class="math">\(K_f^a\)</span> = 0.0）</td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td> </td>
+<td> </td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.active" title="The fluid process is  on  for zones, by default, when the  model.configure.fluid 
+command is given...">单元流体活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>（关闭）</td>
+<td> </td>
+<td> </td>
+</tr>
+<tr class="row-even"><td> </td>
+<td> </td>
+<td> </td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.mechanical.html#kwd:zone.mechanical.active" title="Sets mechanical calculation  off \ /\  on  (default is  on ).
+ The mechanical calculation may be turned off for a thermal-only calculation
+or a fluid flow-only calculation.  Note that in general it is preferable to
+set mechanical calculations off for the entire model with the  model.mechanical.active 
+command...">单元力学活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">mechanical</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>（开启）</td>
+<td> </td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td><span class="math">\(t_s\)</span> 处于 <span class="math">\(t_c\)</span> 范围内</td>
+<td>力学</td>
+<td>任意 <span class="math">\(R_k\)</span></td>
+<td><em>流动-力学耦合</em>（5）</td>
+<td>为 <span class="math">\(M^a\)</span>（或 <span class="math">\(K_f^a\)</span>）取符合实际的值</td>
+<td><a class="reference internal" href="#datafootingcoupled"><span class="std std-ref">饱和土上的基础——耦合</span>（Footing on Saturated Soil - Coupled）</a></td>
+</tr>
+<tr class="row-even"><td> </td>
+<td> </td>
+<td> </td>
+<td><a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.fluid" title="Fluid-flow analysis...">配置流体计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">fluid</span></code>）</a></td>
+<td>使得 <span class="math">\(R_k \le 20\)</span></td>
+<td><a class="reference internal" href="../../../../../zone/test3d/Fluid/1DConsolidation/1dconsolidation.html#data1dconsolidation-coupled"><span class="std std-ref">一维固结——耦合</span>（1D Consolidation - Coupled）</a></td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td> </td>
+<td> </td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.active" title="The fluid process is  on  for zones, by default, when the  model.configure.fluid 
+command is given...">单元流体活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>（开启）</td>
+<td> </td>
+<td><a class="reference internal" href="../../../../../zone/test3d/Fluid/ConsolidationSettlement/consolidationsettlement.html#consolidationsettlement"><span class="std std-ref">固结沉降</span>（Consolidation Settlement）</a></td>
+</tr>
+<tr class="row-even"><td> </td>
+<td> </td>
+<td> </td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.mechanical.html#kwd:zone.mechanical.active" title="Sets mechanical calculation  off \ /\  on  (default is  on ).
+ The mechanical calculation may be turned off for a thermal-only calculation
+or a fluid flow-only calculation.  Note that in general it is preferable to
+set mechanical calculations off for the entire model with the  model.mechanical.active 
+command...">单元力学活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">mechanical</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>（开启）</td>
+<td> </td>
+<td><a class="reference internal" href="../../../../../zone/test3d/Fluid/Pressuremeter/pressuremeter.html#pressuremeter"><span class="std std-ref">旁压试验</span>（Pressuremeter Test）</a></td>
+</tr>
+</tbody>
+</table>
+<p><a href="#table-fluid-procedures">表  1（Table  1）</a>的注释：</p>
+<blockquote>
+<div><ol class="arabic">
+<li><p class="first">无流体流动的有效应力方法在<a class="reference internal" href="#fluid-fixed-pp"><span class="std std-ref">固定孔隙压力</span>（Fixed Pore Pressure）</a>中讨论。为建立该有效应力分析的初始条件，可使用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.water.html#kwd:zone.water.plane" title="Specify a water table plane.  The water table sets pore pressure for all gridpoints
+(and, hence, zones) below the water table. The pore-pressure gradient is given
+by the direction of the gravity vector, which can be arbitrary (see the  model.gravity 
+command)...">单元水平面（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">water</span> <span class="pre">plane</span></code>）</a> 命令、<a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/zonegridpoint/cmd_zone.gridpoint.initialize.html#kwd:zone.gridpoint.initialize.pore-pressure" title="Pore Pressure at gridpoint.  Note that if the pore-pressure is changed this
+will not affect the total stress, but will change the effective stress.  The
+ zone.gridpoint.fix.pore-pressure  command can be used to change the total
+stress and leave the effective stress constant...">单元网格点初始化孔隙压力（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">gridpoint</span> <span class="pre">initialize</span> <span class="pre">pore-pressure</span></code>）</a> 命令或 <span class="codename">FISH</span> 函数建立稳态孔隙压力。为地下水位以下的网格单元指定正确的湿密度，为水位以上的网格单元指定干密度。</p>
+</li>
+<li><p class="first">考虑地下水流动的有效应力方法在<a class="reference internal" href="#fluid-flowonly-cal-est-pp-dist"><span class="std std-ref">纯流动计算</span>（Flow-Only Calculation）</a>中讨论。为建立该有效应力分析的初始条件，可使用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/zonegridpoint/cmd_zone.gridpoint.initialize.html#kwd:zone.gridpoint.initialize.pore-pressure" title="Pore Pressure at gridpoint.  Note that if the pore-pressure is changed this
+will not affect the total stress, but will change the effective stress.  The
+ zone.gridpoint.fix.pore-pressure  command can be used to change the total
+stress and leave the effective stress constant...">单元网格点初始化孔隙压力（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">gridpoint</span> <span class="pre">initialize</span> <span class="pre">pore-pressure</span></code>）</a> 命令或 <span class="codename">FISH</span> 函数建立稳态孔隙压力，或在不清楚潜水面位置时指定 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.active" title="The fluid process is  on  for zones, by default, when the  model.configure.fluid 
+command is given...">单元流体活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 和 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.mechanical.html#kwd:zone.mechanical.active" title="Sets mechanical calculation  off \ /\  on  (default is  on ).
+ The mechanical calculation may be turned off for a thermal-only calculation
+or a fluid flow-only calculation.  Note that in general it is preferable to
+set mechanical calculations off for the entire model with the  model.mechanical.active 
+command...">单元力学活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">mechanical</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a> 并计算到稳态。对于部分饱和系统，可将 <span class="math">\(M^a\)</span>（或 <span class="math">\(K_f^a\)</span>）设为较小值以加快收敛。请注意，为满足数值稳定性，<span class="math">\(M^a\)</span>（或 <span class="math">\(K_f^a\)</span>）应大于 <span class="math">\(0.3nL_{z}\rho_{w}g\)</span>（或 <span class="math">\(0.3L_{z}\rho_{w}g\)</span>）（见方程<a class="reference internal" href="#equation-eqfluid-solve-m">(12)</a>）。</p>
+</li>
+<li><p class="first">孔隙压力产生方法在<a class="reference internal" href="#fluid-noflow-mech-general-pp"><span class="std std-ref">无流动——孔隙压力的力学产生</span>（No Flow — Mechanical Generation of Pore Pressure）</a>中讨论。为建立孔隙压力产生分析的初始条件，可使用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/zonegridpoint/cmd_zone.gridpoint.initialize.html#kwd:zone.gridpoint.initialize.pore-pressure" title="Pore Pressure at gridpoint.  Note that if the pore-pressure is changed this
+will not affect the total stress, but will change the effective stress.  The
+ zone.gridpoint.fix.pore-pressure  command can be used to change the total
+stress and leave the effective stress constant...">单元网格点初始化孔隙压力（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">gridpoint</span> <span class="pre">initialize</span> <span class="pre">pore-pressure</span></code>）</a> 命令或 <span class="codename">FISH</span> 函数建立稳态流动，或在不清楚潜水面位置时指定 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.active" title="The fluid process is  on  for zones, by default, when the  model.configure.fluid 
+command is given...">单元流体活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a> 和 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.mechanical.html#kwd:zone.mechanical.active" title="Sets mechanical calculation  off \ /\  on  (default is  on ).
+ The mechanical calculation may be turned off for a thermal-only calculation
+or a fluid flow-only calculation.  Note that in general it is preferable to
+set mechanical calculations off for the entire model with the  model.mechanical.active 
+command...">单元力学活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">mechanical</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 并计算到稳态。对于部分饱和系统，可将 <span class="math">\(M^a\)</span>（或 <span class="math">\(K_f^a\)</span>）设为较小值以加快收敛。请注意，为满足数值稳定性，<span class="math">\(M^a\)</span>（或 <span class="math">\(K_f^a\)</span>）应大于 <span class="math">\(0.3nL_{z}\rho_{w}g\)</span>（或 <span class="math">\(0.3L_{z}\rho_{w}g\)</span>）（见方程<a class="reference internal" href="#equation-eqfluid-solve-m">(12)</a>）。</p>
+</li>
+<li><p class="first">流动-力学解耦方法在<a class="reference internal" href="#fluid-selection-model-approach"><span class="std std-ref">完全耦合分析建模方法的选择</span>（Selection of a Modeling Approach for a Fully Coupled Analysis）</a>中介绍。该方法推荐用于孔隙压力驱动的系统；若 <span class="math">\(R_k &gt;&gt;&gt; 1\)</span>，则应谨慎使用。请注意，在纯流动步中 <span class="math">\(M^a\)</span>（或 <span class="math">\(K_f^a\)</span>）的调整值应满足方程<a class="reference internal" href="#equation-eqfluid-solve-ma">(16)</a>，以使耦合扩散率正确。</p>
+</li>
+<li><p class="first">完全耦合方法在<a class="reference internal" href="#fluid-coupled-flow-and-mechcal"><span class="std std-ref">流动与力学计算的耦合</span>（Coupled Flow and Mechanical Calculations）</a>中讨论。请注意，对于 <span class="math">\(R_k &gt;&gt;&gt; 1\)</span>，若将 <span class="math">\(M^a\)</span>（或 <span class="math">\(K_f^a\)</span>）调整为使 <span class="math">\(R_k\)</span> = 20，则时间响应将接近（通常在 5% 以内）<span class="math">\(M\)</span>（或 <span class="math">\(K_f\)</span>）为无穷大时的响应。</p>
+<p>用于完全耦合分析的<em>饱和快速流动</em>选项（<a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.fastflow" title="Turns the fastflow solution scheme on and off.  See  fluid-fully-sat-ff ...">单元流体快速流动命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">fastflow</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>）在<a class="reference internal" href="../numerical_form/numerical_form.html#fluid-fully-sat-ff"><span class="std std-ref">完全饱和快速流动</span>（Fully Saturated Fast Flow）</a>中讨论。请注意，该方法只能用于完全饱和流动。其局限在<a class="reference internal" href="../numerical_form/numerical_form.html#fluid-fully-sat-ff"><span class="std std-ref">完全饱和快速流动</span>（Fully Saturated Fast Flow）</a>中讨论。</p>
+</li>
+<li><p class="first">示例见<a class="reference internal" href="../verification_examples/verification_examples.html#fluid-verification-examples"><span class="std std-ref">流体验证示例</span>（Verification Examples on Fluid）</a>。演示各种方法的示例应用（E.A.）和验证问题（V.P.）见<a class="reference internal" href="../../../projects/examples/examples.html#example-applications"><span class="std std-ref">示例问题</span>（Example Problems）</a>和<a class="reference internal" href="../../../projects/verifications/verifications.html#verification-problems"><span class="std std-ref">验证问题</span>（Verification Problems）</a>。</p>
+</li>
+</ol>
+</div></blockquote>
+</div>
+</div>
+<div class="section" id="fixed-pore-pressure-used-in-effective-stress-calculation">
+<span id="fluid-fixed-pp"></span><h2>固定孔隙压力（用于有效应力计算）</h2>
+<p>在某些计算中，孔隙压力分布之所以重要，仅仅是因为它被用于计算系统各点处的有效应力。例如在边坡稳定性建模中，可能给出固定的地下水位。用 <span class="codename">FLAC3D</span> 表示该系统时，只需指定不受可能发生的力学变形影响的孔隙压力分布即可。由于不涉及孔隙压力的变化，<em>不</em>需要为地下水流配置网格。</p>
+<p><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.water.html#kwd:zone.water.set" title="Specify the geometric set used to determine water surface location. By default,
+the name is  Water Surface .  Specifying a new set name causes a recalculation
+of gridpoint pore pressures for all gridpoints below polygons in that set that
+are also in the range. See the  geometry  command...">单元水集合（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">water</span> <span class="pre">set</span></code>）</a> 命令可用于指定给定固定潜水面以下的初始静水孔隙压力分布。必须提供水密度（用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.water.html#kwd:zone.water.density" title="fluid density, `ρ_w` [SI units: kg/m\  3 ]. This will force a recalculation
+of pore pressures on all gridpoints in the range...">单元水密度（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">water</span> <span class="pre">density</span></code>）</a> 命令），并由用户分别为地下水位以上和以下提供适当的干密度和饱和材料密度。或者也可使用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/zonegridpoint/cmd_zone.gridpoint.initialize.html#kwd:zone.gridpoint.initialize.pore-pressure" title="Pore Pressure at gridpoint.  Note that if the pore-pressure is changed this
+will not affect the total stress, but will change the effective stress.  The
+ zone.gridpoint.fix.pore-pressure  command can be used to change the total
+stress and leave the effective stress constant...">单元网格点初始化孔隙压力（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">gridpoint</span> <span class="pre">initialize</span> <span class="pre">pore-pressure</span></code>）</a> 命令或 <span class="codename">FISH</span> 函数生成所需的静力孔隙压力分布。</p>
+<p>该孔隙压力分布对应于无应变的初始状态。它保持恒定，不受力学变形影响。不发生流体流动。该孔隙压力分布的影响体现在那些屈服取决于平均有效应力的材料的破坏上。应用示例见<a class="reference internal" href="../../../../../zone/test3d/ExampleApplications/SlopeCurvature/slopecurvature.html#slopecurvature"><span class="std std-ref">曲率边坡稳定性</span>（Curvature Slope Stability）</a>。</p>
+</div>
+<div class="section" id="flow-only-calculation-to-establish-a-pore-pressure-distribution">
+<span id="fluid-flowonly-cal-est-pp-dist"></span><h2>为建立孔隙压力分布而进行的纯流动计算</h2>
+<p>可进行纯流动计算，以确定某些系统中与任何力学效应无关的流动和压力分布。例如，可能需要评价开挖排水沟或启用抽水井所引起的地下水变化。在另一些情况下，耦合计算可能需要初始孔隙压力分布。两种情况下都可在不做任何力学计算的情况下以流体流动模式运行 <span class="codename">FLAC3D</span>。随后可进行、也可不进行力学计算。</p>
+<p>纯流动计算命令流程的第一步是发出 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.fluid" title="Fluid-flow analysis...">配置流体计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">fluid</span></code>）</a> 命令，以便为流体流动计算分配额外内存。应使用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.mechanical.html#kwd:zone.mechanical.active" title="Sets mechanical calculation  off \ /\  on  (default is  on ).
+ The mechanical calculation may be turned off for a thermal-only calculation
+or a fluid flow-only calculation.  Note that in general it is preferable to
+set mechanical calculations off for the entire model with the  model.mechanical.active 
+command...">单元力学活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">mechanical</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a> 命令抑制力学计算。然后必须在显式和隐式流体流动求解算法之间作出选择。默认将选择显式算法，但可在计算的任何阶段使用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.implicit" title="The implicit solution scheme in the fluid flow model is turned  on  or
+ off . The default is  off ...">单元流体隐式命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">implicit</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 或 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.implicit" title="The implicit solution scheme in the fluid flow model is turned  on  or
+ off . The default is  off ...">单元流体隐式命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">implicit</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a> 命令激活（或停用）隐式计算模式。但请注意，隐式计算模式<em>仅</em>适用于介质保持完全饱和的问题（即饱和度保持不变且等于 1）；若模拟中发生去饱和，它将给出错误结果。使用隐式计算模式时，务必确认未发生去饱和（例如通过绘制饱和度云图）。</p>
+<p>在显式模式下，流体流动时步将自动计算，但可使用 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.fluid.html#kwd:model.fluid.timestep" title=".. kwd:: Automatic...">模型流体时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">fluid</span> <span class="pre">timestep</span></code>）</a> 命令选择更小的时步。在隐式模式下，时步大小<em>必须</em>由用户指定，这通过发出 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.fluid.html#kwd:model.fluid.timestep" title=".. kwd:: Automatic...">模型流体时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">fluid</span> <span class="pre">timestep</span></code>）</a> 命令完成。对于饱和流动，当存在渗透率反差时，采用隐式求解模式往往更高效。</p>
+<p>必须为所有可能发生流体流动的网格单元指定流体流动模型和性质。为完成流体流动问题的设置，还需指定初始条件和边界条件。纯流体或流体-力学模拟中的流体流动域由具有非空流体流动模型的网格单元集合定义。例如，可通过指定带 <span class="cmdkey">range</span> 关键字的 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/zoneface/cmd_zone.face.apply.html#kwd:zone.face.apply.flux" title="A flux is applied over the range of faces specified (available only if  model.configure.thermal 
+has been specified).  f  is the initial flux (e.g., in W/m2). This command
+is used to specify a constant flux into ( f  &gt; 0) or out of ( f  &lt;
+0) a thermal boundary of the grid. Decay of the flux can be represented by applying
+a time-varying modifier available in &lt;[faceapplyblock]&gt;...">单元面施加通量（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">face</span> <span class="pre">apply</span> <span class="pre">flux</span></code>）</a> 命令使其与该域的边界相对应，来赋予流量边界条件。（请记住，在力学上被设为空的网格单元不会自动在流体流动上设为空。）</p>
+<p>可指定 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.step.html#command:model.step" title="Execute timesteps. The synonym  model.cycle  may also be used.  This is
+the equivalent of calling  model.solve  with the  cycles  keyword
+set to  i ...">执行计算时步命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">step</span></code>）</a> 命令以执行给定数量的流体流动步。要在达到特定流体流动时间时自动停止计算，可发出 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令。或者可指定 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#kwd:model.solve.fluid.time-total" title="Limit of the time accumulated while this process is active since model creation...">模型求解流体时间总（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span> <span class="pre">fluid</span> <span class="pre">time-total</span></code>）</a> 或 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#kwd:model.solve.fluid.cycles" title="Limit of the number of cycles to take with fluid-flow active during this solve
+operation...">模型流体求解循环命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span> <span class="pre">fluid</span> <span class="pre">cycles</span></code>）</a> 设置以规定流体流动时间限值或最大步数，然后给出 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令。也可使用带 <span class="cmdkey">ratio</span> 关键字的 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令计算稳态流动条件，以指定定义稳态流动的极限不平衡流体流动比。</p>
+<p>若随后要把计算得到的孔隙压力分布用于可假定孔隙压力保持不变的力学计算，则应给出 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.active" title="The fluid process is  on  for zones, by default, when the  model.configure.fluid 
+command is given...">单元流体活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a> 和 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.mechanical.html#kwd:zone.mechanical.active" title="Sets mechanical calculation  off \ /\  on  (default is  on ).
+ The mechanical calculation may be turned off for a thermal-only calculation
+or a fluid flow-only calculation.  Note that in general it is preferable to
+set mechanical calculations off for the entire model with the  model.mechanical.active 
+command...">单元力学活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">mechanical</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 命令。还应将 Biot 系数或流体体积模量设为零，以防止力学变形产生额外孔隙压力。</p>
+<p><a class="reference internal" href="../../../../../zone/test3d/Fluid/FreeSurfaceSteadyStateFluidFlow/freesurfacesteadystatefluidflow.html#freesurfacesteadystatefluidflow"><span class="std std-ref">带自由面的稳态流体流动</span>（Steady-State Fluid Flow with a Free Surface）</a>给出了一个纯流动分析示例，其中计算了通过竖直堤坝的无压流动。该分析产生稳态潜水面。请注意，该示例中将流体体积模量设为较低值，以使潜水面能迅速发展。在达到稳态所需时间不重要时，可以这样做。但请注意，为避免数值不稳定，流体模量存在下限（见方程<a class="reference internal" href="#equation-eqfluid-solve-m">(12)</a>）。</p>
+</div>
+<div class="section" id="no-flow-mechanical-generation-of-pore-pressure">
+<span id="fluid-noflow-mech-general-pp"></span><h2>无渗流——力学作用产生的孔隙压力</h2>
+<p>在 <span class="codename">FLAC3D</span> 中可采用“干”和“湿”两种方法分析不排水（短期）响应。在干模拟中，不直接模拟体积应变下的孔隙压力产生，而是通过在 <span class="codename">FLAC3D</span> 模拟中把不排水体积值 <span class="math">\(K_u = K + \alpha^2 M\)</span> 赋予材料的体积模量 <span class="math">\(K\)</span>，来计入其对力学变形的影响。此时可采用两种不同技术检测 Mohr-Coulomb 材料的破坏。第一种技术使用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.water.html#command:zone.water" title="This command initializes pore pressures, changing the effective stresses.  |flac3d|
+uses effective stresses (i.e., total stresses plus pore pressure) in constitutive
+models. Pore pressures are defined at gridpoints, and zone pore pressures are
+then calculated as the average of the zone gridpoints. If  model.configure.fluid 
+is not set, pore pressures are not affected by zone volume changes, there is
+no flow of water, and the dry density must be specified for zones above the
+water..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">water</span></code></a> 或 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/zonegridpoint/cmd_zone.gridpoint.initialize.html#kwd:zone.gridpoint.initialize.pore-pressure" title="Pore Pressure at gridpoint.  Note that if the pore-pressure is changed this
+will not affect the total stress, but will change the effective stress.  The
+ zone.gridpoint.fix.pore-pressure  command can be used to change the total
+stress and leave the effective stress constant...">单元网格点初始化孔隙压力（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">gridpoint</span> <span class="pre">initialize</span> <span class="pre">pore-pressure</span></code>）</a> 命令初始化恒定孔隙压力，并输入<em>不排水</em>黏聚力和摩擦角。第二种技术为材料赋予零摩擦角和等于不排水抗剪强度 <span class="math">\(C_u\)</span> 的黏聚力。第一种技术适用于孔隙压力变化相对于初始值较小的情形；第二种技术严格适用于 Skempton 系数等于 1（<span class="math">\(M &gt;&gt;&gt; K + 4G/3\)</span>）的平面应变问题。请注意，无论是否发出 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.fluid" title="Fluid-flow analysis...">配置流体计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">fluid</span></code>）</a> 命令，都可进行干模拟。但若已使用该命令，则必须将流体体积模量（<span class="math">\(M\)</span> 或 <span class="math">\(K_f\)</span>）设为零，以防止额外产生孔隙压力。</p>
+<p>在湿模拟中，在 <span class="codename">FLAC3D</span> 的流体配置下分析耦合系统的短期响应。此时材料的体积模量、摩擦角和黏聚力应采用排水值。若给出 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.active" title="The fluid process is  on  for zones, by default, when the  model.configure.fluid 
+command is given...">单元流体活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a> 命令，且 Biot 模量（或流体模量）取符合实际的值，则孔隙压力将因力学变形而产生。例如，可用这种方式计算基础荷载产生的“瞬时”孔隙压力。若流体体积模量（<span class="math">\(M\)</span> 或 <span class="math">\(K_f\)</span>）远大于固体体积模量，收敛会很慢；可能可以在不显著影响行为的情况下减小流体体积模量。（见<a href="#table-fluid-procedures">表  1（Table  1）</a>注 5。）数据文件 <a class="reference internal" href="#datafootinginstantpp">Footing-InstantPP.dat 数据文件（<span class="std std-ref">Footing-InstantPP.dat</span>）</a> 演示了箱体内弹塑性材料上基础荷载产生的孔隙压力累积。相应的项目文件“Footing.f3prj”位于“datafiles\Fluid\Footing”文件夹中。箱体左边界为对称线，顶面沿线的孔隙压力固定为零，以防止该处产生孔隙压力。默认孔隙率为 0.5；不需要渗透率，因为不计算流动。请注意，沿网格顶部的网格点处孔隙压力固定为零。这样做的原因是该模型的下一阶段将进行允许地表排水的耦合排水分析（见<a class="reference internal" href="#fluid-coupled-flow-and-mechcal"><span class="std std-ref">流动与力学计算的耦合</span>（Coupled Flow and Mechanical Calculations）</a>）。现在设置零孔隙压力条件，是为了给第二阶段提供相容的孔隙压力分布。</p>
+<p>由于加载期间发生大量塑性流动，法向应力通过使用 <span class="codename">FISH</span> 函数 <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function..."><span class="varfishsym"><span class="null">ramp</span></span></a> 向 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.apply.html#command:zone.apply" title="Create or modify zone apply conditions.  This command is used to apply conditions
+to the volume represented by zones — i.e., body forces or fluid/thermal sources.
+ For application of boundary conditions on surfaces represented by zone faces,
+see the  zone.face.apply  command. The user must specify the condition
+type, the numerical value, optional modifiers, and an optional  range 
+over which the condition is to be applied. If no range is specified, then the
+command..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">apply</span></code></a> 命令提供线性变化乘数而逐渐施加。<a href="#footing-force">图  1（Figure  1）</a> 给出了孔隙压力云图和表示所施加力的矢量。重要的是要认识到，现实中塑性流动发生在很短的时段内（秒量级）；此处的“流动”一词容易引起误解，因为与流体流动相比，它几乎是瞬时发生的。因此，不排水分析（使用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.active" title="The fluid process is  on  for zones, by default, when the  model.configure.fluid 
+command is given...">单元流体活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>）是符合实际的。</p>
+<p>本例可使用<a class="reference internal" href="../numerical_form/numerical_form.html#fluid-fully-sat-ff"><span class="std std-ref">饱和快速流动</span>（saturated fast-flow）</a>逻辑，因为材料完全饱和，且流体刚度显著大于固体基质刚度。只需在 <a class="reference internal" href="#datafootinginstantpp">Footing-InstantPP.dat 数据文件（<span class="std std-ref">Footing-InstantPP.dat</span>）</a> 中加入 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.fastflow" title="Turns the fastflow solution scheme on and off.  See  fluid-fully-sat-ff ...">单元流体快速流动命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">fastflow</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 命令，即可执行<em>饱和快速流动</em>计算。当不平衡体积 <span class="math">\(V_{av}\)</span> 和 <span class="math">\(V_{max}\)</span> 以及不平衡力比小于预定限值时，计算步进停止并达到平衡。如 <a href="#footing-force-ff">图  2（Figure  2）</a> 所示，瞬时孔隙压力产生情况与基本流动格式所得几乎相同（约在 5% 以内）。<a class="reference internal" href="../numerical_form/numerical_form.html#fluid-fully-sat-ff"><span class="std std-ref">饱和快速流动</span>（saturated fast-flow）</a>格式的运行时间约比基本流动格式快三倍。</p>
+<p id="datafootinginstantpp"><strong>Footing-InstantPP.dat</strong>：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'Instantaneous pore pressures generated under an applied load'</span>
+<span class="nb">model configure</span><span class="n"> fluid</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">40</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">20</span><span class="n"> point </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">20</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                               point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">10</span><span class="p">)</span>
+<span class="c">; --- 力学模型 ---</span>
+<span class="nb">zone cmodel</span><span class="n"> assign mohr</span><span class="o">-</span><span class="n">coulomb</span>
+<span class="nb">zone property</span><span class="n"> bulk </span><span class="m m-Double">5e7</span><span class="n"> shear </span><span class="m m-Double">3e7</span><span class="n"> fric </span><span class="m m-Double">25</span><span class="n"> cohesion </span><span class="m m-Double">1e5</span><span class="n"> tens </span><span class="m m-Double">1e10</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x  range union position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">20</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z  range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span>
+<span class="c">; --- 缓慢施加荷载 ---</span>
+<span class="nb">fish define</span><span class="ni"> ramp</span>
+<span class="ni">    ramp </span><span class="p">=</span><span class="ni"> </span><span class="k">math.min</span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="k">global.step</span><span class="o">/</span><span class="m m-Double">1000</span><span class="p">)</span>
+<span class="nb">end</span>
+<span class="nb">zone face apply</span><span class="n"> stress</span><span class="o">-</span><span class="n">normal </span><span class="p">=</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.3e6</span><span class="n"> fish ramp </span><span class="sx">...</span>
+<span class="n">                range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">3</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">10</span>
+<span class="c">; --- 流体流动模型 ---</span>
+<span class="nb">zone fluid</span><span class="n"> cmodel assign isotropic</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> fluid</span><span class="o">-</span><span class="n">modulus </span><span class="m m-Double">9e8</span>
+<span class="c">; --- 地表孔隙压力固定为零 ---</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure </span><span class="m m-Double">0</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">10</span>
+<span class="c">; --- 设置 ---</span>
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">off</span>
+<span class="c">; --- 历程 ---</span>
+<span class="nb">zone history</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure position </span><span class="p">(</span><span class="m m-Double">2</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">9</span><span class="p">)</span>
+<span class="c">; --- 时间设置 ---</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> t0 </span><span class="p">=</span><span class="ni"> </span><span class="k">time.clock</span><span class="o">/</span><span class="m m-Double">100</span><span class="ni">]</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> convergence </span><span class="m m-Double">1</span>
+<span class="ni">[</span><span class="p">(</span><span class="k">time.clock</span><span class="o">/</span><span class="m m-Double">100</span><span class="p">)</span><span class="o">-</span><span class="ni">t0]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'load'</span>
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id2">
+<span id="footing-force"></span><a class="reference internal image-reference" href="../../../../../../_images/footing-force.png"><img alt="../../../../../../_images/footing-force.png" src="../../../../../../_images/footing-force.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 1：所施加荷载下产生的瞬时孔隙压力。</span></p>
+</div>
+<div class="figure align-center" id="id3">
+<span id="footing-force-ff"></span><a class="reference internal image-reference" href="../../../../../../_images/footing-force-ff.png"><img alt="../../../../../../_images/footing-force-ff.png" src="../../../../../../_images/footing-force-ff.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：所施加荷载下产生的瞬时孔隙压力——采用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.fastflow" title="Turns the fastflow solution scheme on and off.  See  fluid-fully-sat-ff ...">单元流体快速流动命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">fastflow</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>。</span></p>
+</div>
+</div>
+<div class="section" id="coupled-flow-and-mechanical-calculations">
+<span id="fluid-coupled-flow-and-mechcal"></span><h2>渗流与力学耦合计算</h2>
+<p>默认情况下，若网格已配置用于流体，且 Biot 模量（或流体体积模量）和渗透率设为符合实际的值，<span class="codename">FLAC3D</span> 将进行流体流动与力学的耦合计算。<span class="codename">FLAC3D</span> 中的完全流体-力学耦合在两个方向上发生：孔隙压力变化引起体积应变，从而影响应力；反过来，孔隙压力又受所发生应变的影响。</p>
+<p>应了解固结与力学加载相关的相对时间尺度。力学效应几乎瞬时发生（秒或几分之一秒量级）。然而流体流动是一个长期过程：与固结相关的消散历时数小时、数天或数周。</p>
+<p>相对时间尺度可通过考虑耦合过程与不排水过程的特征时间之比来估算。与不排水力学过程相关的特征时间，可将方程<a class="reference internal" href="#equation-eqfluid-solve-tcm">(1)</a>中的 <span class="math">\(K\)</span> 用饱和质量密度作为 <span class="math">\(\rho\)</span>、并用<a class="reference internal" href="../properties_units/properties_units.html#eqfluid-prop-kul"><span class="std std-ref">此方程</span>（this equation）</a>（对于不可压缩颗粒为<a class="reference internal" href="../properties_units/properties_units.html#eqfluid-prop-ku2"><span class="std std-ref">此方程</span>（this equation）</a>）中定义的不排水体积模量 <span class="math">\(K_u\)</span> 来求得。于是扩散特征时间（方程<a class="reference internal" href="#equation-eqfluid-solve-tcf">(2)</a>和<a class="reference internal" href="#equation-eqfluid-solve-c4">(9)</a>）与不排水力学特征时间之比为</p>
+<div class="math" id="equation-eqfluid-solve-tcfovertcm">
+<span class="eqno">(18)</span>\[ {{t_c^{f}}\over{t_c^{m}}} = \sqrt{{K + \alpha^2M + 4/3 G}\over{\rho}} \ {{L_c}\over {k }} \left( {1 \over {M}} + {\alpha^2 \over {K + 4/3 G}} \right)\]</div>
+<p>多数情况下，<span class="math">\(M\)</span> 约为 10<sup>10</sup> Pa，但流动系数 <span class="math">\(k\)</span> 可能相差几个数量级；典型值为</p>
+<blockquote>
+<div><p>花岗岩为 10<sup>-19</sup>m<sup>2</sup>/Pa-s；</p>
+<p>石灰岩为 10<sup>-17</sup>m<sup>2</sup>/Pa-s；</p>
+<p>砂岩为 10<sup>-15</sup>m<sup>2</sup>/Pa-s；</p>
+<p>黏土为 10<sup>-13</sup>m<sup>2</sup>/Pa-s；以及</p>
+<p>砂为 10<sup>-7</sup>m<sup>2</sup>/Pa-s。</p>
+</div></blockquote>
+<p>对于岩石和土，<span class="math">\(\rho\)</span> 约为 10<sup>3</sup>kg/m<sup>3</sup> 量级，而 <span class="math">\(K + 4/3 G\)</span> 约为 10<sup>10</sup> Pa。将这些量级代入方程<a class="reference internal" href="#equation-eqfluid-solve-tcfovertcm">(18)</a>可见，流体与力学时间尺度之比可能在以下范围内变化：砂为 <span class="math">\(L_c\)</span>，黏土为 10<sup>6</sup><span class="math">\(L_c\)</span>，砂岩为 10<sup>8</sup><span class="math">\(L_c\)</span>，石灰岩为 10<sup>10</sup> <span class="math">\(L_c\)</span>，花岗岩为 10<sup>12</sup> <span class="math">\(L_c\)</span>。若排除迁移系数大于黏土的材料，则可以看出，即使 <span class="math">\(L_c\)</span> 较小，该比值仍然很大。</p>
+<p>因此实践中可认为力学效应相对于扩散效应是瞬时发生的。这也是 <span class="codename">FLAC3D</span> 所采用的方法，其中与流体流动步一起执行的任何力学步均不占用时间。对于砂等力学时间尺度与流体时间尺度相当的材料，可考虑使用 <span class="codename">FLAC3D</span> 的动力选项来研究流体-力学相互作用。</p>
+<p>在大多数建模情形中，初始力学条件对应于一种平衡状态，必须在开始耦合分析之前先达到该平衡。通常，在流体流动时间较小（相对于 <span class="math">\(t_c\)</span>——见<a class="reference internal" href="#fluid-timescale"><span class="std std-ref">时间尺度</span>（Time Scale）</a>）时，每个流体步必须执行一定数量的力学步才能达到准静态平衡。在流体流动时间较大时，若系统接近稳态流动，则可执行若干流体流动时步而不显著扰动介质的力学状态。相应的数值模拟可通过在纯流动模式（<a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.active" title="The fluid process is  on  for zones, by default, when the  model.configure.fluid 
+command is given...">单元流体活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 和 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.mechanical.html#kwd:zone.mechanical.active" title="Sets mechanical calculation  off \ /\  on  (default is  on ).
+ The mechanical calculation may be turned off for a thermal-only calculation
+or a fluid flow-only calculation.  Note that in general it is preferable to
+set mechanical calculations off for the entire model with the  model.mechanical.active 
+command...">单元力学活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">mechanical</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>）与纯力学模式（<a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.active" title="The fluid process is  on  for zones, by default, when the  model.configure.fluid 
+command is given...">单元流体活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a> 和 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.mechanical.html#kwd:zone.mechanical.active" title="Sets mechanical calculation  off \ /\  on  (default is  on ).
+ The mechanical calculation may be turned off for a thermal-only calculation
+or a fluid flow-only calculation.  Note that in general it is preferable to
+set mechanical calculations off for the entire model with the  model.mechanical.active 
+command...">单元力学活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">mechanical</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>）之间交替来手动控制。<a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.step.html#command:model.step" title="Execute timesteps. The synonym  model.cycle  may also be used.  This is
+the equivalent of calling  model.solve  with the  cycles  keyword
+set to  i ...">执行计算时步命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">step</span></code>）</a> 命令可用于执行纯流动和纯力学两种过程的计算。</p>
+<p>作为另一种方法，可避免在纯流动与纯力学模式之间来回切换的繁琐工作：将 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令与适当设置结合使用；<a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#kwd:model.solve.mechanical.unbalanced-maximum" title="Limit based on the maximum unbalanced force among model objects...">模型求解力学不平衡最大（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span> <span class="pre">mechanical</span> <span class="pre">unbalanced-maximum</span></code>）</a>（或 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#kwd:model.solve.mechanical.ratio-maximum" title="Limited based on the maximum convergence ratio.  See ref-equilibrium-.   CS:
+Common trouble...">模型求解力学比最大（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span> <span class="pre">mechanical</span> <span class="pre">ratio-maximum</span></code>）</a>）将设定最大不平衡力（或力比）的限值，低于该限值即认为达到准静态力学平衡。<a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.mechanical.html#kwd:model.mechanical.substep" title="Specifies the maximum number of steps the mechanical process will take when
+solving with  slave   on ...">模型力学子步命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">mechanical</span> <span class="pre">substep</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">n</span></span></a> <span class="cmdkey">auto</span> 将力学模块声明为从属模块，它必须为主动模块所执行的每一步做 <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">n</span></span></a> 个子循环（若检测到平衡则可更少——见上一设置）。<a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.fluid.html#kwd:model.fluid.substep" title="Specify the maximum number of steps the fluid process will take when solving
+with  slave   on ...">模型流体子步命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">fluid</span> <span class="pre">substep</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">m</span></span></a> 隐式地将流动模块声明为主动模块。（主动过程省略关键字 <span class="cmdkey">auto</span>。）若对每个流体流动时步，力学模块只需一个子步即可达到平衡，则流体流动子步数将加倍，但绝不超过数目 <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">m</span></span></a>（默认 <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">m</span></span></a> = 1）。一旦每个流体流动子步组对应一个力学时步的序列被打破，系统便恢复到原来的子步设置。若在 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#kwd:model.solve.fluid" title="Specifies a solve limit for the fluid process specifically...">模型求解流体（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span> <span class="pre">fluid</span></code>）</a> 命令中指定了选项 <span class="cmdkey">time-total</span>，则计算将进行到 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#kwd:model.solve.time-total" title="Cycle until the total age of any active process meets or exceeds  f . This
+is distinct from the  time  keyword...">模型求解时间总（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span> <span class="pre">time-total</span></code>）</a> 参数给定的流体流动时间。</p>
+<p>在第三种方法中，可在力学和流体流动模块均开启时使用 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.step.html#command:model.step" title="Execute timesteps. The synonym  model.cycle  may also be used.  This is
+the equivalent of calling  model.solve  with the  cycles  keyword
+set to  i ...">执行计算时步命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">step</span></code>）</a> 命令。在该选项中，每个流体流动步将执行一个力学步。此处假定流体流动步足够小，一个力学步即已足够。关于耦合分析可用命令选项的完整清单，应查阅<a class="reference internal" href="../input/input.html#fluid-input"><span class="std std-ref">输入说明</span>（Input Instructions）</a>。</p>
+<p>为说明完全耦合分析，我们继续基础模拟（在<a class="reference internal" href="#fluid-noflow-mech-general-pp"><span class="std std-ref">无流动——孔隙压力的力学产生</span>（No Flow — Mechanical Generation of Pore Pressure）</a>中完成），使用带适当设置的 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令计算基础下方的固结。数据文件为 <a class="reference internal" href="#datafootingcoupled">Footing-Coupled.dat 数据文件（<span class="std std-ref">Footing-Coupled.dat</span>）</a>：</p>
+<p id="datafootingcoupled"><strong>Footing-Coupled.dat</strong>：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model restore</span><span class="n"> </span><span class="s">'load'</span>
+<span class="c">; --- 启用流体流动模型 ---</span>
+<span class="nb">zone fluid</span><span class="n"> property permeability </span><span class="m m-Double">1e-12</span>
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">on</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> velocity </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> displacement </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="c">; --- 设置力学求解限值 ---</span>
+<span class="nb">model mechanical</span><span class="n"> substep </span><span class="m m-Double">100</span>
+<span class="nb">model mechanical</span><span class="n"> slave </span><span class="sx">on</span>
+<span class="nb">model fluid</span><span class="n"> substep </span><span class="m m-Double">10</span>
+<span class="c">; --- 历程 ---</span>
+<span class="nb">model history</span><span class="n"> fluid time</span><span class="o">-</span><span class="n">total</span>
+<span class="nb">zone history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">z position </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">10</span>
+<span class="nb">zone history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">z position </span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">10</span>
+<span class="nb">zone history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">z position </span><span class="m m-Double">2</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">10</span>
+<span class="nb">zone history</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure  position </span><span class="m m-Double">2</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">9</span>
+<span class="nb">zone history</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure  position </span><span class="m m-Double">5</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">5</span>
+<span class="nb">zone history</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure  position </span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">7</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> ratio</span><span class="o">-</span><span class="n">target </span><span class="m m-Double">1e-3</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">4</span><span class="n"> </span><span class="m m-Double">21</span>
+<span class="c">; --- 求解至 3,000,000 秒 ---</span>
+<span class="ni">[</span><span class="k">global</span><span class="ni"> t0 </span><span class="p">=</span><span class="ni"> </span><span class="k">time.clock</span><span class="o">/</span><span class="m m-Double">100</span><span class="ni">]</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fluid time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">3.0e6</span><span class="n"> or mechanical convergence </span><span class="m m-Double">10</span>
+<span class="ni">[</span><span class="p">(</span><span class="k">time.clock</span><span class="o">/</span><span class="m m-Double">100</span><span class="p">)</span><span class="o">-</span><span class="ni">t0]</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'age_3e6'</span>
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+<p>计算过程中应留意屏幕输出——发出 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令后，屏幕上会更新八个变量：</p>
+<ol class="arabic simple">
+<li>当前步号；</li>
+<li>主动过程（流体流动）在最近一步中所执行的子循环总数；</li>
+<li>从属过程（力学）在最近一步中所执行的子循环总数；</li>
+<li>当前处于活动状态的过程；</li>
+<li>当前子循环号；</li>
+<li>当前最大不平衡力或力比；</li>
+<li>主动（流体流动）过程的总时间；以及</li>
+<li>当前时步。</li>
+</ol>
+<p>该问题的不平衡力比容差为 10<sup>-4</sup>；会执行足够多的力学步以使不平衡力比保持在该容差以下。但在本例中，由 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.mechanical.html#kwd:model.mechanical.substep" title="Specifies the maximum number of steps the mechanical process will take when
+solving with  slave   on ...">模型力学子步命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">mechanical</span> <span class="pre">substep</span></code>）</a> 定义的力学步数限值设为 100。若实际执行的力学步数总是等于 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.mechanical.html#kwd:model.mechanical.substep" title="Specifies the maximum number of steps the mechanical process will take when
+solving with  slave   on ...">模型力学子步命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">mechanical</span> <span class="pre">substep</span></code>）</a> 的设定值，则必定有问题：要么力限值或 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.mechanical.html#kwd:model.mechanical.substep" title="Specifies the maximum number of steps the mechanical process will take when
+solving with  slave   on ...">模型力学子步命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">mechanical</span> <span class="pre">substep</span></code>）</a> 设得太低，要么系统不稳定而无法达到平衡。解的质量取决于力容差：容差小可得到平滑、准确的响应，但运行较慢；容差大可快速得到答案，但结果会有噪声。</p>
+<p>该耦合分析的特征扩散时间由方程<a class="reference internal" href="#equation-eqfluid-solve-tcf">(2)</a>评价，其中扩散率用方程<a class="reference internal" href="#equation-eqfluid-solve-c4">(9)</a>，并取对应于模型高度的 <span class="math">\(L_c\)</span> = 10 m。使用<a class="reference internal" href="#datafootinginstantpp"><span class="std std-ref">此示例</span>（this example）</a>中的性质值，<span class="math">\(t_c^{f}\)</span> 估计为 1,200,000 秒。预计在该时间尺度内将达到完全固结；数值模拟共进行了 3,000,000 秒。</p>
+<p><a href="#footing-hist">图  3（Figure  3）</a> 给出了基础荷载作用下位移至 3,000,000 秒的时程。在该模拟中，地表的孔隙压力保持为零；因此多余流体会向上逸出。时程趋于平缓表明已达到完全固结。</p>
+<div class="figure align-center" id="id4">
+<span id="footing-hist"></span><a class="reference internal image-reference" href="../../../../../../_images/footing-hist.png"><img alt="../../../../../../_images/footing-hist.png" src="../../../../../../_images/footing-hist.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 3：固结响应——基础位移的时程。</span></p>
+</div>
+<p>由于地基材料完全饱和，该耦合模拟也可使用<a class="reference internal" href="../numerical_form/numerical_form.html#fluid-fully-sat-ff"><span class="std std-ref">饱和快速流动</span>（saturated fast-flow）</a>格式运行。此时调用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.fastflow" title="Turns the fastflow solution scheme on and off.  See  fluid-fully-sat-ff ...">单元流体快速流动命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">fastflow</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 命令。开启流体流动后，耦合计算将继续使用<a class="reference internal" href="../numerical_form/numerical_form.html#fluid-fully-sat-ff"><span class="std std-ref">饱和快速流动</span>（saturated fast-flow）</a>格式。如 <a href="#footing-hist-ff">图  4（Figure  4）</a> 所示，结果与基本流动情形的结果相似（与 <a href="#footing-hist">图  3（Figure  3）</a> 比较）。为提供更平滑的位移时程，该模拟的不平衡力比容差设为 10<sup>-6</sup>。即使采用这一更低的容差，<a class="reference internal" href="../numerical_form/numerical_form.html#fluid-fully-sat-ff"><span class="std std-ref">饱和快速流动</span>（saturated fast-flow）</a>计算仍比基本流动模拟快约 10 倍。</p>
+<div class="figure align-center" id="id5">
+<span id="footing-hist-ff"></span><a class="reference internal image-reference" href="../../../../../../_images/footing-hist-ff.png"><img alt="../../../../../../_images/footing-hist-ff.png" src="../../../../../../_images/footing-hist-ff.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 4：固结响应——基础位移的时程——采用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.fastflow" title="Turns the fastflow solution scheme on and off.  See  fluid-fully-sat-ff ...">单元流体快速流动命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">fastflow</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>。</span></p>
+</div>
+<p>最后，与解耦排水分析进行比较。首先进行纯流动计算，然后将流体体积模量设为零进行纯力学计算。解耦计算的数据文件为 <a class="reference internal" href="#datafootinguncoupled">Footing-Uncoupled.dat 数据文件（<span class="std std-ref">Footing-Uncoupled.dat</span>）</a>。解耦排水模拟的位移时程绘于 <a href="#footing-hist-uncoupled">图  5（Figure  5）</a>。最终沉降与基本流动结果的差异在 3% 以内。</p>
+<p id="datafootinguncoupled"><strong>Footing-Uncoupled.dat</strong>：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model restore</span><span class="n"> </span><span class="s">'load'</span>
+<span class="c">; --- 启用流体流动模型 ---</span>
+<span class="nb">zone fluid</span><span class="n"> property permeability </span><span class="m m-Double">1e-12</span>
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">on</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> velocity </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> displacement </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="c">; --- 历程 ---</span>
+<span class="nb">model history</span><span class="n"> fluid time</span><span class="o">-</span><span class="n">total</span>
+<span class="nb">zone history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">z position </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">10</span>
+<span class="nb">zone history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">z position </span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">10</span>
+<span class="nb">zone history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">z position </span><span class="m m-Double">2</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">10</span>
+<span class="nb">zone history</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure  position </span><span class="m m-Double">2</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">9</span>
+<span class="nb">zone history</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure  position </span><span class="m m-Double">5</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">5</span>
+<span class="nb">zone history</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure  position </span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">7</span>
+<span class="c">; --- 求解至 2,000,000 秒 ---</span>
+<span class="c">; --- 非耦合 ---</span>
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">on</span>
+<span class="nb">model mechanical</span><span class="n"> active </span><span class="sx">off</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fluid time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">3.0e6</span>
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">off</span>
+<span class="nb">model mechanical</span><span class="n"> active </span><span class="sx">on</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> fluid</span><span class="o">-</span><span class="n">modulus </span><span class="m m-Double">0</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> convergence </span><span class="m m-Double">1</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'age_3e6_uncoup'</span>
+</pre></div>
+</div>
+<div class="figure align-center" id="id6">
+<span id="footing-hist-uncoupled"></span><a class="reference internal image-reference" href="../../../../../../_images/footing-hist-uncoupled.png"><img alt="../../../../../../_images/footing-hist-uncoupled.png" src="../../../../../../_images/footing-hist-uncoupled.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 5：固结响应——解耦排水分析的基础位移。</span></p>
+</div>
+<p>若在耦合问题中施加荷载或力学边界条件的突然变化，重要的是先让不排水（短期）响应发展，然后再允许流动发生。换言之，在施加力学变化之后，应在 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.active" title="The fluid process is  on  for zones, by default, when the  model.configure.fluid 
+command is given...">单元流体活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a> 条件下将 <span class="codename">FLAC3D</span> 运行至平衡。随后可使用 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 逻辑（配合 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.active" title="The fluid process is  on  for zones, by default, when the  model.configure.fluid 
+command is given...">单元流体活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>）计算随后的流动/力学耦合响应。若流体边界条件的变化与力学变化在物理上同时发生，则应遵循同样的顺序（即：力学变化 | 平衡 | 流体变化 | 耦合求解）。</p>
+<p>完全耦合行为的另一个例子是饱和土中开挖沟槽后发生的随时间发展的膨胀。此时，沟槽开挖后立即产生负孔隙压力；随后的膨胀是由水逐渐流入负压力区引起的。我们分两个阶段对该系统建模：第一阶段让力学平衡发生而不允许流动；然后允许流动，并使用 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令在固结过程中保持准静态平衡。流体抗拉极限初始化为很大的负值以防止去饱和。所用数据文件为 <a class="reference internal" href="#dataswelling">Swelling.dat 数据文件（<span class="std std-ref">Swelling.dat</span>）</a>。相应的项目文件为“Swelling.f3prj”，位于“datafiles\Fluid\Swelling”文件夹中。</p>
+<p>沟槽开挖于平坦土层沉积物的左侧部分，该土层初始完全饱和并在重力作用下处于平衡。本例中材料为弹性，但同样可以是黏土等黏性材料。本次计算中，我们假定自由面不渗透。<a href="#swelling-dispvect">图  6（Figure  6）</a> 给出了流动发生期间累积的位移矢量；可以看到沟槽位于模型左侧。<a href="#swelling-pp">图  7（Figure  7）</a> 给出了沟槽坡顶附近孔隙压力的时程；请注意，由于土体向沟槽的瞬时膨胀，压力出现初始的负向偏移。<a href="#swelling-disphist">图  8（Figure  8）</a> 给出了坡顶处水平和竖向位移的时程。该问题的特征时间取模型长度 40 m 作为 <span class="math">\(L_c\)</span> 来评价，约为 5 × 10<sup>8</sup> 秒（基于方程<a class="reference internal" href="#equation-eqfluid-solve-tcf">(2)</a>和<a class="reference internal" href="#equation-eqfluid-solve-c4">(9)</a>）；数值模拟计算到该时间。</p>
+<p id="dataswelling"><strong>Swelling.dat</strong>：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">"Maintaining equilibrium under time-dependent swelling conditions"</span>
+<span class="nb">model config</span><span class="n"> fluid</span>
+<span class="nb">zone create</span><span class="n"> brick size </span><span class="m m-Double">40</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">8</span>
+<span class="c">; --- 力学模型 ---</span>
+<span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
+<span class="nb">zone property</span><span class="n"> bulk </span><span class="m m-Double">2e8</span><span class="n"> shear </span><span class="m m-Double">1e8</span>
+<span class="nb">zone initialize</span><span class="n"> density </span><span class="m m-Double">1500</span>
+<span class="nb">zone cmodel</span><span class="n"> assign null range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">2</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">2</span><span class="p">,</span><span class="m m-Double">8</span>
+<span class="c">; --- 流体流动模型 ---</span>
+<span class="nb">zone fluid</span><span class="n"> cmodel assign isotropic</span>
+<span class="nb">zone fluid</span><span class="n"> property permeability </span><span class="m m-Double">1e-14</span><span class="n">  poros </span><span class="m m-Double">0.5</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> fluid</span><span class="o">-</span><span class="n">modulus </span><span class="m m-Double">2e9</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> fluid</span><span class="o">-</span><span class="n">tension </span><span class="o">-</span><span class="m m-Double">5e5</span>
+<span class="nb">zone initialize</span><span class="n"> fluid</span><span class="o">-</span><span class="n">density </span><span class="m m-Double">1000</span>
+<span class="nb">zone fluid</span><span class="n"> cmodel assign null range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">2</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">2</span><span class="p">,</span><span class="m m-Double">8</span>
+<span class="c">; 初始条件与边界条件</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x  range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x  range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">40</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity    range position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y    </span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">10</span>
+<span class="nb">zone initialize</span><span class="n"> stress</span><span class="o">-</span><span class="n">xx </span><span class="o">-</span><span class="m m-Double">1.6e5</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">20000</span>
+<span class="nb">zone initialize</span><span class="n"> stress</span><span class="o">-</span><span class="n">yy </span><span class="o">-</span><span class="m m-Double">1.6e5</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">20000</span>
+<span class="nb">zone initialize</span><span class="n"> stress</span><span class="o">-</span><span class="n">zz </span><span class="o">-</span><span class="m m-Double">1.6e5</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">20000</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure </span><span class="m m-Double">8.0e4</span><span class="n"> grad </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="o">-</span><span class="m m-Double">10000</span>
+<span class="c">; --- 设置 ---</span>
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">off</span>
+<span class="c">; </span>
+<span class="nb">model history</span><span class="n"> mechanical unbalanced</span><span class="o">-</span><span class="n">maximum</span>
+<span class="nb">model </span><span class="ss">solve</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'swell1'</span>
+<span class="c">;</span>
+<span class="nb">zone gridpoint initialize</span><span class="n"> displacement </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span>
+<span class="nb">history interval</span><span class="n"> </span><span class="m m-Double">100</span>
+<span class="nb">model history</span><span class="n"> fluid time</span><span class="o">-</span><span class="n">total</span>
+<span class="c">;fish history [] gp pp 3,0,7</span>
+<span class="nb">zone history</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure position </span><span class="m m-Double">4.5</span><span class="p">,</span><span class="m m-Double">0.5</span><span class="p">,</span><span class="m m-Double">6.5</span>
+<span class="nb">zone history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">x position </span><span class="m m-Double">2</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">8</span>
+<span class="nb">zone history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">z position </span><span class="m m-Double">2</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">8</span>
+<span class="nb">zone gridpoint fix</span><span class="n"> pore</span><span class="o">-</span><span class="n">pressure range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">40</span>
+<span class="nb">model fluid</span><span class="n"> active </span><span class="sx">on</span>
+<span class="nb">model fluid</span><span class="n"> substep </span><span class="m m-Double">100</span>
+<span class="nb">model mechanical</span><span class="n"> substep </span><span class="m m-Double">100</span><span class="n"> </span>
+<span class="nb">model mechanical</span><span class="n"> slave   </span><span class="sx">on</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> fluid time</span><span class="o">-</span><span class="n">total </span><span class="m m-Double">5e8</span><span class="n"> or mechanical unbalanced</span><span class="o">-</span><span class="n">maximum </span><span class="m m-Double">50</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'swell2'</span>
+</pre></div>
+</div>
+<div class="pagebreak docutils container">换页</div>
+<div class="figure align-center" id="id7">
+<span id="swelling-dispvect"></span><a class="reference internal image-reference" href="../../../../../../_images/swelling-dispvect.png"><img alt="../../../../../../_images/swelling-dispvect.png" src="../../../../../../_images/swelling-dispvect.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 6：不渗透表面沟槽附近的膨胀位移。</span></p>
+</div>
+<div class="figure align-center" id="id8">
+<span id="swelling-pp"></span><a class="reference internal image-reference" href="../../../../../../_images/swelling-pp.png"><img alt="../../../../../../_images/swelling-pp.png" src="../../../../../../_images/swelling-pp.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 7：沟槽壁后孔隙压力的时程。</span></p>
+</div>
+<div class="figure align-center" id="id9">
+<span id="swelling-disphist"></span><a class="reference internal image-reference" href="../../../../../../_images/swelling-disphist.png"><img alt="../../../../../../_images/swelling-disphist.png" src="../../../../../../_images/swelling-disphist.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 8：沟槽坡顶处的位移时程——竖向（上）和水平向（下）</span></p>
+</div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../flac3dhome.html"><span class="codename">FLAC3D</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../theory.html"><span class="codename">FLAC3D</span> Theory and Background</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../fluid-mechanical.html">Fluid-Mechanical Interaction</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../boundary_conditions/boundary_conditions.html" title="previous chapter"> Fluid-Flow Boundary Conditions, Initial Conditions, Sources and Sinks</a> |    
+       <a href="../verification_examples/verification_examples.html" title="next chapter">Verification Examples</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Solving Flow-Only and Coupled-Flow Problems" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

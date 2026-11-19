@@ -1,0 +1,451 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>数值公式 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="../calcmodes/calcmodes.html" rel="next" title="Calculation Modes for Fluid-Mechanical Interaction"/>
+<link href="../fluid_therm_mech_form/fluid_therm_mech_form.html" rel="prev" title="FLAC3D Fluid-Thermal-Mechanical-Formulation — Mathematical Description"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="hide sectionname docutils container">
+<span class="codename">FLAC3D</span> Theory and Background • Fluid-Mechanical Interaction</div>
+<div class="section" id="numerical-formulation">
+<span id="fluid-numerical-form"></span><h1>数值公式</h1>
+<p>将流体质量平衡<a class="reference internal" href="../fluid_therm_mech_form/fluid_therm_mech_form.html#eqfluid-form-massbalancel"><span class="std std-ref">方程</span>（equation）</a>代入孔隙流体的本构<a class="reference internal" href="../fluid_therm_mech_form/fluid_therm_mech_form.html#eqfluid-eq11"><span class="std std-ref">方程</span>（equation）</a>，得到流体连续方程表达式：</p>
+<div class="math" id="equation-eqfluid-num-fluidcontiuity">
+<span class="eqno">(1)</span>\[{1 \over M} {{\partial p} \over {\partial t}} + {n \over s} {{\partial s} \over {\partial t}}= {1 \over s} (-q_{i,i} + q_v) - \alpha {{\partial \epsilon} \over {\partial t}} + \beta {{\partial T} \over {\partial t}}\]</div>
+<p><span class="codename">FLAC3D</span> 数值方法将流动区域离散为由八个节点定义的砖形网格单元。（适用时，力学和热计算采用相同离散方式。）孔隙压力和饱和度均视为节点变量。每个网格单元内部划分为四面体，默认采用两套叠加划分，并假定孔隙压力和饱和度在各四面体内线性变化。</p>
+<p>数值方案基于流体连续方程的有限体积节点表述。此表述可类比于力学常应力表述，后者导出 Newton 定律的节点形式（见<a class="reference internal" href="../../theoreticalbackground/formulation.html#sec-fdatsd"><span class="std std-ref">空间导数的有限体积近似</span>（Finite Volume Approximation to Space Derivatives）</a>）。分别以孔隙压力、比流量向量和孔隙压力梯度，替换速度向量、应力张量和应变率张量，即可获得该表述。所得常微分方程组默认通过时间上<em>显式</em>离散求解。还提供<em>隐式</em>流体流动计算方案，但仅适用于饱和流动模拟，即饱和度保持为 1、不允许变化的流动。</p>
+<p>主要结果概述如下。首先介绍适用于<a class="reference internal" href="#fluid-saturationflow"><span class="std std-ref">饱和流动</span>（saturated flow）</a>的表述，再扩展至<a class="reference internal" href="#fluid-satoeunsatflow"><span class="std std-ref">饱和／非饱和流动</span>（saturated/unsaturated flow）</a>模拟。这里先指出，饱和／非饱和算法基于变量替换和上游加权技术，并满足流量守恒。</p>
+<p>从力学平衡状态开始，<span class="codename">FLAC3D</span> 耦合水力力学静态模拟包含一系列步骤。每一步包括一个或多个流动步（流动循环），之后执行足够的力学步（力学循环），以保持准静态平衡。</p>
+<p>流体流动引起的孔隙压力增量在流动循环中评估；体积应变的贡献在力学循环中作为网格单元值评估，再分配到节点。</p>
+<p>有效应力计算中，力学体积应变引起孔隙压力变化所产生的总应力增量，在力学循环中评估；流体流动引起的相应增量则在流动循环中评估。</p>
+<p>请注意，<span class="codename">FLAC3D</span> 所有材料模型都用 Terzaghi 有效应力表述，即用有效应力检测塑性材料破坏。在此情况下，孔隙压力场可来自不同来源：流体流动分析、耦合流固模拟，或通过 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/zonegridpoint/cmd_zone.gridpoint.initialize.html#kwd:zone.gridpoint.initialize.pore-pressure" title="Pore Pressure at gridpoint.  Note that if the pore-pressure is changed this
+will not affect the total stress, but will change the effective stress.  The
+ zone.gridpoint.fix.pore-pressure  command can be used to change the total
+stress and leave the effective stress constant...">单元网格点初始化孔隙压力（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">gridpoint</span> <span class="pre">initialize</span> <span class="pre">pore-pressure</span></code>）</a> 或 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.water.html#command:zone.water" title="This command initializes pore pressures, changing the effective stresses.  |flac3d|
+uses effective stresses (i.e., total stresses plus pore pressure) in constitutive
+models. Pore pressures are defined at gridpoints, and zone pore pressures are
+then calculated as the average of the zone gridpoints. If  model.configure.fluid 
+is not set, pore pressures are not affected by zone volume changes, there is
+no flow of water, and the dry density must be specified for zones above the
+water..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">water</span></code></a> 命令初始化。</p>
+<div class="section" id="saturated-fluid-flow">
+<span id="fluid-saturationflow"></span><h2>饱和流体流动</h2>
+<p>本节首先考虑始终保持完全饱和的介质中的流动，作为推导更一般的 <span class="codename">FLAC3D</span> 流体流动算法的第一步。</p>
+<div class="section" id="finite-volume-approximation-to-space-derivatives">
+<h3>空间导数的有限体积近似</h3>
+<p>按约定，四面体节点在局部编号为 1 至 4，面 <span class="math">\(n\)</span> 与节点 <span class="math">\(n\)</span> 相对，上标 <span class="math">\((f)\)</span> 表示相关变量在面 <span class="math">\(f\)</span> 上的值。</p>
+<p>假定四面体内部孔隙压力线性变化，流体密度恒定。通过 Gauss 散度定理，以孔隙压力节点值表示的压力水头梯度可写为</p>
+<div class="math" id="equation-eqfluid-num-gauss">
+<span class="eqno">(2)</span>\[(p - {\rho}_f x_i g_i)_{,j} = - {{1}\over{3V}} \sum_{l=1}^4 (p^l - {\rho}_f x_i^l g_i) \ n_j^{(l)}\ S^{(l)}\]</div>
+<p>其中，<span class="math">\({n}^{(l)}\)</span> 为面 <span class="math">\(l\)</span> 的外法向单位向量，<span class="math">\(S\)</span> 为面面积，<span class="math">\(V\)</span> 为四面体体积。</p>
+<p>为提高数值准确性，可以在方程<a class="reference internal" href="#equation-eqfluid-num-gauss">(2)</a>的压力水头表达式中，用 <span class="math">\(x_i - x_i^1\)</span> 替代 <span class="math">\(x_i\)</span>，其中 <span class="math">\(x_i^1\)</span> 对应四面体某个角点坐标，而不影响压力水头梯度值。因此，方程<a class="reference internal" href="#equation-eqfluid-num-gauss">(2)</a>变为</p>
+<div class="math" id="equation-eqfluid-num-gauss2">
+<span class="eqno">(3)</span>\[(p - {\rho}_f x_i g_i)_{,j} = - {{1}\over{3V}} \sum_{l=1}^4 p^{*l} \ n_j^{(l)}\ S^{(l)}\]</div>
+<p>其中，节点量 <span class="math">\(p^{*l}\)</span> 定义为</p>
+<div class="math" id="equation-eqfluid-num-pstarl">
+<span class="eqno">(4)</span>\[p^{*l} = p^l - {\rho}_f (x_i^l - x_i^1) g_i\]</div>
+</div>
+<div class="section" id="nodal-formulation-of-the-mass-balance-equation">
+<h3>质量平衡方程的节点公式</h3>
+<p>对于完全饱和流动，<span class="math">\(s\)</span> 恒等于 1，流体连续方程<a class="reference internal" href="#equation-eqfluid-num-fluidcontiuity">(1)</a>可表示为</p>
+<div class="math" id="equation-eqfluid-num-qii">
+<span class="eqno">(5)</span>\[q_{i,i} + b^* = 0\]</div>
+<p>其中</p>
+<div class="math" id="equation-eqfluid-num-bstar">
+<span class="eqno">(6)</span>\[b^* = {S \over M} {{\partial p}\over{\partial t}} - q_v^*\]</div>
+<p>等效于力学节点公式中的瞬时“体积力” <span class="math">\(\rho b_i\)</span>，以及</p>
+<div class="math" id="equation-eqfluid-num-qvstar">
+<span class="eqno">(7)</span>\[q_v^* = q_v - \alpha {{\partial \epsilon} \over {\partial t}} + \beta {{\partial T} \over {\partial t}}\]</div>
+<p>先考虑单个四面体。利用这一类比，与四面体比流量及体积源强度 <span class="math">\(b^*\)</span> 等效的节点流量 <span class="math">\(Q_e^n\)</span> [m<sup>3</sup>/s]、<span class="math">\(n\)</span> = 1,4，可表示为（见<a class="reference internal" href="../../theoreticalbackground/formulation.html#sec-fdatsd"><span class="std std-ref">空间导数的有限体积近似</span>（Finite Volume Approximation to Space Derivatives）</a>）</p>
+<div class="math" id="equation-eqfluid-num-qen">
+<span class="eqno">(8)</span>\[Q_e^n = Q_t^n - {{q_v^* V}\over{4}} + m^n\ {{dp}\over{dt}}^n\]</div>
+<p>其中</p>
+<div class="math" id="equation-eqfluid-num-qtn">
+<span class="eqno">(9)</span>\[Q_t^n = {{q_i n_i^{(n)} S^{(n)}}\over 3}\]</div>
+<p>以及</p>
+<div class="math" id="equation-eqfluid-num-mn">
+<span class="eqno">(10)</span>\[m^n = {{V}\over{4M^n}}\]</div>
+<p>原则上，质量平衡方程的节点形式要求：在每个全局节点，相交于该节点的各四面体所贡献的等效节点流量（<span class="math">\(-Q_e^n\)</span>，在两套叠加划分间取平均），与施加边界通量和源的节点贡献（<span class="math">\(Q_w^n\)</span>）之和为零。</p>
+<p>方程<a class="reference internal" href="#equation-eqfluid-num-qtn">(9)</a>中四面体比流量向量的各分量，通过输运定律与压力水头梯度关联（见<a class="reference internal" href="../fluid_therm_mech_form/fluid_therm_mech_form.html#eqfluid-form-darcyl"><span class="std std-ref">方程</span>（equation）</a>）。反过来，可用方程<a class="reference internal" href="#equation-eqfluid-num-gauss2">(3)</a>，以四面体节点孔隙压力表示压力水头梯度各分量。</p>
+<p>为节约计算时间，组装局部矩阵。采用网格单元表述，将属于同一网格单元且相交于节点 <span class="math">\(n\)</span> 的所有四面体的方程<a class="reference internal" href="#equation-eqfluid-num-qtn">(9)</a>贡献求和为 <span class="math">\(Q_z^n\)</span>，再在两套叠加划分之间取平均。组装将八个节点值 <span class="math">\(\{ Q_z \}\)</span> 与八个节点压力水头 <span class="math">\(\{ p^{*} \}\)</span> 关联的局部网格单元矩阵 <span class="math">\([M]\)</span>。这些矩阵对称，因此只计算 36 个分量；在计算开始时存储，并在大应变模式下每十步更新一次。根据网格单元矩阵定义，有</p>
+<div class="math" id="equation-eqfluid-num-qzn">
+<span class="eqno">(11)</span>\[Q_z^n = M_{nj} p^{*j}\]</div>
+<p>其中，<span class="math">\(\{ p^* \}\)</span> 为该网格单元局部节点压力水头矢量。</p>
+<p>反过来，全局节点值 <span class="math">\(Q_T^n\)</span> 通过叠加各网格单元的贡献得到。在记号上稍作宽松处理，对每个全局节点 <span class="math">\(n\)</span> 可写为</p>
+<div class="math" id="equation-eqfluid-num-qcaptitaltn">
+<span class="eqno">(12)</span>\[Q_T^n = C_{nj} p^{*j}\]</div>
+<p>其中，<span class="math">\([C]\)</span> 为全局矩阵，<span class="math">\(\{ p^* \}\)</span> 在此为全局节点压力水头矢量。</p>
+<p>回到前述讨论，可写为</p>
+<div class="math" id="equation-eqfluid-num-zero">
+<span class="eqno">(13)</span>\[- \sum Q_e^n + \sum Q_w^n = 0\]</div>
+<p>其中，为简化记号，用 <span class="math">\(\sum\)</span> 表示相交于全局节点 <span class="math">\(n\)</span> 的所有网格单元对该节点贡献的求和。（网格单元贡献由其内部四面体的贡献组成，并在两套叠加划分之间取平均。）在方程<a class="reference internal" href="#equation-eqfluid-num-zero">(13)</a>中，分别用方程<a class="reference internal" href="#equation-eqfluid-num-qen">(8)</a>表示 <span class="math">\(Q_e^n\)</span>、用方程<a class="reference internal" href="#equation-eqfluid-num-qen">(8)</a>表示 <span class="math">\(q_v^*\)</span>，经整理可得</p>
+<div class="math" id="equation-eqfluid-num-dpndt">
+<span class="eqno">(14)</span>\[{{d p^n}\over{d t}} = - {{1} \over {\sum m^n}} \left[Q_T^n + \sum Q_{app}^n+ \sum Q_{thm}^n \right]\]</div>
+<p>其中，<span class="math">\(Q_T^n\)</span> 为节点孔隙压力的函数，由方程<a class="reference internal" href="#equation-eqfluid-num-qcaptitaltn">(12)</a>与方程<a class="reference internal" href="#equation-eqfluid-num-pstarl">(4)</a>共同定义；<span class="math">\(\sum Q_{app}^n\)</span> 为施加体积源、边界通量和点源的已知贡献，其形式为</p>
+<div class="math" id="equation-eqfluid-num-sumqappn">
+<span class="eqno">(15)</span>\[\sum Q_{app}^n = - \sum {\left[q_v {{V}\over{4}} + Q_w\right]}^n\]</div>
+<p>其中，<span class="math">\(\sum Q_{thm}^n\)</span> 为热力耦合节点流量贡献，定义为</p>
+<div class="math" id="equation-eqfluid-num-sumqthmn">
+<span id="eq-thermmechdisch"></span><span class="eqno">(16)</span>\[\sum Q_{thm}^n = {{d} \over {d t}} \left[ \sum {\left( \alpha \epsilon {{V}\over{4}} \right)}^n - \sum {\left( \beta T {{V}\over{4}} \right)}^n \right]\]</div>
+<p>方程<a class="reference internal" href="#equation-eqfluid-num-dpndt">(14)</a>为节点 <span class="math">\(n\)</span> 处质量平衡方程的节点形式；右侧项 <span class="math">\(Q_T^n + \sum Q_{app}^n+ \sum Q_{thm}^n\)</span> 称为<em>不平衡流量</em>。它由两部分组成：<em>流动不平衡流量</em> <span class="math">\(Q_T^n + \sum Q_{app}^n\)</span>，及<em>热力耦合不平衡流量</em> <span class="math">\(\sum Q_{thm}^n\)</span>。流体静止时，即流体流动计算关闭，流动不平衡流量消失，孔隙压力变化仅由力学和／或热变形引起。纯流动计算中，没有热力耦合，因此热力耦合不平衡流量为零。</p>
+<p><span class="codename">FLAC3D</span> 中 Biot 模量是节点性质，利用方程<a class="reference internal" href="#equation-eqfluid-num-mn">(10)</a>可写为</p>
+<div class="math" id="equation-eqfluid-num-1oversummn">
+<span class="eqno">(17)</span>\[{{1} \over {\sum m^n}} = {{M^n} \over{V^n}}\]</div>
+<p>其中</p>
+<div class="math" id="equation-eqfluid-num-vn">
+<span class="eqno">(18)</span>\[V^n = \sum {\left( {V \over 4} \right)}^n\]</div>
+<p>将方程<a class="reference internal" href="#equation-eqfluid-num-sumqthmn">(16)</a>代入方程<a class="reference internal" href="#equation-eqfluid-num-dpndt">(14)</a>并整理，得到</p>
+<div class="math" id="equation-eqfluid-num-tpumpvndt">
+<span class="eqno">(19)</span>\[{{d}\over{d t}} \left[ p^n - p_v^n \right] = - {{M^n} \over {V^n}} \left[Q_T^n + \sum Q_{app}^n \right]\]</div>
+<p>其中</p>
+<div class="math" id="equation-eqfluid-num-pvn">
+<span class="eqno">(20)</span>\[p_v^n = - {{M^n} \over {V^n}} \left[ \sum {\left( \alpha \epsilon {{V}\over{4}} \right)}^n - \sum {\left( \beta T {{V}\over{4}} \right)}^n \right]\]</div>
+<p>离散划分中的每个全局节点均满足方程<a class="reference internal" href="#equation-eqfluid-num-tpumpvndt">(19)</a>形式的表达式。它们共同组成常微分方程组；对于给定 <span class="math">\(d p_v^n / dt\)</span>，<span class="codename">FLAC3D</span> 采用显式或隐式有限体积方案求解，隐式仅用于饱和流动。下文讨论各方案的适用范围。</p>
+</div>
+<div class="section" id="explicit-finite-volume-formulation">
+<h3>显式有限体积格式</h3>
+<p>显式表述假定节点处量 <span class="math">\(p - p_v\)</span> 在时间间隔 <span class="math">\(\Delta t\)</span> 内线性变化。原则上，方程<a class="reference internal" href="#equation-eqfluid-num-tpumpvndt">(19)</a>左侧导数采用前向有限差分表示，流动不平衡流量在时刻 <span class="math">\(t\)</span> 计算。从初始孔隙压力场开始，对未固定孔隙压力的节点，在递增时间值处按以下表达式更新孔隙压力</p>
+<div class="math" id="equation-eqfluid-num-ptpdtn">
+<span class="eqno">(21)</span>\[p_{&lt;t+\Delta t&gt;}^n = p_{&lt;t&gt;}^n + \Delta p_{v&lt;t&gt;}^n + \Delta p_{&lt;t&gt;}^n\]</div>
+<p>其中</p>
+<div class="math" id="equation-eqfluid-num-dptn">
+<span class="eqno">(22)</span>\[\Delta p_{&lt;t&gt;}^n = {\chi}^n \left[ Q_{T &lt;t&gt;}^n + \sum Q_{app&lt;t&gt;}^n \right]\]</div>
+<div class="math" id="equation-eqfluid-num-chin">
+<span class="eqno">(23)</span>\[{\chi}^n = - {{M^n}\over{V^n}} \Delta t\]</div>
+<p>以及</p>
+<div class="math" id="equation-eqfluid-num-dpvtn">
+<span class="eqno">(24)</span>\[\Delta p_{v&lt;t&gt;}^n = - {{M^n} \over {V^n}} {\left[ \sum {\left( \alpha \Delta \epsilon {{V}\over{4}} \right)}^n - \sum {\left( \beta \Delta T {{V}\over{4}} \right)}^n \right]}_{&lt;t&gt;}\]</div>
+<p>只有时间步长保持低于某一限值，显式方案才能达到数值稳定。</p>
+</div>
+<div class="section" id="stability-criterion">
+<h3>稳定性准则</h3>
+<p>为推导流动计算稳定性准则，考虑在一组网格单元中，节点 <span class="math">\(n\)</span> 从零初始状态受到孔隙压力扰动 <span class="math">\(p_0\)</span>。由方程<a class="reference internal" href="#equation-eqfluid-num-qcaptitaltn">(12)</a>可得</p>
+<div class="math" id="equation-eqfluid-num-qbigtn">
+<span class="eqno">(25)</span>\[Q_T^n = C_{nn}\ p_0\]</div>
+<p>如果节点 <span class="math">\(n\)</span> 位于渗漏边界，则有</p>
+<div class="math" id="equation-eqfluid-num-sumqappn2">
+<span class="eqno">(26)</span>\[\sum Q^n_{app} = D_{nn}\ p_0\]</div>
+<p>其中，<span class="math">\(D_{nn}\)</span> 表示节点 <span class="math">\(n\)</span> 处全局渗漏项中的压力系数。</p>
+<p>一个流体流动时间步后，节点 <span class="math">\(n\)</span> 处的新孔隙压力为（见方程<a class="reference internal" href="#equation-eqfluid-num-ptpdtn">(21)</a>至<a class="reference internal" href="#equation-eqfluid-num-chin">(23)</a>）</p>
+<div class="math" id="equation-eqfluid-num-pdtn">
+<span class="eqno">(27)</span>\[p_{&lt;\Delta t&gt;}^n = p_0 \left[ 1 - {{M^n}\over{V^n}} (C_{nn} + D_{nn}) \Delta t  \right]\]</div>
+<p>为避免对连续 <span class="math">\(\Delta t\)</span> 重复计算时孔隙压力正负交替，前述关系中 <span class="math">\(p_0\)</span> 的系数必须为正。这要求</p>
+<div class="math" id="equation-eqfluid-num-dt">
+<span class="eqno">(28)</span>\[\Delta t &lt; {{V^n} \over {M^n}} {{1} \over {C_{nn} + D_{nn}}}\]</div>
+<p><span class="codename">FLAC3D</span> 所用孔隙力学时间步，是方程<a class="reference internal" href="#equation-eqfluid-num-dt">(28)</a>右侧所有节点值中的最小值，再乘以 0.8 的安全系数。</p>
+<p>为评估相关参数的影响，记住以下临界时间步表示方式会有帮助。如果 <span class="math">\(L_c\)</span> 为最小四面体特征长度，可写为以下形式</p>
+<div class="math" id="equation-eqfluid-num-dtcr">
+<span id="eqfluid-num-dtcrl"></span><span class="eqno">(29)</span>\[\Delta t_{cr} = {{1}\over{a}} {\left [ {{c}\over{L_c^2}} + {{h M}\over{L_c}} \right ]}^{-1}\]</div>
+<p>其中，<span class="math">\(\Delta t_{cr}\)</span> 为临界时间步，<span class="math">\(c\)</span> 为流体扩散系数，<span class="math">\(a\)</span> 为大于 1、取决于介质几何离散方式的常数。例如，规则立方体离散时 <span class="math">\(a\)</span> = 6；热学类比见 Karlekar and Desmond (1982)。</p>
+<p>方程<a class="reference internal" href="#equation-eqfluid-num-dtcr">(29)</a>中的临界时间步，度量扩散“前沿”传播通过整个四面体所需的特征时间。估计前沿通过某个区域所需时间时，可使用类似表达式，但应将 <span class="math">\(L_c\)</span> 理解为所考察区域的特征长度。考虑无渗漏且性质均匀的情况，取区域与四面体特征时间之比可见，模拟扩散过程遍及整个区域所需步数，与区域和四面体特征长度平方之比成正比。步数可能大到无法仅靠显式方法计算。但在许多地下水问题中，这种一阶方法的优点是计算时间步通常足够小，可准确跟踪节点孔隙压力波动。</p>
+</div>
+<div class="section" id="implicit-finite-volume-formulation">
+<h3>隐式有限体积格式</h3>
+<p>为保证稳定性而限制 <span class="math">\(\Delta t\)</span> 大小，有时会导致极小时间步，量级为不足一秒，尤其在性质差异明显的分层介质瞬态流动中。隐式表述消除此限制，但每个时间步都需要求解联立方程，且仅适用于饱和流体流动模拟。</p>
+<p><span class="codename">FLAC3D</span> 隐式表述采用 Crank-Nicolson 方法，假定节点量 <span class="math">\(p - p_v\)</span> 在时间间隔 <span class="math">\(\Delta t\)</span> 内按二次函数变化。在此方法中，方程<a class="reference internal" href="#equation-eqfluid-num-tpumpvndt">(19)</a>的导数 <span class="math">\(d(p - p_v)/dt\)</span> 采用对应半时间步的中心差分表述，而流动不平衡流量取 <span class="math">\(t\)</span> 与 <span class="math">\(t +
+\Delta t\)</span> 时刻值的平均。在此表述中，有</p>
+<div class="math" id="equation-eqfluid-num-ptpdtn-im">
+<span class="eqno">(30)</span>\[p^n_{&lt;t + \Delta t&gt;} = p_{&lt;t&gt;}^n + \Delta p_{v&lt;t&gt;}^n + \Delta p_{&lt;t&gt;}^n\]</div>
+<p>以及</p>
+<div class="math" id="equation-eqfluid-num-dptn-im">
+<span class="eqno">(31)</span>\[\Delta p_{&lt;t&gt;}^n = {\chi}^n \left[{{1}\over{2}} \left(Q_{T &lt;t + \Delta t&gt;}^n + Q_{T &lt;t&gt;}^n \right) + \sum \overline{Q^n_{app}}\right]\]</div>
+<p>其中</p>
+<div class="math" id="equation-eqfluid-num-chin-im">
+<span class="eqno">(32)</span>\[{\chi}^n = - {{M^n \Delta t}\over{V^n}}\]</div>
+<p><span class="math">\(\Delta p_{v&lt;t&gt;}^n\)</span> 由方程<a class="reference internal" href="#equation-eqfluid-num-dpvtn">(24)</a>给出，并且</p>
+<div class="math" id="equation-eqfluid-num-sumqappn2-im">
+<span class="eqno">(33)</span>\[\sum \overline{Q^n_{app}} = {1 \over 2} \left( \sum Q^n_{app&lt;t + \Delta t&gt;} + \sum Q^n_{app&lt;t&gt;} \right)\]</div>
+<p>由方程<a class="reference internal" href="#equation-eqfluid-num-qcaptitaltn">(12)</a>可写为</p>
+<div class="math" id="equation-eqfluid-num-qbigttn-im">
+<span class="eqno">(34)</span>\[Q_{T&lt;t&gt;}^n = C_{nj} p_{&lt;t&gt;}^{*j}\]</div>
+<p>以及</p>
+<div class="math" id="equation-eqfluid-num-qbitttptn-im">
+<span class="eqno">(35)</span>\[Q_{T&lt;t + \Delta t&gt;}^n = C_{nj} p_{&lt;t + \Delta t&gt;}^{*j}\]</div>
+<p>若时间间隔 <span class="math">\(\Delta t\)</span> 内重力项不变，方程<a class="reference internal" href="#equation-eqfluid-num-ptpdtn-im">(30)</a>可利用方程<a class="reference internal" href="#equation-eqfluid-num-pstarl">(4)</a>改写。</p>
+<div class="math" id="equation-eqfluid-num-ptpdtstarn-im">
+<span class="eqno">(36)</span>\[p^{*n}_{&lt;t + \Delta t&gt;} = p_{&lt;t&gt;}^{*n} + \Delta p_{v&lt;t&gt;}^n + \Delta p_{&lt;t&gt;}^n\]</div>
+<p>利用上述表达式和方程<a class="reference internal" href="#equation-eqfluid-num-qbigttn-im">(34)</a>，方程<a class="reference internal" href="#equation-eqfluid-num-qbitttptn-im">(35)</a>变为</p>
+<div class="math" id="equation-eqfluid-num-qbigttpdtn-im">
+<span class="eqno">(37)</span>\[Q_{T&lt;t + \Delta t&gt;}^n = Q_{T&lt;t&gt;}^n + C_{nj} \Delta p_{&lt;t&gt;}^j + C_{nj} \Delta p_{v&lt;t&gt;}^j\]</div>
+<p>将方程<a class="reference internal" href="#equation-eqfluid-num-qbigttpdtn-im">(37)</a>代入方程<a class="reference internal" href="#equation-eqfluid-num-dptn-im">(31)</a>，并利用方程<a class="reference internal" href="#equation-eqfluid-num-qbitttptn-im">(35)</a>，可得</p>
+<div class="math" id="equation-eqfluid-num-dptn-im2">
+<span class="eqno">(38)</span>\[\Delta p_{&lt;t&gt;}^n = {\chi}^n \left[C_{nj} (p_{&lt;t&gt;}^{*j} + {{1}\over{2}} \Delta p_{v&lt;t&gt;}^j) + {{1}\over{2}} C_{nj} \Delta p_{&lt;t&gt;}^j + \sum \overline{Q_{app}^n}\right]\]</div>
+<p>最后，重新合并各项：</p>
+<div class="math" id="equation-eqfluid-num-rehrouping-im">
+<span class="eqno">(39)</span>\[\left[\delta_{nj} - {{\chi}^n\over{2}} C_{nj}\right] \Delta p_{&lt;t&gt;}^j = {\chi}^n \left[C_{nj} (p_{&lt;t&gt;}^{*j} + {{1}\over{2}}  \Delta p_{v&lt;t&gt;}^j) + \sum \overline{Q_{app}^n}\right]\]</div>
+<p>为书写简便，把已知矩阵 <span class="math">\([A]\)</span> 与矢量 <span class="math">\([b_{&lt;t&gt;}]\)</span> 定义为</p>
+<div class="math" id="equation-eqfluid-num-anj-im">
+<span class="eqno">(40)</span>\[A_{nj} = \delta_{nj} - {{\chi}^n\over{2}} C_{nj}\]</div>
+<p>以及</p>
+<div class="math" id="equation-eqfluid-num-bnt-im">
+<span class="eqno">(41)</span>\[b_{n&lt;t&gt;} = {\chi}^n \left[C_{nj} (p{&lt;t&gt;}^{*j} + {{1}\over{2}} \Delta p_{v&lt;t&gt;}^j) + \sum \overline{Q_{app}^n}\right]\]</div>
+<p>按此约定，方程<a class="reference internal" href="#equation-eqfluid-num-rehrouping-im">(39)</a>可写为以下形式</p>
+<div class="math" id="equation-eqfluid-num-anjdptj-im">
+<span class="eqno">(42)</span>\[A_{nj} \Delta p_{&lt;t&gt;}^j = b_{n&lt;t&gt;}\]</div>
+<p>网格中的每个节点均满足一个方程，所得方程组在 <span class="codename">FLAC3D</span> 中采用 Jacobi 迭代法求解。在此方法中，迭代 <span class="math">\(r+1\)</span>、节点 <span class="math">\(n\)</span> 处的孔隙压力增量，通过以下递推关系计算</p>
+<div class="math" id="equation-eqfluid-num-dptntp1-im">
+<span class="eqno">(43)</span>\[\Delta p_{&lt;t&gt;}^{n &lt;r+1&gt;} = \Delta p_{&lt;t&gt;}^{n &lt;r&gt;} + {{1}\over{A_{nn}}} \left[-A_{nj} \Delta p_{&lt;t&gt;}^{j &lt;r&gt;} + b_{n&lt;t&gt;}\right]\]</div>
+<p>其中，Einstein 求和约定仅适用于下标 <span class="math">\(j\)</span>。利用 <span class="math">\([A]\)</span> 的方程<a class="reference internal" href="#equation-eqfluid-num-anj-im">(40)</a>，方程<a class="reference internal" href="#equation-eqfluid-num-dptntp1-im">(43)</a>变为</p>
+<div class="math" id="equation-eqfluid-num-dptntp12-im">
+<span class="eqno">(44)</span>\[\Delta p_{&lt;t&gt;}^{n &lt;r+1&gt;} = \Delta p_{&lt;t&gt;}^{n &lt;r&gt;} + {{1}\over{1 - {{\chi}^n\over{2}} C_{nn}}} \left[{{\chi}^n\over{2}} C_{nj} \Delta p_{&lt;t&gt;}^{j &lt;r&gt;} - \Delta p_{&lt;t&gt;}^{n &lt;r&gt;} + b_{n&lt;t&gt;}\right]\]</div>
+<p>初始近似值的选择使其满足</p>
+<div class="math" id="equation-eqfluid-num-dptno-im">
+<span class="eqno">(45)</span>\[\Delta p_{&lt;t&gt;}^{n &lt;0&gt;} = 0\]</div>
+<p>（请注意，在 <span class="codename">FLAC3D</span> 中，与压力有关的边界条件包含在 <span class="math">\(b_n\)</span> 中，在隐式迭代过程中更新。）</p>
+</div>
+<div class="section" id="convergence-criterion">
+<h3>收敛准则</h3>
+<p><span class="codename">FLAC3D</span> 至少考虑 3 次、最多 500 次迭代，检测收敛的准则形式为</p>
+<div class="math" id="equation-eqfluid-num-maxn">
+<span class="eqno">(46)</span>\[\max\limits_n \ \ \big\vert\ \ \Delta p^{n&lt;r+1&gt;}_{&lt;t&gt;} - \Delta p^{n&lt;r&gt;}_{&lt;t&gt;} \ \ \big\vert\ \ &lt; 10^{-2}\ \left( \max\limits_n \ \ \big\vert\ \ \Delta p^{n&lt;r&gt;}_{&lt;t&gt;} \ \ \big\vert \right)\]</div>
+<p>选择时间步大小时，必须同时考虑隐式方案的收敛性和准确性。虽然无渗漏时，Crank-Nicolson 方法对所有正 <span class="math">\(\Delta t\)</span> 均稳定，但只有矩阵 <span class="math">\([A]\)</span> 严格对角占优时，Jacobi 方法才保证无条件收敛：</p>
+<div class="math" id="equation-eqfluid-num-ineq">
+<span class="eqno">(47)</span>\[\sum\limits_{{j=1}\atop{j\ne k}}^n \ \ \bigg\vert\ \ A_{kj} \ \ \bigg\vert\ \ &lt;  \ \ \bigg\vert\ \ A_{kk} \ \ \bigg\vert\]</div>
+<p>对于 <span class="math">\(1 \le k \le n\)</span>（见 Dahlquist and Bjorck 1974）。根据 <span class="math">\(A_{nj}\)</span>（方程<a class="reference internal" href="#equation-eqfluid-num-anj-im">(40)</a>）和 <span class="math">\(\chi^n\)</span>（方程<a class="reference internal" href="#equation-eqfluid-num-chin-im">(32)</a>）的定义，当 <span class="math">\(\Delta t\)</span> 足够小时，总能满足此充分条件。如果 Jacobi 方法不收敛，程序发出错误消息。此时必须减小隐式时间步，或改用显式方法；显式时间步可作为下限。</p>
+<p>此外，虽然隐式方法具有二阶精度，但选择适当时间步仍需一定判断。时间步必须相对于任何节点孔隙压力波动的波长保持足够小。通常在计算早期或受到扰动的阶段使用显式方法，而其余模拟阶段优先采用隐式方法。也可在隐式方法中采用显式时间步值，以进一步提高准确性。</p>
+<p>请记住，预期饱和度变化的模拟不应选择隐式方法。此外，在 <span class="codename">FLAC3D</span> 中选择隐式方法时，还必须考虑计算时间和内存。隐式方法每个时间步均需通过至少三次迭代求解一组方程。一次迭代所需计算量，约等于显式方案一个时间步的计算量。同时，迭代过程必须存储中间值，因此比显式方案需要额外内存。但隐式方法通常允许大得多的时间步，或可提高准确性，这些收益足以抵消上述不便。</p>
+</div>
+</div>
+<div class="section" id="saturated-unsaturated-flow">
+<span id="fluid-satoeunsatflow"></span><h2>饱和／非饱和流动</h2>
+<p>对于饱和流体流动，网格单元内节点体积流率 <span class="math">\(\{ Q_z \}\)</span> 与节点孔隙压力 <span class="math">\(\{ p \}\)</span> 通过方程<a class="reference internal" href="#equation-eqfluid-num-qzn">(11)</a>关联，其矩阵记法为</p>
+<div class="math" id="equation-eqfluid-num-matrixqz">
+<span class="eqno">(48)</span>\[\{ Q_z \} = [M] \{ p - \rho_f x_i g_i \}\]</div>
+<p>其中，矩阵 <span class="math">\([M]\)</span> 是网格单元几何形状及饱和流动性系数的已知函数。该关系通过对四面体内部孔隙压力梯度应用 Gauss 散度定理，并考虑能量及叠加原理推导得到。通过以下修改，可扩展至粗粒土中的非饱和流动（气压恒定，无毛细压力）：</p>
+<ol class="loweralpha">
+<li><p class="first">将重力项 <span class="math">\(\rho_f x_ig_i\)</span> 乘以网格单元平均饱和度 <span class="math">\(\bar s\)</span>，以考虑部分充水。</p>
+</li>
+<li><p class="first">将节点流率乘以相对流动性 <span class="math">\(\hat{k}\)</span>（见<a class="reference internal" href="../fluid_therm_mech_form/fluid_therm_mech_form.html#eqfluid-form-darcyl"><span class="std std-ref">方程</span>（equation）</a>），后者是网格单元流入节点平均饱和度 <span class="math">\(\hat{s}_{in}\)</span> 的函数。采用这种上游加权技术，是为防止初始干燥介质充水过程中出现未计入的流动，即饱和度定义于节点所造成的数值弥散。相对渗透率函数具有此<a class="reference internal" href="../fluid_therm_mech_form/fluid_therm_mech_form.html#eqfluid-form-cubiclawl"><span class="std std-ref">方程</span>（equation）</a>的相同形式：</p>
+<div class="math" id="equation-eqfluid-num-hatksin">
+<span class="eqno">(49)</span>\[\hat{k}(\hat{s}_{in}) = {\hat{s}_{in}}^2(3 - 2\hat{s}_{in})\]</div>
+</li>
+<li><p class="first">根据局部饱和度缩放节点流入率。</p>
+</li>
+</ol>
+<p>对于饱和／非饱和流动，流体连续方程<a class="reference internal" href="#equation-eqfluid-num-fluidcontiuity">(1)</a>的显式有限体积节点表述形式为（见方程<a class="reference internal" href="#equation-eqfluid-num-ptpdtn">(21)</a>至<a class="reference internal" href="#equation-eqfluid-num-chin">(23)</a>）</p>
+<div class="math" id="equation-eqfluid-num-dponm">
+<span class="eqno">(50)</span>\[{{\Delta p} \over{nM}} + {{\Delta s }\over{s}}= - {{1} \over {snV}} {\left[ \left( Q_{T} + \sum Q_{app} \right) \Delta t + s \left( \sum  \alpha \Delta \epsilon {{V_T}\over{4}}  - \sum  \beta \Delta T {{V_T}\over{4}} \right)  \right]}\]</div>
+<p>其中，为简化记号，省略了下标 <span class="math">\(&lt;t&gt;\)</span> 和上标 <span class="math">\(n\)</span>，<span class="math">\(V_T\)</span> 表示四面体体积。饱和节点处，<span class="math">\(s\)</span> = 1，方程<a class="reference internal" href="#equation-eqfluid-num-dponm">(50)</a>变为</p>
+<div class="math" id="equation-eqfluid-num-dp">
+<span id="eq-ffnf-69"></span><span class="eqno">(51)</span>\[\Delta p  = - {{M} \over {V}} {\left[ \left( Q_{T} + \sum Q_{app} \right) \Delta t + \left( \sum  \alpha \Delta \epsilon {{V_T}\over{4}}  - \sum  \beta \Delta T {{V_T}\over{4}} \right) \right]}\]</div>
+<p>部分饱和节点处，<span class="math">\(p\)</span> = 0，方程<a class="reference internal" href="#equation-eqfluid-num-dponm">(50)</a>可表示为</p>
+<div class="math" id="equation-eqfluid-num-ds">
+<span id="eq-ffnf-70"></span><span class="eqno">(52)</span>\[\Delta s = - {{1} \over {nV}} {\left[ \left( Q_{T} + \sum Q_{app} \right) \Delta t + s \left( \sum  \alpha \Delta \epsilon {{V_T}\over{4}}  - \sum  \beta \Delta T {{V_T}\over{4}} \right)  \right]}\]</div>
+<p>此方法导出变量替换技术：在非饱和节点，即孔隙压力为零处，通过方程<a class="reference internal" href="#equation-eqfluid-num-ds">(52)</a>更新饱和度变量；在饱和节点，即饱和度恒定处，通过方程<a class="reference internal" href="#equation-eqfluid-num-dp">(51)</a>更新孔隙压力变量。应用这些关系时保持流体体积平衡，即满足方程<a class="reference internal" href="#equation-eqfluid-num-dponm">(50)</a>。</p>
+<p><span class="codename">FLAC3D</span> 显式流体时间步根据饱和流体扩散系数 <span class="math">\(c = k M\)</span> 推导的稳定性准则选取，其中 <span class="math">\(k\)</span> 为饱和流动性系数张量最大主值，<span class="math">\(M\)</span> 为 Biot 模量（见方程<a class="reference internal" href="#equation-eqfluid-num-dt">(28)</a>和<a class="reference internal" href="#equation-eqfluid-num-dtcr">(29)</a>）。与流体储存有关的时间尺度，通常远小于潜水储水的特征时间尺度。前者二维流动的估计可用 <span class="math">\(t \propto L^2/c\)</span> 计算，其中 <span class="math">\(L\)</span> 表示平均流动路径长度；后者的粗略估计可由 <span class="math">\(t \propto L^2/(k \bar{p}/n)\)</span> 得到，其中 <span class="math">\(L\)</span> 为与潜水储水有关的介质平均高度，<span class="math">\(\bar p\)</span> 为相应平均孔隙压力变化。</p>
+</div>
+<div class="section" id="mechanical-timestep-and-numerical-stability">
+<h2>力学时间步长与数值稳定性</h2>
+<p>流体存在会增加介质表观力学体积模量，进而影响 <span class="codename">FLAC3D</span> 为保证数值稳定而采用的密度缩放方案中的节点质量。考虑不排水、饱和、等温孔隙力学条件，可求得此表观模量的上限；此时 <span class="math">\({{\partial\zeta}\over{\partial t}}\)</span> = 0、<span class="math">\({{\partial s}\over{\partial t}}\)</span> = 0、<span class="math">\({\partial{T}\over{\partial t}}\)</span> = 0。<a class="reference internal" href="../fluid_therm_mech_form/fluid_therm_mech_form.html#eqfluid-eq11"><span class="std std-ref">流体本构定律</span>（fluid constitutive law）</a>的增量表达式随后变为</p>
+<div class="math" id="equation-eqfluid-num-dpmech">
+<span class="eqno">(53)</span>\[\Delta p = - \alpha M \Delta \epsilon\]</div>
+<p>采用<a class="reference internal" href="../fluid_therm_mech_form/fluid_therm_mech_form.html#eqfluid-form-elasticl"><span class="std std-ref">弹性定律</span>（the elastic law）</a>的增量形式，描述一个时间间隔内应力应变本构关系的体积部分，可写为</p>
+<div class="math" id="equation-eqfluid-num-kde">
+<span class="eqno">(54)</span>\[{{1}\over{3}} \Delta {\sigma}_{ii} + \alpha \Delta p = K \Delta \epsilon\]</div>
+<p>将方程<a class="reference internal" href="#equation-eqfluid-num-dpmech">(53)</a>代入方程<a class="reference internal" href="#equation-eqfluid-num-kde">(54)</a>可得</p>
+<div class="math" id="equation-eqfluid-num-kde2">
+<span class="eqno">(55)</span>\[{{1}\over{3}} \Delta {\sigma}_{ii} = (K + {\alpha}^2 M) \Delta \epsilon\]</div>
+<p>计算节点惯性质量时，用表观切线体积模量 <span class="math">\(K + {\alpha}^2 M\)</span> 替代 <span class="math">\(K\)</span>（见<em>理论与背景</em>部分的<a class="reference internal" href="../../theoreticalbackground/formulation.html#eqtheory-scalemll"><span class="std std-ref">此方程</span>（this equation）</a>）。</p>
+<p>另请注意，<span class="codename">FLAC3D</span> 输入采用介质干密度 <span class="math">\({\rho}_d\)</span>。程序根据输入的流体密度 <span class="math">\({\rho}_f\)</span>、孔隙率 <span class="math">\(n\)</span> 和饱和度 <span class="math">\(s\)</span>，内部计算饱和密度 <span class="math">\(\rho = {\rho}_d + n s{\rho}_f\)</span>，然后相应调整 Newton 运动方程中的体力。</p>
+</div>
+<div class="section" id="total-stress-correction">
+<h2>总应力修正</h2>
+<p><span class="codename">FLAC3D</span> 表述先计算节点孔隙压力，再对四面体值进行体积平均，得到网格单元孔隙压力；四面体值则由节点值算术平均获得。</p>
+<p>随后按 Biot 有效应力定义，通过添加增量 <span class="math">\(\Delta \sigma_{ij}\)</span> 调整总应力，以考虑孔隙压力变化的贡献（见<a class="reference internal" href="../fluid_therm_mech_form/fluid_therm_mech_form.html#eqfluid-form-mechlawl"><span class="std std-ref">此方程</span>（this equation）</a>）。应力增量 <span class="math">\(\Delta \sigma_{ij}\)</span> 表示为</p>
+<div class="math" id="equation-eqfluid-num-dsij-tsc">
+<span class="eqno">(56)</span>\[\Delta {\sigma}_{ij} = \Delta {\sigma}_{ij}^f + \Delta {\sigma}_{ij}^{th}\]</div>
+<p>其中</p>
+<div class="math" id="equation-eqfluid-num-dsijf-tsc">
+<span class="eqno">(57)</span>\[\Delta {\sigma}_{ij}^f = - \alpha \overline{\Delta p_{&lt;t&gt;}^n} {\delta}_{ij}\]</div>
+<p>为流动贡献，以及</p>
+<div class="math" id="equation-eqfluid-num-dsijth-tsc">
+<span class="eqno">(58)</span>\[\Delta {\sigma}_{ij}^{th} = \alpha \overline{M} {(\alpha \overline{\Delta \epsilon} - \beta \overline{\Delta T}})_{&lt;t&gt;} {\delta}_{ij}\]</div>
+<p>为热力耦合的贡献。此外，上述表达式中的上划线符号表示前述意义下的网格单元平均。</p>
+</div>
+<div class="section" id="fully-saturated-fast-flow">
+<span id="fluid-fully-sat-ff"></span><h2>完全饱和快速流动</h2>
+<p><span class="codename">FLAC3D</span> 标准流体流动表述中，可压缩流体的完全饱和流动连续方程，基于等温条件下的<a class="reference internal" href="../fluid_therm_mech_form/fluid_therm_mech_form.html#eqfluid-eq11"><span class="std std-ref">此方程</span>（this equation）</a>，为</p>
+<div class="math" id="equation-eqfluid-num-1om-fsff">
+<span class="eqno">(59)</span>\[{1 \over M} {{\partial p} \over {\partial t}} = {{\partial \zeta} \over {\partial t}} - \alpha {{\partial \epsilon} \over {\partial t}}\]</div>
+<p>其中，<span class="math">\(\zeta\)</span> 为相对于参考状态的流体含量变化，定义为单位体积多孔材料中流体体积的变化；<span class="math">\(\epsilon\)</span> 为体积应变，<span class="math">\(M\)</span> 为 Biot 模量，<span class="math">\(\alpha\)</span> 为 Biot 系数。标准表述中的流体质量平衡由<a class="reference internal" href="../fluid_therm_mech_form/fluid_therm_mech_form.html#sec-gde"><span class="std std-ref">控制微分方程</span>（Governing Differential Equations）</a>中的<a class="reference internal" href="../fluid_therm_mech_form/fluid_therm_mech_form.html#eqfluid-form-massbalancel"><span class="std std-ref">此方程</span>（this equation）</a>给出，动量平衡由<a class="reference internal" href="../fluid_therm_mech_form/fluid_therm_mech_form.html#eqfluid-form-momentuml"><span class="std std-ref">此方程</span>（this equation）</a>给出，材料本构定律形式见<a class="reference internal" href="../fluid_therm_mech_form/fluid_therm_mech_form.html#eqfluid-form-mechlawl"><span class="std std-ref">此方程</span>（this equation）</a>。</p>
+<p>标准计算流程适用于材料刚度相对流体刚度较高、孔隙率一般的情况。当采用较高 Biot 模量，相对于固体基质刚度较大时，标准方案的求解速度和准确性会降低。高值通常用以下方程表征</p>
+<div class="math" id="equation-eqfluid-num-m-fsff">
+<span class="eqno">(60)</span>\[{M &gt; 20 (K + 4/3 G)}\]</div>
+<p>或者，如果 <span class="math">\(\alpha\)</span> = 1，并考虑高流体体积模量与低孔隙率的组合，</p>
+<div class="math" id="equation-eqfluid-num-kf-fsff">
+<span class="eqno">(61)</span>\[{K_f &gt; 20 (K + 4/3 G)} n\]</div>
+<p><span class="math">\(K_f\)</span> 为流体体积模量，<span class="math">\(n\)</span> 为孔隙率，<span class="math">\(K\)</span> 和 <span class="math">\(G\)</span> 为固体基质排水弹性模量。</p>
+<p>当 Biot 模量或流体体积模量较高，即满足方程<a class="reference internal" href="#equation-eqfluid-num-m-fsff">(60)</a>或<a class="reference internal" href="#equation-eqfluid-num-kf-fsff">(61)</a>时，使用标准方案存在若干缺点：</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>稳定的显式流体时间步可能极小，因为它与 Biot 模量成反比。</li>
+<li>流体通过质量缩放引入附加刚度 <span class="math">\(\alpha^2 M\)</span>，使力学收敛非常慢。</li>
+<li>求解准确性较差，因为标准方案不适于求解孔隙压力方程<a class="reference internal" href="#equation-eqfluid-num-1om-fsff">(59)</a>的退化形式。</li>
+</ol>
+</div></blockquote>
+<p>标准方案性能较差的原因是，<span class="math">\(M\)</span> 很大时，方程<a class="reference internal" href="#equation-eqfluid-num-1om-fsff">(59)</a>退化为以下表达式</p>
+<div class="math" id="equation-eqfluid-num-0-fsff">
+<span class="eqno">(62)</span>\[{{\partial \epsilon_{unb}} \over {\partial t}} = 0\]</div>
+<p>其中，量</p>
+<div class="math" id="equation-eqfluid-num-02-fsff">
+<span class="eqno">(63)</span>\[{{\partial \epsilon_{unb}} \over {\partial t}}= {{\partial \zeta} \over {\partial t}} - \alpha {{\partial \epsilon} \over {\partial t}}\]</div>
+<p>定义为不平衡体积应变率。标准方案未针对这种基于压力方程的退化形式进行良好设计。</p>
+<div class="section" id="an-alternative-fast-flow-algorithm">
+<h3>替代的快速流动算法</h3>
+<p>基于应变的另一种表述，即<em>饱和快速流动</em>功能，更适合 Biot 模量较高时的方程<a class="reference internal" href="#equation-eqfluid-num-1om-fsff">(59)</a>。<a class="footnote-reference" href="#id3" id="id1">[1]</a></p>
+<p>为简要说明该方案原理，考虑具有弹性体积行为的材料本构定律，表示为</p>
+<div class="math" id="equation-eqfluid-num-elastic-fsff">
+<span class="eqno">(64)</span>\[{{\partial \sigma} \over {\partial t}} + \alpha {{\partial p} \over {\partial t}} = K {{\partial \epsilon} \over {\partial t}}\]</div>
+<p>该方案在执行一个流动步和一个力学步后，根据方程<a class="reference internal" href="#equation-eqfluid-num-02-fsff">(63)</a>计算量 <span class="math">\({{\partial \epsilon_{unb}} \over {\partial t}}\)</span>。通常此量不可忽略，因此采用迭代方案减小其值，以满足方程<a class="reference internal" href="#equation-eqfluid-num-0-fsff">(62)</a>。首先评估“不平衡”体积应变率贡献对 Biot 有效应力的影响；量 <span class="math">\(K {{\partial \epsilon_{unb}} \over {\partial t}}\)</span> 被解释为孔隙压力增量 <span class="math">\(\alpha {{\partial p} \over {\partial t}}\)</span>，随后按以下方式“修正”总应力（见方程<a class="reference internal" href="#equation-eqfluid-num-elastic-fsff">(64)</a>）</p>
+<div class="math" id="equation-eqfluid-num-sn-fsff">
+<span class="eqno">(65)</span>\[\sigma^n = \sigma - \alpha {{\partial p} \over {\partial t}}\]</div>
+<p>其中</p>
+<div class="math" id="equation-eqfluid-num-alphadpdn-fsff">
+<span class="eqno">(66)</span>\[\alpha {{\partial p} \over {\partial t}} = K {{\partial \epsilon_{unb}} \over {\partial t}}\]</div>
+<p>在一系列力学步中重复此过程，直到不平衡体积应变增量降至可忽略值。网格点孔隙压力也同时更新，以确保流固计算中具有正确反馈。</p>
+<p>为使方案稳定且收敛，不能在每个计算步完整施加应力修正增量 <span class="math">\(-\alpha {{\partial p} \over {\partial t}} = -K {{\partial \epsilon_{unb}} \over {\partial t}}\)</span>。而是通过“气球”技术，将累计量逐渐释放到网格中。<a class="footnote-reference" href="#id4" id="id2">[2]</a>该技术计算不平衡体积 <span class="math">\(V_{unb}\)</span>，并存储在与每个网格点或节点关联的虚拟容器（气球）中。网格点的不平衡体积有两项贡献：流体含量变化，以及相交于该网格点的网格单元体积应变增量。每个力学步后根据体积变形更新气球内容，每个流动步后根据不平衡流量更新。（与标准方案相同，利用<a class="reference internal" href="../fluid_therm_mech_form/fluid_therm_mech_form.html#eqfluid-form-massbalancel"><span class="std std-ref">流体质量平衡方程</span>（fluid mass balance equation）</a>在网格点计算流体含量变化。）</p>
+<p>网格单元不平衡体积应变表达式通过下式计算</p>
+<div class="math" id="equation-eqfluid-num-epsilonunb-fsff">
+<span class="eqno">(67)</span>\[\epsilon_{unb} = {V_{unb,z} \over V_z} - \alpha \Delta\epsilon\]</div>
+<p>其中，<span class="math">\(V_z\)</span> 为网格单元体积，网格单元不平衡体积 <span class="math">\(V_{unb,z}\)</span> 来自其相关网格点的贡献。力学步中用于修正法向应力的孔隙压力增量（见<a class="reference internal" href="#equation-eqfluid-num-sn-fsff">(65)</a>），按当前不平衡体积应变成比例计算：</p>
+<div class="math" id="equation-eqfluid-num-dpdt-fsff">
+<span class="eqno">(68)</span>\[{{\partial p} \over {\partial t}} = F_p^{\star} K \epsilon_{unb}\]</div>
+<p>其中，<span class="math">\(F_p^{\star}\)</span> 为松弛系数。此外，每个力学步后，利用加权函数将量 <span class="math">\(- \alpha \Delta\epsilon V\)</span> 从一个网格单元分配到各网格点气球。最后，用<a class="reference internal" href="#equation-eqfluid-num-dpdt-fsff">(68)</a>的节点形式更新网格点孔隙压力：</p>
+<div class="math" id="equation-eqfluid-num-dpdt2-fsff">
+<span class="eqno">(69)</span>\[{{\partial p} \over {\partial t}} = F_p^{\star} K {V_{unb} \over V_n}\]</div>
+<p>其中，<span class="math">\(V_n\)</span> 为网格点体积。</p>
+<p>松弛系数 <span class="math">\(F_p^{\star}\)</span> 是无量纲数，必须足够小，以确保<em>快速流动</em>方案收敛。默认值为 0.004，对大多数问题应足以确保数值稳定。可使用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.fastflow-relaxation" title="Sets the relaxation parameters used in the fastflow solution scheme...">单元流体快速流动松弛命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">fastflow-relaxation</span></code>）</a> 命令重置其值。（关于 <span class="math">\(F_p^{\star}\)</span> 的更多信息和建议，见 <em>FLAC</em> 7 版手册<em>流固相互作用</em>卷第 1.4.1.1 节。）</p>
+<p>不排水模拟中，气球内不平衡体积应变的唯一贡献来自力学体积变化。这些变化在力学迭代期间逐渐转为孔隙压力变化，气球排空时过程停止。</p>
+<p>流固模拟中，在流动计算步期间将流动对不平衡体积应变的贡献加入气球，随后执行足够的力学步，以消散该贡献以及力学体积变化的贡献。</p>
+<p>采用<em>饱和快速流动</em>功能循环时，监测平均不平衡体积比 <span class="math">\(\hat{V}_{unb}^a\)</span> 和最大不平衡体积比 <span class="math">\(\hat{V}_{unb}^m\)</span>，以检测方案收敛：</p>
+<div class="math" id="equation-eqfluid-num-vunba-fsff">
+<span class="eqno">(70)</span>\[\hat{V}_{unb}^a = max \biggl[{{ K_n  V_{unb}} \over {|\sigma| V_{n}}}  \biggr]\]</div>
+<div class="math" id="equation-eqfluid-num-vunbm-fsff">
+<span class="eqno">(71)</span>\[\hat{V}_{unb}^m = {{\sum K_n  \sum  V_{unb}} \over {|\sigma| \bigl[\sum V_{n}\bigr]^2}}\]</div>
+<p>其中，求和与取最大值遍及模型所有网格点，<span class="math">\(K_n\)</span> 为相交于网格点的各网格单元平均体积模量，<span class="math">\(|\sigma|\)</span> 为模型应力范数的最大值。<span class="math">\(\hat{V}_{unb}^a\)</span> 和 <span class="math">\(\hat{V}_{unb}^m\)</span> 均低于 <span class="math">\(10^{-5}\)</span> 时，认为气球已排空。此默认值可通过 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#kwd:model.solve.unbalanced-average" title="Cycle until the average unbalanced quantity, defined by the active processes,
+is less than or equal to  f . For the mechanical process, unbalanced refers
+to the average unbalanced force (i.e., the unbalanced force is what remains
+after all forces are applied to a model object)...">模型求解不平衡平均（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span> <span class="pre">unbalanced-average</span></code>）</a> 和 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#kwd:model.solve.unbalanced-maximum" title="Cycle until the maximum unbalanced quantity, defined by the active processes,
+is less than or equal to  f . For the mechanical process, unbalanced refers
+to the maximum unbalanced force (i.e., the unbalanced force is what remains
+after all forces are applied to a model object)...">模型求解不平衡最大（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span> <span class="pre">unbalanced-maximum</span></code>）</a> 命令改变。</p>
+<p><em>饱和快速流动</em>方案仅适用于不可压缩流体。其他情况下，即<a class="reference internal" href="#equation-eqfluid-num-m-fsff">(60)</a>或<a class="reference internal" href="#equation-eqfluid-num-kf-fsff">(61)</a>不适用时，应采用标准方案。因此两种方案相互补充。</p>
+<p>当<a class="reference internal" href="#equation-eqfluid-num-m-fsff">(60)</a>或<a class="reference internal" href="#equation-eqfluid-num-kf-fsff">(61)</a>适用时，不可压缩耦合<em>饱和快速流动</em>方案比标准方案具有若干优点：</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>可采用较大流体时间步。该方案消除了稳定显式时间步对 Biot 模量倒数，或孔隙率及流体体积模量倒数的依赖。在<em>饱和快速流动</em>方案中，稳定显式时间步与 <span class="math">\(F_p^{\star}K\)</span> 成反比。实际上，方程<a class="reference internal" href="#equation-eqfluid-num-1om-fsff">(59)</a>中的 Biot 模量 <span class="math">\(M\)</span> 在<em>快速流动</em>方案中被 <span class="math">\(F_p^{\star}K\)</span> 替代（见<a class="reference internal" href="#equation-eqfluid-num-dpdt2-fsff">(69)</a>和<a class="reference internal" href="#equation-eqfluid-num-02-fsff">(63)</a>）。</li>
+<li>收敛快得多。<em>快速流动</em>方案的质量缩放计算无需考虑流体刚度，因此力学收敛大幅加快。</li>
+<li>准确性更好。<em>快速流动</em>方案直接求解适用于高 Biot 模量的流固耦合方程退化形式，因此得到更准确的解。</li>
+</ol>
+</div></blockquote>
+<p>目前，<em>饱和快速流动</em>方案<em>不能</em>用于以下情况：</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>存在或形成潜水面、地下水位的无压流动；</li>
+<li>含接触面的模型；</li>
+<li>含连接网格的模型；以及</li>
+<li>动力分析。</li>
+</ol>
+</div></blockquote>
+<p>提供两个<em>饱和快速流动</em>功能验证问题，见<a class="reference internal" href="../../../../../zone/test3d/Fluid/1DConsolidation/1dconsolidation.html#dconsolidation"><span class="std std-ref">一维固结</span>（One-Dimensional Consolidation）</a>和<a class="reference internal" href="../../../../../zone/test3d/Fluid/ConsolidationSettlement/consolidationsettlement.html#consolidationsettlement"><span class="std std-ref">条形荷载中心处的固结沉降</span>（Consolidation Settlement at the Center of a Strip Load）</a>。</p>
+<p class="endnotesection rubric">尾注</p>
+<table class="docutils footnote" frame="void" id="id3" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>此方案源自 <em>FLAC</em> 已有的<em>饱和快速流动</em>方案。参考资料见 <em>FLAC</em> 7 版手册<em>流固相互作用</em>卷第 1.4.1 节。</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id4" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>参考资料见 <em>FLAC</em> 7 版手册<em>流固相互作用</em>卷第 1.4.1.1 节。</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../flac3dhome.html"><span class="codename">FLAC3D</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../theory.html"><span class="codename">FLAC3D</span> Theory and Background</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../fluid-mechanical.html">Fluid-Mechanical Interaction</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../fluid_therm_mech_form/fluid_therm_mech_form.html" title="previous chapter"> <span class="codename">FLAC3D</span> Fluid-Thermal-Mechanical-Formulation — Mathematical Description</a> |    
+       <a href="../calcmodes/calcmodes.html" title="next chapter">Calculation Modes for Fluid-Mechanical Interaction</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Numerical Formulation" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

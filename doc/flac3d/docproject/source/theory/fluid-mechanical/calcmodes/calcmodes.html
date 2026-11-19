@@ -1,0 +1,318 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>流固相互作用的计算模式 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="../properties_units/properties_units.html" rel="next" title="Properties and Units for Fluid-Flow Analysis"/>
+<link href="../numerical_form/numerical_form.html" rel="prev" title="Numerical Formulation"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="hide sectionname docutils container">
+<span class="codename">FLAC3D</span> Theory and Background • Fluid-Mechanical Interaction</div>
+<div class="section" id="calculation-modes-for-fluid-mechanical-interaction">
+<span id="fluid-calcmodes"></span><h1>流固相互作用的计算模式</h1>
+<p>孔隙压力分析所需计算模式和命令，取决于网格是否配置流体流动，即是否已指定 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.fluid" title="Fluid-flow analysis...">配置流体计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">fluid</span></code>）</a> 命令。</p>
+<p>指定 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.fluid" title="Fluid-flow analysis...">配置流体计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">fluid</span></code>）</a> 后，流动计算可独立于力学变形计算进行，也可与其耦合。</p>
+<p>也可以不为网格配置流体流动，而使用 <span class="codename">FLAC3D</span> 进行边坡稳定性分析等简化非耦合流固计算。在适用情况下，该选项比流体流动配置求解更快。</p>
+<p><a class="reference internal" href="#fluid-gridnofluid"><span class="std std-ref">网格未配置流体流动</span>（Grid Not Configured for Fluid Flow）</a>和<a class="reference internal" href="#fluid-gridwithfluid"><span class="std std-ref">网格已配置流体流动</span>（Grid Configured for Fluid Flow）</a>对应这两种可能。为方便使用，下述所有命令均汇总于本节末尾的<a class="reference internal" href="../input/input.html#fluid-input"><span class="std std-ref">流体流动分析输入说明</span>（Input Instructions for Fluid-Flow Analysis）</a>。</p>
+<div class="section" id="grid-not-configured-for-fluid-flow">
+<span id="fluid-gridnofluid"></span><h2>网格未配置流体流动</h2>
+<p>如果<em>未</em>发出 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.fluid" title="Fluid-flow analysis...">配置流体计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">fluid</span></code>）</a> 命令，则不能进行流体流动分析，但仍可在网格点赋予孔隙压力。在这种计算模式下，孔隙压力不变；但使用塑性本构模型时，由有效应力状态控制的破坏仍可能发生。</p>
+<p>可通过带梯度的 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/zonegridpoint/cmd_zone.gridpoint.initialize.html#kwd:zone.gridpoint.initialize.pore-pressure" title="Pore Pressure at gridpoint.  Note that if the pore-pressure is changed this
+will not affect the total stress, but will change the effective stress.  The
+ zone.gridpoint.fix.pore-pressure  command can be used to change the total
+stress and leave the effective stress constant...">单元网格点初始化孔隙压力（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">gridpoint</span> <span class="pre">initialize</span> <span class="pre">pore-pressure</span></code>）</a> 命令，或 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.water.html#kwd:zone.water.plane" title="Specify a water table plane.  The water table sets pore pressure for all gridpoints
+(and, hence, zones) below the water table. The pore-pressure gradient is given
+by the direction of the gravity vector, which can be arbitrary (see the  model.gravity 
+command)...">单元水平面（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">water</span> <span class="pre">plane</span></code>）</a>（或 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.water.html#kwd:zone.water.set" title="Specify the geometric set used to determine water surface location. By default,
+the name is  Water Surface .  Specifying a new set name causes a recalculation
+of gridpoint pore pressures for all gridpoints below polygons in that set that
+are also in the range. See the  geometry  command...">单元水集合（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">water</span> <span class="pre">set</span></code>）</a>）命令，在网格点指定孔隙压力分布。</p>
+<p>使用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.water.html#kwd:zone.water.plane" title="Specify a water table plane.  The water table sets pore pressure for all gridpoints
+(and, hence, zones) below the water table. The pore-pressure gradient is given
+by the direction of the gravity vector, which can be arbitrary (see the  model.gravity 
+command)...">单元水平面（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">water</span> <span class="pre">plane</span></code>）</a> 命令时，程序自动计算给定地下水位以下的静水孔隙压力分布。此时还必须指定流体密度（<a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.water.html#kwd:zone.water.density" title="fluid density, `ρ_w` [SI units: kg/m\  3 ]. This will force a recalculation
+of pore pressures on all gridpoints in the range...">单元水密度（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">water</span> <span class="pre">density</span></code>）</a>）和重力（<a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.gravity.html#command:model.gravity" title="Set the gravity as a vector or float. Gravity is set in units of acceleration.
+ Body force is calculated as the product of the gravity vector and the real
+mass of an object...">设置重力命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">gravity</span></code>）</a>）。可通过 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.list.html#kwd:zone.list.fluid-density" title="Zone fluid density (only available if  model.configure.fluid  has been
+specified)...">单元列表流体密度（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">list</span> <span class="pre">fluid-density</span></code>）</a> 命令输出流体密度值和地下水位位置；如果地下水位由 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.water.html#kwd:zone.water.set" title="Specify the geometric set used to determine water surface location. By default,
+the name is  Water Surface .  Specifying a new set name causes a recalculation
+of gridpoint pore pressures for all gridpoints below polygons in that set that
+are also in the range. See the  geometry  command...">单元水集合（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">water</span> <span class="pre">set</span></code>）</a> 或 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.water.html#kwd:zone.water.plane" title="Specify a water table plane.  The water table sets pore pressure for all gridpoints
+(and, hence, zones) below the water table. The pore-pressure gradient is given
+by the direction of the gravity vector, which can be arbitrary (see the  model.gravity 
+command)...">单元水平面（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">water</span> <span class="pre">plane</span></code>）</a> 命令定义，还可以绘制地下水位。</p>
+<p>两种情况下，网格单元孔隙压力都通过网格点值平均得到，并用于推导本构模型所需的有效应力。在此模式下，计算体力时不会自动考虑流体存在，因此用户必须分别为地下水位以下和以上赋予介质湿密度和干密度。命令 <code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">gridpoint</span> <span class="pre">list</span> <span class="pre">pore-pressure</span></code> 和 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.list.html#kwd:zone.list.pore-pressure" title="Zone pore pressure (average from gridpoint values)...">单元列表孔隙压力（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">list</span> <span class="pre">pore-pressure</span></code>）</a> 分别输出网格点和网格单元孔隙压力。<code class="xref fish fish-cmd docutils literal"><span class="pre">plot</span> <span class="pre">add</span> <span class="pre">zone</span> <span class="pre">contour</span> <span class="pre">pore-pressure</span></code> 绘制网格点孔隙压力等值线。</p>
+<p>此模式的简单应用示例，见<em>问题求解</em>部分的<a class="reference internal" href="../../../modeling/problemsolving/choice.html#cmodelwatereffects"><span class="std std-ref">水的影响</span>（The Effect of Water）</a>主题。</p>
+</div>
+<div class="section" id="grid-configured-for-fluid-flow">
+<span id="fluid-gridwithfluid"></span><h2>网格已配置流体流动</h2>
+<p>给定 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.fluid" title="Fluid-flow analysis...">配置流体计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">fluid</span></code>）</a> 命令后，可进行瞬态流体流动分析，孔隙压力和潜水面均可变化。孔隙压力在网格点计算，网格单元值通过平均获得。<a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.fluid" title="Fluid-flow analysis...">配置流体计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">fluid</span></code>）</a> 模式既可进行有效应力计算（静态孔隙压力分布），也可进行不排水计算。此外，还可进行完全耦合分析：孔隙压力变化产生变形，体积应变又使孔隙压力演化。</p>
+<p>网格配置流体流动时，用户必须在地下水位上下均赋予<em>干</em>密度，因为 <span class="codename">FLAC3D</span> 会在体力计算中考虑流体影响。</p>
+<p>在 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.fluid" title="Fluid-flow analysis...">配置流体计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">fluid</span></code>）</a> 模式运行时，必须为网格单元赋予流体流动模型。通过 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.cmodel.assign.isotropic" title="Assign the isotropic flow model...">指定流体各向同性本构模型命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">cmodel</span> <span class="pre">assign</span> <span class="pre">isotropic</span></code>）</a> 命令规定各向同性流动，通过 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.cmodel.assign.anisotropic" title="Assign the anisotropic flow model...">指定流体各向异性本构模型命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">cmodel</span> <span class="pre">assign</span> <span class="pre">anisotropic</span></code>）</a> 命令规定各向异性流动。使用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.cmodel.assign.null" title="Assign the null fluid model...">单元流体本构模型指定空（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">cmodel</span> <span class="pre">assign</span> <span class="pre">null</span></code>）</a> 命令为网格单元赋予不透水材料。请注意，力学上设为空的网格单元，<em>不会</em>自动在流体流动中设为空。</p>
+<p>流体性质赋予网格单元或网格点。网格单元流体性质包括各向同性渗透率、孔隙率、Biot 系数、不排水热系数和流体密度。除流体密度外，网格单元流体性质通过 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.property" title="Assigns properties for the fluid flow constitutive models of all zones in the
+rnage...">单元流体属性（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">property</span></code>）</a> 命令赋予；流体密度通过 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.initialize.html#kwd:zone.initialize.fluid-density" title="fluid mass density in zone (only available if  model.configure.fluid  has
+been specified)...">单元初始化流体密度（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">initialize</span> <span class="pre">fluid-density</span></code>）</a> 命令赋予。（注意，流体密度也可通过 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.water.html#kwd:zone.water.density" title="fluid density, `ρ_w` [SI units: kg/m\  3 ]. This will force a recalculation
+of pore pressures on all gridpoints in the range...">单元水密度（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">water</span> <span class="pre">density</span></code>）</a> 命令全局指定。）</p>
+<p>各向同性流动使用 <span class="cmdkey">permeability</span> 性质关键字指定渗透率。各向异性流动使用 <span class="cmdkey">permeability-1</span>、<span class="cmdkey">permeability-2</span> 和 <span class="cmdkey">permeability-3</span> 指定三个渗透率主值，方向由 <span class="cmdkey">dip</span>、<span class="cmdkey">dip-direction</span> 和 <span class="cmdkey">rotation</span> 定义。渗透率主方向对应 <span class="math">\(k_1\)</span>、<span class="math">\(k_2\)</span>、<span class="math">\(k_3\)</span>，构成右手系。性质 <span class="cmdkey">dip</span> 和 <span class="cmdkey">dip-direction</span> 为定义 <span class="math">\(k_1\)</span> 和 <span class="math">\(k_2\)</span> 的平面的倾角和倾向角。倾角从全局 <span class="math">\(xy\)</span> 平面量起，向下即 <span class="math">\(z\)</span> 负方向为正。倾向角是 <span class="math">\(y\)</span> 正轴与倾向向量在 <span class="math">\(xy\)</span> 平面上投影的夹角，从 <span class="math">\(y\)</span> 轴顺时针为正。性质 <span class="cmdkey">rotation</span> 是 <span class="math">\(k_1\)</span>-<span class="math">\(k_2\)</span> 平面内，<span class="math">\(k_1\)</span> 轴与倾向向量间的旋转角，从倾向向量顺时针为正。见<a href="#fig-fluid-prin-directions">图 1（Figure  1）</a>。</p>
+<div class="figure align-center" id="id1">
+<span id="fig-fluid-prin-directions"></span><a class="reference internal image-reference" href="../../../../../../_images/fluid-prin-directions.png"><img alt="../../../../../../_images/fluid-prin-directions.png" src="../../../../../../_images/fluid-prin-directions.png" style="width: 557.25px; height: 702.0px;"/></a>
+<p class="caption"><span class="caption-text">图 1：渗透率张量主方向的定义。</span></p>
+</div>
+<p>使用 <span class="cmdkey">biot</span> 关键字赋予 Biot 系数，使用 <span class="cmdkey">porosity</span> 关键字赋予孔隙率。若未指定，默认 Biot 系数 = 1，孔隙率 = 0.5。</p>
+<p>网格点流体性质通过 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/zonegridpoint/cmd_zone.gridpoint.initialize.html#command:zone.gridpoint.initialize" title="Assign or initialize values to all gridpoints in the range.   Keywords available
+can be chosen from the following list:..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">gridpoint</span> <span class="pre">initialize</span></code></a> 命令赋予，包括流体体积模量、Biot 模量、流体抗拉限值和饱和度。每个网格点性质也可以指定空间变化。</p>
+<p><a href="#table-fluid-property">表 1（Table  1）</a>汇总各种性质的指定方式。流体性质的进一步说明见<a class="reference internal" href="../properties_units/properties_units.html#fluid-properties-units"><span class="std std-ref">流体流动分析的性质与单位</span>（Properties and Units for Fluid-Flow Analysis）</a>。</p>
+<span id="table-fluid-property"></span><table border="1" class="colwidths-given icg1 docutils" id="id2">
+<caption><span class="caption-text">表 1：性质指定方法</span></caption>
+<colgroup>
+<col width="19%"/>
+<col width="25%"/>
+<col width="13%"/>
+<col width="44%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">property</th>
+<th class="head">关键字</th>
+<th class="head">specific</th>
+<th class="head">命令</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>渗透率（各向同性）</td>
+<td><span class="cmdkey">permeability</span></td>
+<td><em>在网格单元中</em></td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.property.permeability" title="Isotropic permeability,  k . The permeability used in |flac3d| is defined
+as the conventional hydraulic Permeability divided by the unit weight of water.
+Permeability must be non-zero if the command  zone.fluid.active   on 
+applies...">单元流体属性渗透率（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">property</span> <span class="pre">permeability</span></code>）</a></td>
+</tr>
+<tr class="row-odd"><td>渗透率主值（各向异性）</td>
+<td><span class="cmdkey">permeability-1</span></td>
+<td><em>在网格单元中</em></td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.property.permeability-1" title="Principal permeability value...">单元流体属性渗透率 1（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">property</span> <span class="pre">permeability-1</span></code>）</a></td>
+</tr>
+<tr class="row-even"><td>渗透率主值（各向异性）</td>
+<td><span class="cmdkey">permeability-2</span></td>
+<td><em>在网格单元中</em></td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.property.permeability-2" title="Principal permeability value...">单元流体属性渗透率 2（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">property</span> <span class="pre">permeability-2</span></code>）</a></td>
+</tr>
+<tr class="row-odd"><td>渗透率主值（各向异性）</td>
+<td><span class="cmdkey">permeability-3</span></td>
+<td><em>在网格单元中</em></td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.property.permeability-3" title="Principal permeability value...">单元流体属性渗透率 3（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">property</span> <span class="pre">permeability-3</span></code>）</a></td>
+</tr>
+<tr class="row-even"><td>渗透率主值（各向异性）</td>
+<td><span class="cmdkey">permeability-xx</span></td>
+<td><em>在网格单元中</em></td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.property.permeability-xx" title="*xx*-component permeability...">单元流体属性渗透率 xx 分量（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">property</span> <span class="pre">permeability-xx</span></code>）</a></td>
+</tr>
+<tr class="row-odd"><td>渗透率主值（各向异性）</td>
+<td><span class="cmdkey">permeability-xy</span></td>
+<td><em>在网格单元中</em></td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.property.permeability-xy" title="*xy*-component permeability...">单元流体属性渗透率 xy 分量（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">property</span> <span class="pre">permeability-xy</span></code>）</a></td>
+</tr>
+<tr class="row-even"><td>渗透率主值（各向异性）</td>
+<td><span class="cmdkey">permeability-xz</span></td>
+<td><em>在网格单元中</em></td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.property.permeability-xz" title="*xz*-component permeability...">单元流体属性渗透率 xz 分量（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">property</span> <span class="pre">permeability-xz</span></code>）</a></td>
+</tr>
+<tr class="row-odd"><td>渗透率主值（各向异性）</td>
+<td><span class="cmdkey">permeability-yy</span></td>
+<td><em>在网格单元中</em></td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.property.permeability-yy" title="*yy*-component permeability...">单元流体属性渗透率 yy 分量（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">property</span> <span class="pre">permeability-yy</span></code>）</a></td>
+</tr>
+<tr class="row-even"><td>渗透率主值（各向异性）</td>
+<td><span class="cmdkey">permeability-yz</span></td>
+<td><em>在网格单元中</em></td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.property.permeability-yz" title="*yz*-component permeability...">单元流体属性渗透率 yz 分量（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">property</span> <span class="pre">permeability-yz</span></code>）</a></td>
+</tr>
+<tr class="row-odd"><td>渗透率主值（各向异性）</td>
+<td><span class="cmdkey">permeability-zz</span></td>
+<td><em>在网格单元中</em></td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.property.permeability-zz" title="*zz*-component permeability...">单元流体属性渗透率 zz 向命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">property</span> <span class="pre">permeability-zz</span></code>）</a></td>
+</tr>
+<tr class="row-even"><td>渗透率主方向（各向异性）</td>
+<td><span class="cmdkey">dip</span></td>
+<td><em>在网格单元中</em></td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.property.dip" title="Principal permeability plane dip angle (in degrees)...">单元流体属性倾角（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">property</span> <span class="pre">dip</span></code>）</a></td>
+</tr>
+<tr class="row-odd"><td>渗透率主方向（各向异性）</td>
+<td><span class="cmdkey">did-direction</span></td>
+<td><em>在网格单元中</em></td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.property.dip-direction" title="Principal permeability plane dip direction angle (in degrees)...">单元流体属性倾角方向（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">property</span> <span class="pre">dip-direction</span></code>）</a></td>
+</tr>
+<tr class="row-even"><td>渗透率主方向（各向异性）</td>
+<td><span class="cmdkey">rotation</span></td>
+<td><em>在网格单元中</em></td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.property.rotation" title="Principal permeability plane rotation angle (in degrees)...">单元流体属性旋转（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">property</span> <span class="pre">rotation</span></code>）</a></td>
+</tr>
+<tr class="row-odd"><td>孔隙率</td>
+<td><span class="cmdkey">porosity</span></td>
+<td><em>在网格单元中</em></td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.property.porosity" title="Porosity,  n . The default is 0.5...">单元流体属性孔隙率（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">property</span> <span class="pre">porosity</span></code>）</a></td>
+</tr>
+<tr class="row-even"><td>Biot 系数</td>
+<td><span class="cmdkey">biot</span></td>
+<td><em>在网格单元中</em></td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.property.biot" title="Biot coefficient (grain compressibility),  \alpha . The default is 1.0...">单元流体属性比奥（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">property</span> <span class="pre">biot</span></code>）</a></td>
+</tr>
+<tr class="row-odd"><td>不排水热系数</td>
+<td><span class="cmdkey">undrained-thermal-coefficient</span></td>
+<td><em>在网格单元中</em></td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.property.undrained-thermal-coefficient" title="Undrained thermal coefficient,  \beta ...">设置单元流体不排水热系数属性命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">property</span> <span class="pre">undrained-thermal-coefficient</span></code>）</a></td>
+</tr>
+<tr class="row-even"><td>流体模量</td>
+<td><span class="cmdkey">fluid-modulus</span></td>
+<td><em>在网格点处</em></td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/zonegridpoint/cmd_zone.gridpoint.initialize.html#kwd:zone.gridpoint.initialize.fluid-modulus" title="Fluid bulk modulus for fluid-flow model (can only be used for biot c = 1; see
+the material in  fluid-mechanical ).  Only available if the  model.configure.fluid 
+has been given...">单元网格点初始化流体模量（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">gridpoint</span> <span class="pre">initialize</span> <span class="pre">fluid-modulus</span></code>）</a></td>
+</tr>
+<tr class="row-odd"><td>Biot 模量</td>
+<td><span class="cmdkey">biot-modulus</span></td>
+<td><em>在网格点处</em></td>
+<td><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">gridpoint</span> <span class="pre">initialize</span> <span class="pre">biot-modulus</span></code></td>
+</tr>
+<tr class="row-even"><td>饱和度</td>
+<td><span class="cmdkey">saturation</span></td>
+<td><em>在网格点处</em></td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/zonegridpoint/cmd_zone.gridpoint.initialize.html#kwd:zone.gridpoint.initialize.saturation" title="Saturation at the gridpoint.  Only available if the  model.configure.fluid 
+has been given...">单元网格点初始化饱和度（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">gridpoint</span> <span class="pre">initialize</span> <span class="pre">saturation</span></code>）</a></td>
+</tr>
+<tr class="row-odd"><td>流体抗拉限值</td>
+<td><span class="cmdkey">fluid-tension</span></td>
+<td><em>在网格点处</em></td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/zonegridpoint/cmd_zone.gridpoint.initialize.html#kwd:zone.gridpoint.initialize.fluid-tension" title="Fluid tension limit for fluid-flow model (tension is negative, value is -1e-15
+by default; see the material in  fluid-mechanical ).  Only available if
+the  model.configure.fluid  has been given...">单元网格点初始化流体抗拉（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">gridpoint</span> <span class="pre">initialize</span> <span class="pre">fluid-tension</span></code>）</a></td>
+</tr>
+<tr class="row-even"><td>流体密度</td>
+<td><span class="cmdkey">fluid-density</span></td>
+<td><em>在网格单元处</em></td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.initialize.html#kwd:zone.initialize.fluid-density" title="fluid mass density in zone (only available if  model.configure.fluid  has
+been specified)...">单元初始化流体密度（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">initialize</span> <span class="pre">fluid-density</span></code>）</a></td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td><span class="cmdkey">density</span></td>
+<td><em>全局</em></td>
+<td><a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.water.html#kwd:zone.water.density" title="fluid density, `ρ_w` [SI units: kg/m\  3 ]. This will force a recalculation
+of pore pressures on all gridpoints in the range...">单元水密度（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">water</span> <span class="pre">density</span></code>）</a></td>
+</tr>
+</tbody>
+</table>
+<p>在 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.fluid" title="Fluid-flow analysis...">配置流体计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">fluid</span></code>）</a> 模式中，流体可压缩性以两种方式之一定义：1）指定 Biot 系数和 Biot 模量；或 2）指定流体体积模量和孔隙率。第一种情况考虑固体颗粒可压缩性，不可压缩颗粒的 Biot 系数设为 1。第二种假定固体颗粒不可压缩（见<a class="reference internal" href="../properties_units/properties_units.html#fluid-biot-coefficient-and-biot-modulus"><span class="std std-ref">Biot 系数与 Biot 模量</span>（Biot Coefficient and Biot Modulus）</a>）。</p>
+<p>网格单元性质可用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.list.property" title="Outputs the values of the specified fluid property in all zones in the range...">单元流体列表属性（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">list</span> <span class="pre">property</span></code>）</a> 命令输出，网格点性质可用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/zonegridpoint/cmd_zone.gridpoint.list.html#command:zone.gridpoint.list" title="Display gridpoint information in the console.  The following keywords are available
+to choose which information to list..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">gridpoint</span> <span class="pre">list</span></code></a> 命令输出。流体密度及地下水位位置（若已指定）可用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.water.html#kwd:zone.water.list" title="Lists the current water table settings.  This includes the assumed fluid density,
+the geometric set to use (if any), and the water table plane last specified...">单元水列表（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">water</span> <span class="pre">list</span></code>）</a> 命令输出。流体流动性质可绘为等值线图。对于各向异性流动，可使用网格单元性质关键字 <span class="cmdkey">permeability-xx</span>、<span class="cmdkey">permeability-yy</span>、<span class="cmdkey">permeability-zz</span>、<span class="cmdkey">permeability-xy</span>、<span class="cmdkey">permeability-xz</span> 和 <span class="cmdkey">permeability-zz</span>，绘制和输出渗透率张量的全局分量。请注意，这些全局分量不能直接初始化。</p>
+<p>在 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.fluid" title="Fluid-flow analysis...">配置流体计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">fluid</span></code>）</a> 模式下，网格点孔隙压力初始分布的赋予方式与非 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.fluid" title="Fluid-flow analysis...">配置流体计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">fluid</span></code>）</a> 模式相同，即通过 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/zonegridpoint/cmd_zone.gridpoint.initialize.html#kwd:zone.gridpoint.initialize.pore-pressure" title="Pore Pressure at gridpoint.  Note that if the pore-pressure is changed this
+will not affect the total stress, but will change the effective stress.  The
+ zone.gridpoint.fix.pore-pressure  command can be used to change the total
+stress and leave the effective stress constant...">单元网格点初始化孔隙压力（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">gridpoint</span> <span class="pre">initialize</span> <span class="pre">pore-pressure</span></code>）</a>、<a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.water.html#kwd:zone.water.set" title="Specify the geometric set used to determine water surface location. By default,
+the name is  Water Surface .  Specifying a new set name causes a recalculation
+of gridpoint pore pressures for all gridpoints below polygons in that set that
+are also in the range. See the  geometry  command...">单元水集合（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">water</span> <span class="pre">set</span></code>）</a> 或 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.water.html#kwd:zone.water.plane" title="Specify a water table plane.  The water table sets pore pressure for all gridpoints
+(and, hence, zones) below the water table. The pore-pressure gradient is given
+by the direction of the gravity vector, which can be arbitrary (see the  model.gravity 
+command)...">单元水平面（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">water</span> <span class="pre">plane</span></code>）</a> 命令。可用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/zonegridpoint/cmd_zone.gridpoint.fix.html#kwd:zone.gridpoint.fix.pore-pressure" title="Fix pore pressures. If  f  is given, the pore pressure is fixed at that
+value.  Note that if the current pore-pressure is changed, the difference is
+stored in the fluid-mechanical coupling logic and will be applied to the zones
+in the next mechanical step.  This will adjust the total stress but keep the
+effective stress constant.  This is in comparison to using the  zone.gridpoint.initialize.pore-pressure ,
+which will keep the total stress constant but...">单元网格点固定孔隙压力（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">gridpoint</span> <span class="pre">fix</span> <span class="pre">pore-pressure</span></code>）</a>（或 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/zonegridpoint/cmd_zone.gridpoint.free.html#kwd:zone.gridpoint.free.pore-pressure" title="Free pore pressures...">单元网格点自由孔隙压力（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">gridpoint</span> <span class="pre">free</span> <span class="pre">pore-pressure</span></code>）</a>）命令，在选定网格点固定或释放孔隙压力。可用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.apply.html#kwd:zone.apply.well" title="A volume rate of flow,  f  (i.e., fluid volume per zone volume per unit
+time),...">施加单元井命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">apply</span> <span class="pre">well</span></code>）</a> 命令施加流体源与汇。各种条件的说明见<a class="reference internal" href="../boundary_conditions/boundary_conditions.html#fluid-boundary-conditions"><span class="std std-ref">流体流动边界和初始条件</span>（Fluid-Flow Boundary and Initial Conditions）</a>。</p>
+<p>流体流动求解由 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.active" title="The fluid process is  on  for zones, by default, when the  model.configure.fluid 
+command is given...">单元流体活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 和 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令控制。有若干关键字可辅助求解。例如，<a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.active" title="The fluid process is  on  for zones, by default, when the  model.configure.fluid 
+command is given...">单元流体活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 或 <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a> 可开启或关闭流体流动计算模式。这些命令和关键字的应用，取决于流体流动分析所需的耦合程度。<a class="reference internal" href="../solving/solving.html#fluid-solving"><span class="std std-ref">求解纯渗流和耦合渗流问题</span>（Solving Flow-Only and Coupled-Flow Problems）</a>介绍各种耦合程度及建议求解流程，并说明从纯渗流到耦合力学渗流计算的应用示例。</p>
+<p>流体流动分析结果以多种形式提供。命令 <code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">gridpoint</span> <span class="pre">list</span> <span class="pre">pore-pressure</span></code> 和 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.list.html#kwd:zone.list.pore-pressure" title="Zone pore pressure (average from gridpoint values)...">单元列表孔隙压力（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">list</span> <span class="pre">pore-pressure</span></code>）</a> 分别输出网格点和网格单元孔隙压力。使用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.history.html#kwd:zone.history.pore-pressure" title="By default this will be the grid point pore pressure, but the zone average pore
+pressure can be specified by using the  source  keyword modifier...">单元历程孔隙压力（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">history</span> <span class="pre">pore-pressure</span></code>）</a> 命令，并分别指定 <span class="cmdkey">source.gridpoint</span> 和 <span class="cmdkey">source.zone</span>，可监测网格点和网格单元孔隙压力历程。对于瞬态计算，通过 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.history.html#kwd:model.history.fluid.time-total" title="The total accumulated time while this process is active...">模型流体总时间历程命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">history</span> <span class="pre">fluid</span> <span class="pre">time-total</span></code>）</a> 命令监测流动时间，即可绘制孔隙压力随实际时间变化的曲线。<code class="xref fish fish-cmd docutils literal"><span class="pre">plot</span> <span class="pre">add</span> <span class="pre">zone</span> <span class="pre">contour</span> <span class="pre">pore-pressure</span></code> 绘制网格点孔隙压力等值线，<code class="xref fish fish-cmd docutils literal"><span class="pre">plot</span> <span class="pre">add</span> <span class="pre">zone</span> <span class="pre">contour</span> <span class="pre">saturation</span></code> 绘制饱和度等值线，<code class="xref fish fish-cmd docutils literal"><span class="pre">plot</span> <span class="pre">add</span> <span class="pre">flow</span></code> 命令绘制比流量向量。<a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.fluid" title="Fluid-flow analysis...">配置流体计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">fluid</span></code>）</a> 计算模式的一般信息由 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.fluid.html#kwd:model.fluid.list" title="Display fluid calculation-mode information...">模型流体列表（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">fluid</span> <span class="pre">list</span></code>）</a> 命令输出。若干流体流动变量可通过 <span class="codename">FISH</span> 访问，列表见<a class="reference internal" href="../input/input.html#fluid-input"><span class="std std-ref">流体流动分析输入说明</span>（Input Instructions for Fluid-Flow Analysis）</a>。有一个与网格相关的变量 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_fish/zone.gridpoint_intrinsics/fish_gp.flow.html#function:gp.flow" title="Get/set the unbalanced flow discharge at a gridpoint...">节点流量（<code class="xref fish fish-func docutils literal"><span class="pre">gp.flow</span></code>）</a> 只能通过 <span class="codename">FISH</span> 函数访问，对应网格点净流入或流出量。对固定孔隙压力边界上的这些流量求和很有用，可得到系统总流出或流入量。</p>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../flac3dhome.html"><span class="codename">FLAC3D</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../theory.html"><span class="codename">FLAC3D</span> Theory and Background</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../fluid-mechanical.html">Fluid-Mechanical Interaction</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../numerical_form/numerical_form.html" title="previous chapter"> Numerical Formulation</a> |    
+       <a href="../properties_units/properties_units.html" title="next chapter">Properties and Units for Fluid-Flow Analysis</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Calculation Modes for Fluid-Mechanical Interaction" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

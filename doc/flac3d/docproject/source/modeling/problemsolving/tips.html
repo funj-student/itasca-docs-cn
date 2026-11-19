@@ -1,0 +1,301 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>技巧与建议 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="interpretation.html" rel="next" title="Interpretation"/>
+<link href="interfaces.html" rel="prev" title="Interfaces"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="hide sectionname docutils container">
+<span class="codename">FLAC3D</span> Modeling • Problem Solving with <span class="codename">FLAC3D</span></div>
+<div class="section" id="tips-and-advice">
+<span id="tips"></span><h1>技巧与建议</h1>
+<p>使用 <span class="codename">FLAC3D</span> 解决问题时，优化模型以实现最高效分析十分重要。本节提出若干改进模型运行的建议，并介绍准备 <span class="codename">FLAC3D</span> 计算时应避免的常见问题。</p>
+<div class="section" id="check-model-runtime">
+<h2>1. 检查模型运行时间</h2>
+<p><span class="codename">FLAC3D</span> 的求解时间与 <span class="math">\(N^{4/3}\)</span> 成正比，其中 <span class="math">\(N\)</span> 为网格单元数量。该公式适用于求解平衡状态的弹性问题。对于塑性问题，运行时间会有所变化，但变化不大；如果持续发生塑性流动，则可能长得多。必须检查计算机对特定模型的计算速度。一个简单方法是运行<a class="reference internal" href="#benchmark-test"><span class="std std-ref">下文</span>（below）</a>的基准测试，再根据网格单元数量插值，用该速度估计具体模型的计算速度。</p>
+</div>
+<div class="section" id="effects-on-runtime">
+<h2>2. 对运行时间的影响</h2>
+<p>以下情况会使 <span class="codename">FLAC3D</span> 收敛更慢：</p>
+<blockquote>
+<div><ol class="loweralpha simple">
+<li>网格单元材料内部，或网格单元、结构构件和接触面之间存在较大刚度差异；或</li>
+<li>网格单元尺寸存在较大差异。</li>
+</ol>
+</div></blockquote>
+<p>这些差异越大，程序效率越低。详细分析前，应研究刚度差异的影响。例如，可以用一系列赋予恒定速度的固定网格点替代非常刚硬的加载板。（请记住，<a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/zoneface/cmd_zone.face.apply.html#command:zone.face.apply" title="This command is used to apply boundary conditions at surface faces of the model.
+ To apply conditions to zones rather than at faces, see the  zone.apply 
+command.  To apply conditions at individual gridpoints, see the  zone.gridpoint.fix 
+command...">施加网格单元面条件（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">face</span> <span class="pre">apply</span></code>）</a> 或 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/zonegridpoint/cmd_zone.gridpoint.fix.html#command:zone.gridpoint.fix" title="Fix a property at all gridpoints in the range. If a fixed displacement is required,
+the appropriate velocities should be initialized to zero. (Zero velocity is
+the default on start-up.) To provide a boundary condition to a surface of the
+model, see the  zone.face.apply  command..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">gridpoint</span> <span class="pre">fix</span></code></a> 命令用于固定速度，<em>而非</em>位移。）考虑地下水会增加表观力学体积模量（见<a class="reference internal" href="../../theory/fluid-mechanical/fluid-mechanical.html#fluid-mechanical"><span class="std std-ref">流固相互作用</span>（Fluid-Mechanical Interaction）</a>一节）。</p>
+<p>对于因材料性质或网格单元尺寸而形成的小型高刚度区域，要求其完全收敛与否，可能对所关注的模型总体响应没有明显影响。此时，采用 <span class="cmdkey">convergence</span> 求解准则并提高该区域的 <span class="cmdkey">ratio-target</span>，可能显著减少所需运行时间。与往常一样，应仔细分析模型响应，确保这一附加误差可接受。</p>
+</div>
+<div class="section" id="considerations-for-zoning-density">
+<h2>3. 网格划分密度的考虑</h2>
+<p><span class="codename">FLAC3D</span> 使用常应变单元。如果应力或应变梯度较高，就需要许多网格单元表示变化的分布。应以不同网格划分密度运行同一问题，检查其影响。</p>
+<p>尽量使网格划分均匀，尤其在关注区域内。避免纵横比大于 5:1 的狭长网格单元，也应避免网格单元尺寸突变（即采用平滑渐变网格）。配合 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.create.html#command:zone.create" title="The  zone.create  command fills primitive shapes (  brick ,  cylinder ,
+etc.) with a predefined grid pattern..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">create</span></code></a> 命令使用 <span class="cmdkey">ratio</span> 关键字，使网格单元尺寸从细网格区域向粗网格区域平滑渐变。如果已通过 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.densify.html#command:zone.densify" title="|...">加密网格单元（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">densify</span></code>）</a> 加密网格单元，建议使用 <span class="cmdkey">gradient-limit</span> 关键字，尽量减小网格单元尺寸梯度。</p>
+</div>
+<div class="section" id="automatic-detection-of-an-equilibrium-state">
+<h2>4. 自动检测平衡状态</h2>
+<p>如<a class="reference internal" href="equilibrium.html#equilibrium"><span class="std std-ref">达到平衡</span>（Reaching Equilibrium）</a>所述，使用 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令时，建议采用 <span class="cmdkey">convergence</span> <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">1.0</span></span></a> 限值准则。但应始终记录最关注区域的位移和速度历程，判断是否能更早达到足够平衡，或是否仍需继续循环。先求解至 <span class="cmdkey">convergence</span> 为 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">100</span></span></a> 或更高，再检查响应，是良好做法。绘制收敛值等值面，查看模型哪些位置收敛困难，有助于判断为提高效率应优先调整哪些部位。</p>
+<p>默认力比限值也用于检测热计算和流体流动计算的稳态解。热计算中，评估的是不平衡热通量和施加热通量的大小，而非不平衡力与施加机械力。流体流动计算中，则评估不平衡流量和施加流量的大小。</p>
+</div>
+<div class="section" id="considerations-for-selecting-damping">
+<h2>5. 阻尼选择的考虑</h2>
+<p>静力分析的默认力学阻尼为<em>局部阻尼</em>（见<a class="reference internal" href="../../theory/theoreticalbackground/formulation.html#mechanical-damping"><span class="std std-ref">力学阻尼</span>（Mechanical Damping）</a>主题）。当多数网格点的速度分量周期性过零时，这种阻尼最有效地消除动能，因为质量调整过程依赖速度符号变化。局部阻尼是一种非常高效的算法，可在不引入错误阻尼力的情况下获得静力平衡解（见 Cundall 1987）。</p>
+<p>如果求解最终状态中，网格较大区域具有非零速度分量，则默认阻尼可能不足以使模型达到平衡。当网格存在显著刚体运动时，称为<em>组合阻尼</em>的另一种阻尼方式，比局部阻尼更有利于收敛至稳态。例如，蠕变模拟中，或很刚硬的结构加固附着于因开挖而运动的软土时，可能出现这种情况。使用 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.mechanical.html#kwd:zone.mechanical.damping.combined" title="combined local damping (default is 0.8)...">单元力学组合阻尼命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">mechanical</span> <span class="pre">damping</span> <span class="pre">combined</span></code>）</a> 命令启用组合阻尼。组合阻尼消除动能的效率较低，因此应注意尽量减小系统的动力激励（见<a class="reference internal" href="boundary_conditions.html#gradual-excavation-example1"><span class="std std-ref">圆形隧道的逐步开挖</span>（gradual excavation of a circular tunnel）</a>示例）。可通过 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.mechanical.html#kwd:zone.mechanical.damping.local" title="local damping (default is 0.8).  If the  alternate  keyword is specified,
+an experimental alternate implementation of local damping is used that produces
+less sensitivity to small changes in the model...">单元力学阻尼局部（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">mechanical</span> <span class="pre">damping</span> <span class="pre">local</span></code>）</a> 命令切回默认阻尼。</p>
+</div>
+<div class="section" id="check-model-response">
+<h2>6. 检查模型响应</h2>
+<p><span class="codename">FLAC3D</span> 展示类似物理系统将如何表现。应经常开展简单测试，验证实际操作是否符合您的设想。例如，如果加载条件和几何形状对称，确保响应也对称。修改模型后，执行少量计算步（例如 50 或 100 步），验证初始响应的符号和位置正确。对预期应力或位移量级进行粗略估算，并与 <span class="codename">FLAC3D</span> 输出比较。</p>
+<p>如果对模型施加强烈冲击，就会得到剧烈响应。如果对模型采取物理上不合理的操作，就应预期出现异常结果。如果某个分析阶段得到意外结果，应回顾此前各步操作。</p>
+<p>继续模型模拟之前，应批判性地检查输出。例如，除了某个角部网格单元速度很大之外，其余一切似乎合理，也应先弄清原因再继续。这种情况下，可能是某个边界网格点没有正确固定。</p>
+</div>
+<div class="section" id="initializing-variables">
+<h2>7. 初始化变量</h2>
+<p>对于包含多个不同开挖阶段的模拟，常见做法是在不同计算之间初始化网格点位移，以便解释结果。这是可行的，因为程序计算过程中不需要位移——位移由网格点速度计算，只为方便用户使用。</p>
+<p>但初始化速度是另一回事。如果网格点速度被固定为某个常值，在另行设置前会始终保持该值。因此，不要只是为了清除速度就将网格速度初始化为零——这会影响模拟结果。但有时将速度设为零确实有用，例如消除全部动能。</p>
+</div>
+<div class="section" id="minimizing-transient-effects-on-static-analysis">
+<h2>8. 尽量减小瞬态效应对静力分析的影响</h2>
+<p>静力分析中，瞬态波可能使塑性模型经历定义不明确的应力路径（可能触发不真实的破坏）。因此，通常应在每个阶段逐渐趋近解，即在问题条件突然变化时，尽量减小瞬态波影响，使求解更为“静态”。<a class="footnote-reference" href="#id2" id="id1">[1]</a></p>
+<p>使 <span class="codename">FLAC3D</span> 求解更接近静态的建议方法，是使用 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.relax.html#kwd:zone.relax.excavate" title="Creates and initializes an excavation condition on all zones in the range...">单元松弛开挖（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">relax</span> <span class="pre">excavate</span></code>）</a> 开挖区域，并在施加或降低荷载时使用 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/zoneface/cmd_zone.face.apply.html#command:zone.face.apply" title="This command is used to apply boundary conditions at surface faces of the model.
+ To apply conditions to zones rather than at faces, see the  zone.apply 
+command.  To apply conditions at individual gridpoints, see the  zone.gridpoint.fix 
+command...">施加网格单元面条件（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">face</span> <span class="pre">apply</span></code>）</a> 的 <span class="cmdkey">servo</span> 选项。发生突然变化时（例如将网格单元设为空来模拟开挖），<em>不</em>建议先将强度性质设为高值、步进至平衡，再将性质恢复为真实值。后一种方法并没有在应力空间中明确规定将网格单元带入屈服面以内的方向，整个过程不符合物理实际。</p>
+</div>
+<div class="section" id="changing-material-models">
+<h2>9. 更改材料模型</h2>
+<p><span class="codename">FLAC3D</span> 不限制模拟期间可以使用的不同材料模型数量。对于您所用 <span class="codename">FLAC3D</span> 版本支持的最大规模网格，程序容量设计允许在需要时为每个网格单元采用不同材料。</p>
+</div>
+<div class="section" id="running-problems-with-in-situ-field-stresses-and-gravity">
+<h2>10. 计算具有原位应力和重力的问题</h2>
+<p>许多问题需要对模型同时施加原位应力和重力。例如深部充填采矿：岩体承受很高的原位应力场（对于有限网格尺寸，其重力应力可忽略），但形成的充填矿柱会产生重力应力，可能在荷载作用下坍塌。这些模拟中（与所有施加重力的模拟一样）需要注意，必须至少将网格中的三个点固定在空间中；否则整个网格会因重力而平移。如果发现整个网格沿重力加速度向量方向平移，很可能忘记将网格固定在空间中（例如见<a class="reference internal" href="boundary_conditions.html#uplift-example1"><span class="std std-ref">移除材料时的上浮</span>（uplift when material is removed）</a>）。</p>
+</div>
+<div class="section" id="determining-collapse-loads">
+<h2>11. 确定极限荷载</h2>
+<p>为确定极限荷载，采用“应变控制”而非“应力控制”边界条件通常更好，即施加恒定速度并测量反力，而非施加力并测量位移。当施加荷载接近极限荷载时，会坍塌的系统变得难以控制。真实系统和模型系统均如此。</p>
+</div>
+<div class="section" id="determining-factor-of-safety">
+<h2>12. 确定安全系数</h2>
+<p>在 <span class="codename">FLAC3D</span> 中，对于任意选定参数，可以通过给定条件下计算值与导致破坏的值之比确定安全系数。例如：</p>
+<div class="math">
+\[F_L\ =\ {\hbox{applied load to cause failure} \over {\hbox{design load}}}\]</div>
+<div class="math">
+\[F_\phi\ =\ {\tan \hbox{(actual friction angle)} \over {\tan \hbox{(friction angle at failure)}}}\]</div>
+<p>请注意，始终用较大值除以较小值（假定系统在实际条件下不破坏）。<em>破坏的定义必须由用户建立。</em>Dawson and Roth (1999) 及 Dawson et al. (1999) 比较了这种基于强度折减确定安全系数的方法与基于极限分析解的方法。另见应用示例<a class="reference internal" href="../../../../zone/test3d/ExampleApplications/SlopeCurvature/slopecurvature.html#slopecurvature"><span class="std std-ref">边坡曲率对稳定性的影响</span>（Influence of Slope Curvature on Stability）</a>。</p>
+<p>在 <span class="codename">FLAC3D</span> 中，通过 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 命令实现确定安全系数的强度折减法。该命令采用 Dawson et al. (1999) 所述区间夹逼方法，自动搜索安全系数。在 <span class="codename">FLAC3D</span> 计算的任何阶段都可发出 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 命令，只要每个非空网格单元中的本构模型都支持性质缩放。求解过程中性质会改变，但计算完成，或按 <code class="kbd docutils literal"><span class="pre">Esc</span></code> 键提前终止 <span class="cmdkey">factor-of-safety</span> 搜索时，将恢复原始状态。</p>
+<p><span class="codename">FLAC3D</span> 执行 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 命令时，会持续在屏幕上输出 <span class="math">\(F\)</span> 的夹逼区间值，便于查看求解进展。如果按 <code class="kbd docutils literal"><span class="pre">Esc</span></code> 键终止，求解过程结束，并显示当前最佳 <span class="cmdkey">fos</span> 估计值。程序还生成对应最后一个非平衡状态的保存文件，以便绘制速度向量等，从而显示破坏模式。</p>
+<p>下例基于 Dawson et al. (1999) 的稳定性分析示例，说明此方法的工作方式。对应项目文件为“FactorOfSafety.f3prj”。计算在 <span class="math">\(F\)</span> = 1.06 时停止。随后图示绘制剪应变率等值线和速度向量，可据此识别破坏面。</p>
+<p><strong>边坡稳定性分析的安全系数计算</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">; 创建网格单元</span>
+<span class="nb">zone create</span><span class="n"> brick point </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="n">  </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">2</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0.5</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  size </span><span class="m m-Double">3</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">3</span>
+<span class="nb">zone create</span><span class="n"> brick point </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">2</span><span class="p">,</span><span class="n">  </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">13.4</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">2</span><span class="p">,</span><span class="m m-Double">0.5</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="n">   </span><span class="m m-Double">2</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  size </span><span class="m m-Double">8</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">3</span>
+<span class="nb">zone create</span><span class="n"> brick point </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">13.4</span><span class="p">,</span><span class="n">  </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">20</span><span class="n">  </span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">13.4</span><span class="p">,</span><span class="m m-Double">0.5</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">13.4</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">2</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  size </span><span class="m m-Double">6</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">3</span>
+<span class="nb">zone create</span><span class="n"> brick point </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="n"> </span><span class="m m-Double">2</span><span class="n">  </span><span class="p">,</span><span class="n">  </span><span class="m m-Double">0</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">2</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">13.4</span><span class="p">,</span><span class="n">  </span><span class="m m-Double">0</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">2</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="n"> </span><span class="m m-Double">2</span><span class="n">  </span><span class="p">,</span><span class="m m-Double">0.5</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">2</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">12</span><span class="n">  </span><span class="p">,</span><span class="n">  </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">12</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  point </span><span class="m m-Double">4</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">13.4</span><span class="n"> </span><span class="m m-Double">0.5</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">2</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">5</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">12</span><span class="n">  </span><span class="p">,</span><span class="m m-Double">0.5</span><span class="p">,</span><span class="m m-Double">12</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  point </span><span class="m m-Double">6</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">16</span><span class="n">  </span><span class="p">,</span><span class="n">  </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">12</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">7</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">16</span><span class="n">  </span><span class="p">,</span><span class="m m-Double">0.5</span><span class="p">,</span><span class="m m-Double">12</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  size </span><span class="m m-Double">8</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">17</span>
+<span class="nb">zone create</span><span class="n"> brick point </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">13.4</span><span class="p">,</span><span class="n">  </span><span class="m m-Double">0</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">2</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">20</span><span class="p">,</span><span class="n">  </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">2</span><span class="n"> </span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  point </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">13.4</span><span class="p">,</span><span class="m m-Double">0.5</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">2</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">16</span><span class="p">,</span><span class="n">  </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">12</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  point </span><span class="m m-Double">4</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">20</span><span class="n">  </span><span class="p">,</span><span class="m m-Double">0.5</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">2</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">5</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">16</span><span class="p">,</span><span class="m m-Double">0.5</span><span class="p">,</span><span class="m m-Double">12</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  point </span><span class="m m-Double">6</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">20</span><span class="n">  </span><span class="p">,</span><span class="n">  </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">12</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">7</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">20</span><span class="p">,</span><span class="m m-Double">0.5</span><span class="p">,</span><span class="m m-Double">12</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                  size </span><span class="m m-Double">6</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">17</span>
+<span class="nb">zone face skin</span>
+<span class="c">; 本构模型和参数</span>
+<span class="nb">zone cmodel</span><span class="n"> assign mohr</span><span class="o">-</span><span class="n">coulomb</span>
+<span class="nb">zone property</span><span class="n"> density </span><span class="m m-Double">2000.0</span><span class="n"> bulk </span><span class="m m-Double">1e8</span><span class="n"> shear </span><span class="m m-Double">3e7</span><span class="n"> cohesion </span><span class="m m-Double">12380</span><span class="n"> tension </span><span class="m m-Double">1e10</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">              friction </span><span class="m m-Double">20</span><span class="n"> dilation </span><span class="m m-Double">20</span>
+<span class="c">; 边界条件        </span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'East'</span><span class="n"> or </span><span class="s">'West'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'North'</span><span class="n"> or </span><span class="s">'South'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> range group </span><span class="s">'Bottom'</span>
+<span class="c">; 初始条件</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">10</span>
+<span class="nb">zone initialize-stresses</span>
+<span class="c">; 历程</span>
+<span class="nb">model history</span><span class="n"> name</span><span class="p">=</span><span class="s">'conv'</span><span class="n"> mechanical convergence</span>
+<span class="c">; 求解</span>
+<span class="nb">model </span><span class="ss">solve</span><span class="n"> convergence </span><span class="m m-Double">1</span>
+<span class="nb">model factor-of-safety</span><span class="n"> file </span><span class="s">'slope3dfos'</span><span class="n"> associated convergence </span><span class="m m-Double">1</span>
+</pre></div>
+</div>
+<p>建议在模型平衡状态下发出 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 命令，以缩短求解时间并减少可能的伪惯性效应，但这并非必要条件。</p>
+<p><span class="codename">FLAC3D</span> 执行 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 的流程如下。首先，程序确定表征系统响应时间的“代表性步数”（记为 <span class="math">\(N_r\)</span>）。确定 <span class="math">\(N_r\)</span> 时，先将黏聚力设为较大值，大幅改变内部应力，再计算系统恢复平衡所需步数。随后，对给定安全系数 <span class="math">\(F\)</span>，执行 <span class="math">\(N_r\)</span> 步。如果满足平衡条件，则系统处于平衡；否则再执行 <span class="math">\(N_r\)</span> 步，若满足条件则退出循环。将当前 <span class="math">\(N_r\)</span> 步范围内的平均平衡条件值，与此前 <span class="math">\(N_r\)</span> 步的平均力比比较。如果差异小于 10%，则认为系统不平衡，并以新的非平衡 <span class="math">\(F\)</span> 退出循环。如果上述差异大于 10%，则继续按每组 <span class="math">\(N_r\)</span> 步执行，直到：1）差异小于 10%；2）已执行六组；或 3）满足平衡条件。第一种情况的依据是，平均力比正收敛至高于平衡对应值的稳定值，因此系统必然持续运动。<span class="codename">FISH</span> 内置变量 <a class="reference internal" href="../../../../../common/kernel/doc/manual/global_manual/global_fish/global_utilities/fish_global.fos.html#function:global.fos" title="Get the global factor of safety...">全局安全系数（<code class="xref fish fish-func docutils literal"><span class="pre">global.fos</span></code>）</a> 允许在执行 <a class="reference internal" href="../../../../../common/kernel/doc/manual/model/commands/cmd_model.factor-of-safety.html#command:model.factor-of-safety" title="Set factor of safety analysis parameters.  See the section ref-factorofsafety-
+for a complete description. The following keywords apply...">设置安全系数分析参数（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">factor-of-safety</span></code>）</a> 期间访问 <span class="math">\(F\)</span> 当前值（见示例<span class="flag3">此处需要链接到 FISH 手册中的示例 2.18“fos_f 使用示例”</span>）。</p>
+<div class="figure align-center" id="id3">
+<a class="reference internal image-reference" href="../../../../../_images/FOS.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/FOS.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 1：边坡模型最后非平衡状态下的剪应变率等值线和速度向量。</span></p>
+</div>
+</div>
+<div class="section" id="use-bulk-and-shear-moduli">
+<span id="tips-usebulkandshear"></span><h2>13. 使用体积模量和剪切模量</h2>
+<p>对于 <span class="codename">FLAC3D</span> 中的弹性性质，采用体积模量 <span class="math">\(K\)</span> 和剪切模量 <span class="math">\(G\)</span> 比采用杨氏模量 <span class="math">\(E\)</span> 和泊松比 <span class="math">\(ν\)</span> 更好。</p>
+<p>参数对（<span class="math">\(K,G\)</span>）适用于所有不违反热力学原理的弹性材料。参数对（<span class="math">\(E,ν\)</span>）则不适用于某些物理上允许的材料。在一种极端情况下，材料抵抗体积变化却不抵抗剪切；在另一极端情况下，材料抵抗剪切却不抵抗体积变化。第一类材料对应有限 <span class="math">\(K\)</span> 和零 <span class="math">\(G\)</span>，第二类对应零 <span class="math">\(K\)</span> 和有限 <span class="math">\(G\)</span>。但参数对（<span class="math">\(E,ν\)</span>）不能表征这两类材料中的任何一种。如果排除这两种极限情况（通常为 <span class="math">\(ν\)</span> = 0.5 和 <span class="math">\(ν\)</span> = -1），以下方程</p>
+<div class="math">
+\[\begin{split}\begin{split}
+   3K (1 - 2\nu) &amp;= E \\
+   2G (1 + \nu)  &amp;= E
+\end{split}\end{split}\]</div>
+<p>关联这两组常数。无论多么接近（但不达到）极限情况，这些方程都成立。无需将它们与可能可行也可能不可行的物理试验关联；方程只是定义比例系数的两种方式所产生的结果。假定某材料抵抗畸变的能力逐渐降低，而抵抗体积变化的能力保持恒定，此时 <span class="math">\(ν\)</span> 趋近 0.5。仍必须满足方程 <span class="math">\(3K(1 - 2ν) = E\)</span>。从<em>代数</em>而非物理角度，有两种可能：要么 <span class="math">\(E\)</span> 保持有限非零而 <span class="math">\(K\)</span> 趋于任意大值；要么 <span class="math">\(K\)</span> 保持有限而 <span class="math">\(E\)</span> 趋于零。排除第一种可能，因为所有已知材料的可压缩性都有极限（例如泊松比为 0.5 的水，其体积模量为 2 GPa）。因此只剩第二种情况，此时尽管假定材料主要的弹性抵抗模式不变，<span class="math">\(E\)</span> 却发生剧烈变化。由此推知，参数（<span class="math">\(E,ν\)</span>）不足以表达材料行为。</p>
+</div>
+<div class="section" id="flac3d-runtime-benchmark">
+<span id="benchmark-test"></span><h2><span class="codename">FLAC3D</span> 运行时间基准测试</h2>
+<p>已在多种不同计算机上测试 <span class="codename">FLAC3D</span>。这里比较采用 Mohr-Coulomb 材料、含 624,000 个网格单元的基础模型的计算速率。模型运行 100 步，由 <span class="codename">FISH</span> 函数计算速率。下例给出数据文件，随后表格汇总各计算机的计算速率。</p>
+<p><strong>基准测试数据文件——“timing-test.dat”</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">; 创建网格单元</span>
+<span class="nb">zone create</span><span class="n"> cylindrical</span><span class="o">-</span><span class="n">shell point  </span><span class="m m-Double">0</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point  </span><span class="m m-Double">1</span><span class="n"> </span><span class="p">(</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">15</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                              point  </span><span class="m m-Double">2</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">15</span><span class="p">)</span><span class="n"> point  </span><span class="m m-Double">3</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">15</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                              point  </span><span class="m m-Double">4</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">15</span><span class="p">,</span><span class="m m-Double">15</span><span class="p">)</span><span class="n"> point  </span><span class="m m-Double">5</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">15</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">15</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                              point  </span><span class="m m-Double">8</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">3</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> point  </span><span class="m m-Double">9</span><span class="n"> </span><span class="p">(</span><span class="n"> </span><span class="m m-Double">3</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                              point </span><span class="m m-Double">10</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">3</span><span class="p">,</span><span class="m m-Double">15</span><span class="p">)</span><span class="n"> point </span><span class="m m-Double">11</span><span class="n"> </span><span class="p">(</span><span class="n"> </span><span class="m m-Double">3</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">15</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                              size </span><span class="m m-Double">100</span><span class="n"> </span><span class="m m-Double">80</span><span class="n"> </span><span class="m m-Double">60</span><span class="n"> </span><span class="m m-Double">30</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                              ratio </span><span class="m m-Double">1.05</span><span class="n"> </span><span class="m m-Double">1.1</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0.875</span><span class="n"> fill group </span><span class="s">'cyl'</span>
+<span class="nb">zone face skin</span>
+<span class="nb">zone face group</span><span class="n"> </span><span class="s">'slab'</span><span class="n"> slot </span><span class="s">'app'</span><span class="n"> range group </span><span class="s">'Top'</span><span class="n"> group </span><span class="s">'cyl'</span>
+<span class="c">; 本构模型和参数</span>
+<span class="nb">zone cmodel</span><span class="n"> assign mohr</span><span class="o">-</span><span class="n">coulomb</span>
+<span class="nb">zone property</span><span class="n"> bulk </span><span class="m m-Double">2e8</span><span class="n"> shear </span><span class="m m-Double">1e8</span><span class="n"> cohesion </span><span class="m m-Double">1e5</span>
+<span class="nb">zone property</span><span class="n"> friction </span><span class="m m-Double">20</span><span class="n"> dilation </span><span class="m m-Double">20</span><span class="n"> tension </span><span class="m m-Double">1e10</span>
+<span class="c">; 边界条件</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'West'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'South'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'Bottom'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'North'</span>
+<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="o">-</span><span class="m m-Double">2e-5</span><span class="n"> range group </span><span class="s">'slab'</span>
+<span class="c">; 初始条件</span>
+<span class="nb">zone initialize</span><span class="n"> stress xx </span><span class="o">-</span><span class="m m-Double">1e6</span><span class="n"> yy </span><span class="o">-</span><span class="m m-Double">1e6</span><span class="n"> zz </span><span class="o">-</span><span class="m m-Double">1e6</span>
+<span class="c">; 测量速率</span>
+<span class="nb">fish define</span><span class="ni"> startClock</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> start </span><span class="p">=</span><span class="ni"> </span><span class="k">time.clock</span>
+<span class="nb">end</span>
+<span class="nb">fish define</span><span class="ni"> endClock</span>
+<span class="ni">    </span><span class="k">global</span><span class="ni"> time </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="k">global.cycle</span><span class="ni"> </span><span class="o">*</span><span class="ni"> </span><span class="k">zone.num</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> </span><span class="p">((</span><span class="k">time.clock</span><span class="o">-</span><span class="ni">start</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> </span><span class="m m-Double">100</span><span class="p">)</span>
+<span class="nb">end</span>
+<span class="nb">fish callback</span><span class="n"> add startClock event zone_update_complete</span>
+<span class="nb">fish callback</span><span class="n"> add endClock   event solve_complete</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">100</span>
+<span class="ni">[</span><span class="k">io.out</span><span class="p">(</span><span class="s">'Calculation rate = '</span><span class="o">+</span><span class="ni">string</span><span class="p">(</span><span class="ni">time</span><span class="o">/</span><span class="m m-Double">1000</span><span class="p">)</span><span class="o">+</span><span class="s">' kilo-zones/sec'</span><span class="p">)</span><span class="ni">]</span>
+</pre></div>
+</div>
+<p class="endnotesection rubric">尾注</p>
+<table class="docutils footnote" frame="void" id="id2" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>情况并非始终如此。变化中的非线性系统的“路径相关性”可能很重要。见<a class="reference internal" href="../../../../../common/docproject/source/manual/program_guide/methodology/localizationandpath.html#pathdependence"><span class="std std-ref">局部化、物理不稳定性与路径相关性</span>（Localization, Physical Instability, and Path-Dependence）</a>中的讨论。</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../flac3dhome.html"><span class="codename">FLAC3D</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../modeling.html"><span class="codename">FLAC3D</span> Modeling</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="problemsolving.html">Problem Solving with <span class="codename">FLAC3D</span></a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="interfaces.html" title="previous chapter"> Interfaces</a> |    
+       <a href="interpretation.html" title="next chapter">Interpretation</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Tips and Advice" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

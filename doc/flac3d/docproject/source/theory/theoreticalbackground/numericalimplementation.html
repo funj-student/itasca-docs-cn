@@ -1,0 +1,297 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>数值实现 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="references.html" rel="next" title="References"/>
+<link href="griddiscretization.html" rel="prev" title="Grid Discretization"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="numerical-implementation">
+<span id="numericalimplementation"></span><h1>数值实现</h1>
+<div class="section" id="body-discretization">
+<h2>物体离散</h2>
+<p>默认情况下，所研究的体积被离散为六面体网格单元。
+用户也可以将（由外部网格生成器生成的）四面体网格导入 <span class="codename">FLAC3D</span>。
+下面讨论两种物体离散方式：</p>
+<p><strong>六面体网格划分</strong></p>
+<p>在 <span class="codename">FLAC3D</span> 中，将物体总体离散为六面体网格单元的工作由用户完成。
+有助于此任务的若干可用步骤描述于 :flag2:<code class="docutils literal"><span class="pre">Section</span> <span class="pre">3.2</span> <span class="pre">in</span> <span class="pre">the</span> <span class="pre">User's</span> <span class="pre">Guide</span></code> <span class="flag3">← 呃，这里需要修正</span>
+每个网格单元由程序自动离散为若干四面体集合。
+用户可决定使用一个覆盖层还是两个覆盖层的组合进行计算。
+在预期应力和变形梯度较高的介质区域，建议使用两个覆盖层。
+默认情况下，模型中所有网格单元均规定使用两个覆盖层。
+此外，还应用混合离散技术
+以克服均匀应变四面体在塑性流动期间的过度刚硬行为。</p>
+<p><strong>四面体网格划分</strong></p>
+<p>对导入 <span class="codename">FLAC3D</span> 的四面体网格所执行的 NMD 计算仅使用一个覆盖层。
+应变的节点混合离散技术的实现使用三个计算循环，
+在调用本构模型之前立即执行：</p>
+<ol class="arabic simple">
+<li>对网格单元进行一次循环，以将体积应变率（由网格点速度计算）以及面积/体积分配到网格点。</li>
+<li>对网格点进行一次循环，以计算网格点处体积应变率的体积加权平均值。</li>
+<li>对网格单元进行一次循环，使用网格点值计算体积应变率的平均值，并将该值赋给网格单元。</li>
+</ol>
+<p>请注意，可利用现有的计算循环来执行上述任务。</p>
+<p>在使用依赖于弹塑性体积行为的本构模型时，
+在调用本构模型之后使用类似的（基于应力的）循环，
+以实现对应力的节点混合离散。</p>
+</div>
+<div class="section" id="initial-and-boundary-conditions">
+<h2>初始条件与边界条件</h2>
+<p>问题的边界条件包括表面面力、集中荷载和位移。
+此外，可给出体力并施加初始应力条件。
+在程序中实现时，所有应力和节点速度初始设为零；然后指定初始应力。
+集中荷载在给定的表面节点处指定，
+施加的边界位移以节点速度形式给定。
+体力和表面面力在内部转换为静力等效的节点力集合。
+这构成数值格式的初始状态。</p>
+</div>
+<div class="section" id="main-calculation-steps">
+<h2>主要计算步骤</h2>
+<p><span class="codename">FLAC3D</span> 采用显式“时间步进”有限体积求解格式；
+对于每个时步，计算序列可概述如下：</p>
+<ol class="arabic simple">
+<li>由节点速度导出新的应变率。</li>
+<li>使用本构方程由应变率和前一时刻的应力计算新的应力。</li>
+<li>调用运动方程由应力和力导出新的节点速度和位移。</li>
+</ol>
+<p>该序列在每个时步重复，并监测模型中的最大不平衡力。
+该力要么趋近于零，表明系统正在达到平衡状态；要么趋近于一个恒定的非零值，
+表明系统的一部分（或全部）处于材料的稳态（塑性）流动。
+可在任意时刻中断计算，以便分析解。</p>
+<p>为清晰起见，下面给出计算序列中所用方程（推导见参考文献）的汇总。
+在记号中，仅当局部语境需要时才用上标特指某个节点或四面体。
+此外，如前所述，记号 [[<span class="math">\(f\)</span>]]<span class="math">\(^{&lt;l&gt;}\)</span> 表示
+在全局节点 <span class="math">\(l\)</span> 处共有该节点的所有四面体上类型为 <span class="math">\(f\)</span> 的贡献之和。</p>
+</div>
+<div class="section" id="strain-rate-calculation">
+<h2>应变率计算</h2>
+<p>从已知速度场出发，对网格单元中的每个四面体，
+使用有限体积公式表述计算应变率张量的分量（“<a class="reference internal" href="formulation.html#sec-fdatsd"><span class="std std-ref">空间导数的有限体积近似</span>（Finite Volume Approximation to Space Derivatives）</a>”中的方程<a class="reference internal" href="formulation.html#equation-eqtheory-xiij">(15)</a>）：</p>
+<div class="math" id="equation-eqtheory-num-xiij">
+<span class="eqno">(1)</span>\[ {\xi}_{ij} = - {{1}\over{6V}} \sum_{l = 1}^{4} \left( v_i^l\ n_j^{(l)} + v_j^l\ n_i^{(l)}\right) S^{(l)}\]</div>
+<p>对于默认的六面体网格，随后应用混合离散过程，
+并由“<a class="reference internal" href="griddiscretization.html#griddiscretization"><span class="std std-ref">网格离散</span>（Grid Discretization）</a>”中的方程<a class="reference internal" href="griddiscretization.html#equation-eqtheory-md-xiz">(3)</a>和<a class="reference internal" href="griddiscretization.html#equation-eqtheory-md-xiijl2">(4)</a>计算新的应变率张量对角分量。
+对于该网格单元中现已局部编号为 <span class="math">\(l\)</span> 的特定四面体，这些方程给出</p>
+<div class="math" id="equation-eqtheory-num-xiijl">
+<span class="eqno">(2)</span>\[ {\xi}_{ij}^{[l]} = {\eta}_{ij}^{[l]} + {{{\xi}^z}\over{3}} {\delta}_{ij}\]</div>
+<p>其中 <span class="math">\(ξ^z\)</span> 为网格单元内第一应变率不变量的平均值，由下式计算</p>
+<div class="math" id="equation-eqtheory-num-xiiz">
+<span class="eqno">(3)</span>\[ {\xi}^z = {{\sum_{k=1}^{n_t} {\xi}^{[k]} V^{[k]}}\over {\sum_{k=1}^{n_t} V^{[k]}}}\]</div>
+<p>其中 <span class="math">\(n_t\)</span> 为网格单元计算中所涉及四面体的总数，
+<span class="math">\(V^{[k]}\)</span> 为编号为 <span class="math">\(k\)</span> 的四面体体积。</p>
+<p>对于四面体网格，采用应变的<a class="reference internal" href="griddiscretization.html#nmd"><span class="std std-ref">节点混合离散</span>（nodal mixed discretization）</a>技术。</p>
+</div>
+<div class="section" id="stress-calculation">
+<h2>应力计算</h2>
+<p>本构方程以其增量形式 <span class="math">\(H^*_{ij}\)</span> 使用，
+以计算网格单元中每个四面体的应力增量
+（见“<a class="reference internal" href="formulation.html#eqtheory-sec-ceiif"><span class="std std-ref">增量形式的本构方程</span>（Constitutive Equations in Incremental Form）</a>”中的方程<a class="reference internal" href="formulation.html#equation-eqtheory-dsijcheck">(46)</a>、<a class="reference internal" href="formulation.html#equation-eqtheory-xiijdt">(47)</a>和<a class="reference internal" href="formulation.html#equation-eqtheory-dsij">(48)</a>）：</p>
+<div class="math" id="equation-eqtheory-num-dsij">
+<span class="eqno">(4)</span>\[ \Delta {\sigma}_{ij} =  \Delta {\check{\sigma}}_{ij} + \Delta {\sigma}_{ij}^C\]</div>
+<p>其中</p>
+<div class="math" id="equation-eqtheory-num-dsijcheck">
+<span class="eqno">(5)</span>\[ \Delta {[\check \sigma}_{ij}] = H_{ij}^* \ ({\sigma}_{ij}, \Delta _{ij})\]</div>
+<p>而 <span class="math">\(\epsilon_{ij}\)</span> 由下式计算（使用“<a class="reference internal" href="formulation.html#sec-fdatsd"><span class="std std-ref">空间导数的有限体积近似</span>（Finite Volume Approximation to Space Derivatives）</a>”中的方程<a class="reference internal" href="formulation.html#equation-eqtheory-xiij">(15)</a>）</p>
+<div class="math" id="equation-eqtheory-num-deij">
+<span class="eqno">(6)</span>\[ \Delta _{ij} = - {{\Delta t}\over{6V}} \sum_{l = 1}^{4}\left( v_i^l\ n_j^{(l)} + v_j^l\ n_i^{(l)}\right) S^{(l)}\]</div>
+<p>在小应变模式中不考虑应力修正 <span class="math">\(Δσ^C_{ij}\)</span>。
+在大应变模式中，其值由“<a class="reference internal" href="formulation.html#eqtheory-sec-ceiif"><span class="std std-ref">增量形式的本构方程</span>（Constitutive Equations in Incremental Form）</a>”中的方程<a class="reference internal" href="formulation.html#equation-eqtheory-dsijc">(49)</a>和<a class="reference internal" href="formulation.html#equation-eqtheory-omegaij2">(50)</a>给出：</p>
+<div class="math" id="equation-eqtheory-num-dsijc">
+<span class="eqno">(7)</span>\[ \Delta {\sigma}_{ij}^C = ({\omega}_{ik}\ {\sigma}_{kj} - {\sigma}_{ik}\ {\omega}_{kj}) \Delta t\]</div>
+<p>其中</p>
+<div class="math" id="equation-eqtheory-num-omegaij">
+<span class="eqno">(8)</span>\[ {\omega}_{ij} =  - {{1}\over{6V}} \sum_{l=1}^4 \left( v_i^l\ n_j^{(l)}- v_j^l\ n_i^{(l)} \right)  S^{(l)}\]</div>
+<p>随后通过累加应力增量得到新的应力值。</p>
+<p>对于默认的六面体网格，应用混合离散技术，
+并使用“<a class="reference internal" href="griddiscretization.html#griddiscretization"><span class="std std-ref">网格离散</span>（Grid Discretization）</a>”中的方程<a class="reference internal" href="griddiscretization.html#equation-eqtheory-md-sz">(7)</a>和<a class="reference internal" href="griddiscretization.html#equation-eqtheory-md-sijl2">(8)</a>调整应力张量的对角分量。
+对于该网格单元中局部编号为 <span class="math">\(l\)</span> 的特定四面体，这些方程为</p>
+<div class="math" id="equation-eqtheory-num-sijl">
+<span class="eqno">(9)</span>\[ {\sigma}_{ij}^{[l]} = s_{ij}^{[l]} + {\sigma}^z {\delta}_{ij}\]</div>
+<p>以及</p>
+<div class="math" id="equation-eqtheory-num-sz">
+<span class="eqno">(10)</span>\[ {\sigma}^z = {{\sum_{k=1}^{n_t} {\sigma}^{[k]} V^{[k]}}\over{\sum_{k=1}^{n_t} V^{[k]}}}\]</div>
+<p>对于四面体网格，采用应力的<a class="reference internal" href="griddiscretization.html#nmd"><span class="std std-ref">节点混合离散</span>（nodal mixed discretization）</a>过程。</p>
+</div>
+<div class="section" id="nodal-mass-calculation">
+<h2>节点质量计算</h2>
+<p>四面体对局部节点 <span class="math">\(l\)</span> 处节点质量的贡献 <span class="math">\(m^l\)</span> 使用
+“<a class="reference internal" href="formulation.html#mechtimestepdetermination"><span class="std std-ref">为数值稳定而确定力学时步</span>（Mechanical Timestep Determination for Numerical Stability）</a>”中的方程<a class="reference internal" href="formulation.html#equation-eqtheory-scaleml">(64)</a>计算：</p>
+<div class="math" id="equation-eqtheory-num-ml">
+<span class="eqno">(11)</span>\[ m^l ={{{\alpha}_1}\over{9V}} max \left( {\left[ n_i^{(l)} S^{(l)} \right] }^2 {, i=1,3}\right)\]</div>
+<p>注意时步大小取为单位值。</p>
+<p>全局节点 <span class="math">\(l\)</span> 处的节点质量 <span class="math">\(M\)</span><span class="math">\(^{&lt;l&gt;}\)</span> 按共有该节点的所有四面体在该节点处的贡献方程<a class="reference internal" href="#equation-eqtheory-num-ml">(11)</a>之和计算：</p>
+<div class="math" id="equation-eqtheory-num-capml">
+<span class="eqno">(12)</span>\[ M^{&lt;l&gt;} = {[[m]]}^{&lt;l&gt;}\]</div>
+<p>在小应变模式中，节点质量计算仅在循环前执行一次。
+在大应变模式中，每 10 步更新一次数值。</p>
+</div>
+<div class="section" id="out-of-balance-force-calculation">
+<span id="outofbalanceforcecalculation"></span><h2>不平衡力计算</h2>
+<p>四面体对局部节点 <span class="math">\(l\)</span> 处不平衡力的贡献 [<span class="math">\(p\)</span>]<span class="math">\(^l\)</span> 由应力和体力计算，使用</p>
+<div class="math" id="equation-eqtheory-num-oil">
+<span class="eqno">(13)</span>\[ p_i^l = {{1}\over{3}} {\sigma}_{ij}\ n_j^{(l)}\ S^{(l)} + {{1}\over{4}} \rho\ b_i\ V\]</div>
+<p>（见“<a class="reference internal" href="formulation.html#sec-nodalformulationof"><span class="std std-ref">运动方程的节点公式表述</span>（Nodal Formulation of the Equations of Motion）</a>”中的方程<a class="reference internal" href="formulation.html#equation-eqtheory-til">(21)</a>和<a class="reference internal" href="formulation.html#equation-eqtheory-fil2">(41)</a>。</p>
+<p>对共有该节点的所有四面体在全局节点 <span class="math">\(l\)</span> 处的贡献方程<a class="reference internal" href="#equation-eqtheory-num-oil">(13)</a>之和进行计算。
+在适当情况下对两个覆盖层取平均，并加上施加荷载和集中力的贡献 [<span class="math">\(P\)</span>]<span class="math">\(^{&lt;l&gt;}\)</span>，
+从而给出全局节点 <span class="math">\(l\)</span> 处不平衡力 [<span class="math">\(F\)</span>]<span class="math">\(^{&lt;l&gt;}\)</span> 的表达式：</p>
+<div class="math" id="equation-eqtheory-num-fil">
+<span class="eqno">(14)</span>\[ F_i^{&lt;l&gt;} = {[[ p_i ]]}^{&lt;l&gt;} + P_i^{&lt;l&gt;}\]</div>
+<p>监测不平衡力以判定系统是否达到平衡状态或稳定流动状态。
+阻尼项由“<a class="reference internal" href="formulation.html#damping-local"><span class="std std-ref">局部非黏性阻尼</span>（Local Nonviscous Damping）</a>”中的方程<a class="reference internal" href="formulation.html#equation-eqtheory-localdamp2">(66)</a>计算，即</p>
+<div class="math" id="equation-eqtheory-num-fil2">
+<span class="eqno">(15)</span>\[\mathcal{F}_{(i)}^{&lt;l&gt;}  = -\alpha \left| F_i^{&lt;l&gt;} \right| {\rm sign} \left( v_{(i)}^{&lt;l&gt;}  \right)\]</div>
+<p>并将其加到不平衡力中。</p>
+</div>
+<div class="section" id="velocity-and-displacement-calculations">
+<h2>速度与位移计算</h2>
+<p>调用“<a class="reference internal" href="formulation.html#eqtheory-efdattd"><span class="std std-ref">时间导数的显式有限差分近似</span>（Explicit Finite Difference Approximation to Time Derivatives）</a>”中的方程<a class="reference internal" href="formulation.html#equation-eqtheory-vilhalf">(43)</a>或<a class="reference internal" href="formulation.html#equation-eqtheory-vilhalf">(43)</a>（考虑阻尼），
+由已知不平衡力导出新的节点速度：</p>
+<div class="math" id="equation-eqtheory-num-vilhalf">
+<span class="eqno">(16)</span>\[v_i^{&lt;l&gt;}(t + {\Delta t \over 2}) =  v_i^{&lt;l&gt;}(t - {\Delta t \over 2}) + {{\Delta t}\over{{M}^{&lt;l&gt;}}} \left( F_i^{&lt;l&gt;} + \mathcal{F}_i^{&lt;l&gt;} \right)\]</div>
+<p>相应地，节点位移使用“<a class="reference internal" href="formulation.html#eqtheory-efdattd"><span class="std std-ref">时间导数的显式有限差分近似</span>（Explicit Finite Difference Approximation to Time Derivatives）</a>”中的方程<a class="reference internal" href="formulation.html#equation-eqtheory-uilhalf">(45)</a>计算：</p>
+<div class="math" id="equation-eqtheory-num-uilhalf">
+<span class="eqno">(17)</span>\[ u_i^{&lt;l&gt;}(t + \Delta t) =  u_i^{&lt;l&gt;}(t) + \Delta t  v_i^{&lt;l&gt;} (t + {\Delta t \over 2})\]</div>
+</div>
+<div class="section" id="geometry-update-calculation">
+<h2>几何更新计算</h2>
+<p>在大应变模式中，节点位置使用“<a class="reference internal" href="formulation.html#eqtheory-efdattd"><span class="std std-ref">时间导数的显式有限差分近似</span>（Explicit Finite Difference Approximation to Time Derivatives）</a>”中的方程<a class="reference internal" href="formulation.html#equation-eqtheory-xilhalf">(44)</a>更新，
+网格随后相应变形。对于全局节点 <span class="math">\(l\)</span>，有</p>
+<div class="math" id="equation-eqtheory-num-xiilhalf">
+<span class="eqno">(18)</span>\[ x_i^{&lt;l&gt;}(t + \Delta t) =  x_i^{&lt;l&gt;}(t) + \Delta t  v_i^{&lt;l&gt;} (t + {\Delta t \over 2})\]</div>
+<p>在小应变模式中，忽略几何调整。</p>
+</div>
+<div class="section" id="energy-calculation-in-flac3d">
+<span id="sec-energycalculation"></span><h2><span class="codename">FLAC3D</span> 中的能量计算</h2>
+<p>对于含力学模型的网格单元，可以跟踪弹性应变能和耗散的塑性能量。
+<span class="codename">FLAC3D</span> 采用增量求解过程：每个时步求解运动方程（在网格点处）和应力-应变计算（在网格单元处）。
+在应力-应变方程中，系统趋于平衡的过程中确定并累积各能量分量的增量变化。</p>
+<p><strong>网格单元中通过塑性功的能量耗散</strong></p>
+<p><span class="codename">FLAC3D</span> 中提供了若干塑性模型，可描述网格单元的变形性。
+当网格单元发生不可恢复变形时，能量通过塑性功耗散。
+任何网格单元中的应变都可分为弹性部分和塑性部分。</p>
+<p>弹性应变能（分解为偏量分量和体积分量）由下式给出</p>
+<div class="math" id="equation-eqtheory-num-we">
+<span class="eqno">(19)</span>\[ W_e = {V \over 2} \left({{\sigma_{ij}^d \sigma_{ij}^d} \over 2G} +{{\bar \sigma \bar \sigma} \over K}\right)\]</div>
+<p>其中 <span class="math">\(V\)</span> 为子四面体体积，<span class="math">\(σ^d_{ij}\)</span> 为偏应力，
+<span class="math">\(\bar \sigma\)</span> 为平均应力。</p>
+<p>在本构模型中求解应力-应变方程之前和之后，弹性应变能的变化由下式给出</p>
+<div class="math" id="equation-eqtheory-num-we2">
+<span class="eqno">(20)</span>\[ W_e = W_e - W_e^{\prime}\]</div>
+<p>其中 <span class="math">\(W_e\)</span> 为当前弹性应变能，<span class="math">\(Wʹ_e\)</span> 为先前的弹性应变能。方程<a class="reference internal" href="#equation-eqtheory-num-we2">(20)</a>可分解为剪切分量和体积分量：<span class="math">\(ΔW_{es}\)</span> 和 <span class="math">\(ΔW_{ev}\)</span>。</p>
+<p>总剪切能量变化可由总偏应变和偏应力求得：</p>
+<div class="math" id="equation-eqtheory-num-wts">
+<span class="eqno">(21)</span>\[\begin{split}\Delta W_{Ts} = {V \over 2}
+                [\left(\sigma_{11} + \sigma^{\prime}_{11}\right)e_{11} +
+                 \left(\sigma_{22} + \sigma^{\prime}_{22}\right)e_{22} +
+                 \left(\sigma_{33} + \sigma^{\prime}_{33}\right)e_{33} + \\
+                 {\qquad}  2\left(\sigma_{12} + \sigma^{\prime}_{12}\right)e_{12} +
+                 2\left(\sigma_{13} + \sigma^{\prime}_{13}\right)e_{13} +
+                 2\left(\sigma_{23} + \sigma^{\prime}_{23}\right)e_{23} ]\end{split}\]</div>
+<p>总体积变化可由总平均应变和平均应力求得：</p>
+<div class="math" id="equation-eqtheory-num-wtv">
+<span class="eqno">(22)</span>\[ \Delta W_{Tv} = {3V \over 2} \left(\bar \sigma + \bar \sigma^{\prime}\right)\bar e\]</div>
+<p>一个时步内耗散的总剪切塑性功等于任一时步内总剪切能与弹性剪切能变化之差：</p>
+<div class="math" id="equation-eqtheory-num-wps">
+<span class="eqno">(23)</span>\[ \Delta W_{ps} = \Delta W_{Ts} - \Delta W_{es}\]</div>
+<p>类似地，一个时步内耗散的总体积塑性功为</p>
+<div class="math" id="equation-eqtheory-num-wpv">
+<span class="eqno">(24)</span>\[ \Delta W_{pv} = \Delta W_{Tv} - \Delta W_{ev}\]</div>
+<p>每个网格单元包含若干覆盖层的常应力、常应变四面体。
+对网格单元计算上述能量分量的体积平均值，以获得该网格单元的平均能量耗散增量。
+每个网格单元还有四个附加变量用于累积耗散的塑性能量：<span class="math">\(W_{pv}\)</span>、<span class="math">\(W_{ps}\)</span>、<span class="math">\(W_{ev}\)</span>、<span class="math">\(W_{es}\)</span>。</p>
+<p><span class="codename">FLAC3D</span> 中的能量计算可通过 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.mechanical.html#kwd:zone.mechanical.energy.active" title="Turns the calculations  off \ /\  on  in the stress-strain loop...">单元力学能活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">mechanical</span> <span class="pre">energy</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 命令
+以及基于网格单元的 <span class="codename">FISH</span> 函数
+<a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_fish/zone_intrinsics/fish_zone.work.plastic.vol.html#function:zone.work.plastic.vol" title="Get the volumetric plastic work dissipated.  See  sec_energycalculation ...">单元体积塑性功（<code class="xref fish fish-func docutils literal"><span class="pre">zone.work.plastic.vol</span></code>）</a>、
+<a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_fish/zone_intrinsics/fish_zone.work.plastic.shear.html#function:zone.work.plastic.shear" title="Get the shear plastic work dissipated.  See  sec_energycalculation ...">单元剪切塑性功（<code class="xref fish fish-func docutils literal"><span class="pre">zone.work.plastic.shear</span></code>）</a>、
+<a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_fish/zone_intrinsics/fish_zone.work.plastic.total.html#function:zone.work.plastic.total" title="Get the total plastic work dissipated.  See  sec_energycalculation ...">单元总塑性功（<code class="xref fish fish-func docutils literal"><span class="pre">zone.work.plastic.total</span></code>）</a>、
+<a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_fish/zone_intrinsics/fish_zone.work.elastic.vol.html#function:zone.work.elastic.vol" title="Get the volumetric elastic work.  See  sec_energycalculation ...">单元体积弹性功（<code class="xref fish fish-func docutils literal"><span class="pre">zone.work.elastic.vol</span></code>）</a>、
+<a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_fish/zone_intrinsics/fish_zone.work.elastic.shear.html#function:zone.work.elastic.shear" title="Get the shear elastic work.  See  sec_energycalculation ...">单元剪切弹性功（<code class="xref fish fish-func docutils literal"><span class="pre">zone.work.elastic.shear</span></code>）</a> 和
+<a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_fish/zone_intrinsics/fish_zone.work.elastic.total.html#function:zone.work.elastic.total" title="Get the total elastic work.  See  sec_energycalculation ...">单元总弹性功（<code class="xref fish fish-func docutils literal"><span class="pre">zone.work.elastic.total</span></code>）</a> 访问。</p>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../flac3dhome.html"><span class="codename">FLAC3D</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../theory.html"><span class="codename">FLAC3D</span> Theory and Background</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="theoreticalbackground.html">Theoretical Background</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="griddiscretization.html" title="previous chapter"> Grid Discretization</a> |    
+       <a href="references.html" title="next chapter">References</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Numerical Implementation" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

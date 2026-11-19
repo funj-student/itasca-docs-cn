@@ -1,0 +1,197 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>流固相互作用 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="fluid_therm_mech_form/fluid_therm_mech_form.html" rel="next" title="FLAC3D Fluid-Thermal-Mechanical-Formulation — Mathematical Description"/>
+<link href="../interfaces/references.html" rel="prev" title="References"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="hide sectionname docutils container">
+<span class="codename">FLAC3D</span> Theory and Background • Fluid-Mechanical Interaction</div>
+<div class="section" id="fluid-mechanical-interaction">
+<span id="fluid-mechanical"></span><h1>流固相互作用</h1>
+<p><span class="codename">FLAC3D</span> 模拟流体通过土等透水固体的流动。流动建模可单独进行，独立于 <span class="codename">FLAC3D</span> 常规力学计算；也可与力学建模同时进行，以捕捉流固相互作用。一种流固相互作用为<em>固结</em>，即孔隙压力缓慢消散，使土体发生位移。这类行为涉及两种力学效应。首先，孔隙压力变化引起有效应力变化，进而影响固体响应，例如有效应力降低可能诱发塑性屈服。其次，网格单元内的流体通过孔隙压力变化响应力学体积变化。</p>
+<p>基本流动方案既处理完全饱和流动，也处理形成潜水面的流动。后一情况下，潜水面以上孔隙压力为零，气相视为被动。当毛细效应可以忽略时，此功能适用于粗粒材料。为表示饱和与非饱和网格单元之间内部过渡面的演化，必须模拟非饱和区流动，使流体能够在两区域间迁移。程序使用将表观渗透率与饱和度关联的简单定律。由于采用简单定律，非饱和区瞬态行为只是近似的，但稳态潜水面应当准确（示例见<a class="reference internal" href="../../../../zone/test3d/Fluid/FreeSurfaceSteadyStateFluidFlow/freesurfacesteadystatefluidflow.html#freesurfacesteadystatefluidflow"><span class="std std-ref">具有自由表面的稳态流体流动</span>（Steady-State Fluid Flow with a Free Surface）</a>和<a class="reference internal" href="../../../../zone/test3d/Fluid/GroundwaterMound/groundwatermound.html#groundwatermound"><span class="std std-ref">地下水丘的扩展</span>（Spreading of a Groundwater Mound）</a>）。</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>提供两种流体输运定律，分别对应各向同性和各向异性渗透率。还提供流体流动空模型，用于指定流动区域中的不透水材料。</li>
+<li>不同网格单元可具有不同流体流动模型（各向同性、各向异性或空）及性质。</li>
+<li>可规定流体压力、通量、渗漏及不透水边界条件。</li>
+<li>可在材料中以点源或体积源形式插入流体源（井）。这些源对应规定的流体流入或流出，并随时间变化。</li>
+<li>完全饱和模拟可采用显式或隐式流体流动求解算法。饱和／非饱和流动采用显式求解方法。</li>
+<li>任何力学模型和热模型都可与流体流动模型配合使用。耦合问题中允许饱和材料的可压缩性和热膨胀。</li>
+<li>通过 Biot 系数 <span class="math">\(\alpha\)</span> 提供由颗粒可变形引起的流体与力学计算耦合。</li>
+<li>通过线膨胀系数 <span class="math">\({\alpha}_t\)</span> 和不排水热系数 <span class="math">\(\beta\)</span>，实现与热传导计算的耦合。</li>
+<li>热传导与流体流动功能基于线性理论，假定材料性质恒定并忽略对流。流体和固体温度局部平衡。可通过 <span class="codename">FISH</span> 访问孔隙压力和材料性质，以指定非线性行为。与热传导功能的热耦合见<a class="reference internal" href="fluid_therm_mech_form/fluid_therm_mech_form.html#fluid-therm-mech-form"><span class="std std-ref">数学描述</span>（Mathematical Description）</a>。</li>
+<li>程序还提供考虑对流热输运的平流模型，包括温度相关的流体密度和流体携带的热平流。关于这种热流体耦合的说明，见<a class="reference internal" href="../../options/thermalanalysis/thermal/numerical-form.html#thermal-advection"><span class="std std-ref">平流</span>（Advection）</a>。</li>
+</ol>
+</div></blockquote>
+<p>在以下情况下，使用基本流动方案进行流体流动及耦合不排水、排水计算会很慢：1）流体体积模量相对于排水约束模量 <span class="math">\(K + (4/3)G\)</span> 很大；2）渗透率和／或孔隙率差异很大；或 3）网格尺寸变化很大。程序提供另一种数值技术——<em>饱和快速流动</em>功能——在相对于排水材料可压缩性可将流体视为<em>不可压缩</em>时，加快<em>完全饱和耦合</em>流固模拟。使用 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.fastflow" title="Turns the fastflow solution scheme on and off.  See  fluid-fully-sat-ff ...">单元流体快速流动命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">fastflow</span></code>）</a> <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 命令启用。方案及理论背景见<a class="reference internal" href="numerical_form/numerical_form.html#fluid-fully-sat-ff"><span class="std std-ref">完全饱和快速流动</span>（Fully Saturated Fast Flow）</a>，效率演示及应用见<a class="reference internal" href="../../../../zone/test3d/Fluid/1DConsolidation/1dconsolidation.html#dconsolidation"><span class="std std-ref">一维固结</span>（1D Consolidation）</a>和<a class="reference internal" href="../../../../zone/test3d/Fluid/ConsolidationSettlement/consolidationsettlement.html#consolidationsettlement"><span class="std std-ref">固结沉降</span>（Consolidation Settlement）</a>。</p>
+<p><span class="codename">FLAC3D</span> 还可模拟循环荷载引起的动力孔隙压力产生及液化（相关文档见<a class="reference internal" href="../../options/dynamic/models/models.html#liquefaction-modeling"><span class="std std-ref">液化建模</span>（Liquefaction Modeling）</a>）。<span class="codename">FLAC3D</span> <em>不</em>表示部分饱和材料颗粒之间的毛细力、电力或化学力。但可编写 <span class="codename">FISH</span> 函数，根据局部饱和度、孔隙率和／或其他相关变量，提供适当内部应力，以引入这些力。同样，程序不直接模拟溶解空气造成的流体刚度变化，但可通过 <span class="codename">FISH</span> 函数，使局部流体模量随压力、时间或其他量变化。</p>
+<p>本节分为八个主要部分：</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>流体流动，以及流体流动与力学、流体流动与热传导耦合过程的数学模型描述及相应数值表述。（见<a class="reference internal" href="fluid_therm_mech_form/fluid_therm_mech_form.html#fluid-therm-mech-form"><span class="std std-ref">数学描述</span>（Mathematical Description）</a>和<a class="reference internal" href="numerical_form/numerical_form.html#fluid-numerical-form"><span class="std std-ref">数值表述</span>（Numerical Formulation）</a>。）</li>
+<li>涉及流体流动分析的计算模式及相关命令。（<a class="reference internal" href="calcmodes/calcmodes.html#fluid-calcmodes"><span class="std std-ref">链接</span>（link）</a>）</li>
+<li>流体流动分析所需材料性质，并包括这些性质的适当单位。（（<a class="reference internal" href="properties_units/properties_units.html#fluid-properties-units"><span class="std std-ref">链接</span>（link）</a>））</li>
+<li>初始条件，以及可在 <span class="codename">FLAC3D</span> 模型中施加的不同边界条件和流体源与汇的说明。（<a class="reference internal" href="boundary_conditions/boundary_conditions.html#fluid-boundary-conditions"><span class="std std-ref">链接</span>（link）</a>）</li>
+<li>纯渗流及耦合渗流问题的建议求解流程。本节还包含若干示例，说明这些流程的应用。建议先完成这些示例，再尝试自己的流体分析。（<a class="reference internal" href="solving/solving.html#fluid-solving"><span class="std std-ref">链接</span>（link）</a>）</li>
+<li>若干<a class="reference internal" href="verification_examples/verification_examples.html#fluid-verification-examples"><span class="std std-ref">验证问题</span>（verification problems）</a>，展示 <span class="codename">FLAC3D</span> 流体流动功能的准确性。</li>
+<li>特定流体应用的建模技术，涵盖若干主题：耦合分析中<a class="reference internal" href="verification_concepts/verification_concepts.html#fluid-weight-buoyancy-seepage"><span class="std std-ref">固体重量、浮力和渗流力</span>（solid weight, buoyancy forces and seepage forces）</a>的建模；耦合分析中<a class="reference internal" href="verification_concepts/verification_concepts.html#fluid-pp-deformation-initialization"><span class="std std-ref">孔隙压力初始化与变形</span>（initialization of pore pressures and deformation）</a>的关系；以及<a class="reference internal" href="verification_concepts/verification_concepts.html#fluid-effect-biot"><span class="std std-ref">Biot 系数的影响</span>（effect of the Biot coefficient）</a>。</li>
+<li>最后，<a class="reference internal" href="input/input.html#fluid-input"><span class="std std-ref">汇总</span>（summary）</a>与流体流动相关的所有命令和 <span class="codename">FISH</span> 函数。本节还包含特殊的<a class="reference internal" href="input/input.html#fluid-input-zonebasedpp"><span class="std std-ref">基于网格单元的孔隙压力</span>（zone-based pore pressure）</a>功能。</li>
+</ol>
+</div></blockquote>
+<p>强烈建议用户先熟悉 <span class="codename">FLAC3D</span> 对简单力学问题的操作，再尝试求解流动与力学效应都很重要的问题。流动力学耦合行为通常十分复杂，需要充分认识才能正确解释。开始大型项目前，务必花时间用拟定模拟的小网格版本试验，尝试各种边界条件和建模策略。这些试验所“浪费”的时间，会通过减少总体人员工作时间和运行时间而得到充分回报。</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fluid_therm_mech_form/fluid_therm_mech_form.html"><span class="codename">FLAC3D</span> 流体热力耦合表述——数学描述（FLAC3D Fluid-Thermal-Mechanical-Formulation — Mathematical Description）</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="fluid_therm_mech_form/fluid_therm_mech_form.html#conventions-and-definitions">约定与定义（Conventions and Definitions）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fluid_therm_mech_form/fluid_therm_mech_form.html#governing-differential-equations">控制微分方程（Governing Differential Equations）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fluid_therm_mech_form/fluid_therm_mech_form.html#fluid-flow-boundary-and-initial-conditions-in-flac3d"><span class="codename">FLAC3D</span> 中的流体流动边界和初始条件（Fluid Flow Boundary and Initial Conditions in FLAC3D）</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="numerical_form/numerical_form.html">数值公式（Numerical Formulation）</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="numerical_form/numerical_form.html#saturated-fluid-flow">饱和流体流动（Saturated Fluid Flow）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="numerical_form/numerical_form.html#saturated-unsaturated-flow">饱和／非饱和流动（Saturated/Unsaturated Flow）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="numerical_form/numerical_form.html#mechanical-timestep-and-numerical-stability">力学时间步长与数值稳定性（Mechanical Timestep and Numerical Stability）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="numerical_form/numerical_form.html#total-stress-correction">总应力修正（Total Stress Correction）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="numerical_form/numerical_form.html#fully-saturated-fast-flow">完全饱和快速流动（Fully Saturated Fast Flow）</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="calcmodes/calcmodes.html">流固相互作用的计算模式（Calculation Modes for Fluid-Mechanical Interaction）</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="calcmodes/calcmodes.html#grid-not-configured-for-fluid-flow">未配置流动计算的网格（Grid Not Configured for Fluid Flow）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="calcmodes/calcmodes.html#grid-configured-for-fluid-flow">已配置流动计算的网格（Grid Configured for Fluid Flow）</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="properties_units/properties_units.html">流体流动分析的性质与单位（Properties and Units for Fluid-Flow Analysis）</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="properties_units/properties_units.html#permeability-coefficient">渗透系数（Permeability Coefficient）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="properties_units/properties_units.html#mass-density">质量密度（Mass Density）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="properties_units/properties_units.html#fluid-moduli">流体模量（Fluid Moduli）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="properties_units/properties_units.html#porosity">孔隙率（Porosity）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="properties_units/properties_units.html#saturation">饱和度（Saturation）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="properties_units/properties_units.html#undrained-thermal-coefficient">不排水热系数（Undrained Thermal Coefficient）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="properties_units/properties_units.html#fluid-tension-limit">流体抗拉限值（Fluid Tension Limit）</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="boundary_conditions/boundary_conditions.html">流体流动边界条件、初始条件、源与汇（Fluid-Flow Boundary Conditions, Initial Conditions, Sources and Sinks）</a></li>
+<li class="toctree-l1"><a class="reference internal" href="solving/solving.html">求解纯渗流和耦合渗流问题（Solving Flow-Only and Coupled-Flow Problems）</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="solving/solving.html#time-scales">时间尺度（Time Scales）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="solving/solving.html#selection-of-a-modeling-approach-for-a-fully-coupled-analysis">完全耦合分析建模方法的选择（Selection of a Modeling Approach for a Fully Coupled Analysis）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="solving/solving.html#fixed-pore-pressure-used-in-effective-stress-calculation">固定孔隙压力（用于有效应力计算）（Fixed Pore Pressure (Used in Effective Stress Calculation)）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="solving/solving.html#flow-only-calculation-to-establish-a-pore-pressure-distribution">通过纯渗流计算建立孔隙压力分布（Flow-Only Calculation to Establish a Pore-Pressure Distribution）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="solving/solving.html#no-flow-mechanical-generation-of-pore-pressure">无流动——力学作用产生孔隙压力（No Flow — Mechanical Generation of Pore Pressure）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="solving/solving.html#coupled-flow-and-mechanical-calculations">流动与力学耦合计算（Coupled Flow and Mechanical Calculations）</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="verification_examples/verification_examples.html">验证示例（Verification Examples）</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="../../../../zone/test3d/Fluid/UnsteadyGroundwaterFlowConfinedLayer/unsteadygroundwaterflowconfinedlayer.html">承压层中的非稳态地下水流（Unsteady Groundwater Flow in a Confined Layer）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../zone/test3d/Fluid/1DFillingPorousRegion/1dfillingporousregion.html">多孔区域的一维充水（One-Dimensional Filling of a Porous Region）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../zone/test3d/Fluid/FreeSurfaceSteadyStateFluidFlow/freesurfacesteadystatefluidflow.html">具有自由表面的稳态流体流动（Steady-State Fluid Flow with a Free Surface）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../zone/test3d/Fluid/GroundwaterMound/groundwatermound.html">地下水丘的扩展（Spreading of a Groundwater Mound）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../zone/test3d/Fluid/1DConsolidation/1dconsolidation.html">一维固结（One-Dimensional Consolidation）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../zone/test3d/Fluid/ConsolidationSettlement/consolidationsettlement.html">条形荷载中心处的固结沉降（Consolidation Settlement at the Center of a Strip Load）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../zone/test3d/Fluid/WellConfinedAquifer/wellconfinedaquifer.html">浅层承压含水层中向井的瞬态流动（Transient Fluid Flow to a Well in a Shallow Confined Aquifer）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../zone/test3d/Fluid/Pressuremeter/pressuremeter.html">旁压试验（Pressuremeter Test）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../../zone/test3d/Fluid/SemiConfinedAquifer/semiconfinedaquifer.html">半承压含水层（Semi-confined Aquifer）</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="verification_concepts/verification_concepts.html">概念验证及特定应用建模技术（Verification of Concepts, and Modeling Techniques for Specific Applications）</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="verification_concepts/verification_concepts.html#solid-weight-buoyancy-and-seepage-forces">固体重量、浮力与渗流力（Solid Weight, Buoyancy and Seepage Forces）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="verification_concepts/verification_concepts.html#pore-pressure-initialization-and-deformation">孔隙压力初始化与变形（Pore Pressure Initialization and Deformation）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="verification_concepts/verification_concepts.html#effect-of-the-biot-coefficient">Biot 系数的影响（Effect of the Biot Coefficient）</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="input/input.html">流体流动分析输入说明（Input Instructions for Fluid-Flow Analysis）</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="input/input.html#fluid-commands">流体命令（Fluid Commands）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="input/input.html#fluid-fish-variables">流体 <span class="codename">FISH</span> 变量（Fluid FISH Variables）</a></li>
+<li class="toctree-l2"><a class="reference internal" href="input/input.html#zone-based-pore-pressure">基于网格单元的孔隙压力（Zone-Based Pore Pressure）</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="references/references.html">参考文献（References）</a></li>
+</ul>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../flac3dhome.html"><span class="codename">FLAC3D</span></a> »</li>
+<li class="nav-item nav-item-2"><a accesskey="U" href="../theory.html"><span class="codename">FLAC3D</span> Theory and Background</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../interfaces/references.html" title="previous chapter"> References</a> |    
+       <a href="fluid_therm_mech_form/fluid_therm_mech_form.html" title="next chapter"><span class="codename">FLAC3D</span> Fluid-Thermal-Mechanical-Formulation — Mathematical Description</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Fluid-Mechanical Interaction" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

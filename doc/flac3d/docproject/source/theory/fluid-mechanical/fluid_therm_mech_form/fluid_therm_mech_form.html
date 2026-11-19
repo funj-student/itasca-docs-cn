@@ -1,0 +1,196 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>FLAC3D 流体热力耦合表述——数学描述 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="../numerical_form/numerical_form.html" rel="next" title="Numerical Formulation"/>
+<link href="../fluid-mechanical.html" rel="prev" title="Fluid-Mechanical Interaction"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="hide sectionname docutils container">
+<span class="codename">FLAC3D</span> Theory and Background • Fluid-Mechanical Interaction</div>
+<div class="section" id="flac3d-fluid-thermal-mechanical-formulation-mathematical-description">
+<span id="fluid-therm-mech-form"></span><h1><span class="codename">FLAC3D</span> 流体热力耦合表述——数学描述</h1>
+<p>本节考虑流固过程与热传导功能的耦合（通过<a class="reference internal" href="../../../options/thermalanalysis/thermal/numerical-form.html#thermal-advection"><span class="std std-ref">对流</span>（convection）</a>功能实现的流体热耦合另见相应内容）。多数涉及同时发生变形及流体／热扩散机制的工程分析，采用解耦技术进行（例如<a class="reference internal" href="../solving/solving.html#fluid-solving"><span class="std std-ref">本节</span>（this section）</a>）。除这些计算模式外，<span class="codename">FLAC3D</span> 还提供流体热力耦合分析选项，即可研究瞬态流动和／或热条件下多孔材料的力学响应。虽然本节主要讨论变形与流体扩散问题建模，为完整起见，仍在此给出控制 <span class="codename">FLAC3D</span> 流体热力响应的一般方程。</p>
+<p><span class="codename">FLAC3D</span> 在准静态 Biot 理论框架内表述耦合变形扩散过程，可用于涉及多孔介质中单相 Darcy 流的问题。该模型可表示水和油等各种流体。</p>
+<p>描述流体通过多孔介质流动的变量包括孔隙压力、饱和度和比流量向量的三个分量。这些变量通过流体质量平衡方程、流体输运的 Darcy 定律、描述流体对孔隙压力、饱和度、体积应变和温度变化响应的本构方程，以及关联非饱和范围内孔隙压力与饱和度的状态方程相互联系。力学本构定律计入孔隙压力和温度影响，从而完成热、流动和力学耦合。</p>
+<p>假定体积应变率和温度变化率已知，利用 Darcy 定律，将质量平衡方程代入流体本构关系，可得到以孔隙压力和饱和度表示的微分方程，并可针对特定几何形状、性质、边界和初始条件求解。</p>
+<div class="section" id="conventions-and-definitions">
+<h2>约定与定义</h2>
+<p>按符号约定，<span class="math">\(a_i\)</span> 表示笛卡尔参考坐标系中向量 <span class="math">\(\{ a \}\)</span> 的 <span class="math">\(i\)</span> 分量；<span class="math">\(A_{ij}\)</span> 为张量 <span class="math">\([A]\)</span> 的 <span class="math">\((i,j)\)</span> 分量。此外，<span class="math">\(f_{,i}\)</span> 表示 <span class="math">\(f\)</span> 对 <span class="math">\(x_i\)</span> 的偏导数。（符号 <span class="math">\(f\)</span> 表示标量变量或向量分量。）</p>
+<p>爱因斯坦求和约定<em>仅</em>适用于指标 <span class="math">\(i\)</span>、<span class="math">\(j\)</span> 和 <span class="math">\(k\)</span>，对于涉及空间维度的分量，它们取值为 1、2、3。当用于矩阵方程时，这些指标可取任意值。</p>
+<p>采用 SI 单位说明参数和变量量纲。转换至其他单位制的方法见<a class="reference internal" href="../../../../../../common/docproject/source/manual/program_guide/modelformulation/systemofunits.html#commonsystemofunits"><span class="std std-ref">单位制</span>（System of Units）</a>。</p>
+<p>以下参考量有助于表征瞬态流动。</p>
+<p>特征长度：</p>
+<div class="math" id="equation-eqfluid-form-lc">
+<span class="eqno">(1)</span>\[L_c = {{volume \ of \ flow \ domain}\over{surface \  area  \ of \ flow \ domain}}\]</div>
+<p>流体扩散率：</p>
+<div class="math" id="equation-eqfluid-form-c">
+<span class="eqno">(2)</span>\[c = {{k} \over {1 / M + {\alpha}^2 / {\alpha}_1}}\]</div>
+<p>其中，<span class="math">\(k\)</span> 为流动性系数（<span class="codename">FLAC3D</span> 渗透率），<span class="math">\(M\)</span> 为 Biot 模量，<span class="math">\(\alpha\)</span> 为 Biot 系数，<span class="math">\({\alpha}_1 = K + 4/3 G\)</span>，<span class="math">\(K\)</span> 为排水体积模量，<span class="math">\(G\)</span> 为多孔材料的剪切模量。</p>
+<p>Biot 系数考虑多孔材料颗粒的可压缩性。如果 <span class="math">\(\alpha\)</span> 等于 1，则认为颗粒不可压缩，Biot 模量 <span class="math">\(M\)</span> 等于 <span class="math">\(K_f / n\)</span>，其中 <span class="math">\(K_f\)</span> 为流体体积模量，<span class="math">\(n\)</span> 为孔隙率。流体扩散系数变为</p>
+<div class="math" id="equation-eqfluid-form-c2">
+<span class="eqno">(3)</span>\[c = {{k} \over {n / K_f + 1 / {\alpha}_1}}\]</div>
+<p>注意，对于仅流动计算，即刚性材料，流体扩散率为</p>
+<div class="math" id="equation-eqfluid-form-c3">
+<span class="eqno">(4)</span>\[c = {k M}\]</div>
+<p>关于这些性质关系的进一步讨论，见<a class="reference internal" href="../properties_units/properties_units.html#fluid-properties-units"><span class="std std-ref">流体流动分析的性质与单位</span>（Properties and Units for Fluid-Flow Analysis）</a>。</p>
+<p>特征时间：</p>
+<div class="math" id="equation-eqfluid-form-tc">
+<span class="eqno">(5)</span>\[t_c = {{L_c^2}\over{c}}\]</div>
+</div>
+<div class="section" id="governing-differential-equations">
+<span id="sec-gde"></span><h2>控制微分方程</h2>
+<p>当热量以传导方式在材料区域内输运时，描述多孔材料流体热力响应的微分方程如下。</p>
+<p><strong>输运定律</strong></p>
+<p>流体输运由 Darcy 定律描述：</p>
+<div class="math" id="equation-eqfluid-form-darcy">
+<span id="eqfluid-form-darcyl"></span><span class="eqno">(6)</span>\[q_i = - k_{il} \ \hat{k}(s) \left[ p - {\rho}_f x_j g_j \right] _{,l}\]</div>
+<p>其中，<span class="math">\(q_i\)</span> 为比流量向量，<span class="math">\(p\)</span> 为流体孔隙压力，<span class="math">\(k\)</span> 为介质绝对流动性系数张量（<span class="codename">FLAC3D</span> 渗透率张量），<span class="math">\(\hat{k}(s)\)</span> 为相对流动性系数，是流体饱和度 <span class="math">\(s\)</span> 的函数；<span class="math">\({\rho}_f\)</span> 为流体密度，<span class="math">\(g_i\)</span>、<span class="math">\(i\)</span> = 1,3 为重力向量的三个分量。</p>
+<p>为供后文引用，将量 <span class="math">\(\phi = (p - {\rho}_f x_j g_j) / ({\rho}_f g)\)</span> 定义为水头，其中 <span class="math">\(g\)</span> 为重力向量的模；将 <span class="math">\({\rho}_f g \phi\)</span> 定义为压力水头。</p>
+<p>传导热流由 Fourier 热输运定律描述：</p>
+<div class="math" id="equation-eqfluid-form-fourier">
+<span class="eqno">(7)</span>\[q_i^T = - k^T_{ij} T_{,j}\]</div>
+<p>其中，<span class="math">\(q_i^T\)</span> 为热通量向量，<span class="math">\(T\)</span> 为温度，<span class="math">\(k^T\)</span> 为导热系数张量。请注意，<span class="codename">FLAC3D</span> 表述中考虑温度、通量、对流和绝热边界条件。</p>
+<p><strong>平衡定律</strong></p>
+<p>小变形情况下，流体质量平衡可表示为</p>
+<div class="math" id="equation-eqfluid-form-massbalance">
+<span id="eqfluid-form-massbalancel"></span><span class="eqno">(8)</span>\[-q_{i,i} + q_v = {{\partial\zeta}\over{\partial t}}\]</div>
+<p>其中，<span class="math">\(q_v\)</span> 为体积流体源强度，单位为 [1/sec]；<span class="math">\(\zeta\)</span> 为流体含量变化，或由扩散性流体质量输运引起的单位多孔材料体积内流体体积变化，由 Biot (1956) 引入。</p>
+<p>热能平衡表示为</p>
+<div class="math" id="equation-eqfluid-form-energy">
+<span class="eqno">(9)</span>\[-q_{i,i}^T + q_v^T = {{\partial \zeta^T} \over {\partial t}}\]</div>
+<p>其中，<span class="math">\(\zeta^T\)</span> 为单位体积多孔材料储存的热量，<span class="math">\(q_v^T\)</span> 为体积热源强度。</p>
+<p>动量平衡形式为</p>
+<div class="math" id="equation-eqfluid-form-momentum">
+<span id="eqfluid-form-momentuml"></span><span class="eqno">(10)</span>\[\sigma_{ij,j} + \rho g_i = \rho {{d v_i} \over{d t}}\]</div>
+<p>其中，<span class="math">\(\rho = \rho_d + n s \rho_w\)</span> 为总体密度，<span class="math">\(\rho_d\)</span> 和 <span class="math">\(\rho_w\)</span> 分别为干基质和流体密度，<span class="math">\(n\)</span> 为孔隙率，<span class="math">\(s\)</span> 为饱和度。</p>
+<p><strong>本构关系</strong></p>
+<p>流体含量变化的改变与孔隙压力 <span class="math">\(p\)</span>、饱和度 <span class="math">\(s\)</span>、力学体积应变 <span class="math">\({\epsilon}\)</span> 和温度 <span class="math">\(T\)</span> 的变化有关。孔隙流体的响应方程表述为</p>
+<div class="math" id="equation-eqfluid-fuild">
+<span id="eqfluid-eq11"></span><span class="eqno">(11)</span>\[{1 \over M} {{\partial p} \over {\partial t}} + {n \over s} {{\partial s} \over {\partial t}}= {1 \over s} {{\partial \zeta} \over {\partial t}} - \alpha {{\partial \epsilon} \over {\partial t}} + \beta {{\partial T} \over {\partial t}}\]</div>
+<p>其中，<span class="math">\(M\)</span> 为 Biot 模量 [N/m<sup>2</sup>]，<span class="math">\(n\)</span> 为孔隙率，<span class="math">\(\alpha\)</span> 为 Biot 系数，<span class="math">\(\beta\)</span> 为不排水热系数 [1/°C]，后者考虑流体和颗粒的热膨胀。</p>
+<p><span class="codename">FLAC3D</span> 表述忽略毛细压力影响，并在饱和度小于 1 时将流体压力取为零。相对流体流动性与饱和度通过三次定律关联：零饱和度时为零，完全饱和时为 1：</p>
+<div class="math" id="equation-eqfluid-form-cubiclaw">
+<span id="eqfluid-form-cubiclawl"></span><span class="eqno">(12)</span>\[\hat{k}(s) = s^2(3 - 2s)\]</div>
+<p>因此，非饱和区流体流动仅由重力驱动。虽然使初始干燥介质饱和不需要重力影响，但脱饱和过程由重力驱动。此时仍存在一定残余饱和度，因为饱和度趋近零时，表观渗透率 <span class="math">\(k \ \hat{k}(s)\)</span> 也趋于零。</p>
+<p>热本构定律表示为</p>
+<div class="math" id="equation-eqfluid-form-thermlaw">
+<span class="eqno">(13)</span>\[{1 \over M^T} {{\partial T} \over {\partial t}} = {{\partial \zeta^T} \over {\partial t}}\]</div>
+<p>其中，<span class="math">\(M^T = 1/(\rho C_v)\)</span>，<span class="math">\(\rho\)</span> 为介质质量密度，<span class="math">\(C_v\)</span> 为定容比热。</p>
+<p>请注意，对几乎所有固体和液体，定压比热与定容比热基本相等。因此，<span class="math">\(C_v\)</span> 和 <span class="math">\(C_{\rho}\)</span> 可以互换使用。</p>
+<p>多孔固体的本构响应形式为（符号约定见<a class="reference internal" href="../../theoreticalbackground/theoreticalbackground.html#theoreticalbackground"><span class="std std-ref">理论背景</span>（Theoretical Background）</a>）</p>
+<div class="math" id="equation-eqfluid-form-mechlaw">
+<span id="eqfluid-form-mechlawl"></span><span class="eqno">(14)</span>\[\check \sigma_{ij} + \alpha {{\partial p} \over {\partial t}} \delta_{ij} = H(\sigma_{ij}, \xi_{ij} - \xi_{ij}^T, \kappa)\]</div>
+<p>其中，方程左侧的量为 Biot 有效应力，<span class="math">\(\check\sigma_{ij}\)</span> 为共旋应力率，<span class="math">\(H\)</span> 为本构定律的函数形式，<span class="math">\(\kappa\)</span> 为历程参数，<span class="math">\(\delta_{ij}\)</span> 为 Kronecker δ，<span class="math">\(\xi_{ij}\)</span> 为应变率。</p>
+<p>热应变率表示为（见<a class="reference internal" href="../../../options/thermalanalysis/thermal/math-model.html#thermal-model-strains"><span class="std std-ref">热应变</span>（Thermal Strains）</a>）</p>
+<div class="math" id="equation-eqfluid-form-thermalstrainrate">
+<span class="eqno">(15)</span>\[\xi_{ij}^T = {\alpha}_t  {{\partial T} \over {\partial t}} \delta_{ij}\]</div>
+<p>其中，<span class="math">\(\alpha_t\)</span> 为线膨胀系数。</p>
+<p>特别地，关联有效应力与应变的弹性关系为（小应变）</p>
+<div class="math" id="equation-eqfluid-form-elastic">
+<span id="eqfluid-form-elasticl"></span><span class="eqno">(16)</span>\[\sigma_{ij} - \sigma_{ij}^o + \alpha (p - p^o) \delta_{ij} = 2G (\epsilon_{ij} - \epsilon_{ij}^T) + (K - {2 \over 3} G) (\epsilon_{kk} - \epsilon_{kk}^T)\]</div>
+<p>其中，上标 <span class="math">\(^o\)</span> 表示初始状态，<span class="math">\(\epsilon_{ij}\)</span> 为应变，<span class="math">\(K\)</span> 和 <span class="math">\(G\)</span> 为排水弹性固体的体积模量和剪切模量。</p>
+<p><strong>Biot 与 Terzaghi 有效应力</strong></p>
+<p>Biot 有效应力 <span class="math">\(\sigma_{ij} + \alpha p \delta_{ij}\)</span> 的表达式可根据柔度原理推导（见<a class="reference internal" href="../verification_concepts/verification_concepts.html#fluid-effect-biot"><span class="std std-ref">Biot 系数的影响</span>（Effect of the Biot Coefficient）</a>），因此它表征固体的变形能力。另一方面，Terzaghi 有效应力 <span class="math">\(\sigma_{ij} + p \delta_{ij}\)</span> 度量固体基质承受的应力水平；仍用它检测塑性材料破坏，或弹性固体的潜在破坏。</p>
+<p><strong>协调方程</strong></p>
+<p>应变率与速度梯度关系为</p>
+<div class="math" id="equation-eqfluid-form-compatibility">
+<span class="eqno">(17)</span>\[\xi_{ij} = {1 \over 2} \left[v_{i,j} + v_{j,i} \right]\]</div>
+</div>
+<div class="section" id="fluid-flow-boundary-and-initial-conditions-in-flac3d">
+<h2><span class="codename">FLAC3D</span> 中的流体流动边界和初始条件</h2>
+<p>初始条件对应已知压力和饱和度。这两个值必须与 <span class="codename">FLAC3D</span> 表述一致：如果饱和度小于 1，孔隙压力必须为零，反之亦然。（<span class="codename">FLAC3D</span> 中默认初始孔隙压力为零，饱和度为 1。）</p>
+<p>考虑四类边界条件，分别对应：（1）给定孔隙压力；（2）给定比流量沿边界法向的分量；（3）渗漏边界；（4）不透水边界。</p>
+<p><span class="codename">FLAC3D</span> 的边界默认不透水。</p>
+<p>渗漏边界条件形式为</p>
+<div class="math" id="equation-eqfluid-form-leakbc">
+<span id="eq-leakyboundary"></span><span class="eqno">(18)</span>\[q_n = h (p - p_e)\]</div>
+<p>其中，<span class="math">\(q_n\)</span> 为比流量沿边界外法向的分量，<span class="math">\(h\)</span> 为渗漏系数 [m<sup>3</sup>/N-sec]，<span class="math">\(p\)</span> 为边界表面孔隙压力，<span class="math">\(p_e\)</span> 为假定发生流入或流出渗漏的外部区域孔隙压力。</p>
+<p>可用 <span class="codename">FISH</span> 施加其他组合边界条件，例如给定某段边界总流入量时保持均匀压力。</p>
+<p>请注意，不能将饱和度作为边界条件施加，这一点与 <span class="codename">FLAC</span> 不同。此外，为使模型保持完全饱和，可将流体抗拉限值设为较大的负数。</p>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../flac3dhome.html"><span class="codename">FLAC3D</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../theory.html"><span class="codename">FLAC3D</span> Theory and Background</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../fluid-mechanical.html">Fluid-Mechanical Interaction</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../fluid-mechanical.html" title="previous chapter"> Fluid-Mechanical Interaction</a> |    
+       <a href="../numerical_form/numerical_form.html" title="next chapter">Numerical Formulation</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?FLAC3D Fluid-Thermal-Mechanical-Formulation — Mathematical Description" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

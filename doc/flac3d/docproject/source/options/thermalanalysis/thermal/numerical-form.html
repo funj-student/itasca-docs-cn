@@ -1,0 +1,283 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>数值公式 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="solving.html" rel="next" title="Solving Thermal-Only and Coupled-Thermal Problems"/>
+<link href="def_thermal-isoconduct_property.html" rel="prev" title="Isotropic Heat Conduction Properties"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="numerical-formulation">
+<span id="thermal-numerical-form"></span><h1>数值公式</h1>
+<div class="section" id="conduction">
+<span id="thermal-conduction"></span><h2>传导</h2>
+<p><a class="reference internal" href="math-model.html#eq-energybalance"><span class="std std-ref">能量平衡方程</span>（energy-balance equation）</a>与<a class="reference internal" href="math-model.html#eq-transportlaw"><span class="std std-ref">傅里叶定律</span>（Fourier’s law）</a>一起在 <span class="codename">FLAC3D</span> 中采用有限体积方法求解，该方法基于将介质离散为网格单元，而网格单元由两组叠合的常热流四面体组成。该数值格式以能量平衡方程的节点形式为基础。该表述等价于力学表述（见<a class="reference internal" href="../../../theory/theoreticalbackground/theoreticalbackground.html#theoreticalbackground"><span class="std std-ref">理论背景</span>（Theoretical Background）</a>中给出牛顿定律节点形式的那一表述）。只需分别用温度、热流向量和温度梯度替代速度向量、应力张量和应变率张量即可得到。所得的常微分方程组采用两种时间离散模式求解，分别对应显式格式和隐式格式。主要结果概述如下。</p>
+<div class="section" id="finite-volume-approximation-to-space-derivatives">
+<h3>空间导数的有限体积近似</h3>
+<p>按惯例，四面体的节点在局部用 1 至 4 的编号表示，面 <span class="math">\(n\)</span> 与节点 <span class="math">\(n\)</span> 相对，上标 <span class="math">\((f)\)</span> 表示相应变量在面 <span class="math">\(f\)</span> 上的值。</p>
+<p>假定四面体内温度呈线性变化；温度梯度通过应用高斯散度定理以温度的节点值表示，可写为</p>
+<div class="math" id="equation-eqthermal-numerical-tj">
+<span class="eqno">(1)</span>\[T_{,j} = - {{1}\over{3V}} \sum_{l=1}^4 T^l\ n_j^{(l)}\ S^{(l)}\]</div>
+<p>其中 <span class="math">\([n]^{(l)}\)</span> 是面 <span class="math">\(l\)</span> 的外向单位法向量，<span class="math">\(S\)</span> 是该面的表面积，<span class="math">\(V\)</span> 是四面体的体积。</p>
+</div>
+<div class="section" id="nodal-formulation-of-the-energy-balance-equation">
+<h3>能量平衡方程的节点表述</h3>
+<p><a class="reference internal" href="math-model.html#eq-energybalance"><span class="std std-ref">能量平衡方程</span>（energy-balance equation）</a>可表示为</p>
+<div class="math" id="equation-eqthermal-numerical-qii">
+<span class="eqno">(2)</span>\[q_{i,i} + b^* = 0\]</div>
+<p>其中</p>
+<div class="math" id="equation-eqthermal-numerical-bstar">
+<span class="eqno">(3)</span>\[b^* = \rho C_v {{\partial T}\over{\partial t}} - q_v\]</div>
+<p>相当于力学节点表述中所用的瞬时“体力”。首先考虑单个四面体。利用这一类比，与四面体热流和体力平衡的节点热量 <span class="math">\(Q_e^n [W]\)</span>（<span class="math">\(n\)</span> = 1,4）可表示为</p>
+<div class="math" id="equation-eqthermal-numerical-qen">
+<span class="eqno">(4)</span>\[Q_e^n = Q_t^n - {{q_v V}\over{4}} + m^n\ C_v^n {{dT}\over{dt}}^n\]</div>
+<p>其中</p>
+<div class="math" id="equation-eqthermal-numerical-qtn">
+<span class="eqno">(5)</span>\[Q_t^n = {{q_i n_i^{(n)} S^{(n)}}\over 3}\]</div>
+<p>以及</p>
+<div class="math" id="equation-eqthermal-numerical-mn">
+<span class="eqno">(6)</span>\[m^n = {{\rho V}\over{4}}\]</div>
+<p>原则上，能量平衡方程的节点形式是这样建立的：要求在每个全局节点处，汇聚于该节点的所有四面体提供的等效节点热量（<span class="math">\(-Q_e^n\)</span>，对于两个叠合层除以二）与所施加边界热流和热源的节点贡献（<span class="math">\(Q_w^n\)</span>）之和为零。</p>
+<p>方程<a class="reference internal" href="#equation-eqthermal-numerical-qtn">(5)</a>中四面体热流向量各分量通过输运定律与温度梯度相联系（见<a class="reference internal" href="math-model.html#eq-transportlaw"><span class="std std-ref">傅里叶定律</span>（Fourier’s law）</a>）。反过来，温度梯度的各分量可利用方程<a class="reference internal" href="#equation-eqthermal-numerical-tj">(1)</a>以四面体的节点温度表示。</p>
+<p>为节省计算机时间，<span class="codename">FLAC3D</span> 中采用网格单元表述。对某一网格单元的各节点 <span class="math">\(n\)</span>，将该单元内所有汇聚于该节点的四面体的贡献（方程<a class="reference internal" href="#equation-eqthermal-numerical-qtn">(5)</a>）求和得到 <span class="math">\(Q_z^n\)</span>，并对两个叠合层除以二。组装联系节点单元量 <span class="math">\(Q_z^n\)</span> 与节点单元温度 <span class="math">\(T^n\)</span>（<span class="math">\(n\)</span> = 1,8）的局部单元矩阵 <span class="math">\([M]\)</span>。由于矩阵是对称的，只计算 36 个分量。这些分量在计算开始时保存，并在大应变模式下每 10 步更新一次。按单元矩阵的定义，有</p>
+<div class="math" id="equation-eqthermal-numerical-qzn">
+<span class="eqno">(7)</span>\[Q_z^n = M_{nj} T^j\]</div>
+<p>其中 <span class="math">\([T]\)</span> 是节点单元温度的局部向量。</p>
+<p>反过来，全局节点值 <span class="math">\(Q_T^n\)</span> 通过叠加各网格单元的贡献得到。在记号上稍作宽松处理，对每个全局节点 <span class="math">\(n\)</span> 可写为</p>
+<div class="math" id="equation-eqthermal-numerical-qtn2">
+<span class="eqno">(8)</span>\[Q_T^n = C_{nj} T^j\]</div>
+<p>其中 <span class="math">\([C]\)</span> 是全局矩阵，此处 <span class="math">\([T]\)</span> 是节点温度的全局向量。</p>
+<p>再次考虑单个四面体，可写为</p>
+<div class="math" id="equation-eqthermal-numerical-sumqen">
+<span class="eqno">(9)</span>\[- \sum Q_e^n + \sum Q_w^n = 0\]</div>
+<p>其中为简化记号，用 <span class="math">\(\sum\)</span> 符号表示汇聚于全局节点 <span class="math">\(n\)</span> 的所有网格单元在该节点处贡献之和。（一个网格单元的贡献由该单元内所有四面体的贡献组成，对两个叠合层除以二。）将方程<a class="reference internal" href="#equation-eqthermal-numerical-qen">(4)</a>代入方程<a class="reference internal" href="#equation-eqthermal-numerical-sumqen">(9)</a>，经整理可得</p>
+<div class="math" id="equation-eqthermal-numerical-dtndt">
+<span class="eqno">(10)</span>\[{{d T^n}\over{d t}} = - {{1} \over {\sum[m C_p]^n}} \left[Q_T^n + \sum Q_{app}^n \right]\]</div>
+<p>其中 <span class="math">\(Q_T^n\)</span> 是方程<a class="reference internal" href="#equation-eqthermal-numerical-qtn2">(8)</a>所定义的节点温度的函数，而 <span class="math">\(\sum Q_{app}^n\)</span> 是所施加体积源、边界热流和点源的已知贡献，定义为</p>
+<div class="math" id="equation-eqthermal-numerical-sumqappn">
+<span class="eqno">(11)</span>\[\sum Q_{app}^n = - \sum {\left[{{q_v V}\over{4}} + Q_w\right]}^n\]</div>
+<p>方程<a class="reference internal" href="#equation-eqthermal-numerical-dtndt">(10)</a>是节点 <span class="math">\(n\)</span> 处能量平衡方程的节点形式；右端项 <span class="math">\(Q_T^n + \sum Q_{app}^n\)</span> 称为“不平衡热量”。离散化中所涉及的每个全局节点都成立一个这样的表达式。它们共同构成常微分方程组，<span class="codename">FLAC3D</span> 中采用显式和隐式有限体积格式求解。下面对各格式的适用范围进行讨论。</p>
+</div>
+<div class="section" id="explicit-finite-volume-formulation">
+<span id="thermal-explicit-formulation"></span><h3>显式有限体积格式</h3>
+<p>在显式格式中，假定节点温度在时间区间 <span class="math">\(\Delta t\)</span> 内线性变化：方程<a class="reference internal" href="#equation-eqthermal-numerical-dtndt">(10)</a>左端的导数用前向有限差分表示；不平衡热量在时刻 <span class="math">\(t\)</span> 取值。从初始温度场开始，若温度未被固定，则各增量时刻的节点温度用下式更新</p>
+<div class="math" id="equation-eqthermal-numerical-tntplusdt">
+<span class="eqno">(12)</span>\[T_{&lt;t+\Delta t&gt;}^n = T_{&lt;t&gt;}^n + \Delta T_{&lt;t&gt;}^n\]</div>
+<p>其中</p>
+<div class="math" id="equation-eqthermal-numerical-dtnt">
+<span class="eqno">(13)</span>\[\Delta T_{&lt;t&gt;}^n = {\chi}^n \left[ Q_{T &lt;t&gt;}^n + \sum Q_{app&lt;t&gt;}^n \right]\]</div>
+<p>以及</p>
+<div class="math" id="equation-eqthermal-numerical-chin">
+<span class="eqno">(14)</span>\[{\chi}^n = - {{\Delta t}\over{\sum [m C_p]^n}}\]</div>
+<p>只有时间步长保持低于某一限值，显式方案才能达到数值稳定。</p>
+<p><strong>稳定性准则</strong></p>
+<p>为推导稳定性准则，考虑如下情形：对网格单元组合体中的某节点 <span class="math">\(n\)</span>，从零初始状态施加温度扰动 <span class="math">\(T_0\)</span>。利用方程<a class="reference internal" href="#equation-eqthermal-numerical-qtn2">(8)</a>可得</p>
+<div class="math" id="equation-eqthermal-numerical-qnt3">
+<span class="eqno">(15)</span>\[Q_T^n = C_{nn}\ T_0\]</div>
+<p>若节点 <span class="math">\(n\)</span> 属于对流边界，则有</p>
+<div class="math" id="equation-eqthermal-numerical-sumqnapp">
+<span class="eqno">(16)</span>\[\sum Q^n_{app} = D_{nn}\ T_o\]</div>
+<p>其中 <span class="math">\(D_{nn}\)</span> 用于表示节点 <span class="math">\(n\)</span> 处全局对流项中的温度系数。</p>
+<p>经过一个热学时步后，节点 <span class="math">\(n\)</span> 处的新温度为（见方程<a class="reference internal" href="#equation-eqthermal-numerical-tntplusdt">(12)</a>至<a class="reference internal" href="#equation-eqthermal-numerical-chin">(14)</a>）</p>
+<div class="math" id="equation-eqthermal-numerical-tndt">
+<span class="eqno">(17)</span>\[T_{&lt;\Delta t&gt;}^n = T_0 \left[ 1 - {{\Delta t}\over{\sum [m C_p]^n}} (C_{nn} + D_{nn}) \right]\]</div>
+<p>为防止计算按相继的 <span class="math">\(\Delta t\)</span> 重复进行时温度符号交替变化，上式中 <span class="math">\(T_0\)</span> 的系数必须为正。该要求意味着</p>
+<div class="math" id="equation-eqthermal-numerical-dt">
+<span class="eqno">(18)</span>\[\Delta t &lt; {{\sum [m C_p]^n}\over{C_{nn} + D_{nn}}}\]</div>
+<p><span class="codename">FLAC3D</span> 中所用时步的取值为方程<a class="reference internal" href="#equation-eqthermal-numerical-dt">(18)</a>右端在所有节点上的最小值乘以安全系数 0.8。</p>
+<p>为评估所涉参数的影响，记住临界时步的以下表示形式是有用的。若 <span class="math">\(L_c\)</span> 是最小四面体特征长度，则可写出如下形式的表达式</p>
+<div class="math" id="equation-eqthermal-numerical-dtcr">
+<span id="eq-142"></span><span class="eqno">(19)</span>\[\Delta t_{cr} = {{1}\over{m}} {\left [ {{\kappa}\over{L_c^2}} + {{h}\over{\rho\ C_v L_c}} \right ]}^{-1}\]</div>
+<p>其中 <span class="math">\(\Delta t_{cr}\)</span> 是临界时步，<span class="math">\(\kappa\)</span>、<span class="math">\(h\)</span>、<span class="math">\(\rho\)</span> 和 <span class="math">\(C_v\)</span> 已在前文<a class="reference internal" href="math-model.html#thermal-math-model-description"><span class="std std-ref">数学模型说明</span>（Mathematical Model Description）</a>中定义，<span class="math">\(m\)</span> 是大于 1 的常数，取决于介质的几何离散方式（例如，对于立方体的规则离散，<span class="math">\(m\)</span> = 6——见 Karlekar 和 Desmond 1982）。</p>
+<p>方程<a class="reference internal" href="#equation-eqthermal-numerical-dtcr">(19)</a>中的临界时步对应于扩散“前缘”穿过整个四面体所需特征时间的量度。为估算前缘穿过某一特定区域所需的时间，可使用类似的表达式，只要将 <span class="math">\(L_c\)</span> 解释为所考虑区域的特征长度。考虑无对流的情形。取区域与四面体特征时间之比可以看出，模拟扩散过程在该区域内传播所需的步数与区域和四面体特征长度平方之比成正比。该步数可能大到使仅使用显式方法变得难以承受。</p>
+<p>另一方面，这种一阶方法的优点在于所计算的时步通常足够小，能够准确跟踪节点温度的波动。</p>
+</div>
+<div class="section" id="implicit-finite-volume-formulation">
+<span id="thermal-implicit-formulation"></span><h3>隐式有限体积格式</h3>
+<p>为保证稳定性而对 <span class="math">\(\Delta t\)</span> 大小加以限制的要求，有时会导致时步极小（约为几分之一秒），特别是涉及多层瞬态传导时。隐式格式消除了这一限制，但需要在每个时步求解联立方程。</p>
+<p><span class="codename">FLAC3D</span> 中的隐式格式采用 Crank-Nicolson 方法，其中假定节点温度在时间区间 <span class="math">\(\Delta t\)</span> 内按二次规律变化。在该方法中，方程<a class="reference internal" href="#equation-eqthermal-numerical-dtndt">(10)</a>中的导数 <span class="math">\(dT/dt\)</span> 采用对应于半个时步的中心差分格式表示，而不平衡热量取 <span class="math">\(t\)</span> 和 <span class="math">\(t + \Delta t\)</span> 处的平均值来评价。在该格式中，有</p>
+<div class="math" id="equation-eqthermal-numerical-tntplusdt2">
+<span class="eqno">(20)</span>\[T^n_{&lt;t + \Delta t&gt;} = T_{&lt;t&gt;}^n + \Delta T_{&lt;t&gt;}^n\]</div>
+<p>其中</p>
+<div class="math" id="equation-eqthermal-numerical-dtnt2">
+<span class="eqno">(21)</span>\[\Delta T_{&lt;t&gt;}^n = {\chi}^n \left[{{1}\over{2}} \left(Q_{T &lt;t + \Delta t&gt;}^n + Q_{T &lt;t&gt;}^n \right)  + \sum \overline{Q^n_{app}}\right]\]</div>
+<p>以及</p>
+<div class="math" id="equation-eqthermal-numerical-sumoverlineqnapp">
+<span class="eqno">(22)</span>\[\sum \overline{Q^n_{app}} = {1 \over 2} \left( \sum Q^n_{app&lt;t + \Delta t&gt;} + \sum Q^n_{app&lt;t&gt;} \right)\]</div>
+<p>由方程<a class="reference internal" href="#equation-eqthermal-numerical-qtn2">(8)</a>中的定义，可写为</p>
+<div class="math" id="equation-eqthermal-numerical-qntt">
+<span class="eqno">(23)</span>\[Q_{T&lt;t&gt;}^n = C_{nj} T_{&lt;t&gt;}^j\]</div>
+<p>以及</p>
+<div class="math" id="equation-eqthermal-numerical-qnttplusdt">
+<span class="eqno">(24)</span>\[Q_{T&lt;t + \Delta t&gt;}^n = C_{nj} T_{&lt;t + \Delta t&gt;}^j\]</div>
+<p>利用<a class="reference internal" href="#equation-eqthermal-numerical-tntplusdt">(12)</a>，最后一个表达式变为</p>
+<div class="math" id="equation-eqthermal-numerical-qnttplusdt2">
+<span class="eqno">(25)</span>\[Q_{T&lt;t + \Delta t&gt;}^n = Q_{T&lt;t&gt;}^n + C_{nj} \Delta T_{&lt;t&gt;}^j\]</div>
+<p>将方程<a class="reference internal" href="#equation-eqthermal-numerical-qnttplusdt2">(25)</a>代入方程<a class="reference internal" href="#equation-eqthermal-numerical-dtnt2">(21)</a>后，可得（利用方程<a class="reference internal" href="#equation-eqthermal-numerical-qntt">(23)</a>）</p>
+<div class="math" id="equation-eqthermal-numerical-dtnt3">
+<span class="eqno">(26)</span>\[\Delta T_{&lt;t&gt;}^n = {\chi}^n \left[C_{nj} T_{&lt;t&gt;}^j + {{1}\over{2}} C_{nj} \Delta T_{&lt;t&gt;}^j + \sum \overline{Q_{app}^n}\right]\]</div>
+<p>最后，重新整理各项，</p>
+<div class="math" id="equation-eqthermal-numerical-regrouping">
+<span class="eqno">(27)</span>\[\left[\delta_{nj} - {{\chi}^n\over{2}} C_{nj}\right] \Delta T_{&lt;t&gt;}^j = {\chi}^n \left[C_{nj} T_{&lt;t&gt;}^j + \sum \overline{Q_{app}^n}\right]\]</div>
+<p>为书写简便，把已知矩阵 <span class="math">\([A]\)</span> 与矢量 <span class="math">\([b_{&lt;t&gt;}]\)</span> 定义为</p>
+<div class="math" id="equation-eqthermal-numerical-anj">
+<span class="eqno">(28)</span>\[A_{nj} = \delta_{nj} - {{\chi}^n\over{2}} C_{nj}\]</div>
+<p>以及</p>
+<div class="math" id="equation-eqthermal-numerical-bnt">
+<span class="eqno">(29)</span>\[b_{n&lt;t&gt;} = {\chi}^n \left[C_{nj} T_{&lt;t&gt;}^j + \sum \overline{Q_{app}^n}\right]\]</div>
+<p>采用这一约定，可将方程<a class="reference internal" href="#equation-eqthermal-numerical-regrouping">(27)</a>写为</p>
+<div class="math" id="equation-eqthermal-numerical-qnttplusdtanjdtjt">
+<span class="eqno">(30)</span>\[A_{nj} \Delta T_{&lt;t&gt;}^j = b_{n&lt;t&gt;}\]</div>
+<p>对网格中所涉及的每个节点都可写出这样一个方程。所得的方程组在 <span class="codename">FLAC3D</span> 中采用 Jacobi 迭代法求解。在该方法中，迭代 <span class="math">\(r + 1\)</span> 和节点 <span class="math">\(n\)</span> 处的温度增量用以下递推关系计算</p>
+<div class="math" id="equation-eqthermal-numerical-dtnrp1t">
+<span class="eqno">(31)</span>\[\Delta T_{&lt;t&gt;}^{n &lt;r+1&gt;} = \Delta T_{&lt;t&gt;}^{n &lt;r&gt;} + {{1}\over{A_{nn}}} \left[-A_{nj} \Delta T_{&lt;t&gt;}^{j &lt;r&gt;} + b_{n&lt;t&gt;}\right]\]</div>
+<p>其中爱因斯坦记号约定仅适用于指标 <span class="math">\(j\)</span>。利用方程<a class="reference internal" href="#equation-eqthermal-numerical-anj">(28)</a>对 <span class="math">\([A]\)</span> 的定义，方程<a class="reference internal" href="#equation-eqthermal-numerical-dtnrp1t">(31)</a>变为</p>
+<div class="math" id="equation-eqthermal-numerical-qnttplusdtanjdtjt2">
+<span class="eqno">(32)</span>\[\Delta T_{&lt;t&gt;}^{n &lt;r+1&gt;} = \Delta T_{&lt;t&gt;}^{n &lt;r&gt;} + {{1}\over{1 - {{\chi}^n\over{2}} C_{nn}}} \left[{{\chi}^n\over{2}} C_{nj} \Delta T_{&lt;t&gt;}^{j &lt;r&gt;} - \Delta T_{&lt;t&gt;}^{n &lt;r&gt;} + b_{n&lt;t&gt;}\right]\]</div>
+<p>初始近似值的选择使其满足</p>
+<div class="math" id="equation-eqthermal-numerical-dtn0t">
+<span class="eqno">(33)</span>\[\Delta T_{&lt;t&gt;}^{n &lt;0&gt;} = 0\]</div>
+<p>因此，第一次近似 <span class="math">\(\Delta T_{&lt;t&gt;}^{n &lt;1&gt;}\)</span> 采用与显式格式相同、但除以 <span class="math">\(\left( 1 - {{\chi^n}\over 2} C_{nn}\right)\)</span> 的公式计算。（请注意，在 <span class="codename">FLAC3D</span> 中，与温度相关的边界条件（包含在 <span class="math">\(b_n\)</span> 中）在隐式迭代过程中更新。）</p>
+<p>在 <span class="codename">FLAC3D</span> 中，最少考虑 3 次、最多 500 次迭代，收敛判据的形式为</p>
+<div class="math" id="equation-eqthermal-numerical-maxn">
+<span class="eqno">(34)</span>\[\max\limits_n \ \ \big\vert\ \ \Delta T^{n&lt;r+1&gt;}_{&lt;t&gt;} - \Delta T^{n&lt;r&gt;}_{&lt;t&gt;} \ \ \big\vert\ \ &lt; 10^{-2}\ \left( \max\limits_n \ \ \big\vert\ \ \Delta T^{n&lt;r&gt;}_{&lt;t&gt;} \ \ \big\vert \right)\]</div>
+<p>时步大小必须兼顾隐式格式的收敛性和精度来选择。尽管 Crank-Nicolson 方法对 <span class="math">\(\Delta t\)</span> 的所有正值（无对流时）都是稳定的，但除非矩阵 <span class="math">\([A]\)</span> 严格对角占优，否则 Jacobi 方法的收敛性并非无条件保证：</p>
+<div class="math" id="equation-eqthermal-numerical-sumakj">
+<span class="eqno">(35)</span>\[\sum\limits_{{j=1}\atop{j\ne k}}^n \ \ \bigg\vert\ \ A_{kj} \ \ \bigg\vert\ \ &lt;  \ \ \bigg\vert\ \ A_{kk} \ \ \bigg\vert\]</div>
+<p>对 <span class="math">\(1 \le i \le n\)</span>（见 Dahlquist 和 Bjorck 1974）。根据方程<a class="reference internal" href="#equation-eqthermal-numerical-anj">(28)</a>对 <span class="math">\(A_{nj}\)</span> 的定义以及方程<a class="reference internal" href="#equation-eqthermal-numerical-chin">(14)</a>对 <span class="math">\(\chi^n\)</span> 的定义，对于足够小的 <span class="math">\(\Delta t\)</span>，该充分条件总能满足。若 Jacobi 方法未收敛，将发出错误信息。此时必须减小隐式时步的大小，或改用显式方法。（显式时步可作为下界。）</p>
+<p>此外，尽管隐式方法具有二阶精度，仍可能需要一些经验判断才能选择合适的时步。实际上，其时步值必须相对于任何节点温度波动的波长保持较小。通常，在计算早期或其扰动阶段使用显式方法，而在模拟的其余部分则优先使用隐式方法。（或者，为获得更高精度，隐式方法也可采用显式时步值。）</p>
+<p>在 <span class="codename">FLAC3D</span> 中选择隐式方法时，必须考虑计算时间和计算机内存两个因素。在隐式方法中，每个时步都必须求解一组方程，至少需要三次迭代。一个迭代步所需的计算量约等于显式格式中一个时步所需的计算量。此外，迭代过程中必须存储中间值，与显式格式相比需要分配额外的内存。不过，这些不便可被隐式方法通常允许的大得多的时步或所能获得的精度提升所大大抵消。</p>
+</div>
+<div class="section" id="thermal-stress-coupling">
+<span id="id1"></span><h3>热-应力耦合</h3>
+<p>在瞬态模拟过程中的任何时候，都可把热传导与热-应力计算耦合起来。该耦合仅单向进行（即温度可引起应力变化，但由施加力引起的物体力学变化不会导致温度变化）。一般认为这一限制在此并不重要，因为准静态力学问题的能量变化通常可忽略不计。三角形网格单元中的应力变化由下式给出（据<a class="reference internal" href="math-model.html#eq-110"><span class="std std-ref">此方程</span>（this equation）</a>）：</p>
+<div class="math" id="equation-eqthermal-numerical-dsigmaij">
+<span class="eqno">(36)</span>\[\Delta \sigma _{ij}\ =\ -3K\ \alpha_t\ \Delta T \delta _{ij}\]</div>
+<p>上述公式假定每个三角形网格单元内的温度恒定，该温度由周围网格点插值得到。在应用本构律之前，将该应力加到网格单元的应力状态中。</p>
+<p>通过 <span class="codename">FISH</span> 访问温度和属性值，也可将力学属性设为温度变化的函数。</p>
+</div>
+<div class="section" id="thermal-pore-pressure-coupling">
+<span id="thermal-pp-coupling"></span><h3>热-孔隙压力耦合</h3>
+<p>由温度变化引起的孔隙压力变化，可通过在节点孔隙压力计算中向热-力学项增加一项贡献来获得（见<em>流体-力学相互作用</em>中的<a class="reference internal" href="../../../theory/fluid-mechanical/numerical_form/numerical_form.html#eq-thermmechdisch"><span class="std std-ref">此方程</span>（equation）</a>）。</p>
+<p>相应的总应力变化用以下表达式计算（据<em>流体-力学相互作用</em>中的<a class="reference internal" href="math-model.html#eq-111"><span class="std std-ref">此方程</span>（this equation）</a>、<a class="reference internal" href="math-model.html#eq-112"><span class="std std-ref">此方程</span>（this equation）</a>和<a class="reference internal" href="math-model.html#eq-115"><span class="std std-ref">此方程</span>（this equation）</a>）：</p>
+<div class="math" id="equation-eqthermal-numerical-dsigmaij2">
+<span class="eqno">(37)</span>\[\Delta \sigma_{ij} =\ - \alpha \ M \beta \ \Delta T\ \delta _{ij}\]</div>
+<p>对于不可压缩固体颗粒（<span class="math">\(\alpha\)</span> = 1 且 <span class="math">\(M = {{K_f} \over {n}}\)</span>），该式变为</p>
+<div class="math" id="equation-eqthermal-numerical-dsigmaij3">
+<span class="eqno">(38)</span>\[\Delta \sigma_{ij} =\ - {K_f \over n}  \beta \ \Delta T\ \delta _{ij}\]</div>
+<p>通过 <span class="codename">FISH</span> 访问温度和性质值，也可使地下水性质成为温度变化的函数。</p>
+</div>
+</div>
+<div class="section" id="advection">
+<span id="thermal-advection"></span><h2>平流</h2>
+<p>对流-传导的开发是对前述显式有限体积流体和热传导实现的扩展。其做法是在热能平衡中加入平流项（如<a class="reference internal" href="math-model.html#eq-116"><span class="std std-ref">此方程</span>（this equation）</a>所述），以计入流体引起的强制对流。此外，通过在输运方程（<a class="reference internal" href="math-model.html#eq-121"><span class="std std-ref">此方程</span>（this equation）</a>）中考虑流体密度对温度的依赖性（<a class="reference internal" href="math-model.html#eq-122"><span class="std std-ref">此方程</span>（this equation）</a>），计入了自然对流的逻辑。</p>
+<p>平流逻辑中热传导部分的数值实现采用<a class="reference internal" href="#thermal-conduction"><span class="std std-ref">传导</span>（Conduction）</a>中所述的有限体积格式。该算法经过修改，在评价热学步的新温度之前，通过在节点的不平衡热流中加入热贡献来计入对流。对流贡献按网格单元计算。首先，在每个热学时步，为赋予对流模型的每个网格单元计算热源项 <span class="math">\(\rho_0 c_w q_w \cdot \nabla T V\)</span>。在该公式中，<span class="math">\(q_w\)</span> 是该网格单元的流体比流量，<span class="math">\(\nabla T\)</span> 是温度梯度，<span class="math">\(V\)</span> 是网格单元体积。温度梯度由各四面体的节点温度利用高斯散度定理评价，并对网格单元取平均。随后将热源项分配到各节点并加到其不平衡热流中。最后，输运方程中所用的局部流体密度按<a class="reference internal" href="math-model.html#eq-122"><span class="std std-ref">此方程</span>（this equation）</a>中的定律根据网格单元温度更新，以计入自然对流。</p>
+<p>平流逻辑将流体计算与热学计算耦合，并依赖流体和热学模块的顺序推进。它通过热学本构模型 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.thermal.html#kwd:zone.thermal.cmodel.assign" title="assigns a thermal model to all zones in the  range . This keyword may only
+be given if the model is configured for thermal calculations (see  model.configure.fluid 
+and  Mathematical Model Description &lt;thermal-math-model&gt; )...">单元热本构模型指定（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">thermal</span> <span class="pre">cmodel</span> <span class="pre">assign</span></code>）</a> <span class="cmdkey">advection-conduction</span> 激活。平流项在热学计算期间加入，需要输入流体比流量。该比流量可手动提供，也可由流体流动计算提供。温度场在流体流动计算期间用于评价浮力项。</p>
+<div class="section" id="stability-and-accuracy">
+<span id="sec-stability-therm"></span><h3>稳定性与精度</h3>
+<p>求解能量平衡方程（<a class="reference internal" href="math-model.html#eq-116"><span class="std std-ref">此方程</span>（this equation）</a>）的数值格式的稳定性由两个数控制：网格 Péclet 数 <span class="math">\(P_e\)</span> 和网格 Courant 数 <span class="math">\(C_r\)</span>。对于均匀比热 <span class="math">\(c^T\)</span>，能量平衡方程（<a class="reference internal" href="math-model.html#eq-116"><span class="std std-ref">此方程</span>（this equation）</a>）可写为</p>
+<div class="math" id="equation-eqthermal-numerical-addtdt">
+<span class="eqno">(39)</span>\[{{\partial T} \over {\partial t}} = \nabla \cdot (D \nabla T) - {\bf v} \cdot \nabla T\]</div>
+<p>其中，按定义，</p>
+<div class="math" id="equation-eqthermal-numerical-add">
+<span class="eqno">(40)</span>\[D = {{k^T} \over {c^T}}\]</div>
+<p>以及</p>
+<div class="math" id="equation-eqthermal-numerical-adv">
+<span class="eqno">(41)</span>\[{\bf v} = {{\rho_0 c_w} \over c^T} {\bf q}_w\]</div>
+<p>Péclet 数给出平流与扩散相对效应的量度，定义为</p>
+<div class="math" id="equation-eqthermal-numerical-adpe">
+<span class="eqno">(42)</span>\[P_e = {{\|{\bf v}\|} \over {D / \Delta L}}\]</div>
+<p>其中 <span class="math">\(\Delta L\)</span> 是网格尺寸。Courant 数是粒子在时步 <span class="math">\(\Delta t^T\)</span> 内所覆盖的平流距离相对于 <span class="math">\(\Delta L\)</span> 的量度：</p>
+<div class="math" id="equation-eqthermal-numerical-adcr">
+<span class="eqno">(43)</span>\[C_r = {{\|{\bf v}\| \Delta t^T} \over {\Delta L}}\]</div>
+<p>例如在一维情形下，经典约束为 <span class="math">\(P_e \leq 2\)</span> 和 <span class="math">\(C_r \leq 1\)</span>（例如见 Perrochet 和 Bérod 1993）。在当前的实现中，显式流体和热学时步基于流体和热扩散率计算，与流体和传导逻辑中所采用的时步相同。因此程序对网格 Péclet 数不设固有的限制。然而，不同数值下的精度很可能不同，并受网格尺寸和时步的影响。</p>
+<p>警告：请注意，<span class="codename">FLAC3D</span> 所采用的显式时步对平流逻辑<em>并非</em>无条件稳定。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../flac3dhome.html"><span class="codename">FLAC3D</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../options.html">Options</a> »</li>
+<li class="nav-item nav-item-3"><a href="../thermalanalysis.html">Thermal Analysis</a> »</li>
+<li class="nav-item nav-item-4"><a accesskey="U" href="thermal.html">Thermal Analysis</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="def_thermal-isoconduct_property.html" title="previous chapter"> Isotropic Heat Conduction Properties</a> |    
+       <a href="solving.html" title="next chapter">Solving Thermal-Only and Coupled-Thermal Problems</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Numerical Formulation" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

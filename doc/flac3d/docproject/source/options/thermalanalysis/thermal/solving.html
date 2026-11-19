@@ -1,0 +1,340 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>求解纯热问题与耦合热问题 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="input.html" rel="next" title="Input Instructions for Thermal Analysis"/>
+<link href="numerical-form.html" rel="prev" title="Numerical Formulation"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="solving-thermal-only-and-coupled-thermal-problems">
+<span id="solving"></span><h1>求解纯热问题与耦合热问题</h1>
+<p><span class="codename">FLAC3D</span> 能够进行<a class="reference internal" href="#thermal-mechanical-analysis"><span class="std std-ref">纯热</span>（thermal-only）</a>分析和<a class="reference internal" href="#thermal-coupling-to-pore-pressure"><span class="std std-ref">热-流体流动耦合</span>（coupled thermal fluid-flow）</a>分析。此外，两类模拟都可与力学分析耦合。在所有情况下，命令流程的第一步都是发出 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.thermal" title="Thermal analysis...">配置热力计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">thermal</span></code>）</a> 命令，以便为热计算分配额外的内存。然后必须在显式和隐式热学算法之间作出选择。默认将选择显式算法，但可在纯热或耦合计算的任何阶段，使用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.thermal.html#kwd:zone.thermal.implicit" title="Turns implicit mode  on  or  off .  By default implicit mode is
+ off .  Implicit mode requires a manually specified timestep.  Note that
+specifying a timestep that is too large can cause the iterative matrix solver
+to fail to converge.  (see  Implicit Formulation &lt;thermal-implicit-formulation&gt; )...">单元热隐式命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">thermal</span> <span class="pre">implicit</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 或 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.thermal.html#kwd:zone.thermal.implicit" title="Turns implicit mode  on  or  off .  By default implicit mode is
+ off .  Implicit mode requires a manually specified timestep.  Note that
+specifying a timestep that is too large can cause the iterative matrix solver
+to fail to converge.  (see  Implicit Formulation &lt;thermal-implicit-formulation&gt; )...">单元热隐式命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">thermal</span> <span class="pre">implicit</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a> 命令激活或停用隐式计算模式。在显式模式下，热学时步将自动计算，但可使用 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.thermal.html#kwd:model.thermal.timestep" title=".. kwd:: Automatic...">模型热时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">thermal</span> <span class="pre">timestep</span></code>）</a> 命令选择更小的时步。在隐式模式下，时步大小必须由用户指定，这通过发出 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.thermal.html#kwd:model.thermal.timestep" title=".. kwd:: Automatic...">模型热时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">thermal</span> <span class="pre">timestep</span></code>）</a> 命令完成。必须为所有导热的网格单元指定热学模型和性质。此版本程序中可用的热学模型有四种（见 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.thermal.html#kwd:zone.thermal.cmodel" title="Associates a thermal constitutive model with specified zones in the grid. It
+also allows querying of properties and states of constitutive models...">单元热本构模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">thermal</span> <span class="pre">cmodel</span></code>）</a>）：<span class="cmdkey">null</span>、<span class="cmdkey">isotropic</span>、<span class="cmdkey">anisotropic</span> 和 <span class="cmdkey">advection-conduction</span>，以及一个称为 <span class="cmdkey">hydration</span> 的<a class="reference internal" href="../hydration/description.html#hydration-description"><span class="std std-ref">水化热学模型</span>（hydration thermal model）</a>。<span class="cmdkey">null</span> 模型用于将网格的一部分排除在热计算之外。（热学域由具有非空热学模型的网格单元集合定义。）请注意，例如热流边界条件是通过范围赋给热学域边界的。此外，被赋予空力学模型的网格单元只有在同时被赋予 <span class="cmdkey">null</span> 模型时，才会在热计算中被忽略。<span class="cmdkey">isotropic</span> 和 <span class="cmdkey">anisotropic</span> 模型分别用于热导率为各向同性和各向异性的热传导分析。请注意，<span class="cmdkey">anisotropic</span> 可用于各向同性导热分析；但在此情形下其计算效率低于 <span class="cmdkey">isotropic</span> 模型。<span class="cmdkey">advection-conduction</span> 模型用于传导-平流计算；该模型假定导热系数为各向同性。请注意，在传导-平流分析中允许任意组合热学本构模型；但只有被赋予 <span class="cmdkey">advection-conduction</span> 模型的网格单元才会考虑由平流进行的热输运。还必须指定材料密度。为完成热学问题的设置，还需指定初始条件和边界条件。</p>
+<div class="section" id="thermal-conduction-only-analysis">
+<span id="id1"></span><h2>纯热传导分析</h2>
+<p>命令 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.mechanical.html#kwd:zone.mechanical.active" title="Sets mechanical calculation  off \ /\  on  (default is  on ).
+ The mechanical calculation may be turned off for a thermal-only calculation
+or a fluid flow-only calculation.  Note that in general it is preferable to
+set mechanical calculations off for the entire model with the  model.mechanical.active 
+command...">单元力学活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">mechanical</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>（若指定了 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.fluid" title="Fluid-flow analysis...">配置流体计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">fluid</span></code>）</a>，还包括 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.active" title="The fluid process is  on  for zones, by default, when the  model.configure.fluid 
+command is given...">单元流体活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>）用于请求纯热计算。随后可给出 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.step.html#command:model.step" title="Execute timesteps. The synonym  model.cycle  may also be used.  This is
+the equivalent of calling  model.solve  with the  cycles  keyword
+set to  i ...">执行计算时步命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">step</span></code>）</a>（或 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.cycle.html#command:model.cycle" title="Execute timesteps. The synonym  model.step  may also be used.  This is
+the equivalent of calling  model.solve  with the  cycles  keyword
+set to  i ...">执行计算时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">cycle</span></code>）</a>）命令以执行给定数量的热学步。要在达到特定热学时间时停止计算，可发出 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#kwd:model.solve.thermal.time-total" title="Limit of the time accumulated while this process is active since model creation...">模型求解热时间总（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span> <span class="pre">thermal</span> <span class="pre">time-total</span></code>）</a> 命令。</p>
+<p>热学性质（各向同性导热系数和比热）分别通过 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.thermal.html#kwd:zone.thermal.property" title="Assigns properties for the thermal constitutive models of all zones in the range.
+ Any number...">单元热属性（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">thermal</span> <span class="pre">property</span></code>）</a> 命令后接关键字 <span class="cmdkey">conductivity</span> 和 <span class="cmdkey">specific-heat</span> 赋予。</p>
+<p>只需发出 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#kwd:model.solve.thermal" title="Specifies a solve limit for the thermal process specifically...">模型热分析求解命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span> <span class="pre">thermal</span></code>）</a> 命令即可获得稳态热学解。默认情况下，热计算将一直进行，直到模型中所有网格点处的不平衡热流与所施加热流大小的比值都低于 10<sup>-5</sup>。对大多数热分析而言，该限制比值可产生稳态热流条件。该比值可用 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#kwd:model.solve.thermal.ratio" title="Specifies a limiting convergence ratio as defined by the thermal logic...">模型求解热比（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span> <span class="pre">thermal</span> <span class="pre">ratio</span></code>）</a> 命令调整。</p>
+<p>当给出 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#kwd:model.solve.thermal.cycles" title="Limit of the number of cycles to take with thermal active during this solve
+operation...">模型求解热循环（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span> <span class="pre">thermal</span> <span class="pre">cycles</span></code>）</a> 或 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#kwd:model.solve.thermal.time" title="Limit of the time accumulated while this process is active during this solve
+operation...">模型求解热时间（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span> <span class="pre">thermal</span> <span class="pre">time</span></code>）</a> 时，热学时步和总热学时间会打印到屏幕上。时步及其他热计算模式信息可通过 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.thermal.html#kwd:zone.thermal.list" title=".. kwd:: Information...">单元热列表（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">thermal</span> <span class="pre">list</span></code>）</a> 命令获得。</p>
+</div>
+<div class="section" id="thermal-advection-only-analysis">
+<span id="id2"></span><h2>纯热平流分析</h2>
+<p>平流-传导的逻辑依赖纯流体计算与纯热计算的顺序推进；它在被赋予热学本构模型 <span class="cmdkey">advection-conduction</span> 的网格单元中激活。本构模型 <span class="cmdkey">advection-conduction</span>（见 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.thermal.html#kwd:zone.thermal.property" title="Assigns properties for the thermal constitutive models of all zones in the range.
+ Any number...">单元热属性（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">thermal</span> <span class="pre">property</span></code>）</a>）负责由网格单元的网格点温度计算热流和温度梯度。该模型还存储网格单元的导热系数、比热、热膨胀系数和参考温度等热学性质，以及流体密度（用于浮力计算）和流体比流量。该模型假定导热系数为各向同性。所有性质的空间分布可以是任意的。最后，平流-传导逻辑可执行显式和隐式的热学与流体计算。</p>
+<p>在大多数情况下，使用平流逻辑时会选择流体配置。只有在采用该配置时，自由平流才能被激活（在包含 <span class="cmdkey">advection-conduction</span> 模型的网格单元中）。强制对流在有无流体配置时均可使用。在后一种情况下，（已知的）流体比流量作为模型属性赋值。</p>
+<p>在流体配置（<a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.fluid" title="Fluid-flow analysis...">配置流体计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">fluid</span></code>）</a>）下，用户可赋予若干性质（见 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.thermal.html#kwd:zone.thermal.property" title="Assigns properties for the thermal constitutive models of all zones in the range.
+ Any number...">单元热属性（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">thermal</span> <span class="pre">property</span></code>）</a>）：</p>
+<table border="1" class="colwidths-given blank docutils">
+<colgroup>
+<col width="33%"/>
+<col width="67%"/>
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><span class="cmdkey">conductivity</span></td>
+<td>基质导热系数</td>
+</tr>
+<tr class="row-even"><td><span class="cmdkey">temperature-reference</span></td>
+<td>参考温度</td>
+</tr>
+<tr class="row-odd"><td><span class="cmdkey">expansion-fluid</span></td>
+<td>流体的体积热膨胀系数</td>
+</tr>
+<tr class="row-even"><td><span class="cmdkey">conductivity-fluid</span></td>
+<td>流体导热系数</td>
+</tr>
+<tr class="row-odd"><td><span class="cmdkey">specific-heat-fluid</span></td>
+<td>流体比热</td>
+</tr>
+<tr class="row-even"><td><span class="cmdkey">specific-heat</span></td>
+<td>基质比热</td>
+</tr>
+<tr class="row-odd"><td><span class="cmdkey">expansion</span></td>
+<td>基质线性热膨胀系数</td>
+</tr>
+</tbody>
+</table>
+<p>在这种情况下，上述五个性质（<span class="cmdkey">conductivity-effective</span>、<span class="cmdkey">specific-heat-effective</span>、<span class="cmdkey">specific-discharge-x</span>、<span class="cmdkey">specific-discharge-y</span> 和 <span class="cmdkey">specific-discharge-z</span>）均由程序自动计算得出，用户只能对其进行读取访问，而不能自行赋值。（若用户强行赋予数值，这些数值将被忽略。）</p>
+<p>若未选择流体配置，则必须由用户为下列性质赋值：<span class="cmdkey">conductivity-effective</span>、<span class="cmdkey">specific-heat-effective</span>、<span class="cmdkey">specific-discharge-x</span>、<span class="cmdkey">specific-discharge-y</span> 和 <span class="cmdkey">specific-discharge-z</span>。请注意，性质 <span class="cmdkey">specific-heat</span>、<span class="cmdkey">conductivity</span> 和 <span class="cmdkey">conductivity-fluid</span> 在此情形下均不被使用，因此无需赋值。在这种情况下，需要由用户自行赋值的性质为（见 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.thermal.html#kwd:zone.thermal.property" title="Assigns properties for the thermal constitutive models of all zones in the range.
+ Any number...">单元热属性（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">thermal</span> <span class="pre">property</span></code>）</a>）：</p>
+<table border="1" class="colwidths-given blank docutils">
+<colgroup>
+<col width="33%"/>
+<col width="67%"/>
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><span class="cmdkey">conductivity-effective</span></td>
+<td>有效导热系数</td>
+</tr>
+<tr class="row-even"><td><span class="cmdkey">specific-heat-effective</span></td>
+<td>相对基质密度的有效比热</td>
+</tr>
+<tr class="row-odd"><td><span class="cmdkey">specific-discharge-x</span></td>
+<td>比流量的<em>x</em>分量</td>
+</tr>
+<tr class="row-even"><td><span class="cmdkey">specific-discharge-y</span></td>
+<td>比流量的<em>y</em>分量</td>
+</tr>
+<tr class="row-odd"><td><span class="cmdkey">specific-discharge-z</span></td>
+<td>比流量的<em>z</em>分量</td>
+</tr>
+<tr class="row-even"><td><span class="cmdkey">temperature-reference</span></td>
+<td>参考温度</td>
+</tr>
+<tr class="row-odd"><td><span class="cmdkey">specific-heat-fluid</span></td>
+<td>流体比热</td>
+</tr>
+<tr class="row-even"><td><span class="cmdkey">expansion</span></td>
+<td>基质线性热膨胀系数</td>
+</tr>
+</tbody>
+</table>
+<p>在两种配置情形下，只有当流体密度（<a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.water.html#kwd:zone.water.density" title="fluid density, `ρ_w` [SI units: kg/m\  3 ]. This will force a recalculation
+of pore pressures on all gridpoints in the range...">单元水密度（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">water</span> <span class="pre">density</span></code>）</a>）和流体比热（<a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.thermal.html#kwd:zone.thermal.property" title="Assigns properties for the thermal constitutive models of all zones in the range.
+ Any number...">单元热属性（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">thermal</span> <span class="pre">property</span></code>）</a> <span class="cmdkey">specific-heat-fluid</span>）均不为零时，热方程中的平流项才会被激活。</p>
+<div class="section" id="steady-state-conduction-solution">
+<h3>稳态传导解</h3>
+<p>平流模拟的初始条件常对应于稳态传导解。这些条件可通过直接初始化孔隙压力和温度（若已知）来建立，也可由程序计算得到。在后一种情况下，做法是先进行热计算，取参考流体密度为零以防止在能量平衡方程中引入平流项（使用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.water.html#kwd:zone.water.density" title="fluid density, `ρ_w` [SI units: kg/m\  3 ]. This will force a recalculation
+of pore pressures on all gridpoints in the range...">单元水密度（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">water</span> <span class="pre">density</span></code>）</a> = 0，并令 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.fluid.html#kwd:model.fluid.active" title="The fluid process is  on , by default, when the  model.configure.fluid 
+command is given. Specify  active   off  to suppress fluid calculations...">模型流体活动命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">fluid</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a> 和 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.thermal.html#kwd:model.thermal.active" title="The thermal process is  on , by default, when the  model.configure.thermal 
+command is given. Specify  active   off  to suppress thermal calculations...">模型热活动命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">thermal</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>），然后在将流体参考密度重置为实际值之后进行流体计算（令 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.fluid.html#kwd:model.fluid.active" title="The fluid process is  on , by default, when the  model.configure.fluid 
+command is given. Specify  active   off  to suppress fluid calculations...">模型流体活动命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">fluid</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 和 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.thermal.html#kwd:model.thermal.active" title="The thermal process is  on , by default, when the  model.configure.thermal 
+command is given. Specify  active   off  to suppress thermal calculations...">模型热活动命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">thermal</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>）。</p>
+</div>
+<div class="section" id="forced-advection-and-free-advection-simulations">
+<h3>强制平流与自由平流模拟</h3>
+<p>可将性质 <span class="cmdkey">expansion-fluid</span>（见 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.thermal.html#kwd:zone.thermal.property" title="Assigns properties for the thermal constitutive models of all zones in the range.
+ Any number...">单元热属性（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">thermal</span> <span class="pre">property</span></code>）</a>）设为零，以运行忽略自由平流的模拟。要模拟自由平流而忽略强制平流，可在热计算期间将流体参考密度设为零，并在流体流动计算时将其重置为实际值。</p>
+</div>
+<div class="section" id="synchronization-of-fluid-and-thermal-times">
+<span id="thermal-synchronization"></span><h3>流体时间与热学时间的同步</h3>
+<p>请注意，在平流逻辑的这一实现中，各模块必须独立运行：热学步进期间必须关闭流体流动，而流体计算期间应关闭热学计算。</p>
+<p>随着模拟推进，同步流体时间和热学时间也是用户的责任。对于显式计算，可遵循以下步骤。首先，通过对每个模块各执行一次“预览”计算步，并记录屏幕上显示的时步值，确定流体和热计算的默认时步。默认流体（热学）时步是网格尺寸以及流体（热学）性质（迁移系数、流体体积模量和孔隙率；有效传导、比热）的函数。其次，选择流体和热学时步，使其满足：(a) 一个为另一个的整数倍；(b) 每个时步小于或等于其默认值。（为此使用 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.fluid.html#kwd:model.fluid.timestep" title=".. kwd:: Automatic...">模型流体时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">fluid</span> <span class="pre">timestep</span></code>）</a> 或 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.thermal.html#kwd:model.thermal.timestep" title=".. kwd:: Automatic...">模型热时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">thermal</span> <span class="pre">timestep</span></code>）</a> 命令。）最后，以热学步与流体流动步交替的顺序运行模拟：时步较大的模块执行一步；另一模块执行足够多的步以补上时间差。（为此设计的 <span class="codename">FISH</span> 函数示例见<a class="reference internal" href="../../../../../zone/test3d/Thermal/HortonRogersLapwoodConvection/hortonrogerslapwoodconvection.html#hortonrogerslapwoodconvection"><span class="std std-ref">Horton-Rogers-Lapwood 对流问题</span>（Horton-Rogers-Lapwood Convection Problem）</a>。）此外，若考虑力学耦合，该序列中应包含足够多的力学步，以使系统保持准静态平衡。</p>
+</div>
+</div>
+<div class="section" id="thermal-mechanical-analysis">
+<span id="id3"></span><h2>热-力学分析</h2>
+<p>热学选项可与力学计算结合，以使用 <span class="codename">FLAC3D</span> 进行热-力学分析。热计算的所有功能（包括瞬态和稳态传热，以及采用显式或隐式算法的热学求解）都可在热-力学计算中使用。</p>
+<p>热-力学耦合由温度变化对网格单元体积变化的影响提供（见<a class="reference internal" href="math-model.html#eq-110"><span class="std std-ref">此方程</span>（this equation）</a>）。线性热膨胀系数通过 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.thermal.html#kwd:zone.thermal.property" title="Assigns properties for the thermal constitutive models of all zones in the range.
+ Any number...">单元热属性（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">thermal</span> <span class="pre">property</span></code>）</a> <span class="cmdkey">expansion</span> 命令赋予。</p>
+<p>可使用 <span class="codename">FLAC3D</span> 中任何内建力学模型进行热-力学分析。但请注意，对于在力学上被设为空的网格单元，其热学模型不会自动设为空。必须为热学空网格单元给出 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.thermal.html#kwd:zone.thermal.cmodel.assign.null" title="Assign thermally null model...">单元热本构模型指定空（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">thermal</span> <span class="pre">cmodel</span> <span class="pre">assign</span> <span class="pre">null</span></code>）</a> 命令。</p>
+<p>考虑通过传导进行的热输运：进行热-力学分析时必须考虑两个问题。第一个问题涉及热学过程与力学过程相关的时间尺度不同。由于时步对应于信息从一个节点传播到下一个节点所需的时间，可用其时步公式来比较时间尺度。</p>
+<p>通常，与力学过程相关的时步具有如下形式</p>
+<div class="math" id="equation-eqtherm-solving-dtmech">
+<span class="eqno">(1)</span>\[\Delta t_{mech} = \sqrt{{\rho}\over{K + (4/3) G}} \ L_c\]</div>
+<table border="1" class="colwidths-auto blank docutils">
+<tbody valign="top">
+<tr class="row-odd"><td>其中：</td>
+<td><span class="math">\(K\)</span></td>
+<td>=</td>
+<td>体积模量；</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td><span class="math">\(G\)</span></td>
+<td>=</td>
+<td>剪切模量；</td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td><span class="math">\(\rho\)</span></td>
+<td>=</td>
+<td>密度；以及</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td><span class="math">\(L_c\)</span></td>
+<td>=</td>
+<td>特征长度。</td>
+</tr>
+</tbody>
+</table>
+<p>因此，热传导时步与力学时步之比可表示为（见<a class="reference internal" href="numerical-form.html#eq-142"><span class="std std-ref">此方程</span>（this equation）</a>，<span class="math">\(h\)</span> = 0 且 <span class="math">\(m\)</span> = 1）</p>
+<div class="math" id="equation-eqtherm-solving-dtmthermorverdtmech">
+<span class="eqno">(2)</span>\[{{\Delta t_{ther}}\over{\Delta t_{mech}}} = \sqrt{{K + 4/3 G}\over{\rho}} \ {{L_c}\over {\kappa}}\]</div>
+<p>其中 <span class="math">\(\kappa\)</span> 是热扩散率。对于非金属，该性质至多为 10<sup>-6</sup> m<sup>2</sup>/s 量级。对于岩石和土，<span class="math">\(\rho\)</span> 约为 10<sup>3</sup> kg/m<sup>3</sup> 量级，而 <span class="math">\(K + (4/3) G\)</span> 约为 10<sup>10</sup> N/m<sup>2</sup>。将这些量级代入方程<a class="reference internal" href="#equation-eqtherm-solving-dtmthermorverdtmech">(2)</a>可见，热学时间尺度与力学时间尺度之比约为 10<sup>5</sup> <span class="math">\(L_c\)</span>。即使 <span class="math">\(L_c\)</span> 约为 1 mm，该比值仍然很大。在实践中，可认为力学效应相对于扩散效应是瞬时发生的。这也是 <span class="codename">FLAC3D</span> 所采用的方法，其中与热学步相关联的任何力学步均不占用时间。</p>
+<p>第二个问题涉及 <span class="codename">FLAC3D</span> 中的热-力学耦合。该耦合仅在一个方向上发生：温度变化产生热应变，从而影响应力；而热计算不受所发生的力学变化影响。</p>
+<p>通常，模拟中的初始力学条件对应于一种平衡状态，必须在开始耦合分析之前先达到该平衡。若介质为弹性，且必须在某一热学时刻研究热-力学响应而不分析瞬态过程，则热学模拟与力学模拟可依次进行。首先，进行纯热计算直到所需时刻（<a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.thermal.html#kwd:model.thermal.active" title="The thermal process is  on , by default, when the  model.configure.thermal 
+command is given. Specify  active   off  to suppress thermal calculations...">模型热活动命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">thermal</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 和 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.mechanical.html#kwd:model.mechanical.active" title="The mechanical process is  on  by default. Specify  active   off 
+to suppress mechanical calculations...">模型力学活动命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">mechanical</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>）。随后，可在分析响应之前，使用 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.thermal.html#kwd:model.thermal.active" title="The thermal process is  on , by default, when the  model.configure.thermal 
+command is given. Specify  active   off  to suppress thermal calculations...">模型热活动命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">thermal</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a> 和 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.mechanical.html#kwd:model.mechanical.active" title="The mechanical process is  on  by default. Specify  active   off 
+to suppress mechanical calculations...">模型力学活动命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">mechanical</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 命令使系统循环至力学平衡。</p>
+<p>对于非线性力学模型（即涉及塑性时），必须以更密的时间间隔把热学变化传递给力学模块，以遵循系统的路径相关性。通常，在无量纲热学时间较小时，每个热学步必须执行一定数量的力学步，以使系统达到准静态平衡。在无量纲热学时间较大时，若系统接近热平衡，则可执行若干个热学时步而不显著扰动介质的力学状态。相应的数值模拟可通过在纯热模式与纯力学模式之间交替来手动控制。</p>
+<p>通过将 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令与适当的设置结合使用，可避免这种繁琐的工作：<a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.thermal.html#kwd:model.thermal.active" title="The thermal process is  on , by default, when the  model.configure.thermal 
+command is given. Specify  active   off  to suppress thermal calculations...">模型热活动命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">thermal</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 和 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.mechanical.html#kwd:model.mechanical.active" title="The mechanical process is  on  by default. Specify  active   off 
+to suppress mechanical calculations...">模型力学活动命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">mechanical</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 使热学过程和力学过程都处于活动状态。<a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#kwd:model.solve.mechanical.ratio" title="Limit based on the current convergence ratio value, as defined by the various
+modules that use it.  By default this is the same as  ratio-average .
+ See ref-equilibrium-...">模型求解力学比（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span> <span class="pre">mechanical</span> <span class="pre">ratio</span></code>）</a> 将设定不平衡力比的限值，低于该限值即认为达到力学“平衡”。<a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.mechanical.html#kwd:model.mechanical.substep" title="Specifies the maximum number of steps the mechanical process will take when
+solving with  slave   on ...">模型力学子步命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">mechanical</span> <span class="pre">substep</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">n</span></span></a> 和 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.mechanical.html#kwd:model.mechanical.slave" title="Specifies that mechanical mode is to be considered a slave, and cycled to equilibrium
+after each master step has been taken...">模型力学从属（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">mechanical</span> <span class="pre">slave</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 将力学模块声明为从属模块，它必须为主动模块所执行的每一步做 <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">n</span></span></a> 个子循环（若检测到平衡则可更少——见上一设置）。<a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.thermal.html#kwd:model.thermal.substep" title="Specifies the maximum number of steps the thermal process will take when solving
+with  slave   on ...">模型热子步命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">thermal</span> <span class="pre">substep</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">n</span></span></a> 将热学模块声明为主动模块。默认情况下，若力学模块被声明为从属模块，则热学模块为主动模块，且 <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">m</span></span></a> = 100。</p>
+<p>若对每个热学时步，力学模块只需一个子步即可达到平衡，则热学子步数（此时为力学模块的从属子步）将加倍，但绝不超过数目 <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">m</span></span></a>。一旦每个热学子步组对应一个力学时步的序列被打破，系统便恢复到原来的子步设置。</p>
+<p>在此模式下使用 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.solve.html#command:model.solve" title="Solve to a specified limit. The solve logic provides a mechanism to continue
+cycling a model until specified criteria are met, oftentimes resulting in a
+model that is in...">求解模型（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">solve</span></code>）</a> 命令进行循环计算时，以下信息将打印到屏幕上：</p>
+<blockquote>
+<div><ul class="simple">
+<li>总步数（包括热学和力学子步）</li>
+<li>上一步主动模块的子步总数</li>
+<li>上一步从属模块的子步总数</li>
+<li>当前正在计算的模块</li>
+<li>当前子步号</li>
+<li>当前最大力学不平衡力比</li>
+<li>当前最大热学不平衡力比</li>
+<li>主动模块的当前时步</li>
+</ul>
+</div></blockquote>
+<p>可监测这些信息以确保计算按预期进行。</p>
+<p>在第三种方法中，可在力学和热学模块均开启的情况下使用 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.step.html#command:model.step" title="Execute timesteps. The synonym  model.cycle  may also be used.  This is
+the equivalent of calling  model.solve  with the  cycles  keyword
+set to  i ...">执行计算时步命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">step</span></code>）</a> 命令（<a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.thermal.html#kwd:model.thermal.active" title="The thermal process is  on , by default, when the  model.configure.thermal 
+command is given. Specify  active   off  to suppress thermal calculations...">模型热活动命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">thermal</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 和 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.mechanical.html#kwd:model.mechanical.active" title="The mechanical process is  on  by default. Specify  active   off 
+to suppress mechanical calculations...">模型力学活动命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">mechanical</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>）。在该选项中，每个热学步将执行一个力学步。此处假定热学步足够小，每执行一个热学步后一个力学步即可使系统在力学上重新平衡。可用命令选项的完整清单可参见<a class="reference internal" href="input.html#thermal-input"><span class="std std-ref">热分析输入说明</span>（Input Instructions for Thermal Analysis）</a>。</p>
+</div>
+<div class="section" id="thermal-coupling-to-pore-pressure">
+<span id="id4"></span><h2>热与孔隙压力的耦合</h2>
+<p><span class="codename">FLAC3D</span> 还可用于求解温度变化影响流体孔隙压力的热-流体流动耦合问题。这种耦合响应还可与力学应力计算耦合。</p>
+<p>该耦合由温度变化对饱和基质体积变化的影响引起。不排水体积热膨胀系数 <span class="math">\(\beta\)</span> 作为输入性质，由 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.property.undrained-thermal-coefficient" title="Undrained thermal coefficient,  \beta ...">设置单元流体不排水热系数属性命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">property</span> <span class="pre">undrained-thermal-coefficient</span></code>）</a> 赋予。</p>
+<p>为应用热-流体流动耦合，必须将 <span class="codename">FLAC3D</span> 网格同时配置用于热学选项和流体流动选项（<a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.fluid" title="Fluid-flow analysis...">配置流体计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">fluid</span></code>）</a> 与 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.thermal" title="Thermal analysis...">配置热力计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">thermal</span></code>）</a>）。若<em>不</em>考虑热平流，则可通过抑制其中一个模式（即 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.thermal.html#kwd:zone.thermal.active" title="Sets thermal calculations  on  or  off .  The default is  on 
+after  model.configure.thermal  has been specified...">单元热活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">thermal</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 与 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.active" title="The fluid process is  on  for zones, by default, when the  model.configure.fluid 
+command is given...">单元流体活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>，或 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.thermal.html#kwd:zone.thermal.active" title="Sets thermal calculations  on  or  off .  The default is  on 
+after  model.configure.thermal  has been specified...">单元热活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">thermal</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a> 与 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.active" title="The fluid process is  on  for zones, by default, when the  model.configure.fluid 
+command is given...">单元流体活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>）使热学与流体流动计算模式独立运行，也可使两种模式同时运行（<a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.thermal.html#kwd:zone.thermal.active" title="Sets thermal calculations  on  or  off .  The default is  on 
+after  model.configure.thermal  has been specified...">单元热活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">thermal</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 与 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.fluid.html#kwd:zone.fluid.active" title="The fluid process is  on  for zones, by default, when the  model.configure.fluid 
+command is given...">单元流体活动（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">fluid</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>）。在后一种情况下，热学时步与流体流动时步以两者中较小者为准相互同步。若<em>考虑</em>平流，则流体计算与热学计算必须按顺序进行。此外，用户必须按<a class="reference internal" href="#thermal-synchronization"><span class="std std-ref">流体时间与热学时间的同步</span>（Synchronization of Fluid and Thermal Times）</a>中所述步骤同步流体与热学时间尺度。</p>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../flac3dhome.html"><span class="codename">FLAC3D</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../options.html">Options</a> »</li>
+<li class="nav-item nav-item-3"><a href="../thermalanalysis.html">Thermal Analysis</a> »</li>
+<li class="nav-item nav-item-4"><a accesskey="U" href="thermal.html">Thermal Analysis</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="numerical-form.html" title="previous chapter"> Numerical Formulation</a> |    
+       <a href="input.html" title="next chapter">Input Instructions for Thermal Analysis</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Solving Thermal-Only and Coupled-Thermal Problems" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

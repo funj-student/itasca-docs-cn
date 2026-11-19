@@ -1,0 +1,197 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>抗震分析的建议步骤 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="../verification/verification.html" rel="next" title="Verification Problems"/>
+<link href="../../../../../zone/test3d/Dynamic/DamFoundationWet/damfoundationwet.html" rel="prev" title="Procedure for Dynamic Coupled Mechanical/Groundwater Simulations: Dam Foundation Wet"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="recommended-steps-for-seismic-analyses">
+<span id="dynamicrecommendedsteps"></span><h1>抗震分析的建议步骤</h1>
+<p>土石结构的抗震分析可能相当复杂，特别是当土料存在动力液化的可能性时。建议采用以下步骤使用非线性有效应力材料模型进行抗震分析。在该步骤中，非线性应力/应变行为由“简单的”弹塑性（Mohr-Coulomb）模型表示，并附加公式以模拟循环加载期间土体的液化和滞回阻尼。总体而言，这些抗震分析步骤也可用于更综合的液化模型。</p>
+<ol class="arabic">
+<li><p class="first"><strong>确定代表性的静力和动力材料特性</strong>——<span class="codename">FLAC3D</span> 中的有效应力分析方法以完全耦合的力学-流体流动分析形式进行，这需要选择 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.configure.html#kwd:model.configure.fluid" title="Fluid-flow analysis...">配置流体计算模式（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">fluid</span></code>）</a>，并赋予排水刚度和强度材料性质以及非饱和（“干”）密度（或重度）。</p>
+<p>此外，完全耦合有效应力计算要求显式指定水的体积模量。此类分析中必须谨慎选择水的体积模量。模型的行为取决于刚度比 <span class="math">\(R_k\)</span>，其定义见<a class="reference internal" href="../../../theory/fluid-mechanical/solving/solving.html#fluid-solving"><span class="std std-ref">求解纯流动问题与耦合流动问题</span>（Solving Flow-Only and Coupled-Flow Problems）</a>，此处重复如下：</p>
+<div class="math" id="equation-dyneq-solve-rk">
+<span class="eqno">(1)</span>\[ R_k =  {{K_w/n} \over {K + 4 G/3}}\]</div>
+<p>其中 <span class="math">\(K_w\)</span> 是水的体积模量，<span class="math">\(n\)</span> 是孔隙率，<span class="math">\(K\)</span> 和 <span class="math">\(G\)</span> 是非饱和土的体积模量和剪切模量。人们往往倾向于任意减小水的体积模量以提高时步（并缩短模拟时间）。然而，选择 <span class="math">\(K_w\)</span> 时需考虑两种情形：</p>
+<ol class="arabic simple">
+<li>若根据给定土性和假定 <span class="math">\(K_w\)</span> = 4.18×10<sup>7</sup> psf（即 2 GPa，纯水）计算得到的 <span class="math">\(R_k\)</span> 值大于 20，则可减小水的体积模量使 <span class="math">\(R_k\)</span> = 20，而不会显著影响结果（并缩短模拟时间）。</li>
+<li>若采用实际水的体积模量计算得到的 <span class="math">\(R_k\)</span> 值小于 20，则应采用该水的体积模量值。</li>
+</ol>
+<p>只要满足上述两个条件，水的体积模量可以随局部弹性模量变化，并可按不同土层分别指定。</p>
+<p>材料对动力循环加载的响应通常用剪切模量退化曲线和阻尼比曲线来量化。应为每种材料选择代表性曲线，以准确表示动力加载期间的波衰减和能量耗散。此外，可能需要使曲线随深度变化，以使能量耗散更符合实际（例如见 Darendeli 2001）。</p>
+<p>如<a class="reference internal" href="../models/review.html#dyn-comprehensive-liquefaction-constitutive-models"><span class="std std-ref">综合液化本构模型</span>（Comprehensive Liquefaction Constitutive Models）</a>中所述，表示液化行为的综合材料模型可能相当复杂。最简单的液化模型形式（如<a class="reference internal" href="../../../../../../common/models/finn/doc/modelfinn.html#finn-simple-formulations"><span class="std std-ref">简单模型公式</span>（Simple Model Formulations）</a>所述）基于对 Mohr-Coulomb 模型的体积变化修正。此时唯一附加的性质是与材料相关的击数。例如，见<a class="reference internal" href="../../../../../../common/models/finn/doc/modelfinn.html#finn-simple-formulations"><span class="std std-ref">简单模型公式</span>（Simple Model Formulations）</a>中定义的 Finn/Byrne 公式。</p>
+</li>
+<li><p class="first"><strong>评价地震运动特性</strong>——设计地震动通常以加速度记录的形式提供。它通常是露头运动，且往往记录于岩石露头处。了解所记录运动的位置很重要，因为该运动可能需要修改后才能输入 <span class="codename">FLAC3D</span> 模型。为获得合适输入运动而进行的反卷积分析将在下文第 6 步中讨论。</p>
+<p>应始终检查地震运动的特性，因为这些特性可能影响模型条件。如<a class="reference internal" href="../considerations/considerations.html#dyn-wave-transmission"><span class="std std-ref">波传播</span>（Wave Transmission）</a>中所述，输入运动的频率成分影响为准确波传播而进行的网格尺寸选择。应使用准则 <span class="math">\(\Delta l \le {\lambda / 10}\)</span> 选择合适最大网格单元尺寸以实现准确表示。若与输入运动相关的最高频率要求极细的网格（以及相应很小的时步），则可能可以去除高频成分以允许较粗的网格。若输入的大部分功率集中在较低频率成分中（比如 80% 至 90%），则可对历程滤波以去除较高频率而不显著影响结果。<span class="codename">FISH</span> 函数“fft.fis”（位于“\datafile\FISH\library”）可用于评价波的频率成分。<span class="codename">FISH</span> 函数“filter.fis”（同样位于“\datafile\FISH\library”）可用于执行滤波。</p>
+<p>为评估频率成分，建议以质点速度（而非加速度）历程的形式评价输入运动。（加速度记录可使用“\datafile\FISH\library”中所述的“int.fis”转换为速度记录。）对于在连续介质中传播的平面波，容易证明（例如见关于波传播的教科书）应力 <span class="math">\(\sigma = C \rho v\)</span>（其中 <span class="math">\(C\)</span> 是波速，<span class="math">\(\rho\)</span> 是密度，<span class="math">\(v\)</span> 是质点速度）。因此，在考虑屈服或破坏的可能性（这由诱导应力水平决定）时，评价主频时最相关的是质点速度，因为诱导应力与速度成正比，而与加速度无关。</p>
+<p>还应检查输入记录是否存在基线漂移（即运动结束后仍持续的残余位移——见<a class="reference internal" href="../considerations/considerations.html#dynamic-baseline-correction"><span class="std std-ref">基线校正</span>（Baseline Correction）</a>）。<span class="codename">FISH</span> 函数“int.fis”用于对速度记录积分，以产生与输入加速度相关的位移波形。如有需要，可通过向速度记录中加入低频正弦波来进行基线校正；调整正弦波参数使最终位移为零。示例见<a class="reference internal" href="../../../../../zone/test3d/Dynamic/DamFoundation/damfoundation.html#damfoundation"><span class="std std-ref">坝基</span>（Dam Foundation）</a>示例。</p>
+</li>
+<li><p class="first"><strong>估算材料阻尼参数以表示非弹性循环行为</strong>——在抗震分析中使用简单的理想弹塑性材料模型（例如 Mohr-Coulomb 模型）时，必须加入附加材料阻尼，以计入响应弹性部分的循环能量耗散，如<a class="reference internal" href="../considerations/considerations.html#dynamic-integration-of-damping-schemes"><span class="std std-ref">此处</span>（here）</a>所述。其中一个困难方面是如何确定合适的材料阻尼输入。通常采用两种不同方案，即<a class="reference internal" href="../considerations/considerations.html#dynamic-rayleigh-damping"><span class="std std-ref">瑞利阻尼</span>（Rayleigh damping）</a>或<a class="reference internal" href="../considerations/considerations.html#dynamic-hysteretic-damping"><span class="std std-ref">滞回阻尼</span>（hysteretic damping）</a>。</p>
+<p>等效线性方法（例如程序 <em>SHAKE</em> 中所采用的）是估算瑞利阻尼方案和滞回阻尼方案所需材料阻尼输入的一种途径。对代表场地条件的土柱进行等效线性分析，使用柱中各土层的剪切波速和密度、选为代表材料特性的模量折减曲线和阻尼比曲线，以及场地的目标地震设计运动。然后确定与弹性应变相容的剪切模量折减系数和阻尼比。可对每个土层估算平均模量折减系数和阻尼比；这些即为采用瑞利阻尼模型的输入参数。</p>
+<p>为给滞回阻尼所用的模量折减曲线和阻尼比曲线指定最佳拟合范围，需要给定场地条件下循环剪应变幅值的预期范围（如<a class="reference internal" href="../considerations/considerations.html#dynamic-hysteretic-formulation"><span class="std std-ref">此处</span>（here）</a>所述）。该范围可由 <em>SHAKE</em> 模拟提供的等效均匀循环应变范围估算。</p>
+<p>请注意，这些估算值来自假定非线性水平较低的等效线性分析。可能需要对参数作一些调整，尤其是当实际模型表现出强烈非线性时。第 7 步将进一步讨论这一点。</p>
+</li>
+<li><p class="first"><strong>创建合适的模型网格以保证波传播精度</strong>——利用输入运动的特性来帮助选择合适的网格尺寸，并调整输入波记录，以便在抗震分析中给出准确的解。（关于波传播特性与网格尺寸之间关系的更多信息，见<a class="reference internal" href="../considerations/considerations.html#dyn-wave-transmission"><span class="std std-ref">波传播</span>（Wave Transmission）</a>。）</p>
+<p>在大多数地震模拟中，尤其是预期会出现过大运动和应变时，应进行大应变模拟，以获得更准确的变形解。当预期网格会发生显著变形和畸变时，重要的是尽量减少网格中四面体形网格单元的数量，尤其是在坡面沿线。坡面沿线的四面体网格单元在大应变计算中容易严重畸变，因为四面体网格单元不包含叠合的子网格组。六面体形网格单元包含两组叠合的子网格，可为发生塑性屈服的材料的计算提供更高精度。（见<a class="reference internal" href="../../../theory/theoreticalbackground/griddiscretization.html#md"><span class="std std-ref">六面体网格的混合离散</span>（Mixed Discretization for a Hexahedral Grid）</a>。）<a class="footnote-reference" href="#id3" id="id1">[1]</a></p>
+</li>
+<li><p class="first"><strong>计算场地的静力平衡状态</strong>——尽可能接近地模拟土石结构的施工顺序很重要，以便合理表示结构中的初始静剪应力。这一点很重要，尤其在液化分析中，因为初始静剪应力会影响液化的触发。</p>
+<p>简单分析通常假定初始剪切模量（<span class="math">\(G_{max}\)</span>）在每个材料单元内是均匀的。对土体而言，使 <span class="math">\(G_{max}\)</span> 随原位有效应力变化可能更为合适（例如见 Kramer 1996）。例如，可以认为最大剪切模量按 Seed 等（1986）表达式所定义的方式随有效应力变化，</p>
+<div class="math" id="equation-dyneq-solve-gmax">
+<span class="eqno">(2)</span>\[G_{max} = 21.7 \times P_a \times K_{2,max} \left( {\sigma_m^{\prime} \over P_a} \right)^{0.5}\]</div>
+<p>其中 <span class="math">\(P_a\)</span> 是大气压力，<span class="math">\(K_{2,max}\)</span> 是由相对密度确定的常数，<span class="math">\(\sigma_m^{\prime}\)</span> 是有效平均应力。这种初始模量变化可在静力加载阶段通过 <span class="codename">FISH</span> 实现。</p>
+<p>若在模拟地震时施加滞回阻尼，检查静力平衡状态下的初始剪应力很重要。滞回阻尼公式假定从零剪应变的初始值开始产生滞回。若初始剪应力较高，则滞回阻尼的剪应力和剪应变状态可能不协调。若模型静力平衡状态下剪应力较高，为确保动力阶段剪应力与应变一致，应在模型达到初始平衡状态之前启用滞回阻尼。在静力求解阶段纳入滞回阻尼的建议步骤见<a class="reference internal" href="../considerations/considerations.html#dynamic-hysteretic-practical-issues"><span class="std std-ref">此处</span>（here）</a>。</p>
+</li>
+<li><p class="first"><strong>使动力加载与场地目标地震记录相匹配</strong>——输入 <span class="codename">FLAC3D</span> 模型的地震记录应产生可与目标设计地震动相匹配的计算运动。若目标运动所在位置与模型输入运动的位置不同，则应进行反卷积分析，以施加能在目标位置产生与目标运动相当的运动。</p>
+<p>请注意，为再现目标运动，刚性基底模型与柔性基底模型所施加的反卷积运动形式不同。（进一步说明见<a class="reference internal" href="../considerations/considerations.html#dyn-deconvolution"><span class="std std-ref">此处</span>（here）</a>。）对于刚性基底边界，<span class="codename">FLAC3D</span> 的输入运动是 <em>SHAKE-91</em> 在指定深度处计算得到的层内运动。对于柔性基底边界，输入运动是上行波运动，即 <em>SHAKE</em> 在指定深度处输出的露头运动的一半。<a href="#fig-dyn-solving-1">图  1（Figure  1）</a> 示出了不同的基底输入运动：</p>
+<p>模型底部（GP 189）与墙顶（GP 4715）处的 <span class="math">\(x\)</span> 向速度</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id5">
+<span id="fig-dyn-solving-1"></span><img alt="../../../../../../_images/dyn-solving-1.png" src="../../../../../../_images/dyn-solving-1.png"/>
+<p class="caption"><span class="caption-text">图 1：为获得基底输入运动而进行的反卷积分析。</span></p>
+</div>
+</li>
+<li><p class="first"><strong>施加动力荷载与边界条件</strong>——抗震分析中应按特定顺序指定动力边界和加载条件。这是因为用于表示远场侧向范围的自由场边界，其性质和初始条件是由紧邻自由场边界的主网格单元传递而来的。施加自由场之后对这些网格单元或网格点所作的任何更改，自由场都无法感知。</p>
+<p>建议按以下顺序为动力计算指定条件，以确保这些条件被正确施加：</p>
+<ol class="arabic simple">
+<li>打开动力计算模式（<a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.dynamic.html#kwd:model.dynamic.active" title="The dynamic process is  on , by default, when the  model.configure.dynamic 
+command is given. Specify  active   off  to suppress dynamic calculations...">模型动力活动命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">dynamic</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>）和大应变计算模式（<a class="reference internal" href="../../../../../../common/kernel/doc/manual/model/commands/cmd_model.largestrain.html#command:model.large-strain" title="Sets the program to use the numerical formulation for large-strain deformation.
+ The default is  off .  See the section ref-Large- and Small-Strain Modes
+&lt;largeandsmallstrainmodes&gt;- for discussion of the additional calculations done
+in this formulation.   [cs: has Common trouble]...">设置大变形模式命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">large-strain</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>）。</li>
+<li>输入经过滤波和基线校正的输入速度，它对应于由目标加速度反卷积分析得到的模型底部加速度。可通过 <a class="reference internal" href="../../../../../../common/kernel/doc/manual/table_manual/table_commands/cmd_table.import.html#command:table.import" title="Read file  sfile  into table  s ...">导入表格数据（<code class="xref fish fish-cmd docutils literal"><span class="pre">table</span> <span class="pre">import</span></code>）</a> 命令将输入速度调入 <span class="codename">FLAC3D</span>。</li>
+<li>使用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.history.html#command:zone.history" title="Adds a history of a zone value.  See the  history  command.  The history
+can be assigned a name for later reference with the optional  name  keyword,
+if not the history will be given a default name based on its internally assigned
+id number..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">history</span></code></a> 命令选择动力模拟期间需要监测的各项参数，例如网格点加速度以及网格单元孔隙压力和应力。</li>
+<li>初始化网格中的位移和速度（使用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/zonegridpoint/cmd_zone.gridpoint.initialize.html#command:zone.gridpoint.initialize" title="Assign or initialize values to all gridpoints in the range.   Keywords available
+can be chosen from the following list:..."><code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">gridpoint</span> <span class="pre">initialize</span></code></a> 命令），并指定力学阻尼的类型和参数（使用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.dynamic.html#kwd:zone.dynamic.damping" title="This command selects the damping type for the dynamic analysis. Damping in dynamic
+analysis is described in the topic  dynamic_mechanical_damping ...">单元动力阻尼（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">dynamic</span> <span class="pre">damping</span></code>）</a> 命令）。</li>
+<li>使用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.dynamic.html#kwd:zone.dynamic.free-field" title="Controls the free-field boundary condition (available only for dynamic option;
+see  dynamic-freefield )...">单元动力自由场（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">dynamic</span> <span class="pre">free-field</span></code>）</a> <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 命令在模型侧面施加自由场边界条件。然后使用带 <span class="cmdkey">table</span> 或 <span class="cmdkey">fish</span> 乘数的 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/zoneface/cmd_zone.face.apply.html#command:zone.face.apply" title="This command is used to apply boundary conditions at surface faces of the model.
+ To apply conditions to zones rather than at faces, see the  zone.apply 
+command.  To apply conditions at individual gridpoints, see the  zone.gridpoint.fix 
+command...">施加网格单元面条件（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">face</span> <span class="pre">apply</span></code>）</a> 命令指定地震加载的动力边界。</li>
+</ol>
+<p>为在同一边界上同时施加安静边界条件和动力输入，动力输入必须以应力边界的形式施加，因为若以加速度（或速度）波的形式施加输入，安静边界的效果将被抵消。将速度记录转换为剪应力边界条件需采用两步程序：</p>
+<ol class="arabic simple">
+<li>根据所施加波相对于模型底部的方向，使用<a class="reference internal" href="../considerations/considerations.html#dynamic-boundary-conditions"><span class="std std-ref">动力荷载与边界条件</span>（Dynamic Loading and Boundary Conditions）</a>中给出的 <span class="math">\(\sigma_n\)</span> 和 <span class="math">\(\sigma_s\)</span> 公式，将速度波转换为剪应力波和/或法向应力波。</li>
+<li>在动力计算期间监测基础面处的加速度，以便将该加速度与目标加速度进行比较。若模型内发生材料破坏，将影响波的衰减。此外，若模型较浅，自由面可能使速度和加速度增大，而且这种增大可能延伸至基底。<a class="footnote-reference" href="#id4" id="id2">[2]</a> 为产生与目标加速度相当的加速度，可能需要对输入应力波作一些调整。</li>
+</ol>
+</li>
+<li><p class="first"><strong>进行无阻尼弹性材料模拟</strong>——在使用实际材料强度和阻尼性质运行动力模型之前，应进行无阻尼的弹性模拟，以估计模型系统的最大循环应变水平和频率响应范围。若循环应变大到足以使剪切模量过度减小，则附加阻尼的使用就值得怀疑。在这种情况下，阻尼将超出其预期的适用范围。若在整个模型中计算出过大的应变，则应检查模型性质和输入幅值。</p>
+<p>应在整个模型中监测速度历程，以估计模型系统中产生的主导频率。此外，应记录剪应变历程，以在未提供材料阻尼时估计最大循环剪应变水平。</p>
+</li>
+<li><p class="first"><strong>使用阻尼和实际强度性质进行模拟</strong>——无阻尼计算的结果可用于帮助为模型中各材料选择合适的阻尼特性。可为模型规定附加阻尼，以阻尼由无阻尼模拟识别出的振荡振型。</p>
+<p>在带阻尼和实际强度性质的初次计算中，应首先检查加速度历程，并将其与场地的目标运动相比较。可能需要调整模型输入运动以改善比较结果。</p>
+</li>
+</ol>
+<blockquote>
+<div>在地震震动阶段监测若干不同变量很重要。例如，剪应力/剪应变图可以说明滞回阻尼对模型响应的影响。超孔隙压力历程有助于量化液化的可能性，而循环孔隙压力比的云图可勾画出模型中的液化区域。</div></blockquote>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<table class="docutils footnote" frame="void" id="id3" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id1">[1]</a></td><td>在包含少量四面体网格单元的网格中，严重畸变的网格单元可能导致计算提前终止。可通过提高该单个网格单元的强度来防止这种情况。只要仅改变少数网格单元的强度，就不应显著影响模型结果。</td></tr>
+</tbody>
+</table>
+<table class="docutils footnote" frame="void" id="id4" rules="none">
+<colgroup><col class="label"/><col/></colgroup>
+<tbody valign="top">
+<tr><td class="label"><a class="fn-backref" href="#id2">[2]</a></td><td>这是自由面速度加倍效应的结果。请注意，自由面对简单正弦速度波的影响会延伸到地表以下大约通过介质传播的波长的四分之一深度处。（速度加倍的幅度可以简单地通过向具有自由面的网格单元柱底部施加波，并监测波通过该柱时各网格单元所经历的最大幅值来显示。）</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../flac3dhome.html"><span class="codename">FLAC3D</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../options.html">Options</a> »</li>
+<li class="nav-item nav-item-3"><a href="../dynamic.html">Dynamic Analysis</a> »</li>
+<li class="nav-item nav-item-4"><a accesskey="U" href="solving.html">Solving Dynamic Problems</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../../../../../zone/test3d/Dynamic/DamFoundationWet/damfoundationwet.html" title="previous chapter"> Procedure for Dynamic Coupled Mechanical/Groundwater Simulations: Dam Foundation Wet</a> |    
+       <a href="../verification/verification.html" title="next chapter">Verification Problems</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Recommended Steps for Seismic Analyses" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

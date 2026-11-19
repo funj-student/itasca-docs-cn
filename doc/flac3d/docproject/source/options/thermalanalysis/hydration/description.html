@@ -1,0 +1,363 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>水化模型说明 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="../../../../../../common/models/hydrat/doc/modelhydrat.html" rel="next" title="Hydration-Drucker-Prager Model"/>
+<link href="hydration.html" rel="prev" title="Hydration"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="hydration-model-description">
+<span id="hydration-description"></span><h1>水化模型说明</h1>
+<p class="h2 rubric">引言</p>
+<p>水化定义为物质对水的化学吸收，该过程会生成热量（水化热）。混凝土的凝结（可视为由液相向固相的转变）是工程界水化过程最相关的例子。</p>
+<p>水化过程的影响可分为不同的物理部分，其中热学部分和力学部分最为相关。<span class="codename">FLAC3D</span> 中水化模型的实现遵循这种划分：水化热的产生和热传导在热学模型中处理，材料硬化和强度发展则作为力学行为的本构模型实现。水化模型基于一种综合考虑经验规则、理论依据和实践经验的程序（Onken 和 Rostásy 1995）。</p>
+<p>本构模型各部分之间的耦合参数是水化度 <span class="math">\(\alpha\)</span> 和混凝土龄期 <span class="math">\(t_e\)</span> [s]。水化度定义为截至当前时刻累积的水化热 <span class="math">\(Q\)</span> [J/m<sup>3</sup>] 与完全水化所生成的最终水化热 <span class="math">\(Q_{max}\)</span> [J/m<sup>3</sup>] 之比。</p>
+<div class="math" id="equation-eqhydrationgrad">
+<span class="eqno">(1)</span>\[\alpha (t_e) = {{Q (t_e)} \over {Q_{\rm max}}}\]</div>
+<p>水化度随时间的发展取决于混凝土的温度。因此，边界上方的热流和水化材料内部的热传导，以及初始温度，对该发展过程都特别重要。较低温度导致过程更长且水化热生成较低，而较高温度则导致过程更短且水化热生成较高。引入等效龄期 <span class="math">\(t_e\)</span> 作为与这些实时效应无关的时间度量。</p>
+<div class="math" id="equation-eqhydrationequivalentage">
+<span class="eqno">(2)</span>\[t_e = \int_0^t e^{{E_A \over R} \left({1 \over T_{{\rm Re} f}} - {1 \over T} \right)} d \tau\]</div>
+<p>其中 <span class="math">\(R\)</span> 是通用气体常数（8.314 J/K/mol），<span class="math">\(E_{A}\)</span> 是活化能 [J/mol]。热学行为的描述涉及参考温度 <span class="math">\(T_{Ref}\)</span> [K]，在 Onken 和 Rostásy（1995）中设为 20°C；<span class="math">\(T\)</span> 是材料温度 [K]。</p>
+<p><span class="codename">FLAC3D</span> 中实现了热学水化模型 <a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function..."><span class="varfishsym"><span class="null">hydration</span></span></a>。为模拟水化过程，需要一个能够按水化度（或等效混凝土龄期）调整力学性质的力学本构模型。所提供的修正 Drucker-Prager 水化模型——<a class="reference internal" href="../../../../../../common/models/hydrat/doc/modelhydrat.html#modelhydrat">水化-德鲁克-普拉格模型（<span class="std std-ref">hydration-drucker-prager model</span>）</a>——用于处理力学方面的问题。这些模型将在后续各节中介绍。</p>
+<p class="h2 rubric">水化的热学模型</p>
+<p>主要正是胶结材料（对混凝土而言即水泥）的水化导致了水化过程。</p>
+<div class="math" id="equation-eqhydrationprocess">
+<span class="eqno">(3)</span>\[Q(t_e) = C Q_{Ce} (t_e) \ \ \ \ \ \ Q_{\rm max} = C Q_{Ce, {\rm max}}\]</div>
+<p>其中 <span class="math">\(C\)</span> 是胶结材料含量 [kg/m<sup>3</sup>]，<span class="math">\(Q_{Ce}\)</span> 是截至当前时刻胶结材料已产生的水化热量 [J/kg]，<span class="math">\(Q_{Ce, {\rm max}}\)</span> 是直至完全水化所生成的最终水化热 [J/kg]。</p>
+<p>相对于方程<a class="reference internal" href="#equation-eqhydrationgrad">(1)</a>和<a class="reference internal" href="#equation-eqhydrationprocess">(3)</a>，当前放热量为</p>
+<div class="math" id="equation-eqhydrationheatrelease">
+<span class="eqno">(4)</span>\[q(t_e) = \dot Q(t_e) = \dot \alpha C Q_{Ce, {\rm max}}\]</div>
+<p>若无任何限制，水化过程将在水化度的整个范围（即 <span class="math">\(\alpha = [0,1]\)</span>）内进行。放热始终是活跃的，最终已生成数量为 <span class="math">\(Q_{max}\)</span> 的热量（见方程<a class="reference internal" href="#equation-eqhydrationgrad">(1)</a>）。然而，该过程可能因物理或数值原因受到限制。因此提供两个独立的限制：一个取决于温度，另一个取决于水化度：</p>
+<div class="math" id="equation-eqhydrationq1">
+<span class="eqno">(5)</span>\[\begin{split}   q(t_e) =
+   \begin{cases}
+     q(t_e) &amp; \forall T \leq T_{{\rm max}, q} \\
+     0      &amp; \forall T \geq T_{{\rm max}, q} \\
+   \end{cases}\end{split}\]</div>
+<p>或</p>
+<div class="math" id="equation-eqhydrationq2">
+<span class="eqno">(6)</span>\[\begin{split}   q(t_e) =
+   \begin{cases}
+     q(t_e) &amp; \forall T \leq \alpha_{{\rm max}, q} \\
+     0      &amp; \forall T \geq \alpha_{{\rm max}, q} \\
+   \end{cases}\end{split}\]</div>
+<p>水化度随等效龄期的变化（方程<a class="reference internal" href="#equation-eqhydrationequivalentage">(2)</a>）采用含两个 Jonasson 材料参数 <span class="math">\(b\)</span> [-] 和 <span class="math">\(t_1\)</span> [1/s] 的指数描述：</p>
+<div class="math" id="equation-eqhydrationalpha">
+<span class="eqno">(7)</span>\[\alpha(t_e) = e^{-\left[1{\rm n}\left(1 + {t_e \over t_1}\right)\right]^b}\]</div>
+<p>等效龄期由方程<a class="reference internal" href="#equation-eqhydrationequivalentage">(2)</a>给出。如方程<a class="reference internal" href="#equation-eqhydrationequivalentage">(2)</a>所示，等效龄期的唯一材料参数是活化能。</p>
+<p>目前提供两种活化能版本：广义模型和德国模型。</p>
+<p class="h3 rubric">广义混凝土模型</p>
+<p>作为温度函数的活化能 <span class="math">\(E_A\)</span> 的广义版本实现为</p>
+<div class="math" id="equation-eqhydrationgeneralizedmodel">
+<span class="eqno">(8)</span>\[E_A (T) = E_{A, 2} + {{E_{A, 1} - E_{A, 2}} \over {1 + e^{{T - T_{0, EA}} \over {d T_{EA}}}}}\]</div>
+<p>这定义了两个极限值 <span class="math">\(E_{A, 1}\)</span> [J/mol] 和 <span class="math">\(E_{A, 2}\)</span> [J/mol] 之间的活化能。<span class="math">\(T_{0, EA}\)</span> [K] 给出使两极限值之差被平分一半的温度，<span class="math">\(dT_{EA}\)</span> [K] 表征该函数的 S 形特征。</p>
+<p class="h3 rubric">德国混凝土模型</p>
+<p>对于德国混凝土模型（Onken 和 Rostásy 1995），活化能在两个温度范围内取值：</p>
+<div class="math" id="equation-eqhydrationgermanmodel">
+<span class="eqno">(9)</span>\[\begin{split}   E_A (T) =
+   \begin{cases}
+     E_{A, 1} + d E_{A, T} \cdot (T_{0, EA} - T) &amp; \forall T \leq T_{0, EA} \\
+     E_{A, 1}                                    &amp; \forall T &gt; T_{0, EA}    \\
+   \end{cases}\end{split}\]</div>
+<p>典型参数为 <span class="math">\(E_{A, 1}\)</span> = 30 J/mol、<span class="math">\(d_{EA, T}\)</span> = 1.47 J/mol/K、<span class="math">\(T_{0, EA}\)</span> = 293 K。</p>
+<p>两种版本的活化能均已实现，可通过参数 <span class="cmdkey">flag-law</span> 选择（0：德国混凝土；1：通用模型）。</p>
+<p>假定热传导为各向同性，比热 <span class="math">\(c_p\)</span> 和导热系数 <span class="math">\(\lambda\)</span> 采用以下函数：</p>
+<div class="math" id="equation-eqhydrationcp">
+<span class="eqno">(10)</span>\[c_p = c_{p, 1} \cdot (1 + dc_{p, \alpha} \cdot \alpha) \cdot (1 + dc_{p, T} \cdot T)\]</div>
+<div class="math" id="equation-eqhydrationlambda">
+<span class="eqno">(11)</span>\[\lambda = \lambda_1 \cdot (1 + d \lambda_{\alpha} \cdot \alpha) \cdot (1 + d \lambda_T \cdot T)\]</div>
+<p>以及恒定的热膨胀系数。</p>
+<p>下面按字母顺序列出水化热学模型的性质。</p>
+<p class="h2 rubric">水化的力学模型</p>
+<div class="hide docutils container">
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../common/models/hydrat/doc/modelhydrat.html">Hydration-Drucker-Prager Model</a></li>
+</ul>
+</div>
+</div>
+<p><span class="codename">FLAC3D</span> 中水化的力学方面由修正 Drucker-Prager 模型处理（见<a class="reference internal" href="../../../../../../common/models/hydrat/doc/modelhydrat.html#modelhydrat"><span class="std std-ref">模型说明</span>（model description）</a>）。</p>
+<p class="h2 rubric">参考文献</p>
+<p>Onken, P., and F. Rostásy. <span class="bi">Wirksame Betonzugfestigkeit im Bauwerk bei früh einsetzendem Temperaturzwang</span>, DAfStb Heft <span class="bi">449</span>. Berlin: Beuth-Verlag (1995).</p>
+<p><br/></p>
+<p class="h3 rubric" id="hydrationproperties"><span class="cmdkey">Hydration</span> 模型属性</p>
+<p>使用 <a class="reference internal" href="../../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.thermal.html#kwd:zone.thermal.property" title="Assigns properties for the thermal constitutive models of all zones in the range.
+ Any number...">单元热属性（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">thermal</span> <span class="pre">property</span></code>）</a> 命令的以下关键字来设置水化模型的这些性质。</p>
+<dl class="command">
+<dt id="command:hydration">
+<span class="cmdname"><span class="hide">h</span><span class="hide">y</span><span class="hide">d</span><span class="hide">r</span><span class="hide">a</span><span class="hide">t</span><span class="hide">i</span><span class="hide">o</span><span class="hide">n</span><span class="hide"> </span></span></dt>
+<dd><dl class="keyword">
+<dt id="kwd:hydration.constant-conductivity-1">
+<span class="cmdkey"><span class="pref">c</span><span class="null">o</span><span class="null">n</span><span class="null">s</span><span class="null">t</span><span class="null">a</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">c</span><span class="null">o</span><span class="null">n</span><span class="null">d</span><span class="null">u</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">v</span><span class="null">i</span><span class="null">t</span><span class="null">y</span><span class="null">-</span><span class="null">1</span><span class="null"> </span></span><a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>导热系数的材料参数 <span class="math">\(\lambda_{1}\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:hydration.constant-conductivity-dlda">
+<span class="cmdkey"><span class="pref">c</span><span class="null">o</span><span class="null">n</span><span class="null">s</span><span class="null">t</span><span class="null">a</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">c</span><span class="null">o</span><span class="null">n</span><span class="null">d</span><span class="null">u</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">v</span><span class="null">i</span><span class="null">t</span><span class="null">y</span><span class="null">-</span><span class="pref">d</span><span class="pref">l</span><span class="pref">d</span><span class="pref">a</span><span class="null"> </span></span><a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>导热系数的材料参数 <span class="math">\(d \lambda_{\alpha}\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:hydration.constant-conductivity-dldt">
+<span class="cmdkey"><span class="pref">c</span><span class="null">o</span><span class="null">n</span><span class="null">s</span><span class="null">t</span><span class="null">a</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">c</span><span class="null">o</span><span class="null">n</span><span class="null">d</span><span class="null">u</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">v</span><span class="null">i</span><span class="null">t</span><span class="null">y</span><span class="null">-</span><span class="pref">d</span><span class="pref">l</span><span class="pref">d</span><span class="pref">t</span><span class="null"> </span></span><a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>导热系数的材料参数 <span class="math">\(d \lambda_{T}\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:hydration.constant-energy-1">
+<span class="cmdkey"><span class="pref">c</span><span class="null">o</span><span class="null">n</span><span class="null">s</span><span class="null">t</span><span class="null">a</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">e</span><span class="null">n</span><span class="null">e</span><span class="null">r</span><span class="null">g</span><span class="null">y</span><span class="null">-</span><span class="null">1</span><span class="null"> </span></span><a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>活化能的材料参数 <span class="math">\(E_{A,1}\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:hydration.constant-energy-2">
+<span class="cmdkey"><span class="pref">c</span><span class="null">o</span><span class="null">n</span><span class="null">s</span><span class="null">t</span><span class="null">a</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">e</span><span class="null">n</span><span class="null">e</span><span class="null">r</span><span class="null">g</span><span class="null">y</span><span class="null">-</span><span class="null">2</span><span class="null"> </span></span><a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>活化能的材料参数 <span class="math">\(E_{A,2}\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:hydration.constant-energy-dt">
+<span class="cmdkey"><span class="pref">c</span><span class="null">o</span><span class="null">n</span><span class="null">s</span><span class="null">t</span><span class="null">a</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">e</span><span class="null">n</span><span class="null">e</span><span class="null">r</span><span class="null">g</span><span class="null">y</span><span class="null">-</span><span class="pref">d</span><span class="pref">t</span><span class="null"> </span></span><a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>活化能的材料参数 <span class="math">\(d T_{EA}\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:hydration.constant-energy-de">
+<span class="cmdkey"><span class="pref">c</span><span class="null">o</span><span class="null">n</span><span class="null">s</span><span class="null">t</span><span class="null">a</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">e</span><span class="null">n</span><span class="null">e</span><span class="null">r</span><span class="null">g</span><span class="null">y</span><span class="null">-</span><span class="pref">d</span><span class="pref">e</span><span class="null"> </span></span><a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>活化能的材料参数 <span class="math">\(d T_{AT}\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:hydration.constant-energy-halftime">
+<span class="cmdkey"><span class="pref">c</span><span class="null">o</span><span class="null">n</span><span class="null">s</span><span class="null">t</span><span class="null">a</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">e</span><span class="null">n</span><span class="null">e</span><span class="null">r</span><span class="null">g</span><span class="null">y</span><span class="null">-</span><span class="pref">h</span><span class="null">a</span><span class="null">l</span><span class="null">f</span><span class="null">t</span><span class="null">i</span><span class="null">m</span><span class="null">e</span><span class="null"> </span></span><a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>活化能的材料参数 <span class="math">\(T_{0,EA}\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:hydration.constant-gas">
+<span class="cmdkey"><span class="pref">c</span><span class="null">o</span><span class="null">n</span><span class="null">s</span><span class="null">t</span><span class="null">a</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">g</span><span class="null">a</span><span class="null">s</span><span class="null"> </span></span><a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>通用气体常数 <span class="math">\(R\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:hydration.constant-heat-1">
+<span class="cmdkey"><span class="pref">c</span><span class="null">o</span><span class="null">n</span><span class="null">s</span><span class="null">t</span><span class="null">a</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">h</span><span class="null">e</span><span class="null">a</span><span class="null">t</span><span class="null">-</span><span class="null">1</span><span class="null"> </span></span><a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>比热的材料参数 <span class="math">\(c_{p,1}\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:hydration.constant-heat-dcda">
+<span class="cmdkey"><span class="pref">c</span><span class="null">o</span><span class="null">n</span><span class="null">s</span><span class="null">t</span><span class="null">a</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">h</span><span class="null">e</span><span class="null">a</span><span class="null">t</span><span class="null">-</span><span class="pref">d</span><span class="pref">c</span><span class="pref">d</span><span class="pref">a</span><span class="null"> </span></span><a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>比热的材料参数 <span class="math">\(d c_{p,\alpha}\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:hydration.constant-heat-dcdt">
+<span class="cmdkey"><span class="pref">c</span><span class="null">o</span><span class="null">n</span><span class="null">s</span><span class="null">t</span><span class="null">a</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">h</span><span class="null">e</span><span class="null">a</span><span class="null">t</span><span class="null">-</span><span class="pref">d</span><span class="pref">c</span><span class="pref">d</span><span class="pref">t</span><span class="null"> </span></span><a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>比热的材料参数 <span class="math">\(d c_{p,T}\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:hydration.constant-jonasson-b">
+<span class="cmdkey"><span class="pref">c</span><span class="null">o</span><span class="null">n</span><span class="null">s</span><span class="null">t</span><span class="null">a</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">j</span><span class="null">o</span><span class="null">n</span><span class="null">a</span><span class="null">s</span><span class="null">s</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="pref">b</span><span class="null"> </span></span><a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>Jonasson 参数 <span class="math">\(b\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:hydration.constant-jonasson-t1">
+<span class="cmdkey"><span class="pref">c</span><span class="null">o</span><span class="null">n</span><span class="null">s</span><span class="null">t</span><span class="null">a</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">j</span><span class="null">o</span><span class="null">n</span><span class="null">a</span><span class="null">s</span><span class="null">s</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="pref">t</span><span class="null">1</span><span class="null"> </span></span><a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>Jonasson 参数 <span class="math">\(t_1\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:hydration.density-cement">
+<span class="cmdkey"><span class="pref">d</span><span class="null">e</span><span class="null">n</span><span class="null">s</span><span class="null">i</span><span class="null">t</span><span class="null">y</span><span class="null">-</span><span class="pref">c</span><span class="null">e</span><span class="null">m</span><span class="null">e</span><span class="null">n</span><span class="null">t</span><span class="null"> </span></span><a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>胶结材料密度 <span class="math">\(C\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:hydration.expansion">
+<span class="cmdkey"><span class="pref">e</span><span class="null">x</span><span class="null">p</span><span class="null">a</span><span class="null">n</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>基质线性热膨胀系数。更多信息见<a class="reference internal" href="../thermal/numerical-form.html#thermal-stress-coupling"><span class="std std-ref">热-应力耦合</span>（Thermal-Stress Coupling）</a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:hydration.flag-law">
+<span class="cmdkey"><span class="pref">f</span><span class="null">l</span><span class="null">a</span><span class="null">g</span><span class="null">-</span><span class="pref">l</span><span class="null">a</span><span class="null">w</span><span class="null"> </span></span><a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">i</span><span class="null"> </span></span></a></dt>
+<dd><p>活化能律：0——德国混凝土；1——广义形式。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:hydration.hydration-binding-maximum">
+<span class="cmdkey"><span class="pref">h</span><span class="null">y</span><span class="null">d</span><span class="null">r</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="pref">b</span><span class="null">i</span><span class="null">n</span><span class="null">d</span><span class="null">i</span><span class="null">n</span><span class="null">g</span><span class="null">-</span><span class="pref">m</span><span class="null">a</span><span class="null">x</span><span class="null">i</span><span class="null">m</span><span class="null">u</span><span class="null">m</span><span class="null"> </span></span><a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>胶结材料的最大水化热 <span class="math">\(Q_{Ce,max}\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:hydration.hydration-grade-maximum">
+<span class="cmdkey"><span class="pref">h</span><span class="null">y</span><span class="null">d</span><span class="null">r</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="pref">g</span><span class="null">r</span><span class="null">a</span><span class="null">d</span><span class="null">e</span><span class="null">-</span><span class="pref">m</span><span class="null">a</span><span class="null">x</span><span class="null">i</span><span class="null">m</span><span class="null">u</span><span class="null">m</span><span class="null"> </span></span><a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>放热的最大水化度 <span class="math">\(\alpha_{max,q}\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:hydration.temperature-reference">
+<span class="cmdkey"><span class="pref">t</span><span class="null">e</span><span class="null">m</span><span class="null">p</span><span class="null">e</span><span class="null">r</span><span class="null">a</span><span class="null">t</span><span class="null">u</span><span class="null">r</span><span class="null">e</span><span class="null">-</span><span class="pref">r</span><span class="null">e</span><span class="null">f</span><span class="null">e</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">c</span><span class="null">e</span><span class="null"> </span></span><a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>参考温度 <span class="math">\(T_{Ref}\)</span>。默认值为 293（单位 K）。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:hydration.hydration-temperature-maximum">
+<span class="cmdkey"><span class="pref">h</span><span class="null">y</span><span class="null">d</span><span class="null">r</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="pref">t</span><span class="null">e</span><span class="null">m</span><span class="null">p</span><span class="null">e</span><span class="null">r</span><span class="null">a</span><span class="null">t</span><span class="null">u</span><span class="null">r</span><span class="null">e</span><span class="null">-</span><span class="pref">m</span><span class="null">a</span><span class="null">x</span><span class="null">i</span><span class="null">m</span><span class="null">u</span><span class="null">m</span><span class="null"> </span></span><a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>放热的最大水化度 <span class="math">\(T_{max,q}\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:hydration.activation-energy">
+<span class="cmdkey"><span class="pref">a</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">v</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="pref">e</span><span class="null">n</span><span class="null">e</span><span class="null">r</span><span class="null">g</span><span class="null">y</span><span class="null"> </span></span><a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>活化能 <span class="math">\(E_A\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:hydration.age-concrete-effective">
+<span class="cmdkey"><span class="pref">a</span><span class="null">g</span><span class="null">e</span><span class="null">-</span><span class="pref">c</span><span class="null">o</span><span class="null">n</span><span class="null">c</span><span class="null">r</span><span class="null">e</span><span class="null">t</span><span class="null">e</span><span class="null">-</span><span class="pref">e</span><span class="null">f</span><span class="null">f</span><span class="null">e</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">v</span><span class="null">e</span><span class="null"> </span></span><a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>混凝土有效龄期 <span class="math">\(t_e\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:hydration.hydration-grade">
+<span class="cmdkey"><span class="pref">h</span><span class="null">y</span><span class="null">d</span><span class="null">r</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="pref">g</span><span class="null">r</span><span class="null">a</span><span class="null">d</span><span class="null">e</span><span class="null"> </span></span><a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>水化度 <span class="math">\(\alpha\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:hydration.hydration-rate">
+<span class="cmdkey"><span class="pref">h</span><span class="null">y</span><span class="null">d</span><span class="null">r</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="pref">r</span><span class="null">a</span><span class="null">t</span><span class="null">e</span><span class="null"> </span></span><a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>水化度 <span class="math">\(q\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:hydration.time-hydration">
+<span class="cmdkey"><span class="pref">t</span><span class="null">i</span><span class="null">m</span><span class="null">e</span><span class="null">-</span><span class="pref">h</span><span class="null">y</span><span class="null">d</span><span class="null">r</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>自水化激活以来的实时时段。</p>
+</dd></dl>
+<p><strong>图例</strong></p>
+<dl class="docutils">
+<dt>(r) 只读属性。</dt>
+<dd>该属性不能由用户设置，但可以列出、绘图显示，或通过 <span class="codename">FISH</span> 访问。</dd>
+</dl>
+</dd></dl>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../flac3dhome.html"><span class="codename">FLAC3D</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../../options.html">Options</a> »</li>
+<li class="nav-item nav-item-3"><a href="../thermalanalysis.html">Thermal Analysis</a> »</li>
+<li class="nav-item nav-item-4"><a accesskey="U" href="hydration.html">Hydration</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="hydration.html" title="previous chapter"> Hydration</a> |    
+       <a href="../../../../../../common/models/hydrat/doc/modelhydrat.html" title="next chapter">Hydration-Drucker-Prager Model</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Hydration Model Description" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

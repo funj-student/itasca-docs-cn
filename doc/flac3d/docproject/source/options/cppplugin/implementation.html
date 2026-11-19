@@ -1,0 +1,340 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>实现 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="programmersinterface.html" rel="next" title="Programmer’s Interface"/>
+<link href="methodology.html" rel="prev" title="Methodology"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="implementation">
+<span id="modelswritingimplementation"></span><h1>实现</h1>
+<div class="section" id="utility-structures">
+<h2>实用结构</h2>
+<p>提供了一些结构体/类，以帮助编写本构模型并与之通信。其中一些由“base007.dll”提供，它定义了所有插件接口共通的基础功能层。另一些由“conmodel007.dll”提供，它定义了本构模型系统使用的特定接口。在所有情况下，类定义的完整文档均可在 <a class="reference internal" href="programmersinterface.html#flac3d-interface">程序员接口（<span class="std std-ref">Programmer’s Interface</span>）</a> 文档的基础接口模块中查阅。</p>
+<p>“base007.dll”提供：</p>
+<p><code class="docutils literal"><span class="pre">Int,</span> <span class="pre">UInt,</span> <span class="pre">Byte,</span> <span class="pre">UByte,</span> <span class="pre">Double,</span> <span class="pre">Float</span></code> 等——定义于“base/src/basedef.h”。这些类型替代标准 C++ 类型 <code class="docutils literal"><span class="pre">int</span></code>、<code class="docutils literal"><span class="pre">unsigned</span></code>、<code class="docutils literal"><span class="pre">char</span></code>、<code class="docutils literal"><span class="pre">double</span></code> 等。使用这些替代类型是为了定义一致的大小。例如，无论平台如何，<code class="docutils literal"><span class="pre">Int</span></code> 都保证为一个有符号 32 位量。</p>
+<p><code class="docutils literal"><span class="pre">String</span></code>——定义于“base/src/basebool.h”。该类派生自 <code class="docutils literal"><span class="pre">std::basic_string&lt;wchar_t&gt;</span></code>，即 ANSI C++ 标准字符串类。<code class="docutils literal"><span class="pre">String</span></code> 类增加了一些方便的实用函数，例如字符串到数值的转换。</p>
+<p><code class="docutils literal"><span class="pre">DVect3</span></code>——定义于“base/src/vect.h”。该类实际上是模板类 <code class="docutils literal"><span class="pre">Vector3&lt;T&gt;</span></code> 的 <code class="docutils literal"><span class="pre">double</span></code> 实例。类似的预定义类型有 <code class="docutils literal"><span class="pre">IVect</span> <span class="pre">(Vector3&lt;Int&gt;)</span></code> 和 <code class="docutils literal"><span class="pre">UVect</span> <span class="pre">(Vector3&lt;UInt&gt;)</span></code>。该类使三维矢量能够像基本类型一样使用，并通过完整的运算符重载提供便利的语法。</p>
+<p><code class="docutils literal"><span class="pre">Variant</span></code> —— 定义于 “base/src/variant.h”。
+它定义了一种可表示多种不同基本类型的类型
+（例如 <code class="docutils literal"><span class="pre">String</span></code>、<code class="docutils literal"><span class="pre">Double</span></code>、<code class="docutils literal"><span class="pre">Int</span></code> 等）。
+该类用于向本构模型传递属性以及从本构模型传出属性。</p>
+<p><code class="docutils literal"><span class="pre">Axes</span></code> —— 定义于 “base/src/axes.h”。
+该类允许定义正交归一基。该基可用于
+在由传统笛卡尔坐标轴表示的“整体”基之间转换坐标。</p>
+<p><code class="docutils literal"><span class="pre">SymTensor</span></code> —— 定义于 “base/src/symtensor.h”。
+该类定义一个 3 <span class="math">\(\times\)</span> 3 的对称张量，通常用于表示应力和应变。
+成员访问可通过 <code class="docutils literal"><span class="pre">s11()</span></code>、<code class="docutils literal"><span class="pre">s12()</span></code>、<code class="docutils literal"><span class="pre">s13()</span></code>、<code class="docutils literal"><span class="pre">s22()</span></code> 等函数实现。
+成员修改可通过 <code class="docutils literal"><span class="pre">rs11()</span></code>、<code class="docutils literal"><span class="pre">rs12()</span></code> 等函数实现。
+此外，特征向量信息（即主方向和主值）可通过 <code class="docutils literal"><span class="pre">getEigenInfo()</span></code> 函数获得。
+辅助类 <code class="docutils literal"><span class="pre">SymTensorInfo</span></code> 用于使用户在保持主方向不变的同时修改主值，
+并用所得结果构造一个新的 <code class="docutils literal"><span class="pre">SymTensor</span></code>。</p>
+<p><code class="docutils literal"><span class="pre">Orientation3</span></code> —— 定义于 “base/src/orientation.h”。
+该类提供 <em>方位</em>（即空间中的一个方向）的存储与操作。
+该方位既可通过法向矢量指定，也可通过倾角和倾向指定。</p>
+<p>除 <code class="docutils literal"><span class="pre">ConstitutiveModel</span></code> 和 <code class="docutils literal"><span class="pre">State</span></code> 接口之外，“conmodel007.dll”还在“convert.h”中提供以下两个实用函数：<code class="docutils literal"><span class="pre">getYPFromBS()</span></code> 和 <code class="docutils literal"><span class="pre">getBSfromYP()</span></code>。这些函数可用于将杨氏模量和泊松比的值转换为体积模量和剪切模量的值，反之亦然。</p>
+</div>
+<div class="section" id="example-constitutive-model">
+<h2>本构模型示例</h2>
+<p><span class="codename">FLAC3D</span> 所使用的所有本构模型的源代码均已提供，供用户查看或修改。
+此处为便于说明，我们摘录了文件“modelexample.*”中所含 Mohr-Coulomb 弹塑性模型的部分内容。
+<a class="reference internal" href="#data-modelwriting-exampleh">modelexample.h 文件（<span class="std std-ref">modelexample.h</span>）</a> 给出了该模型的类声明，其中还包括该模型唯一类型编号的定义。
+请注意，<code class="docutils literal"><span class="pre">ModelElastic</span></code> 基类中的受保护变量多于性质名称（见 <code class="docutils literal"><span class="pre">getProperties()</span></code> 成员函数）。
+在该模型中，某些变量仅供内部使用：它们在每个网格单元中占用内存，但 <span class="codename">FLAC3D</span> 用户无法更改或打印它们。
+另请注意，<code class="docutils literal"><span class="pre">getProperty()/setProperty</span></code> 接口用于 Save/Restore。</p>
+<p id="data-modelwriting-exampleh"><em>modelexample.h：</em></p>
+<div class="includedc highlight-cpp"><div class="highlight"><pre><span></span><span class="cp">#pragma once</span>
+
+<span class="cp">#include</span> <span class="cpf">"models/elastic/src/modelelastic.h"</span><span class="cp"></span>
+
+<span class="k">namespace</span> <span class="n">models</span> <span class="p">{</span>
+    <span class="k">class</span> <span class="nc">ModelExample</span> <span class="o">:</span> <span class="k">public</span> <span class="n">ModelElastic</span> <span class="p">{</span>
+    <span class="k">public</span><span class="o">:</span>
+        <span class="n">ModelExample</span><span class="p">(</span><span class="kt">unsigned</span> <span class="kt">short</span> <span class="n">option</span><span class="o">=</span><span class="mi">0</span><span class="p">);</span>
+        <span class="k">virtual</span> <span class="n">String</span>        <span class="nf">getName</span><span class="p">()</span> <span class="k">const</span> <span class="k">override</span><span class="p">;</span>
+        <span class="k">virtual</span> <span class="n">String</span>        <span class="nf">getFullName</span><span class="p">()</span> <span class="k">const</span> <span class="k">override</span><span class="p">;</span>
+        <span class="k">virtual</span> <span class="n">UInt</span>          <span class="nf">getMinorVersion</span><span class="p">()</span> <span class="k">const</span> <span class="k">override</span><span class="p">;</span> 
+        <span class="k">virtual</span> <span class="n">String</span>        <span class="nf">getProperties</span><span class="p">()</span> <span class="k">const</span> <span class="k">override</span><span class="p">;</span>
+        <span class="k">virtual</span> <span class="n">String</span>        <span class="nf">getStates</span><span class="p">()</span> <span class="k">const</span> <span class="k">override</span><span class="p">;</span>
+        <span class="k">virtual</span> <span class="n">Variant</span>       <span class="nf">getProperty</span><span class="p">(</span><span class="n">UInt</span> <span class="n">index</span><span class="p">)</span> <span class="k">const</span> <span class="k">override</span><span class="p">;</span>
+        <span class="k">virtual</span> <span class="kt">void</span>          <span class="nf">setProperty</span><span class="p">(</span><span class="n">UInt</span> <span class="n">index</span><span class="p">,</span><span class="k">const</span> <span class="n">Variant</span> <span class="o">&amp;</span><span class="n">p</span><span class="p">,</span><span class="n">UInt</span> <span class="n">restoreVersion</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="k">override</span><span class="p">;</span>
+        <span class="k">virtual</span> <span class="n">ModelExample</span> <span class="o">*</span><span class="nf">clone</span><span class="p">()</span> <span class="k">const</span> <span class="k">override</span> <span class="p">{</span> <span class="k">return</span> <span class="k">new</span> <span class="n">ModelExample</span><span class="p">();</span> <span class="p">}</span>      
+        <span class="k">virtual</span> <span class="kt">void</span>          <span class="nf">copy</span><span class="p">(</span><span class="k">const</span> <span class="n">ConstitutiveModel</span> <span class="o">*</span><span class="n">mod</span><span class="p">)</span> <span class="k">override</span><span class="p">;</span>
+        <span class="k">virtual</span> <span class="kt">void</span>          <span class="nf">run</span><span class="p">(</span><span class="n">UByte</span> <span class="n">dim</span><span class="p">,</span><span class="n">State</span> <span class="o">*</span><span class="n">s</span><span class="p">)</span> <span class="k">override</span><span class="p">;</span> 
+        <span class="k">virtual</span> <span class="kt">void</span>          <span class="nf">initialize</span><span class="p">(</span><span class="n">UByte</span> <span class="n">dim</span><span class="p">,</span><span class="n">State</span> <span class="o">*</span><span class="n">s</span><span class="p">)</span> <span class="k">override</span><span class="p">;</span>
+        <span class="c1">// 可选</span>
+        <span class="k">virtual</span> <span class="kt">bool</span>          <span class="nf">isPropertyAdvanced</span><span class="p">(</span><span class="n">UInt</span> <span class="n">i</span><span class="p">)</span> <span class="k">const</span> <span class="k">override</span><span class="p">;</span>
+        <span class="k">virtual</span> <span class="kt">bool</span>          <span class="nf">supportsStressStrengthRatio</span><span class="p">()</span> <span class="k">const</span> <span class="k">override</span> <span class="p">{</span> <span class="k">return</span> <span class="nb">true</span><span class="p">;</span> <span class="p">}</span>
+        <span class="k">virtual</span> <span class="kt">bool</span>          <span class="nf">supportsPropertyScaling</span><span class="p">()</span> <span class="k">const</span> <span class="k">override</span> <span class="p">{</span> <span class="k">return</span> <span class="nb">true</span><span class="p">;</span> <span class="p">}</span>
+        <span class="k">virtual</span> <span class="n">Double</span>        <span class="nf">getStressStrengthRatio</span><span class="p">(</span><span class="k">const</span> <span class="n">SymTensor</span> <span class="o">&amp;</span><span class="n">st</span><span class="p">)</span> <span class="k">const</span> <span class="k">override</span><span class="p">;</span>
+        <span class="k">virtual</span> <span class="kt">void</span>          <span class="nf">scaleProperties</span><span class="p">(</span><span class="k">const</span> <span class="n">Double</span> <span class="o">&amp;</span><span class="n">scale</span><span class="p">,</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">UInt</span><span class="o">&gt;</span> <span class="o">&amp;</span><span class="n">props</span><span class="p">)</span> <span class="k">override</span><span class="p">;</span>
+
+    <span class="k">private</span><span class="o">:</span>
+        <span class="k">virtual</span> <span class="kt">bool</span>          <span class="n">updateParameters</span><span class="p">()</span> <span class="k">override</span><span class="p">;</span>
+        <span class="k">virtual</span> <span class="kt">bool</span>          <span class="nf">updateParameters</span><span class="p">(</span><span class="kt">bool</span> <span class="n">bEUpdated</span><span class="p">,</span><span class="n">Double</span> <span class="o">*</span><span class="n">sf1</span><span class="o">=</span><span class="k">nullptr</span><span class="p">,</span><span class="n">Double</span> <span class="o">*</span><span class="n">sf3</span><span class="o">=</span><span class="k">nullptr</span><span class="p">);</span>
+        <span class="k">virtual</span> <span class="n">Double</span>        <span class="nf">moduliReduction</span><span class="p">(</span><span class="k">const</span> <span class="n">Double</span> <span class="o">&amp;</span><span class="n">factor</span><span class="p">)</span> <span class="k">override</span><span class="p">;</span>
+        <span class="k">virtual</span> <span class="kt">void</span>          <span class="nf">apexCorrection</span><span class="p">(</span><span class="k">const</span> <span class="n">Double</span> <span class="o">&amp;</span><span class="n">fric</span><span class="p">,</span><span class="n">State</span> <span class="o">*</span><span class="n">s</span><span class="p">,</span><span class="n">DVect3</span> <span class="o">*</span><span class="n">prin</span><span class="p">,</span><span class="n">UInt</span> <span class="o">*</span><span class="n">iPlasticity</span><span class="o">=</span><span class="k">nullptr</span><span class="p">,</span><span class="kt">bool</span> <span class="n">bBrittle</span><span class="o">=</span><span class="nb">false</span><span class="p">);</span>
+        <span class="k">virtual</span> <span class="kt">void</span>          <span class="nf">tensionCorrection</span><span class="p">(</span><span class="n">State</span> <span class="o">*</span><span class="n">s</span><span class="p">,</span><span class="n">DVect3</span> <span class="o">*</span><span class="n">prin</span><span class="p">,</span><span class="n">UInt</span> <span class="o">*</span><span class="n">iPlasticity</span><span class="p">,</span><span class="k">const</span> <span class="n">Double</span> <span class="o">&amp;</span><span class="n">ftz</span><span class="p">,</span><span class="kt">bool</span> <span class="n">bBrittle</span><span class="o">=</span><span class="nb">false</span><span class="p">);</span>
+        <span class="k">virtual</span> <span class="kt">void</span>          <span class="nf">shearCorrection</span><span class="p">(</span><span class="n">State</span> <span class="o">*</span><span class="n">s</span><span class="p">,</span><span class="n">DVect3</span> <span class="o">*</span><span class="n">prin</span><span class="p">,</span><span class="n">UInt</span> <span class="o">*</span><span class="n">iPlasticity</span><span class="p">,</span><span class="k">const</span> <span class="n">Double</span> <span class="o">&amp;</span><span class="n">fs</span><span class="p">);</span>
+
+        <span class="n">Double</span> <span class="n">cohesion_</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+        <span class="n">Double</span> <span class="n">friction_</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+        <span class="n">Double</span> <span class="n">dilation_</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+        <span class="n">Double</span> <span class="n">tension_</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+        <span class="kt">bool</span> <span class="n">brittle_</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+        <span class="n">Double</span> <span class="n">nph_</span>  <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+        <span class="n">Double</span> <span class="n">csn_</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+        <span class="n">Double</span> <span class="n">nps_</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+        <span class="n">Double</span> <span class="n">rc_</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+        <span class="n">Double</span> <span class="n">sc1_</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+        <span class="n">Double</span> <span class="n">sc2_</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+        <span class="n">Double</span> <span class="n">sc3_</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+    <span class="p">};</span>
+<span class="p">}</span> <span class="c1">// namespace models</span>
+
+<span class="c1">// 文件结束</span>
+</pre></div>
+</div>
+<p>该模型的构造函数列于 <a class="reference internal" href="methodology.html#modelswriting-constructor"><span class="std std-ref">典型模型构造函数</span>（Typical Model Constructor）</a>。示例<a class="reference internal" href="#data-modelwriting-examplecpppart"><span class="std std-ref">初始化与运行函数</span>（initialize and run functions）</a>给出了用于初始化和执行（“运行”）的成员函数清单。请注意，为节省时间，受保护的模型变量 <code class="docutils literal"><span class="pre">e1_</span></code>、<code class="docutils literal"><span class="pre">e2_</span></code>、<code class="docutils literal"><span class="pre">g2_</span></code> 等并非在每个计算循环中计算，而是在 <code class="docutils literal"><span class="pre">ModelElastic::updateParameters</span></code> 方法中进行初始化时计算。另请注意使用 <code class="docutils literal"><span class="pre">State</span></code> 结构来提供应变增量和应力。每个模型中都可以提供独立的部分，分别用于二维和三维执行，从而使相同的模型能在 <span class="codename">FLAC</span> 或 <span class="codename">UDEC</span> 中高效使用。在本示例中，二维部分与三维部分完全相同。成员函数的清单请参阅文件“modelexample.cpp”：<code class="docutils literal"><span class="pre">getProperties</span></code>、<code class="docutils literal"><span class="pre">getStates</span></code>、<code class="docutils literal"><span class="pre">getProperty</span></code>、<code class="docutils literal"><span class="pre">setProperty</span></code> 和 <code class="docutils literal"><span class="pre">copy</span></code>。</p>
+<div class="section" id="initialize-and-run-functions">
+<span id="data-modelwriting-examplecpppart"></span><h3><code class="docutils literal"><span class="pre">initialize()</span></code> 和 <code class="docutils literal"><span class="pre">run()</span></code> 函数</h3>
+<div class="includedc highlight-cpp"><div class="highlight"><pre><span></span>    <span class="kt">void</span> <span class="n">ModelExample</span><span class="o">::</span><span class="n">initialize</span><span class="p">(</span><span class="n">UByte</span> <span class="n">d</span><span class="p">,</span><span class="n">State</span> <span class="o">*</span><span class="n">s</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">ConstitutiveModel</span><span class="o">::</span><span class="n">initialize</span><span class="p">(</span><span class="n">d</span><span class="p">,</span><span class="n">s</span><span class="p">);</span>
+        <span class="n">updateParameters</span><span class="p">();</span>
+    <span class="p">}</span>
+
+    <span class="kt">void</span> <span class="n">ModelExample</span><span class="o">::</span><span class="n">run</span><span class="p">(</span><span class="n">UByte</span> <span class="n">d</span><span class="p">,</span><span class="n">State</span> <span class="o">*</span><span class="n">s</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">ConstitutiveModel</span><span class="o">::</span><span class="n">run</span><span class="p">(</span><span class="n">d</span><span class="p">,</span><span class="n">s</span><span class="p">);</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">s</span><span class="o">-&gt;</span><span class="n">modulus_reduction_factor_</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">)</span>
+            <span class="n">moduliReduction</span><span class="p">(</span><span class="n">s</span><span class="o">-&gt;</span><span class="n">modulus_reduction_factor_</span><span class="p">);</span>
+<span class="c1">// excerpt-state-start</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">s</span><span class="o">-&gt;</span><span class="n">state_</span> <span class="o">&amp;</span> <span class="n">shear_now</span><span class="p">)</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">state_</span> <span class="o">|=</span> <span class="n">shear_past</span><span class="p">;</span>
+        <span class="n">s</span><span class="o">-&gt;</span><span class="n">state_</span> <span class="o">&amp;=</span> <span class="o">~</span><span class="n">shear_now</span><span class="p">;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">s</span><span class="o">-&gt;</span><span class="n">state_</span> <span class="o">&amp;</span> <span class="n">tension_now</span><span class="p">)</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">state_</span> <span class="o">|=</span> <span class="n">tension_past</span><span class="p">;</span>
+        <span class="n">s</span><span class="o">-&gt;</span><span class="n">state_</span> <span class="o">&amp;=</span> <span class="o">~</span><span class="n">tension_now</span><span class="p">;</span>
+<span class="c1">// excerpt-state-end</span>
+        <span class="n">UInt</span> <span class="n">iPlas</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+        <span class="n">ModelElastic</span><span class="o">::</span><span class="n">elasticTrial</span><span class="p">(</span><span class="n">s</span><span class="p">);</span>
+        <span class="n">s</span><span class="o">-&gt;</span><span class="n">viscous_</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>        
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">canFail</span><span class="p">())</span> <span class="k">return</span><span class="p">;</span>
+
+        <span class="n">SymTensorInfo</span> <span class="n">info</span><span class="p">;</span>
+        <span class="n">DVect3</span> <span class="n">prin</span> <span class="o">=</span> <span class="n">s</span><span class="o">-&gt;</span><span class="n">stnS_</span><span class="p">.</span><span class="n">getEigenInfo</span><span class="p">(</span><span class="o">&amp;</span><span class="n">info</span><span class="p">);</span>
+
+        <span class="n">Double</span> <span class="n">fs</span>  <span class="o">=</span> <span class="n">nph_</span><span class="o">*</span><span class="n">prin</span><span class="p">.</span><span class="n">z</span><span class="p">()</span> <span class="o">-</span> <span class="n">prin</span><span class="p">.</span><span class="n">x</span><span class="p">()</span> <span class="o">-</span> <span class="n">csn_</span><span class="p">;</span>
+        <span class="n">Double</span> <span class="n">fsd</span> <span class="o">=</span> <span class="n">fs</span> <span class="o">/</span> <span class="n">rc_</span><span class="p">;</span>
+        <span class="n">Double</span> <span class="n">ftz</span> <span class="o">=</span> <span class="n">prin</span><span class="p">.</span><span class="n">z</span><span class="p">()</span> <span class="o">-</span> <span class="n">tension_</span><span class="p">;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">fsd</span> <span class="o">&gt;</span> <span class="mf">0.0</span> <span class="o">&amp;&amp;</span> <span class="n">fsd</span> <span class="o">&gt;=</span> <span class="n">ftz</span><span class="p">)</span>
+            <span class="n">shearCorrection</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="o">&amp;</span><span class="n">prin</span><span class="p">,</span><span class="o">&amp;</span><span class="n">iPlas</span><span class="p">,</span><span class="n">fs</span><span class="p">);</span>
+        <span class="k">else</span> <span class="nf">if</span> <span class="p">(</span><span class="n">ftz</span> <span class="o">&gt;</span> <span class="mf">0.0</span> <span class="o">&amp;&amp;</span> <span class="n">ftz</span> <span class="o">&gt;=</span> <span class="n">fsd</span><span class="p">)</span>
+            <span class="n">tensionCorrection</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="o">&amp;</span><span class="n">prin</span><span class="p">,</span><span class="o">&amp;</span><span class="n">iPlas</span><span class="p">,</span><span class="n">ftz</span><span class="p">,</span><span class="n">brittle_</span><span class="p">);</span>
+        <span class="n">apexCorrection</span><span class="p">(</span><span class="n">friction_</span><span class="p">,</span><span class="n">s</span><span class="p">,</span><span class="o">&amp;</span><span class="n">prin</span><span class="p">,</span><span class="o">&amp;</span><span class="n">iPlas</span><span class="p">,</span><span class="n">brittle_</span><span class="p">);</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">iPlas</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">s</span><span class="o">-&gt;</span><span class="n">stnS_</span> <span class="o">=</span> <span class="n">info</span><span class="p">.</span><span class="n">resolve</span><span class="p">(</span><span class="n">prin</span><span class="p">);</span>
+            <span class="n">s</span><span class="o">-&gt;</span><span class="n">viscous_</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kt">bool</span> <span class="n">ModelExample</span><span class="o">::</span><span class="n">updateParameters</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">Double</span> <span class="n">rsin</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">sin</span><span class="p">(</span><span class="n">friction_</span> <span class="o">*</span> <span class="n">degrad</span><span class="p">);</span>
+        <span class="n">nph_</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">rsin</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">rsin</span><span class="p">);</span>
+        <span class="n">csn_</span> <span class="o">=</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">cohesion_</span> <span class="o">*</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">nph_</span><span class="p">);</span>
+        <span class="n">rsin</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">sin</span><span class="p">(</span><span class="n">dilation_</span> <span class="o">*</span> <span class="n">degrad</span><span class="p">);</span>
+        <span class="n">nps_</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">rsin</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">rsin</span><span class="p">);</span>
+        <span class="n">rc_</span>  <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">nph_</span><span class="o">*</span><span class="n">nph_</span><span class="p">);</span>
+        <span class="c1">//</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">friction_</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">Double</span> <span class="n">apex</span> <span class="o">=</span> <span class="n">cohesion_</span> <span class="o">/</span> <span class="n">std</span><span class="o">::</span><span class="n">tan</span><span class="p">(</span><span class="n">friction_</span> <span class="o">*</span> <span class="n">degrad</span><span class="p">);</span>
+            <span class="n">tension_</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">min</span><span class="p">(</span><span class="n">tension_</span><span class="p">,</span><span class="n">apex</span><span class="p">);</span>
+        <span class="p">}</span>
+        <span class="c1">//</span>
+        <span class="n">ModelElastic</span><span class="o">::</span><span class="n">updateParameters</span><span class="p">();</span>
+        <span class="c1">//</span>
+        <span class="n">Double</span> <span class="n">ra</span> <span class="o">=</span> <span class="n">e1_</span> <span class="o">-</span> <span class="n">nps_</span> <span class="o">*</span> <span class="n">e2_</span><span class="p">;</span>
+        <span class="n">Double</span> <span class="n">rb</span> <span class="o">=</span> <span class="n">e2_</span> <span class="o">-</span> <span class="n">nps_</span> <span class="o">*</span> <span class="n">e1_</span><span class="p">;</span>
+        <span class="n">Double</span> <span class="n">rd</span> <span class="o">=</span> <span class="n">ra</span> <span class="o">-</span> <span class="n">rb</span> <span class="o">*</span> <span class="n">nph_</span><span class="p">;</span>
+        <span class="n">sc1_</span>  <span class="o">=</span> <span class="n">ra</span> <span class="o">/</span> <span class="n">rd</span><span class="p">;</span>
+        <span class="n">sc3_</span>  <span class="o">=</span> <span class="n">rb</span> <span class="o">/</span> <span class="n">rd</span><span class="p">;</span>
+        <span class="n">sc2_</span>  <span class="o">=</span> <span class="n">e2_</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">nps_</span><span class="p">)</span> <span class="o">/</span> <span class="n">rd</span><span class="p">;</span>
+        <span class="c1">//</span>
+        <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="kt">bool</span> <span class="n">ModelExample</span><span class="o">::</span><span class="n">updateParameters</span><span class="p">(</span><span class="kt">bool</span> <span class="n">bEUpdated</span><span class="p">,</span> <span class="n">Double</span> <span class="o">*</span><span class="n">sf1</span><span class="p">,</span> <span class="n">Double</span> <span class="o">*</span><span class="n">sf3</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">cohesion_</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">)</span>
+            <span class="k">throw</span> <span class="n">std</span><span class="o">::</span><span class="n">runtime_error</span><span class="p">(</span><span class="s">"Example model: cohesion is not allowed less than 0."</span><span class="p">);</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">friction_</span> <span class="o">&gt;=</span> <span class="mf">90.0</span> <span class="o">||</span> <span class="n">friction_</span> <span class="o">&lt;</span> <span class="mf">0.0</span><span class="p">)</span>
+            <span class="k">throw</span> <span class="n">std</span><span class="o">::</span><span class="n">runtime_error</span><span class="p">(</span><span class="s">"Example model: friction angle is not in the valid range of 0 to 90."</span><span class="p">);</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">dilation_</span> <span class="o">&gt;</span> <span class="n">friction_</span><span class="p">)</span>
+            <span class="k">throw</span> <span class="n">std</span><span class="o">::</span><span class="n">runtime_error</span><span class="p">(</span><span class="s">"Example model: dilationn angle is not allowed greater than friction angle."</span><span class="p">);</span>
+
+        <span class="n">Double</span> <span class="n">rsin</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">sin</span><span class="p">(</span><span class="n">friction_</span> <span class="o">*</span> <span class="n">degrad</span><span class="p">);</span>
+        <span class="n">nph_</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">rsin</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">rsin</span><span class="p">);</span>
+        <span class="n">csn_</span> <span class="o">=</span> <span class="mf">2.0</span> <span class="o">*</span> <span class="n">cohesion_</span> <span class="o">*</span> <span class="n">sqrt</span><span class="p">(</span><span class="n">nph_</span><span class="p">);</span>
+        <span class="n">rsin</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">sin</span><span class="p">(</span><span class="n">dilation_</span> <span class="o">*</span> <span class="n">degrad</span><span class="p">);</span>
+        <span class="n">nps_</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">rsin</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">rsin</span><span class="p">);</span>
+        <span class="n">rc_</span>  <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">sqrt</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">nph_</span><span class="o">*</span><span class="n">nph_</span><span class="p">);</span>
+        <span class="c1">//</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">friction_</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">Double</span> <span class="n">apex</span> <span class="o">=</span> <span class="n">cohesion_</span> <span class="o">/</span> <span class="n">std</span><span class="o">::</span><span class="n">tan</span><span class="p">(</span><span class="n">friction_</span><span class="o">*</span><span class="n">degrad</span><span class="p">);</span>
+            <span class="n">tension_</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">min</span><span class="p">(</span><span class="n">tension_</span><span class="p">,</span><span class="n">apex</span><span class="p">);</span>
+        <span class="p">}</span>
+        <span class="c1">//</span>
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">bEUpdated</span><span class="p">)</span> <span class="n">ModelElastic</span><span class="o">::</span><span class="n">updateParameters</span><span class="p">();</span>
+        <span class="c1">//</span>
+        <span class="n">Double</span> <span class="n">ra</span> <span class="o">=</span> <span class="n">e1_</span> <span class="o">-</span> <span class="n">nps_</span><span class="o">*</span><span class="n">e2_</span><span class="p">;</span>
+        <span class="n">Double</span> <span class="n">rb</span> <span class="o">=</span> <span class="n">e2_</span> <span class="o">-</span> <span class="n">nps_</span><span class="o">*</span><span class="n">e1_</span><span class="p">;</span>
+        <span class="n">Double</span> <span class="n">rd</span> <span class="o">=</span> <span class="n">ra</span>  <span class="o">-</span> <span class="n">rb</span><span class="o">*</span><span class="n">nph_</span><span class="p">;</span>
+        <span class="n">sc1_</span> <span class="o">=</span> <span class="n">ra</span><span class="o">/</span><span class="n">rd</span><span class="p">;</span>
+        <span class="n">sc3_</span> <span class="o">=</span> <span class="n">rb</span><span class="o">/</span><span class="n">rd</span><span class="p">;</span>
+        <span class="n">sc2_</span> <span class="o">=</span> <span class="n">e2_</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">nps_</span><span class="p">)</span><span class="o">/</span><span class="n">rd</span><span class="p">;</span>
+        <span class="c1">//</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">sf1</span><span class="p">)</span> <span class="o">*</span><span class="n">sf1</span> <span class="o">=</span> <span class="o">-</span><span class="mf">1.0</span><span class="o">/</span><span class="n">rd</span><span class="p">;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">sf3</span><span class="p">)</span> <span class="o">*</span><span class="n">sf3</span> <span class="o">=</span> <span class="n">nps_</span><span class="o">/</span><span class="n">rd</span><span class="p">;</span>
+        <span class="c1">//</span>
+        <span class="k">return</span> <span class="o">!</span><span class="n">bEUpdated</span><span class="p">;</span>
+    <span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="fish-support-for-constitutive-models">
+<h2>对本构模型的 <span class="codename">FISH</span> 支持</h2>
+<p><span class="codename">FISH</span> 内建函数 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_fish/zone_intrinsics/fish_zone.prop.html#function:zone.prop" title="Get/set the value of property  s  in the zone.  The name  s  must
+match a property type available in the current constitutive model using keyword
+matching rules.  If no property matches, an error occurs...">单元属性值（<code class="xref fish fish-func docutils literal"><span class="pre">zone.prop</span></code>）</a> 在 <span class="codename">FLAC3D</span> 中可用。
+它可用于表达式的左侧或右侧。
+因此，</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="n">val </span><span class="p">=</span><span class="n"> zone</span><span class="p">.</span><span class="n">prop</span><span class="p">(</span><span class="n">zp</span><span class="p">,</span><span class="n"> p_name</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>将地址为 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">单元指针（<span class="varfishsym"><span class="null">zp</span></span>）</a> 的网格单元中名为 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">属性名称（<span class="varfishsym"><span class="null">p_name</span></span>）</a> 的性质的浮点值存入 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">属性值（<span class="varfishsym"><span class="null">val</span></span>）</a>。
+<a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">属性名称（<span class="varfishsym"><span class="null">p_name</span></span>）</a> 可以是包含该性质名称的字符串，也可以是求值得到此类字符串的 <span class="codename">FISH</span> 变量。
+例如，<code class="docutils literal"><span class="pre">zone.prop(zp,'bulk')</span></code> 将引用体积模量。
+若 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">单元指针（<span class="varfishsym"><span class="null">zp</span></span>）</a> 中没有本构模型，或该模型不具有所命名的性质，则返回 0.0。类似地，</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="n">zone</span><span class="p">.</span><span class="n">prop</span><span class="p">(</span><span class="n">zp</span><span class="p">,</span><span class="n"> p_name</span><span class="p">)</span><span class="n"> </span><span class="p">=</span><span class="n"> val</span>
+</pre></div>
+</div>
+<p>将 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">属性值（<span class="varfishsym"><span class="null">val</span></span>）</a> 存入网格单元 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">单元指针（<span class="varfishsym"><span class="null">zp</span></span>）</a> 中名为 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">属性名称（<span class="varfishsym"><span class="null">p_name</span></span>）</a> 的性质。
+若 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">单元指针（<span class="varfishsym"><span class="null">zp</span></span>）</a> 中没有本构模型，或该模型不具有所命名的性质，或 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">属性值（<span class="varfishsym"><span class="null">val</span></span>）</a> 不是整数或浮点数，则不存储任何内容。
+在两种用法中，<a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">单元指针（<span class="varfishsym"><span class="null">zp</span></span>）</a> 必须是网格单元指针，并且 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">属性名称（<span class="varfishsym"><span class="null">p_name</span></span>）</a> 必须是字符串或包含字符串的 <span class="codename">FISH</span> 变量。</p>
+</div>
+<div class="section" id="creating-user-written-model-dlls">
+<h2>创建用户自定义模型 DLL</h2>
+<div class="section" id="using-the-template">
+<h3>使用模板</h3>
+<p>在 Visual Studio 2017 或 2019 中创建本构模型项目的最简单方法，
+是使用 Itasca 公司提供的 <a class="reference internal" href="writeyourownmodel.html#modelswriting-template">ItascaProjectTemplates 扩展（<span class="std std-ref">ItascaProjectTemplates</span>）</a> 扩展模板。</p>
+</div>
+</div>
+<div class="section" id="loading-and-running-user-written-model-dlls">
+<h2>加载和运行用户自定义模型 DLL</h2>
+<p>在 <span class="codename">FLAC3D</span> 运行期间，可通过给出命令 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.cmodel.html#kwd:zone.cmodel.load" title="attempts to dynamically load a DLL version of a constitutive model, identified
+by  s ...">单元本构模型荷载（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">cmodel</span> <span class="pre">load</span></code>）</a> <span class="cmdkey">filename</span> 并指定 DLL 的文件名，将模型 DLL 文件加载到其中。若将 DLL 文件放在“exe64\plugins\cmodel”文件夹中，则会自动加载。此后，<span class="codename">FLAC3D</span> 以及引用该模型及其性质的 <span class="codename">FISH</span> 函数将识别新的模型名称和性质名称。若对已加载的模型再次给出 <a class="reference internal" href="../../../../zone/doc/manual/zone_manual/zone_commands/cmd_zone.cmodel.html#kwd:zone.cmodel.load" title="attempts to dynamically load a DLL version of a constitutive model, identified
+by  s ...">单元本构模型荷载（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">cmodel</span> <span class="pre">load</span></code>）</a> 命令，则不会执行任何操作，但会显示一条提示信息。</p>
+<p>在将本构模型插件赋给网格单元之前，必须先通过给出 <code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">configure</span> <span class="pre">plugin</span></code> 命令将模型配置为可使用插件。
+配置之后，除非您的 <span class="codename">FLAC3D</span> 许可证包含 C++ 插件选项，否则模型将无法进行循环计算。</p>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../flac3dhome.html"><span class="codename">FLAC3D</span></a> »</li>
+<li class="nav-item nav-item-2"><a href="../options.html">Options</a> »</li>
+<li class="nav-item nav-item-3"><a href="cppplugin.html">C++ Option</a> »</li>
+<li class="nav-item nav-item-4"><a accesskey="U" href="writeyourownmodel.html">Writing New Constitutive Models</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="methodology.html" title="previous chapter"> Methodology</a> |    
+       <a href="programmersinterface.html" title="next chapter">Programmer’s Interface</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Implementation" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>
