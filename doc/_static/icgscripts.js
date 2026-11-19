@@ -127,8 +127,25 @@ if (t.lastIndexOf('/html/3dec/') > 0 || t.lastIndexOf('/doc/3dec/') > 0) {
 }
 
 
-document.getElementById("navbutton").onclick = function() {
-   doNav();
+var navTouchX = 0, navTouchY = 0, navTouchMoved = false;
+document.addEventListener('touchstart', function (e) {
+  if (e.touches && e.touches.length) {
+    navTouchX = e.touches[0].clientX;
+    navTouchY = e.touches[0].clientY;
+    navTouchMoved = false;
+  }
+}, {passive: true});
+document.addEventListener('touchmove', function (e) {
+  if (e.touches && e.touches.length) {
+    var dx = e.touches[0].clientX - navTouchX;
+    var dy = e.touches[0].clientY - navTouchY;
+    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) { navTouchMoved = true; }
+  }
+}, {passive: true});
+
+document.getElementById("navbutton").onclick = function (e) {
+  if (navTouchMoved) { e.preventDefault(); return; }
+  doNav();
 }
 
 //document.getElementById("totopbutton").onclick = function() { toTop(); }
