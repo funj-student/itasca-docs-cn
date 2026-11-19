@@ -1,0 +1,196 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>壳结构中塑性铰的形成 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../search.html" rel="search" title="Search"/>
+<link href="../PlateAppliedPressure/PlateAppliedPressure.html" rel="next" title="Isotropic Rectangular Plate with Applied Pressure"/>
+<link href="../Cantilever/Cantilever.html" rel="prev" title="Cantilever Beam with Applied Moment at Tip — Shell Elements"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<span class="target" id="shellplastichinge"></span><div class="section" id="plastic-hinge-formation-in-a-shell-structure">
+<h1>壳结构中塑性铰的形成</h1>
+<p class="h2 rubric">问题描述</p>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">要在 <span class="codename">FLAC3D</span> 中查看该项目，请使用菜单命令 <span class="menuselection">Help ► Examples…</span>。选择 “Structure/Shell/PlasticHinge” 并选中 “PlasticHinge.f3prj” 载入。所用 <a class="reference internal" href="#shellplastichingedata"><span class="std std-ref">主数据文件</span>（main data files）</a> 示于本例末尾。其余数据文件可在该项目中找到。</p>
+</div>
+<p>本例演示用 <span class="codename">FLAC3D</span> 计算壳结构中形成的塑性铰线的起始与后续行为的过程。用壳单元重现 <a class="reference internal" href="../../Beam/PlasticHinge/PlasticHinge.html#plastichinge"><span class="std std-ref">梁结构中塑性铰的形成</span>（Plastic Hinge Formation in a Beam Structure）</a> 所述的双节点法。沿铰线创建双节点，然后适当地把它们连接起来。双节点允许在达到极限塑性弯矩时出现转动不连续。对壳单元，没有可与单节点法（用 <a class="reference internal" href="../../../doc/manual/sel_manual/beams/commands/cmd_structure.beam.property.html#kwd:structure.beam.property.plastic-moment" title="plastic moment capacity, `M^P`...">结构梁单元属性塑性弯矩（<code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">beam</span> <span class="pre">property</span> <span class="pre">plastic-moment</span></code>）</a> 命令）类比的、可用于模拟梁单元塑性铰的方法。</p>
+<p>所考虑的问题在 <a class="reference internal" href="../../Beam/PlasticHinge/PlasticHinge.html#plastichinge"><span class="std std-ref">梁结构中塑性铰的形成</span>（Plastic Hinge Formation in a Beam Structure）</a> 中描述，并示于 <a href="#shellplastichinge-diagram">图 1（Figure  1）</a>。<span class="codename">FLAC3D</span> 模型模拟长 10 m、高 1 m 的梁（见 <a href="#shellplastichinge-geom">图 2（Figure  2）</a>）。采用交叉对角网格模式以确保响应对称，并采用 <a class="reference internal" href="../../../doc/manual/sel_manual/formulation/formulation.html#struct-shell-dkt-cst-element"><span class="std std-ref">DKT-CST 杂交壳单元</span>（DKT-CST Hybrid
+Shell Element）</a> 以承受大应变模式下破坏后将发展的膜荷载。杨氏模量与泊松比分别设为 200 GPa 与 0。壳厚度设为 0.133887 m，使二次矩 <span class="math">\(I\)</span> 等于 200 × 10<sup>-6</sup> m<sup>4</sup>。</p>
+<div class="figure align-center" id="id1">
+<span id="shellplastichinge-diagram"></span><img alt="../../../../../_images/shellplastichinge-diagram.png" src="../../../../../_images/shellplastichinge-diagram.png"/>
+<p class="caption"><span class="caption-text">图 1：承受单个集中荷载的简支梁。</span></p>
+</div>
+<div class="figure align-center" id="id2">
+<span id="shellplastichinge-geom"></span><a class="reference internal image-reference" href="../../../../../_images/shellplastichinge-geom.png"><img alt="../../../../../_images/shellplastichinge-geom.png" src="../../../../../_images/shellplastichinge-geom.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 2：用壳单元模拟塑性铰示例的 <span class="codename">FLAC3D</span> 模型。</span></p>
+</div>
+<p>发出两条独立的 <a class="reference internal" href="../../../doc/manual/sel_manual/shells/commands/cmd_structure.shell.create.html#command:structure.shell.create" title="Create a shell. The four main keywords articulate four different techniques
+of creation: by creating a collection of elements from a group of zone faces
+( by-face ); by creating a single element from four existing nodes ( by-nodes );
+from a specified quadrilateral ( by-quadrilateral ); or from a triangle
+( by-triangle )..."><code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">shell</span> <span class="pre">create</span></code></a> 命令，产生含两个独立壳段的模型：一个用于梁的左半，一个用于右半。<a href="#shellplastichinge-nodes">图 3（Figure  3）</a> 示出标有节点位置的壳单元；<a href="#shellplastichinge-links">图 4（Figure  4）</a> 示出壳单元轮廓并标出连接位置。注意沿梁中心线有一组重叠的八个节点，由节点-节点连接相连。</p>
+<div class="figure align-center" id="id3">
+<span id="shellplastichinge-nodes"></span><a class="reference internal image-reference" href="../../../../../_images/shellplastichinge-nodes.png"><img alt="../../../../../_images/shellplastichinge-nodes.png" src="../../../../../_images/shellplastichinge-nodes.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 3：壳单元——节点以球表示。</span></p>
+</div>
+<div class="figure align-center" id="id4">
+<span id="shellplastichinge-links"></span><a class="reference internal image-reference" href="../../../../../_images/shellplastichinge-links.png"><img alt="../../../../../_images/shellplastichinge-links.png" src="../../../../../_images/shellplastichinge-links.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 4：壳单元——连接位置以球表示。</span></p>
+</div>
+<p>现在我们用以下命令在这些节点之间创建适当的连接</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">struct node join</span>
+<span class="nb">struct link attach</span><span class="n"> rotation</span><span class="o">-</span><span class="n">z</span><span class="p">=</span><span class="n">normal</span><span class="o">-</span><span class="n">yield </span><span class="c">; 将 z 转动自由度改为 normal-yield</span>
+<span class="c">; 设置这些弹簧的参数</span>
+<span class="nb">struct link property</span><span class="n"> rotation</span><span class="o">-</span><span class="n">z area</span><span class="p">=</span><span class="m m-Double">1.0</span><span class="n"> stiffness</span><span class="p">=</span><span class="m m-Double">5e9</span>
+<span class="nb">struct link property</span><span class="n"> rotation</span><span class="o">-</span><span class="n">z yield</span><span class="o">-</span><span class="n">compression</span><span class="p">=</span><span class="m m-Double">8.33e3</span><span class="n"> yield</span><span class="o">-</span><span class="n">tension</span><span class="p">=</span><span class="m m-Double">8.33e3</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">5.0</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.3</span><span class="n"> </span><span class="m m-Double">0.7</span>
+<span class="nb">struct link property</span><span class="n"> rotation</span><span class="o">-</span><span class="n">z yield</span><span class="o">-</span><span class="n">compression</span><span class="p">=</span><span class="m m-Double">4.17e3</span><span class="n"> yield</span><span class="o">-</span><span class="n">tension</span><span class="p">=</span><span class="m m-Double">4.17e3</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">5.0</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.0</span>
+<span class="nb">struct link property</span><span class="n"> rotation</span><span class="o">-</span><span class="n">z yield</span><span class="o">-</span><span class="n">compression</span><span class="p">=</span><span class="m m-Double">4.17e3</span><span class="n"> yield</span><span class="o">-</span><span class="n">tension</span><span class="p">=</span><span class="m m-Double">4.17e3</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">5.0</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">1.0</span>
+</pre></div>
+</div>
+<p>该命令在与另一节点位于同一位置的每个节点上创建节点-节点连接。连接示于 <a href="#shellplastichinge-links">图 4（Figure  4）</a>，默认在所有方向上刚性。下一条命令影响所有连接：把 <span class="math">\(z\)</span> 转动方向的附着条件设为法向屈服弹簧，三个平动方向与 <span class="math">\(x\)</span>、<span class="math">\(y\)</span> 转动方向设为刚性，并指定在 <span class="math">\(z\)</span> 转动方向插入法向屈服弹簧。最后几条命令按下述方式设置这些法向屈服弹簧的性质：把面积全部设为一，并把抗压与抗拉屈服强度都设为所需塑性弯矩承载力（依据各节点对应的 tributary 长度）。总塑性弯矩承载力为 25 kN-m，因此给两个中心弹簧赋 8.33 kN-m，给两个端部弹簧赋 4.17 kN-m。最后把弹簧刚度设为足够大的值，使弹簧变形相对壳变形很小。我们取 5 × 10<sup>9</sup>，约等于中心左侧节点的转动刚度。</p>
+<p>双节点已适当互连后，通过限制 <span class="math">\(y\)</span> 方向平动在梁端指定简支。对右侧部分的四个目标节点施加常竖向速度，并在计算中监测靠近中心处某单元形心的力矩，以确定何时达到限值。</p>
+<p>我们发现已达到力矩限值（见 <a href="#shellplastichinge-hist">图 5（Figure  5）</a>）。<a href="#shellplastichinge-moment">图 6（Figure  6）</a> 显示梁中心处的值为 24.89 kN，与所指定弯矩承载力相差在 1% 以内。<a href="#shellplastichinge-disp">图 7（Figure  7）</a> 显示位移已发展出不连续。</p>
+<div class="figure align-center" id="id5">
+<span id="shellplastichinge-hist"></span><a class="reference internal image-reference" href="../../../../../_images/shellplastichinge-hist.png"><img alt="../../../../../_images/shellplastichinge-hist.png" src="../../../../../_images/shellplastichinge-hist.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 5：靠近中心某单元形心处的力矩对施加的中心位移。</span></p>
+</div>
+<div class="figure align-center" id="id6">
+<span id="shellplastichinge-moment"></span><a class="reference internal image-reference" href="../../../../../_images/shellplastichinge-moment.png"><img alt="../../../../../_images/shellplastichinge-moment.png" src="../../../../../_images/shellplastichinge-moment.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 6：壳上的 Mx 等值线。</span></p>
+</div>
+<div class="figure align-center" id="id7">
+<span id="shellplastichinge-disp"></span><a class="reference internal image-reference" href="../../../../../_images/shellplastichinge-disp.png"><img alt="../../../../../_images/shellplastichinge-disp.png" src="../../../../../_images/shellplastichinge-disp.png" style="width: 85%;"/></a>
+<p class="caption"><span class="caption-text">图 7：壳在放大变形图上的 y 向位移。</span></p>
+</div>
+<p class="h2 rubric" id="shellplastichingedata">数据文件</p>
+<p><strong>PlasticHinge.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">model title</span><span class="n"> </span><span class="s">'Plastic hinge formation (double-node method with shell elements)'</span>
+<span class="c">; 创建两组壳单元</span>
+<span class="nb">struct shell create</span><span class="n"> by</span><span class="o">-</span><span class="n">quadrilateral </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="n"> </span><span class="m m-Double">5</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="n"> </span><span class="m m-Double">5</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                     size </span><span class="p">(</span><span class="m m-Double">6</span><span class="p">,</span><span class="m m-Double">3</span><span class="p">)</span><span class="n"> id</span><span class="p">=</span><span class="m m-Double">1</span><span class="n"> element</span><span class="o">-</span><span class="n">type</span><span class="p">=</span><span class="n">dkt</span><span class="o">-</span><span class="n">csth </span><span class="sx">...</span>
+<span class="n">                                     cross</span><span class="o">-</span><span class="n">diagonal group </span><span class="s">'Left'</span>
+<span class="nb">struct shell create</span><span class="n"> by</span><span class="o">-</span><span class="n">quadrilateral </span><span class="p">(</span><span class="m m-Double">5</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">10</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">5</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                                     size </span><span class="p">(</span><span class="m m-Double">6</span><span class="p">,</span><span class="m m-Double">3</span><span class="p">)</span><span class="n"> id</span><span class="p">=</span><span class="m m-Double">2</span><span class="n"> element</span><span class="o">-</span><span class="n">type</span><span class="p">=</span><span class="n">dkt</span><span class="o">-</span><span class="n">csth </span><span class="sx">...</span>
+<span class="n">                                     cross</span><span class="o">-</span><span class="n">diagonal group </span><span class="s">'Right'</span>
+<span class="nb">struct shell property</span><span class="n"> isotropic</span><span class="p">=(</span><span class="m m-Double">2e11</span><span class="p">,</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="p">)</span><span class="n"> thick</span><span class="p">=</span><span class="m m-Double">0.133887</span>
+<span class="c">; 创建连接，默认六个自由度均为刚性 </span>
+<span class="c">; 在位置重合的节点之间</span>
+<span class="nb">struct node join</span>
+<span class="nb">struct link attach</span><span class="n"> rotation</span><span class="o">-</span><span class="n">z</span><span class="p">=</span><span class="n">normal</span><span class="o">-</span><span class="n">yield </span><span class="c">; 将 z 转动自由度改为 normal-yield</span>
+<span class="c">; 设置这些弹簧的参数</span>
+<span class="nb">struct link property</span><span class="n"> rotation</span><span class="o">-</span><span class="n">z area</span><span class="p">=</span><span class="m m-Double">1.0</span><span class="n"> stiffness</span><span class="p">=</span><span class="m m-Double">5e9</span>
+<span class="nb">struct link property</span><span class="n"> rotation</span><span class="o">-</span><span class="n">z yield</span><span class="o">-</span><span class="n">compression</span><span class="p">=</span><span class="m m-Double">8.33e3</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n">                     yield</span><span class="o">-</span><span class="n">tension</span><span class="p">=</span><span class="m m-Double">8.33e3</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">5.0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                     position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.3</span><span class="n"> </span><span class="m m-Double">0.7</span>
+<span class="nb">struct link property</span><span class="n"> rotation</span><span class="o">-</span><span class="n">z yield</span><span class="o">-</span><span class="n">compression</span><span class="p">=</span><span class="m m-Double">4.17e3</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n">                     yield</span><span class="o">-</span><span class="n">tension</span><span class="p">=</span><span class="m m-Double">4.17e3</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">5.0</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n">                     position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.0</span>
+<span class="nb">struct link property</span><span class="n"> rotation</span><span class="o">-</span><span class="n">z yield</span><span class="o">-</span><span class="n">compression</span><span class="p">=</span><span class="m m-Double">4.17e3</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n">                     yield</span><span class="o">-</span><span class="n">tension</span><span class="p">=</span><span class="m m-Double">4.17e3</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">5.0</span><span class="n"> </span><span class="sx">...</span><span class="n"> </span>
+<span class="n">                     position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">1.0</span>
+<span class="c">; 边界条件</span>
+<span class="nb">struct node fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y rotation</span><span class="o">-</span><span class="n">x rotation</span><span class="o">-</span><span class="n">y range position</span><span class="o">-</span><span class="n">x</span><span class="p">=</span><span class="n"> </span><span class="m m-Double">0.0</span><span class="n"> </span>
+<span class="n">                                        </span><span class="c">; 左端采用滚动支承</span>
+<span class="nb">struct node fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y rotation</span><span class="o">-</span><span class="n">x rotation</span><span class="o">-</span><span class="n">y range position</span><span class="o">-</span><span class="n">x</span><span class="p">=</span><span class="m m-Double">10.0</span><span class="n"> </span>
+<span class="n">                                        </span><span class="c">; 右端采用滚动支承</span>
+<span class="nb">struct node fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z rotation</span><span class="o">-</span><span class="n">x rotation</span><span class="o">-</span><span class="n">y           </span>
+<span class="n">                                        </span><span class="c">; 约束非梁变形模态</span>
+<span class="nb">struct node fix</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">5.0</span><span class="n"> group </span><span class="s">'Right'</span>
+<span class="nb">struct node initialize</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">5e-7</span><span class="n"> local </span><span class="sx">...</span>
+<span class="n">                       range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">5.0</span><span class="n"> group </span><span class="s">'Right'</span>
+<span class="c">; 历程</span>
+<span class="nb">struct node history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">y position </span><span class="p">(</span><span class="m m-Double">5.0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0.6667</span><span class="p">)</span>
+<span class="nb">struct shell history</span><span class="n"> resultant</span><span class="o">-</span><span class="n">mx surface</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="n"> position </span><span class="p">(</span><span class="m m-Double">4.861</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0.5</span><span class="p">)</span>
+<span class="c">; 运行模型计算循环</span>
+<span class="nb">struct damping</span><span class="n"> combined</span><span class="o">-</span><span class="n">local</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">30000</span><span class="n"> </span><span class="c">; 总位移为 0.015</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'PlasticHinge'</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../../docproject/source/manual/program_guide/program_guide.html">程序指南</a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../doc/manual/sels.html">Structural Elements</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../../../doc/manual/sel_manual/shells/shells.html">Shell Structural Elements</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../Cantilever/Cantilever.html" title="previous chapter"> Cantilever Beam with Applied Moment at Tip — Shell Elements</a> |    
+       <a href="../PlateAppliedPressure/PlateAppliedPressure.html" title="next chapter">Isotropic Rectangular Plate with Applied Pressure</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Plastic Hinge Formation in a Shell Structure" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../_static/icgscripts.js"></script>
+</body>
+</html>
