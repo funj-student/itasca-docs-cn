@@ -53,10 +53,14 @@ function openNav() {
     side.style.width = "";
     side.scrollTop = 0;
     var toc = document.getElementById('toctobj2');
+    navTranslate = 0;
     if (toc) {
       try {
         var d = toc.contentDocument || toc.contentWindow.document;
-        if (d && d.documentElement) { d.documentElement.scrollTop = 0; }
+        if (d && d.documentElement) {
+          d.documentElement.scrollTop = 0;
+          d.documentElement.style.transform = '';
+        }
         if (d && d.body) { d.body.scrollTop = 0; }
       } catch (e) {}
     }
@@ -87,7 +91,7 @@ function sizeMobileNav() {
     try {
       if (doc.body && !doc.body.dataset.mobileScrollFixed) {
         var st = doc.createElement('style');
-        st.textContent = 'html,body{overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;margin:0;}body{padding-bottom:3em!important;}';
+        st.textContent = 'html,body{overflow:hidden!important;margin:0;}body{padding-bottom:3em!important;}';
         doc.head.appendChild(st);
         doc.body.dataset.mobileScrollFixed = '1';
       }
@@ -136,15 +140,37 @@ function enableTouchScroll(el, getScroller) {
 
 var sideEl = document.getElementById('mySidenav');
 enableTouchScroll(sideEl, function () { return sideEl; });
-if (tocFrame) {
+var navTranslate = 0;
+function attachIframeTouch() {
+  if (!tocFrame) { return; }
   try {
-    var tdoc = tocFrame.contentDocument || tocFrame.contentWindow.document;
-    if (tdoc) {
-      enableTouchScroll(tdoc, function () {
-        return tdoc.scrollingElement || tdoc.documentElement || tdoc.body;
-      });
-    }
+    var d = tocFrame.contentDocument || tocFrame.contentWindow.document;
+    if (!d || d.dataset.touchAttached) { return; }
+    d.dataset.touchAttached = '1';
+    var sy = 0, start = 0;
+    d.addEventListener('touchstart', function (e) {
+      if (e.touches && e.touches.length) {
+        sy = e.touches[0].clientY;
+        start = navTranslate;
+      }
+    }, {passive: true});
+    d.addEventListener('touchmove', function (e) {
+      if (!e.touches || !e.touches.length) { return; }
+      var dy = e.touches[0].clientY - sy;
+      var max = Math.max(0, d.body.scrollHeight - tocFrame.clientHeight);
+      navTranslate = Math.max(0, Math.min(max, start - dy));
+      if (d.documentElement) {
+        d.documentElement.style.transform = 'translateY(' + (-navTranslate) + 'px)';
+      }
+      e.preventDefault();
+    }, {passive: false});
   } catch (e) {}
+}
+if (tocFrame) {
+  attachIframeTouch();
+  tocFrame.addEventListener('load', attachIframeTouch);
+  setTimeout(attachIframeTouch, 300);
+  setTimeout(attachIframeTouch, 900);
 }
 
 var f = document.getElementById('toctobj2');
