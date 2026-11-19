@@ -1,6 +1,9 @@
 function isMobileNav() {
-   // screen.width is stable while the browser toolbar hides on scroll
-   return window.innerWidth <= 720 || screen.width <= 1024;
+   // UA/touch detection is stable across address-bar show/hide while scrolling
+   var ua = navigator.userAgent || '';
+   return window.innerWidth <= 720 ||
+          navigator.maxTouchPoints > 0 ||
+          /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
 }
 
 window.onload = function(){
@@ -16,8 +19,6 @@ window.onresize = function(){
     if (isMobileNav()) {
       closeNav();
       sizeMobileNav();
-    } else {
-      openNav();
     }
 }
 window.addEventListener('orientationchange', function () {
