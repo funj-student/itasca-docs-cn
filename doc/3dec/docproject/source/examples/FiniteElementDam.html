@@ -1,0 +1,745 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>有限元坝体 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../search.html" rel="search" title="Search"/>
+<link href="OpenPitFaceblocks.html" rel="next" title="Open Pit with Face Blocks"/>
+<link href="dfn_advanced.html" rel="prev" title="Discrete Fracture Network (Advanced)"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="finite-element-dam">
+<span id="dec-dam"></span><h1>有限元坝体</h1>
+<p class="h2 rubric">问题描述</p>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p>本示例将演示一种在 <span class="codename">3DEC</span> 中创建有限元（FE）块体的技术。在本例中，有限单元构成一座带基础和坝肩的坝体。</p>
+<p class="last">要在 <span class="codename">3DEC</span> 中查看此项目，请使用菜单命令 <span class="menuselection">Help ► Examples…</span>。选择“3DEC/ ExampleApplications/ FE / Dam”，然后选择“dam.prj”进行加载。所用的<a class="reference internal" href="#dam-datafiles"><span class="std std-ref">主数据文件</span>（main data files）</a>显示在本示例的末尾。所有数据文件都可在该项目中找到。</p>
+</div>
+<p class="h2 rubric"><span class="codename">3DEC</span> 模型几何</p>
+<p>用于创建本示例的数据文件列于<a class="reference internal" href="#dam-datafiles"><span class="std std-ref">数据文件</span>（Data Files）</a>中。模型构建从将坝段作为五个普通 <span class="codename">3DEC</span> 块体开始。这是在 FISH 函数（geodam）中使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">block</span> <span class="pre">create</span> <span class="pre">prism</span></code> 命令完成的。该 FISH 函数还设置了一些 FISH 参数，供后续命令中的尺寸使用。该几何如<a class="reference internal" href="#dam1"><span class="std std-ref">图 1</span>（Figure 1）</a>所示。</p>
+<div class="figure align-center" id="dam1">
+<a class="reference internal image-reference" href="../../../../_images/dampanels.png"><img alt="../../../../_images/dampanels.png" src="../../../../_images/dampanels.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 1：坝体面板</span></p>
+</div>
+<p>每个 <span class="codename">3DEC</span> 块体包含八个顶点。按 <span class="codename">3DEC</span> 块体创建几何之后，再使用命令 <code class="xref fish fish-kwd docutils literal"><span class="pre">feblock</span> <span class="pre">generate</span></code> 将块体转换为有限元块体。</p>
+<p>每个顶部中央块体都已转换为三个各含 20 个节点的有限元砖块。底部中央块体各自转换为一个退化有限元砖块。两端的块体各包含两个退化有限元砖块。</p>
+<p>下一步是更改坝体块体上的面组名称。这通过 FISH 函数（markdamfaces）为块体面设置面组来实现。随后，<code class="xref fish fish-kwd docutils literal"><span class="pre">block</span> <span class="pre">generate</span> <span class="pre">from-topo</span></code> 命令利用这些块体面组，将已有块体向下拉伸至模型底部。该步骤拉伸生成的块体如<a class="reference internal" href="#dam2"><span class="std std-ref">图 2</span>（Figure 2）</a>所示。</p>
+<div class="figure align-center" id="dam2">
+<a class="reference internal image-reference" href="../../../../_images/damextrude1.png"><img alt="../../../../_images/damextrude1.png" src="../../../../_images/damextrude1.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 2：面板的拉伸生成</span></p>
+</div>
+<p>然后将底部块体沿 y 方向拉伸，形成如图<a class="reference internal" href="#dam3"><span class="std std-ref">图 3</span>（Figure 3）</a>所示的上游和下游底部块体。</p>
+<div class="figure align-center" id="dam3">
+<a class="reference internal image-reference" href="../../../../_images/damextrude2.png"><img alt="../../../../_images/damextrude2.png" src="../../../../_images/damextrude2.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 3：向上游和下游方向拉伸生成的块体</span></p>
+</div>
+<p>随后使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">block</span> <span class="pre">create</span> <span class="pre">prism</span></code> 命令创建上游和下游坝肩。这些命令的结果如<a class="reference internal" href="#dam4"><span class="std std-ref">图 4</span>（Figure 4）</a>所示。</p>
+<div class="figure align-center" id="dam4">
+<a class="reference internal image-reference" href="../../../../_images/damabut.png"><img alt="../../../../_images/damabut.png" src="../../../../_images/damabut.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 4：带坝肩的坝体</span></p>
+</div>
+<p>在右坝肩切出一条断层，块体按<a class="reference internal" href="#dam5"><span class="std std-ref">图 5</span>（Figure 5）</a>所示划分网格。</p>
+<div class="figure align-center" id="dam5">
+<a class="reference internal image-reference" href="../../../../_images/damfebz.png"><img alt="../../../../_images/damfebz.png" src="../../../../_images/damfebz.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 5：已划分网格的模型</span></p>
+</div>
+<p class="h2 rubric">坝体加载</p>
+<p>属性赋值与坝体加载见文件<a class="reference internal" href="#damloading-dat"><span class="std std-ref">dam-loading.dat</span></a>。</p>
+<p>下一步是为岩体、坝体和节理赋属性。初始时节理保持弹性，以防止在循环计算获得重力平衡的过程中发生移动。坝体还赋予了一个人为偏低的模量。</p>
+<p>定义重力，并对岩体和坝体施加地应力。然后隐藏坝体，使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">block</span> <span class="pre">insitu</span> <span class="pre">topograph</span></code> 命令初始化河谷应力。随后从坝体中移除这些应力。</p>
+<p>此时我们希望将模型运行至平衡。可以使用 <code class="xref fish fish-kwd docutils literal"><span class="pre">feblock</span> <span class="pre">gravity</span> <span class="pre">delete</span></code> 命令为有限单元移除坝体上的重力荷载。此时我们还不希望坝体对河谷加载。我们还要对模型施加边界条件并指定一些监测历史记录。</p>
+<p>现在我们要从坝体中移除可能由谷底和谷壁产生的任何应力，并在有限元模型中恢复重力。同时重置监测历史记录。</p>
+<p>在该阶段，我们使用边界条件为坝体施加水压力（<code class="xref fish fish-kwd docutils literal"><span class="pre">block</span> <span class="pre">face</span> <span class="pre">apply</span> <span class="pre">stress</span></code>）。</p>
+<p>循环计算 5000 步后，我们将节理恢复到适当的强度值，并使用 FISH 函数（<code class="xref fish fish-kwd docutils literal"><span class="pre">ppjoint</span></code>）为节理添加孔隙压力。</p>
+<p>最后，我们降低断层面上的摩擦使其滑动。同时去除岩石与混凝土之间的黏聚力，以模拟开裂的接触。显示滑动断层的最终结果如<a class="reference internal" href="#dam6"><span class="std std-ref">图 6</span>（Figure 6）</a>所示。</p>
+<div class="figure align-center" id="dam6">
+<a class="reference internal image-reference" href="../../../../_images/damdisp.png"><img alt="../../../../_images/damdisp.png" src="../../../../_images/damdisp.png" style="width: 80%;"/></a>
+<p class="caption"><span class="caption-text">图 6：岩体与坝体中的位移</span></p>
+</div>
+<p class="h2 rubric" id="dam-datafiles">数据文件</p>
+<p class="rubric" id="damgeometry-dat"><strong>dam-geometry.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">model new</span>
+<span class="c">; ---------------------------------------------------------------------</span>
+<span class="c">; --- 有限元块体算例——拱坝分析 ---</span>
+<span class="c">; ---------------------------------------------------------------------</span>
+<span class="nb">model configure</span><span class="n"> feblock</span>
+<span class="nb">model configure</span><span class="n"> dynamic</span>
+<span class="c">;</span>
+<span class="nb">block tolerance</span><span class="n"> </span><span class="m m-Double">.001</span>
+<span class="c">;</span>
+<span class="c">; --- GEOMDAM ---</span>
+<span class="c">; 用于定义坝体几何形状的 FISH 函数</span>
+<span class="c">; 简化的五块体圆柱形拱</span>
+<span class="c">;</span>
+<span class="nb">fish define</span><span class="ni"> geomdam</span>
+
+<span class="ni">  rad </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">100.0</span>
+<span class="ni">  xcent </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+<span class="ni">  ycent </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni">rad</span>
+<span class="ni">  thick </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">10.0</span>
+<span class="ni">  angtot </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">100.0</span><span class="ni"> </span><span class="o">*</span><span class="ni"> </span><span class="k">math.degrad</span>
+<span class="ni">  nb </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">5</span>
+<span class="ni">  angb </span><span class="p">=</span><span class="ni"> angtot </span><span class="o">/</span><span class="ni"> nb</span>
+<span class="ni">  zz2 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">80.0</span>
+<span class="ni">  zz1 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.0</span>
+
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> i </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="ni">nb</span><span class="p">)</span>
+
+<span class="ni">     ang1 </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">0.5</span><span class="o">*</span><span class="ni">angtot </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="ni">i</span><span class="o">-</span><span class="m m-Double">1</span><span class="p">)</span><span class="o">*</span><span class="ni">angb</span>
+<span class="ni">     ang2 </span><span class="p">=</span><span class="ni"> ang1 </span><span class="o">+</span><span class="ni"> angb</span>
+<span class="ni">     xx1 </span><span class="p">=</span><span class="ni"> xcent </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="ni">rad</span><span class="o">-</span><span class="ni">thick</span><span class="p">)</span><span class="o">*</span><span class="k">math.sin</span><span class="p">(</span><span class="ni">ang1</span><span class="p">)</span>
+<span class="ni">     yy1 </span><span class="p">=</span><span class="ni"> ycent </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="ni">rad</span><span class="o">-</span><span class="ni">thick</span><span class="p">)</span><span class="o">*</span><span class="k">math.cos</span><span class="p">(</span><span class="ni">ang1</span><span class="p">)</span>
+<span class="ni">     xx2 </span><span class="p">=</span><span class="ni"> xcent </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="ni">rad</span><span class="o">-</span><span class="ni">thick</span><span class="p">)</span><span class="o">*</span><span class="k">math.sin</span><span class="p">(</span><span class="ni">ang2</span><span class="p">)</span>
+<span class="ni">     yy2 </span><span class="p">=</span><span class="ni"> Ycent </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="ni">rad</span><span class="o">-</span><span class="ni">thick</span><span class="p">)</span><span class="o">*</span><span class="k">math.cos</span><span class="p">(</span><span class="ni">ang2</span><span class="p">)</span>
+<span class="ni">     xx3 </span><span class="p">=</span><span class="ni"> xcent </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="ni">rad</span><span class="p">)</span><span class="o">*</span><span class="k">math.sin</span><span class="p">(</span><span class="ni">ang2</span><span class="p">)</span>
+<span class="ni">     yy3 </span><span class="p">=</span><span class="ni"> ycent </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="ni">rad</span><span class="p">)</span><span class="o">*</span><span class="k">math.cos</span><span class="p">(</span><span class="ni">ang2</span><span class="p">)</span>
+<span class="ni">     xx4 </span><span class="p">=</span><span class="ni"> xcent </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="ni">rad</span><span class="p">)</span><span class="o">*</span><span class="k">math.sin</span><span class="p">(</span><span class="ni">ang1</span><span class="p">)</span>
+<span class="ni">     yy4 </span><span class="p">=</span><span class="ni"> ycent </span><span class="o">+</span><span class="ni"> </span><span class="p">(</span><span class="ni">rad</span><span class="p">)</span><span class="o">*</span><span class="k">math.cos</span><span class="p">(</span><span class="ni">ang1</span><span class="p">)</span>
+
+<span class="k">     command</span>
+<span class="nb">       block create</span><span class="n"> prism face</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="ni">[xx1]</span><span class="n"> </span><span class="ni">[yy1]</span><span class="n"> </span><span class="ni">[zz1]</span><span class="n"> </span><span class="ni">[xx2]</span><span class="n"> </span><span class="ni">[yy2]</span><span class="n"> </span><span class="ni">[zz1]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">	                             </span><span class="ni">[xx3]</span><span class="n"> </span><span class="ni">[yy3]</span><span class="n"> </span><span class="ni">[zz1]</span><span class="n"> </span><span class="ni">[xx4]</span><span class="n"> </span><span class="ni">[yy4]</span><span class="n"> </span><span class="ni">[zz1]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                          face</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="ni">[xx1]</span><span class="n"> </span><span class="ni">[yy1]</span><span class="n"> </span><span class="ni">[zz2]</span><span class="n"> </span><span class="ni">[xx2]</span><span class="n"> </span><span class="ni">[yy2]</span><span class="n"> </span><span class="ni">[zz2]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">						         </span><span class="ni">[xx3]</span><span class="n"> </span><span class="ni">[yy3]</span><span class="n"> </span><span class="ni">[zz2]</span><span class="n"> </span><span class="ni">[xx4]</span><span class="n"> </span><span class="ni">[yy4]</span><span class="n"> </span><span class="ni">[zz2]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                          group </span><span class="ni">[</span><span class="s">'block='</span><span class="o">+</span><span class="ni">string</span><span class="p">(</span><span class="ni">i</span><span class="p">)</span><span class="ni">]</span>
+<span class="k">    endcommand</span>
+
+<span class="ni">     </span><span class="k">if</span><span class="ni"> i </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">       xa1 </span><span class="p">=</span><span class="ni"> xx2</span>
+<span class="ni">       ya1 </span><span class="p">=</span><span class="ni"> yy2</span>
+<span class="ni">       xb1 </span><span class="p">=</span><span class="ni"> xx3</span>
+<span class="ni">       yb1 </span><span class="p">=</span><span class="ni"> yy3</span>
+<span class="ni">       xd1 </span><span class="p">=</span><span class="ni"> xx1</span>
+<span class="ni">       yd1 </span><span class="p">=</span><span class="ni"> yy1</span>
+<span class="ni">     </span><span class="k">endif</span>
+<span class="ni">     </span><span class="k">if</span><span class="ni"> i </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">5</span>
+<span class="ni">       xa2 </span><span class="p">=</span><span class="ni"> xx1</span>
+<span class="ni">       ya2 </span><span class="p">=</span><span class="ni"> yy1</span>
+<span class="ni">       xb2 </span><span class="p">=</span><span class="ni"> xx4</span>
+<span class="ni">       yb2 </span><span class="p">=</span><span class="ni"> yy4</span>
+<span class="ni">       xd2 </span><span class="p">=</span><span class="ni"> xx2</span>
+<span class="ni">       yd2 </span><span class="p">=</span><span class="ni"> yy2</span>
+<span class="ni">     </span><span class="k">endif</span>
+<span class="ni">     </span><span class="k">if</span><span class="ni"> i </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">2</span>
+<span class="ni">       xe1 </span><span class="p">=</span><span class="ni"> xx2</span>
+<span class="ni">       ye1 </span><span class="p">=</span><span class="ni"> yy2</span>
+<span class="ni">       xf1 </span><span class="p">=</span><span class="ni"> xx3</span>
+<span class="ni">       yf1 </span><span class="p">=</span><span class="ni"> yy3</span>
+<span class="ni">     </span><span class="k">endif</span>
+<span class="ni">     </span><span class="k">if</span><span class="ni"> i </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">4</span>
+<span class="ni">       xe2 </span><span class="p">=</span><span class="ni"> xx1</span>
+<span class="ni">       ye2 </span><span class="p">=</span><span class="ni"> yy1</span>
+<span class="ni">       xf2 </span><span class="p">=</span><span class="ni"> xx4</span>
+<span class="ni">       yf2 </span><span class="p">=</span><span class="ni"> yy4</span>
+<span class="ni">     </span><span class="k">endif</span>
+
+<span class="c">; 坝肩点</span>
+<span class="ni">     </span><span class="k">if</span><span class="ni"> i </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">1</span>
+<span class="ni">       xxright </span><span class="p">=</span><span class="ni"> xx4</span>
+<span class="ni">       yyright </span><span class="p">=</span><span class="ni"> yy4</span>
+<span class="ni">       xxrightdown </span><span class="p">=</span><span class="ni"> xx1</span>
+<span class="ni">       yyrightdown </span><span class="p">=</span><span class="ni"> yy1</span>
+<span class="ni">       xxrightd </span><span class="p">=</span><span class="ni"> xx1</span>
+<span class="ni">       yyrightd </span><span class="p">=</span><span class="ni"> yy1</span>
+<span class="ni">     </span><span class="k">endif</span>
+<span class="ni">     </span><span class="k">if</span><span class="ni"> i </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">5</span>
+<span class="ni">       xxleft </span><span class="p">=</span><span class="ni"> xx3</span>
+<span class="ni">       yyleft </span><span class="p">=</span><span class="ni"> yy3</span>
+<span class="ni">       xxleftdown </span><span class="p">=</span><span class="ni"> xx2</span>
+<span class="ni">       yyleftdown </span><span class="p">=</span><span class="ni"> yy2</span>
+<span class="ni">       xxleftd </span><span class="p">=</span><span class="ni"> xx2</span>
+<span class="ni">       yyleftd </span><span class="p">=</span><span class="ni"> yy2</span>
+<span class="ni">     </span><span class="k">endif</span>
+
+<span class="c">; 中央悬臂</span>
+<span class="ni">     </span><span class="k">if</span><span class="ni"> i </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">3</span>
+<span class="ni">       xxrcen </span><span class="p">=</span><span class="ni"> xx1</span>
+<span class="ni">       yyrcen </span><span class="p">=</span><span class="ni"> yy1</span>
+<span class="ni">       xxlcen </span><span class="p">=</span><span class="ni"> xx2</span>
+<span class="ni">       yylcen </span><span class="p">=</span><span class="ni"> yy2</span>
+<span class="ni">     </span><span class="k">endif</span>
+
+<span class="ni">  </span><span class="k">endloop</span>
+
+<span class="ni">  za </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">20.0</span>
+<span class="ni">  xc1 </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">20.0</span>
+<span class="ni">  yc1 </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni">thick</span>
+<span class="ni">  zd </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">60.0</span>
+<span class="ni">  zd0</span><span class="m m-Double">7</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">0.8</span><span class="o">*</span><span class="ni">zd</span>
+<span class="ni">  xc2 </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">20.0</span>
+<span class="ni">  yc2 </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="ni">thick</span>
+<span class="k">  command</span>
+<span class="c">; 水平切割</span>
+<span class="nb">    block hide</span><span class="n"> range group </span><span class="s">'block=1'</span><span class="n"> </span>
+<span class="nb">    block hide</span><span class="n"> range group </span><span class="s">'block=5'</span><span class="n"> </span>
+<span class="nb">    block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set points </span><span class="ni">[xa1]</span><span class="n"> </span><span class="ni">[ya1]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">	                           </span><span class="ni">[xb1]</span><span class="n"> </span><span class="ni">[yb1]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">							   </span><span class="ni">[xc1]</span><span class="n"> </span><span class="ni">[yc1]</span><span class="n"> </span><span class="ni">[za]</span>
+<span class="nb">    block join</span><span class="n"> range group </span><span class="s">'block=3'</span>
+<span class="c">;   </span>
+
+<span class="c">; 右坝肩</span>
+<span class="nb">    block hide</span><span class="n"> range group </span><span class="s">'block=3'</span>
+<span class="nb">    block hide</span><span class="n"> range group </span><span class="s">'block=4'</span>
+<span class="nb">    block delete</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="ni">[zz1]</span><span class="n"> </span><span class="ni">[za]</span>
+<span class="nb">    block create</span><span class="n"> polyhedron face </span><span class="ni">[xe1]</span><span class="n"> </span><span class="ni">[ye1]</span><span class="n"> </span><span class="ni">[zz1]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            </span><span class="ni">[xa1]</span><span class="n"> </span><span class="ni">[ya1]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            </span><span class="ni">[xe1]</span><span class="n"> </span><span class="ni">[ye1]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            face </span><span class="ni">[xf1]</span><span class="n"> </span><span class="ni">[yf1]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            </span><span class="ni">[xb1]</span><span class="n"> </span><span class="ni">[yb1]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            </span><span class="ni">[xf1]</span><span class="n"> </span><span class="ni">[yf1]</span><span class="n"> </span><span class="ni">[zz1]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            face </span><span class="ni">[xb1]</span><span class="n"> </span><span class="ni">[yb1]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            </span><span class="ni">[xa1]</span><span class="n"> </span><span class="ni">[ya1]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            </span><span class="ni">[xe1]</span><span class="n"> </span><span class="ni">[ye1]</span><span class="n"> </span><span class="ni">[zz1]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            </span><span class="ni">[xf1]</span><span class="n"> </span><span class="ni">[yf1]</span><span class="n"> </span><span class="ni">[zz1]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            face </span><span class="ni">[xa1]</span><span class="n"> </span><span class="ni">[ya1]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            </span><span class="ni">[xb1]</span><span class="n"> </span><span class="ni">[yb1]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            </span><span class="ni">[xf1]</span><span class="n"> </span><span class="ni">[yf1]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            </span><span class="ni">[xe1]</span><span class="n"> </span><span class="ni">[ye1]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            face </span><span class="ni">[xe1]</span><span class="n"> </span><span class="ni">[ye1]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            </span><span class="ni">[xf1]</span><span class="n"> </span><span class="ni">[yf1]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            </span><span class="ni">[xf1]</span><span class="n"> </span><span class="ni">[yf1]</span><span class="n"> </span><span class="ni">[zz1]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            </span><span class="ni">[xe1]</span><span class="n"> </span><span class="ni">[ye1]</span><span class="n"> </span><span class="ni">[zz1]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            group </span><span class="s">'block=2'</span><span class="n">   </span>
+<span class="nb">    block join</span><span class="n"> range group </span><span class="s">'block=2'</span>
+<span class="nb">    block hide</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">;</span>
+
+<span class="nb">    block hide</span><span class="n"> range group </span><span class="s">'block=1'</span><span class="n">  not</span>
+<span class="nb">    block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set points </span><span class="ni">[xa1]</span><span class="n"> </span><span class="ni">[ya1]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">	                           </span><span class="ni">[xb1]</span><span class="n"> </span><span class="ni">[yb1]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">							   </span><span class="ni">[xd1]</span><span class="n"> </span><span class="ni">[yd1]</span><span class="n"> </span><span class="ni">[zd]</span>
+<span class="nb">    block delete</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="ni">[zz1]</span><span class="n"> </span><span class="ni">[zd0</span><span class="m m-Double">7</span><span class="ni">]</span>
+<span class="nb">    block hide</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">;</span>
+
+<span class="c">; 左坝肩</span>
+<span class="nb">    block hide</span><span class="n"> range group </span><span class="s">'block=4'</span><span class="n"> not</span>
+<span class="nb">    block delete</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="ni">[zz1]</span><span class="n"> </span><span class="ni">[za]</span>
+<span class="nb">    block create</span><span class="n"> polyhedron face </span><span class="ni">[xa2]</span><span class="n"> </span><span class="ni">[ya2]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            </span><span class="ni">[xe2]</span><span class="n"> </span><span class="ni">[ye2]</span><span class="n"> </span><span class="ni">[zz1]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            </span><span class="ni">[xe2]</span><span class="n"> </span><span class="ni">[ye2]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            face </span><span class="ni">[xb2]</span><span class="n"> </span><span class="ni">[yb2]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            </span><span class="ni">[xf2]</span><span class="n"> </span><span class="ni">[yf2]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            </span><span class="ni">[xf2]</span><span class="n"> </span><span class="ni">[yf2]</span><span class="n"> </span><span class="ni">[zz1]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            face </span><span class="ni">[xa2]</span><span class="n"> </span><span class="ni">[ya2]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            </span><span class="ni">[xb2]</span><span class="n"> </span><span class="ni">[yb2]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            </span><span class="ni">[xf2]</span><span class="n"> </span><span class="ni">[yf2]</span><span class="n"> </span><span class="ni">[zz1]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            </span><span class="ni">[xe2]</span><span class="n"> </span><span class="ni">[ye2]</span><span class="n"> </span><span class="ni">[zz1]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            face </span><span class="ni">[xb2]</span><span class="n"> </span><span class="ni">[yb2]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            </span><span class="ni">[xa2]</span><span class="n"> </span><span class="ni">[ya2]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            </span><span class="ni">[xe2]</span><span class="n"> </span><span class="ni">[ye2]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            </span><span class="ni">[xf2]</span><span class="n"> </span><span class="ni">[yf2]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            face </span><span class="ni">[xf2]</span><span class="n"> </span><span class="ni">[yf2]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            </span><span class="ni">[xe2]</span><span class="n"> </span><span class="ni">[ye2]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            </span><span class="ni">[xe2]</span><span class="n"> </span><span class="ni">[ye2]</span><span class="n"> </span><span class="ni">[zz1]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            </span><span class="ni">[xf2]</span><span class="n"> </span><span class="ni">[yf2]</span><span class="n"> </span><span class="ni">[zz1]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                            group </span><span class="s">'block=4'</span>
+<span class="nb">    block join</span><span class="n"> range  group </span><span class="s">'block=4'</span>
+<span class="nb">    block hide</span><span class="n"> </span><span class="sx">off</span><span class="c">;</span>
+<span class="n">    </span>
+<span class="nb">    block hide</span><span class="n"> range group </span><span class="s">'block=5'</span><span class="n">  not    </span>
+<span class="nb">    block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set points </span><span class="ni">[xa2]</span><span class="n"> </span><span class="ni">[ya2]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">	                           </span><span class="ni">[xb2]</span><span class="n"> </span><span class="ni">[yb2]</span><span class="n"> </span><span class="ni">[za]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">							   </span><span class="ni">[xd2]</span><span class="n"> </span><span class="ni">[yd2]</span><span class="n"> </span><span class="ni">[zd]</span>
+<span class="nb">    block delete</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="ni">[zz1]</span><span class="n"> </span><span class="ni">[zd0</span><span class="m m-Double">7</span><span class="ni">]</span>
+<span class="nb">    block hide</span><span class="n"> </span><span class="sx">off</span>
+<span class="k"> endcommand</span>
+<span class="ni">  xx4</span><span class="m m-Double">5</span><span class="ni"> </span><span class="p">=</span><span class="ni"> xa2</span>
+<span class="ni">  yy4</span><span class="m m-Double">5</span><span class="ni"> </span><span class="p">=</span><span class="ni"> ya2</span>
+<span class="ni">  zz4</span><span class="m m-Double">5</span><span class="ni"> </span><span class="p">=</span><span class="ni"> za</span>
+<span class="ni">  xx4</span><span class="m m-Double">5</span><span class="ni">d </span><span class="p">=</span><span class="ni"> xb2</span>
+<span class="ni">  yy4</span><span class="m m-Double">5</span><span class="ni">d </span><span class="p">=</span><span class="ni"> yb2</span>
+<span class="ni">  zz4</span><span class="m m-Double">5</span><span class="ni">d </span><span class="p">=</span><span class="ni"> za</span>
+
+<span class="ni">  izzright </span><span class="p">=</span><span class="ni"> </span><span class="k">block.gp.near</span><span class="p">(</span><span class="ni">xxright</span><span class="p">,</span><span class="ni">yyright</span><span class="p">,</span><span class="m m-Double">64.0</span><span class="p">)</span>
+<span class="ni">  izzleft </span><span class="p">=</span><span class="ni"> </span><span class="k">block.gp.near</span><span class="p">(</span><span class="ni">xxleft</span><span class="p">,</span><span class="ni">yyleft</span><span class="p">,</span><span class="m m-Double">64.0</span><span class="p">)</span>
+<span class="ni">  zzright </span><span class="p">=</span><span class="ni"> </span><span class="k">block.gp.pos.z</span><span class="p">(</span><span class="ni">izzright</span><span class="p">)</span>
+<span class="ni">  zzleft </span><span class="p">=</span><span class="ni"> </span><span class="k">block.gp.pos.z</span><span class="p">(</span><span class="ni">izzleft</span><span class="p">)</span>
+<span class="ni">  ii</span><span class="p">=</span><span class="k">io.out</span><span class="p">(</span><span class="s">' zzright '</span><span class="o">+</span><span class="ni">string</span><span class="p">(</span><span class="ni">zzright</span><span class="p">))</span>
+<span class="ni">  ii</span><span class="p">=</span><span class="k">io.out</span><span class="p">(</span><span class="s">' zzleft '</span><span class="o">+</span><span class="ni">string</span><span class="p">(</span><span class="ni">zzleft</span><span class="p">))</span>
+
+<span class="c">; 模型边界</span>
+<span class="ni">  xxrbou </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">150.0</span>
+<span class="ni">  xxlbou </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">150.0</span>
+<span class="ni">  yyubou </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">150.0</span>
+<span class="ni">  yydbou </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">180.0</span>
+<span class="ni">  zztopbou </span><span class="p">=</span><span class="ni"> </span><span class="m m-Double">80.0</span>
+<span class="ni">  zzbotbou </span><span class="p">=</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">100.0</span>
+
+<span class="nb">end</span>
+<span class="ni">[geomdam]</span>
+<span class="nb">block group</span><span class="n"> </span><span class="s">'dam'</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'dampanels'</span>
+<span class="c">;</span>
+<span class="c">; 在坝体块体中创建有限元网格</span>
+<span class="c">;</span>
+<span class="n">feblock generate </span><span class="m m-Double">20</span><span class="n"> </span><span class="m m-Double">20</span><span class="n"> </span><span class="m m-Double">20</span><span class="n">  range group </span><span class="s">'block=2'</span><span class="n"> </span>
+<span class="n">feblock generate </span><span class="m m-Double">20</span><span class="n"> </span><span class="m m-Double">20</span><span class="n"> </span><span class="m m-Double">20</span><span class="n">  range group </span><span class="s">'block=3'</span><span class="n"> </span>
+<span class="n">feblock generate </span><span class="m m-Double">20</span><span class="n"> </span><span class="m m-Double">20</span><span class="n"> </span><span class="m m-Double">20</span><span class="n">  range group </span><span class="s">'block=4'</span><span class="n"> </span>
+<span class="n">feblock generate </span><span class="m m-Double">20</span><span class="n"> </span><span class="m m-Double">20</span><span class="n"> </span><span class="m m-Double">13</span><span class="n">  range group </span><span class="s">'block=1'</span><span class="n"> </span>
+<span class="n">feblock generate </span><span class="m m-Double">20</span><span class="n"> </span><span class="m m-Double">20</span><span class="n"> </span><span class="m m-Double">13</span><span class="n">  range group </span><span class="s">'block=5'</span><span class="n"> </span>
+<span class="c">;</span>
+<span class="c">; --- MARKDAMFACES ---</span>
+<span class="c">; 标记坝面，包括有限元面和网格单元面</span>
+<span class="nb">fish define</span><span class="ni"> markdamfaces</span>
+<span class="c">; 坝基接触面</span>
+<span class="ni">  ii</span><span class="p">=</span><span class="k">io.out</span><span class="p">(</span><span class="s">' found. joint'</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> ib </span><span class="k">block.list</span>
+<span class="ni">    </span><span class="k">section</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> </span><span class="k">block.group</span><span class="p">(</span><span class="ni">ib</span><span class="p">,</span><span class="s">'block'</span><span class="p">)</span><span class="ni"> # </span><span class="s">"1"</span><span class="ni"> </span><span class="o">&amp;</span><span class="ni"> </span><span class="k">block.group</span><span class="p">(</span><span class="ni">ib</span><span class="p">,</span><span class="s">'block'</span><span class="p">)</span><span class="ni"> # </span><span class="s">"5"</span>
+<span class="ni">        </span><span class="k">if</span><span class="ni"> </span><span class="k">block.pos.z</span><span class="p">(</span><span class="ni">ib</span><span class="p">)</span><span class="ni"> </span><span class="o">&gt;</span><span class="ni"> za</span>
+<span class="ni">          </span><span class="k">exit section</span>
+<span class="ni">        </span><span class="k">endif</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="c">; 有限元面</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> ifef </span><span class="k">block.feb.facelist</span><span class="p">(</span><span class="ni">ib</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">      </span><span class="k">if</span><span class="ni"> fe</span><span class="k">block.face.normal.z</span><span class="p">(</span><span class="ni">ifef</span><span class="p">)</span><span class="ni"> </span><span class="o">&lt;</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">0.1</span>
+<span class="ni">        fe</span><span class="k">block.face.group</span><span class="p">(</span><span class="ni">ifef</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'face_'</span><span class="o">+</span><span class="k">block.group</span><span class="p">(</span><span class="ni">ib</span><span class="p">,</span><span class="s">'block'</span><span class="p">)</span>
+<span class="ni">        fe</span><span class="k">block.face.region</span><span class="p">(</span><span class="ni">ifef</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> int</span><span class="p">(</span><span class="k">block.group</span><span class="p">(</span><span class="ni">ib</span><span class="p">,</span><span class="s">'block'</span><span class="p">))</span>
+<span class="ni">      </span><span class="k">endif</span>
+<span class="ni">    </span><span class="k">endloop</span>
+<span class="c">; 网格单元面</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> ifa </span><span class="k">block.facelist</span><span class="p">(</span><span class="ni">ib</span><span class="p">,</span><span class="sx">false</span><span class="p">)</span><span class="ni"> </span>
+<span class="ni">      </span><span class="k">if</span><span class="ni"> </span><span class="k">block.face.normal.z</span><span class="p">(</span><span class="ni">ifa</span><span class="p">)</span><span class="ni"> </span><span class="o">&lt;</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">0.1</span>
+<span class="ni">        </span><span class="k">block.face.group</span><span class="p">(</span><span class="ni">ifa</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'face_'</span><span class="o">+</span><span class="k">block.group</span><span class="p">(</span><span class="ni">ib</span><span class="p">,</span><span class="s">'block'</span><span class="p">)</span>
+<span class="ni">      </span><span class="k">endif</span>
+<span class="ni">    </span><span class="k">endloop</span>
+<span class="ni">    </span><span class="k">endsection</span>
+<span class="ni">  </span><span class="k">endloop</span>
+<span class="c">; 上游面</span>
+<span class="ni">  ii</span><span class="p">=</span><span class="k">io.out</span><span class="p">(</span><span class="s">' upstream face'</span><span class="p">)</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> ib </span><span class="k">block.list</span>
+<span class="ni">    </span><span class="k">section</span>
+<span class="c">; 有限元面</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> ifef </span><span class="k">block.feb.facelist</span><span class="p">(</span><span class="ni">ib</span><span class="p">)</span>
+<span class="ni">      vnx </span><span class="p">=</span><span class="ni"> fe</span><span class="k">block.face.normal.x</span><span class="p">(</span><span class="ni">ifef</span><span class="p">)</span>
+<span class="ni">      vny </span><span class="p">=</span><span class="ni"> fe</span><span class="k">block.face.normal.y</span><span class="p">(</span><span class="ni">ifef</span><span class="p">)</span>
+<span class="ni">      vnz </span><span class="p">=</span><span class="ni"> fe</span><span class="k">block.face.normal.z</span><span class="p">(</span><span class="ni">ifef</span><span class="p">)</span>
+<span class="ni">      </span><span class="k">if</span><span class="ni"> </span><span class="k">math.abs</span><span class="p">(</span><span class="ni">vnz</span><span class="p">)</span><span class="ni"> </span><span class="o">&lt;</span><span class="ni"> </span><span class="m m-Double">0.1</span>
+<span class="ni">        angxy </span><span class="p">=</span><span class="ni"> </span><span class="k">math.atan2</span><span class="p">(</span><span class="ni">vnx</span><span class="p">,</span><span class="ni">vny</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> </span><span class="k">math.degrad</span>
+<span class="ni">        </span><span class="k">if</span><span class="ni"> </span><span class="k">math.abs</span><span class="p">(</span><span class="ni">angxy</span><span class="p">)</span><span class="ni"> </span><span class="o">&lt;</span><span class="ni"> </span><span class="m m-Double">41.0</span>
+<span class="ni">            fe</span><span class="k">block.face.group</span><span class="p">(</span><span class="ni">ifef</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">"upstreamface"</span>
+<span class="ni">        </span><span class="k">endif</span>
+<span class="ni">      </span><span class="k">endif</span>
+<span class="ni">    </span><span class="k">endloop</span>
+<span class="c">; 网格单元面</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> ifa </span><span class="k">block.facelist</span><span class="p">(</span><span class="ni">ib</span><span class="p">)</span>
+<span class="ni">      vnx </span><span class="p">=</span><span class="ni"> </span><span class="k">block.face.normal.x</span><span class="p">(</span><span class="ni">ifa</span><span class="p">)</span>
+<span class="ni">      vny </span><span class="p">=</span><span class="ni"> </span><span class="k">block.face.normal.y</span><span class="p">(</span><span class="ni">ifa</span><span class="p">)</span>
+<span class="ni">      vnz </span><span class="p">=</span><span class="ni"> </span><span class="k">block.face.normal.z</span><span class="p">(</span><span class="ni">ifa</span><span class="p">)</span>
+<span class="ni">      </span><span class="k">if</span><span class="ni"> </span><span class="k">math.abs</span><span class="p">(</span><span class="ni">vnz</span><span class="p">)</span><span class="ni"> </span><span class="o">&lt;</span><span class="ni"> </span><span class="m m-Double">0.1</span>
+<span class="ni">        angxy </span><span class="p">=</span><span class="ni"> </span><span class="k">math.atan2</span><span class="p">(</span><span class="ni">vnx</span><span class="p">,</span><span class="ni">vny</span><span class="p">)</span><span class="ni"> </span><span class="o">/</span><span class="ni"> </span><span class="k">math.degrad</span>
+<span class="ni">        </span><span class="k">if</span><span class="ni"> </span><span class="k">math.abs</span><span class="p">(</span><span class="ni">angxy</span><span class="p">)</span><span class="ni"> </span><span class="o">&lt;</span><span class="ni"> </span><span class="m m-Double">41.0</span>
+<span class="ni">            </span><span class="k">block.face.group</span><span class="p">(</span><span class="ni">ifa</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">"upstreamface"</span>
+<span class="ni">        </span><span class="k">endif</span>
+<span class="ni">      </span><span class="k">endif</span>
+<span class="ni">    </span><span class="k">endloop</span>
+<span class="ni">    </span><span class="k">endsection</span>
+<span class="ni">  </span><span class="k">endloop</span>
+<span class="nb">end</span>
+<span class="ni">[markdamfaces]</span>
+
+<span class="c">;</span>
+<span class="c">; --- 创建岩体块体 ---</span>
+<span class="c">; 坝体下方</span>
+<span class="nb">block generate</span><span class="n"> from</span><span class="o">-</span><span class="n">topo direction </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> plane origin </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[zzbotbou]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  normal </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> group </span><span class="s">'downstream'</span><span class="n"> range group </span><span class="s">'face_1'</span>
+<span class="nb">block generate</span><span class="n"> from</span><span class="o">-</span><span class="n">topo direction </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> plane origin </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[zzbotbou]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  normal </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> group </span><span class="s">'downstream'</span><span class="n"> range group </span><span class="s">'face_2'</span>
+<span class="nb">block generate</span><span class="n"> from</span><span class="o">-</span><span class="n">topo direction </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> plane origin </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[zzbotbou]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  normal </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> group </span><span class="s">'downstream'</span><span class="n"> range group </span><span class="s">'face_3'</span>
+<span class="nb">block generate</span><span class="n"> from</span><span class="o">-</span><span class="n">topo direction </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> plane origin </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[zzbotbou]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  normal </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> group </span><span class="s">'downstream'</span><span class="n"> range group </span><span class="s">'face_4'</span>
+<span class="nb">block generate</span><span class="n"> from</span><span class="o">-</span><span class="n">topo direction </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> plane origin </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[zzbotbou]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  normal </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> group </span><span class="s">'downstream'</span><span class="n"> range group </span><span class="s">'face_5'</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'damextrude1'</span>
+
+<span class="c">;</span>
+<span class="nb">block hide</span><span class="n"> range group </span><span class="s">"dam"</span>
+<span class="nb">block generate</span><span class="n"> from</span><span class="o">-</span><span class="n">topo direction </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span><span class="n">  plane origin </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[yyubou]</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> normal </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> group </span><span class="s">'upstream'</span><span class="n">   range cyl end</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="ni">[xcent]</span><span class="n"> </span><span class="ni">[ycent]</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">100</span><span class="n"> end</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="ni">[xcent]</span><span class="n"> </span><span class="ni">[ycent]</span><span class="n"> </span><span class="m m-Double">100</span><span class="n"> rad </span><span class="ni">[rad</span><span class="o">-</span><span class="m m-Double">0.1</span><span class="o">*</span><span class="ni">thick]</span><span class="n"> </span><span class="ni">[rad</span><span class="o">-</span><span class="m m-Double">1.00</span><span class="o">*</span><span class="ni">thick]</span>
+<span class="nb">block generate</span><span class="n"> from</span><span class="o">-</span><span class="n">topo direction </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> plane origin </span><span class="m m-Double">0</span><span class="n"> </span><span class="ni">[yydbou]</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> normal </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">1</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> group </span><span class="s">'downstream'</span><span class="n"> range cyl end</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="ni">[xcent]</span><span class="n"> </span><span class="ni">[ycent]</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">100</span><span class="n"> end</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="ni">[xcent]</span><span class="n"> </span><span class="ni">[ycent]</span><span class="n"> </span><span class="m m-Double">100</span><span class="n"> rad </span><span class="ni">[rad</span><span class="o">-</span><span class="m m-Double">1.25</span><span class="o">*</span><span class="ni">thick]</span><span class="n"> </span><span class="ni">[rad</span><span class="o">-</span><span class="m m-Double">1.00</span><span class="o">*</span><span class="ni">thick]</span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+
+<span class="nb">model save</span><span class="n"> </span><span class="s">'damextrude2'</span>
+<span class="c">;</span>
+<span class="c">; 下游坝肩</span>
+<span class="nb">block create</span><span class="n"> prism  face</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="ni">[xxright]</span><span class="n"> </span><span class="ni">[yyright]</span><span class="n"> </span><span class="ni">[zzright]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                           </span><span class="ni">[xxrightd]</span><span class="n"> </span><span class="ni">[yyrightd]</span><span class="n"> </span><span class="ni">[zd]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">						   </span><span class="ni">[xxrightd]</span><span class="n"> </span><span class="ni">[yyrightd]</span><span class="n"> </span><span class="ni">[zztopbou]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">						   </span><span class="ni">[xxright]</span><span class="n"> </span><span class="ni">[yyright]</span><span class="n"> </span><span class="ni">[zztopbou]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                    face</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="ni">[xxright]</span><span class="n"> </span><span class="ni">[yydbou]</span><span class="n"> </span><span class="ni">[zzright]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">					       </span><span class="ni">[xxrightd]</span><span class="n"> </span><span class="ni">[yydbou]</span><span class="n"> </span><span class="ni">[zd]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">						   </span><span class="ni">[xxrightd]</span><span class="n"> </span><span class="ni">[yydbou]</span><span class="n"> </span><span class="ni">[zztopbou]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">						   </span><span class="ni">[xxright]</span><span class="n"> </span><span class="ni">[yydbou]</span><span class="n"> </span><span class="ni">[zztopbou]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                    group </span><span class="s">'downstream'</span>
+<span class="nb">block create</span><span class="n"> prism  face</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="ni">[xxleft]</span><span class="n"> </span><span class="ni">[yyleft]</span><span class="n"> </span><span class="ni">[zzleft]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                           </span><span class="ni">[xxleftd]</span><span class="n"> </span><span class="ni">[yyleftd]</span><span class="n"> </span><span class="ni">[zd]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">						   </span><span class="ni">[xxleftd]</span><span class="n"> </span><span class="ni">[yyleftd]</span><span class="n"> </span><span class="ni">[zztopbou]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">						   </span><span class="ni">[xxleft]</span><span class="n"> </span><span class="ni">[yyleft]</span><span class="n"> </span><span class="ni">[zztopbou]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                    face</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="ni">[xxleft]</span><span class="n"> </span><span class="ni">[yydbou]</span><span class="n"> </span><span class="ni">[zzleft]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">					       </span><span class="ni">[xxleftd]</span><span class="n"> </span><span class="ni">[yydbou]</span><span class="n"> </span><span class="ni">[zd]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">						   </span><span class="ni">[xxleftd]</span><span class="n"> </span><span class="ni">[yydbou]</span><span class="n"> </span><span class="ni">[zztopbou]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">						   </span><span class="ni">[xxleft]</span><span class="n"> </span><span class="ni">[yydbou]</span><span class="n"> </span><span class="ni">[zztopbou]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                    group </span><span class="s">'downstream'</span>
+<span class="c">;</span>
+<span class="c">; 下游坝肩，位于坝基接触面下方</span>
+<span class="nb">block create</span><span class="n"> prism  face</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="ni">[xxright]</span><span class="n"> </span><span class="ni">[yyright]</span><span class="n"> </span><span class="ni">[zzright]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                           </span><span class="ni">[xxrightd]</span><span class="n"> </span><span class="ni">[yyrightd]</span><span class="n"> </span><span class="ni">[zd]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">						   </span><span class="ni">[xxrightd]</span><span class="n"> </span><span class="ni">[yyrightd]</span><span class="n"> </span><span class="ni">[zzbotbou]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">						   </span><span class="ni">[xxright]</span><span class="n"> </span><span class="ni">[yyright]</span><span class="n"> </span><span class="ni">[zzbotbou]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                    face</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="ni">[xxright]</span><span class="n"> </span><span class="ni">[yydbou]</span><span class="n"> </span><span class="ni">[zzright]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">					       </span><span class="ni">[xxrightd]</span><span class="n"> </span><span class="ni">[yydbou]</span><span class="n"> </span><span class="ni">[zd]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">						   </span><span class="ni">[xxrightd]</span><span class="n"> </span><span class="ni">[yydbou]</span><span class="n"> </span><span class="ni">[zzbotbou]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">						   </span><span class="ni">[xxright]</span><span class="n"> </span><span class="ni">[yydbou]</span><span class="n"> </span><span class="ni">[zzbotbou]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                    group </span><span class="s">'downstream'</span>
+<span class="nb">block create</span><span class="n"> prism  face</span><span class="o">-</span><span class="m m-Double">1</span><span class="n"> </span><span class="ni">[xxleft]</span><span class="n"> </span><span class="ni">[yyleft]</span><span class="n"> </span><span class="ni">[zzleft]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                           </span><span class="ni">[xxleftd]</span><span class="n"> </span><span class="ni">[yyleftd]</span><span class="n"> </span><span class="ni">[zd]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">						   </span><span class="ni">[xxleftd]</span><span class="n"> </span><span class="ni">[yyleftd]</span><span class="n"> </span><span class="ni">[zzbotbou]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">						   </span><span class="ni">[xxleft]</span><span class="n"> </span><span class="ni">[yyleft]</span><span class="n"> </span><span class="ni">[zzbotbou]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                    face</span><span class="o">-</span><span class="m m-Double">2</span><span class="n"> </span><span class="ni">[xxleft]</span><span class="n"> </span><span class="ni">[yydbou]</span><span class="n"> </span><span class="ni">[zzleft]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">					       </span><span class="ni">[xxleftd]</span><span class="n"> </span><span class="ni">[yydbou]</span><span class="n"> </span><span class="ni">[zd]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">						   </span><span class="ni">[xxleftd]</span><span class="n"> </span><span class="ni">[yydbou]</span><span class="n"> </span><span class="ni">[zzbotbou]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">						   </span><span class="ni">[xxleft]</span><span class="n"> </span><span class="ni">[yydbou]</span><span class="n"> </span><span class="ni">[zzbotbou]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">                    group </span><span class="s">'downstream'</span>
+<span class="n">                    </span>
+<span class="c">;</span>
+<span class="c">; 左右边界块体</span>
+<span class="c">; 上游</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="ni">[xxrbou]</span><span class="n"> </span><span class="ni">[xxright]</span><span class="n"> </span><span class="ni">[yyright]</span><span class="n"> </span><span class="ni">[yyubou]</span><span class="n"> </span><span class="ni">[zzbotbou]</span><span class="n"> </span><span class="ni">[zztopbou]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  group </span><span class="s">'upstream'</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="ni">[xxleft]</span><span class="n"> </span><span class="ni">[xxlbou]</span><span class="n"> </span><span class="ni">[yyright]</span><span class="n"> </span><span class="ni">[yyubou]</span><span class="n"> </span><span class="ni">[zzbotbou]</span><span class="n"> </span><span class="ni">[zztopbou]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  group </span><span class="s">'upstream'</span>
+<span class="c">; 下游</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="ni">[xxrbou]</span><span class="n"> </span><span class="ni">[xxright]</span><span class="n"> </span><span class="ni">[yydbou]</span><span class="n"> </span><span class="ni">[yyright]</span><span class="n"> </span><span class="ni">[zzbotbou]</span><span class="n"> </span><span class="ni">[zztopbou]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  group </span><span class="s">'downstream'</span>
+<span class="nb">block create</span><span class="n"> brick </span><span class="ni">[xxleft]</span><span class="n"> </span><span class="ni">[xxlbou]</span><span class="n"> </span><span class="ni">[yydbou]</span><span class="n"> </span><span class="ni">[yyright]</span><span class="n"> </span><span class="ni">[zzbotbou]</span><span class="n"> </span><span class="ni">[zztopbou]</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  group </span><span class="s">'downstream'</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'damabut'</span>
+<span class="c">;</span>
+<span class="c">; 连接岩体块体</span>
+<span class="nb">block join</span><span class="n"> range group </span><span class="s">'upstream'</span>
+<span class="nb">block join</span><span class="n"> range group </span><span class="s">'downstream'</span>
+<span class="c">;</span>
+<span class="c">; 在左坝肩中创建楔体</span>
+<span class="nb">block hide</span><span class="n"> range group </span><span class="s">'downstream'</span><span class="n"> not</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">90</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="o">-</span><span class="m m-Double">80</span><span class="n"> origin </span><span class="ni">[xxleft]</span><span class="n"> </span><span class="ni">[yyleft]</span><span class="n"> </span><span class="m m-Double">80</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">90</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="o">-</span><span class="m m-Double">65</span><span class="n"> origin </span><span class="m m-Double">70</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">60</span><span class="n"> </span><span class="m m-Double">80</span>
+<span class="nb">block cut</span><span class="n"> joint</span><span class="o">-</span><span class="n">set dip </span><span class="m m-Double">0</span><span class="n"> origin </span><span class="ni">[xx4</span><span class="m m-Double">5</span><span class="ni">]</span><span class="n"> </span><span class="ni">[yy4</span><span class="m m-Double">5</span><span class="ni">]</span><span class="n"> </span><span class="ni">[zz4</span><span class="m m-Double">5</span><span class="ni">]</span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">;</span>
+<span class="nb">block join</span><span class="n"> range group </span><span class="s">'block_2'</span>
+<span class="nb">block join</span><span class="n"> range group </span><span class="s">'block_4'</span>
+<span class="nb">block join</span><span class="n"> range group </span><span class="s">'block_5'</span>
+<span class="c">;</span>
+<span class="c">; 为岩体块体划分网格</span>
+<span class="nb">block zone generate</span><span class="n"> edgelength </span><span class="m m-Double">50</span>
+<span class="c">;</span>
+<span class="nb">block contact group</span><span class="n"> </span><span class="s">"dam"</span><span class="n">  range group</span><span class="o">-</span><span class="n">intersection </span><span class="s">'dam'</span><span class="n"> </span><span class="s">'dam'</span>
+<span class="nb">block contact group</span><span class="n"> </span><span class="s">"foundation"</span><span class="n"> range group</span><span class="o">-</span><span class="n">intersection </span><span class="s">'dam'</span><span class="n"> </span><span class="s">'downstream'</span>
+<span class="nb">block contact group</span><span class="n"> </span><span class="s">"fault_1"</span><span class="n"> range plane dip </span><span class="m m-Double">90</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="o">-</span><span class="m m-Double">80</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  origin </span><span class="ni">[xxleft]</span><span class="n"> </span><span class="ni">[yyleft]</span><span class="n"> </span><span class="m m-Double">80</span><span class="n"> distance </span><span class="m m-Double">0.001</span>
+<span class="nb">block contact group</span><span class="n"> </span><span class="s">"fault_2"</span><span class="n"> range plane dip </span><span class="m m-Double">90</span><span class="n"> dip</span><span class="o">-</span><span class="n">direction </span><span class="o">-</span><span class="m m-Double">65</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  origin </span><span class="m m-Double">70</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">60</span><span class="n"> </span><span class="m m-Double">80</span><span class="n"> distance </span><span class="m m-Double">0.001</span>
+<span class="nb">block contact group</span><span class="n"> </span><span class="s">"fault_3"</span><span class="n"> range plane dip </span><span class="m m-Double">0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  origin </span><span class="ni">[xx4</span><span class="m m-Double">5</span><span class="ni">]</span><span class="n"> </span><span class="ni">[yy4</span><span class="m m-Double">5</span><span class="ni">]</span><span class="n"> </span><span class="ni">[zz4</span><span class="m m-Double">5</span><span class="ni">]</span><span class="n">  distance </span><span class="m m-Double">0.001</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'damfebz'</span>
+
+<span class="c">;</span>
+</pre></div>
+</div>
+<p class="rubric" id="damloading-dat"><strong>dam-loading.dat</strong></p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="n">model rest </span><span class="s">'damfebz'</span>
+<span class="c">;</span>
+<span class="c">; --- 指定材料和参数 ---</span>
+<span class="c">;</span>
+<span class="nb">block zone cmodel</span><span class="n"> assign elastic</span>
+<span class="c">;</span>
+<span class="c">; 岩石</span>
+<span class="c">; E=20000 MPa, v=0.2, K=11111, G=8333</span>
+<span class="nb">block zone property</span><span class="n"> density </span><span class="m m-Double">0.0027</span><span class="n"> bulk </span><span class="m m-Double">11111</span><span class="n"> shear </span><span class="m m-Double">8333</span>
+<span class="c">;</span>
+<span class="c">; 混凝土</span>
+<span class="c">; 原位应力阶段采用 E/100</span>
+<span class="c">; E=200 MPa, v=0.2, K=111.11, G=83.33</span>
+<span class="nb">block zone property</span><span class="n"> density </span><span class="m m-Double">0.0024</span><span class="n"> bulk </span><span class="m m-Double">111.11</span><span class="n"> shear </span><span class="m m-Double">83.33</span><span class="n">  range group </span><span class="s">'dam'</span>
+<span class="c">;</span>
+<span class="c">; 岩体节理</span>
+<span class="nb">block contact jmodel</span><span class="n"> assign mohr</span>
+<span class="c">;</span>
+<span class="nb">block contact property</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">10000</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">5000</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  friction </span><span class="m m-Double">38</span><span class="n"> range group </span><span class="s">'Default=None'</span>
+<span class="c">;</span>
+<span class="c">; 坝体接缝，目前采用弹性模型</span>
+<span class="nb">block contact property</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">10000</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">5000</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  cohesion </span><span class="m m-Double">1e20</span><span class="n"> tension </span><span class="m m-Double">1e20</span><span class="n"> range group </span><span class="s">'dam'</span>
+<span class="c">;</span>
+<span class="c">; 坝基接触面，目前采用弹性模型</span>
+<span class="nb">block contact property</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">10000</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">5000</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  cohesion </span><span class="m m-Double">1e20</span><span class="n"> tension </span><span class="m m-Double">1e20</span><span class="n"> range group </span><span class="s">'foundation'</span>
+<span class="c">;</span>
+<span class="c">; --- 阶段 1：原位应力 ---</span>
+<span class="c">; 坝体块体较软，采用弹性模型</span>
+<span class="c">;</span>
+<span class="c">; 重力</span>
+<span class="nb">model gravity</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">10</span>
+<span class="c">;</span>
+<span class="nb">block insitu</span><span class="n"> stress </span><span class="o">-</span><span class="m m-Double">1.0e-4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1.0e-4</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">1.0e-4</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="c">;</span>
+<span class="c">; 隐藏坝体</span>
+<span class="nb">block hide</span><span class="n"> range group </span><span class="s">'dam'</span>
+<span class="c">;</span>
+<span class="c">; 地形应力</span>
+<span class="nb">block insitu</span><span class="n"> topograph ratio</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0.3</span><span class="n"> ratio</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0.3</span>
+<span class="c">;</span>
+<span class="c">; 显示坝体</span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'damfebs0'</span>
+<span class="c">;</span>
+<span class="nb">model large-strain</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">; 移除坝体应力</span>
+<span class="nb">block zone initialize</span><span class="n"> stress </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'dam'</span>
+<span class="nb">block contact reset</span><span class="n"> stress range group </span><span class="s">'dam'</span>
+<span class="nb">block contact reset</span><span class="n"> stress range group </span><span class="s">'foundation'</span>
+<span class="c">;</span>
+<span class="c">; 移除坝体重量</span>
+<span class="n">feblock gravity delete</span>
+<span class="c">;</span>
+<span class="c">; 边界</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0.</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="o">-</span><span class="m m-Double">180</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0.</span><span class="n"> range position</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">150</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0.</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="o">-</span><span class="m m-Double">150</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0.</span><span class="n"> range position</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">150</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.</span><span class="n"> range position</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">100</span>
+<span class="c">;</span>
+<span class="c">; 历程</span>
+<span class="nb">model history</span><span class="n"> mechanical unbalanced</span><span class="o">-</span><span class="n">maximum</span>
+<span class="nb">block history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">x position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">80</span>
+<span class="nb">block history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">y position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">80</span>
+<span class="nb">block history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">z position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">80</span>
+<span class="nb">block hide</span><span class="n"> range group </span><span class="s">'dam'</span>
+<span class="nb">block history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">x position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">y position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">z position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+<span class="c">;</span>
+<span class="nb">model dynamic</span><span class="n"> active </span><span class="sx">off</span>
+<span class="nb">block mechanical</span><span class="n"> damping local</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">15000</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'damfebs1'</span>
+<span class="c">;</span>
+
+<span class="c">; --- 阶段 2：坝体自重 ---</span>
+<span class="c">; 采用真实坝体参数和弹性接缝</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'damfebs1'</span>
+<span class="c">;</span>
+<span class="nb">block gridpoint initialize</span><span class="n"> displacement </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block gridpoint initialize</span><span class="n"> velocity </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block contact reset</span><span class="n"> displacement</span>
+<span class="c">;</span>
+<span class="c">; 移除坝体应力</span>
+<span class="nb">block zone initialize</span><span class="n"> stress </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'dam'</span>
+<span class="nb">block contact reset</span><span class="n"> stress range group </span><span class="s">'dam'</span>
+<span class="nb">block contact reset</span><span class="n"> stress range group </span><span class="s">'foundation'</span>
+<span class="c">;</span>
+<span class="c">; 混凝土参数，采用真实 E</span>
+<span class="c">; E=20000 MPa, v=0.2, K=11111, G=8333</span>
+<span class="nb">block zone property</span><span class="n"> bulk </span><span class="m m-Double">11111</span><span class="n"> shear </span><span class="m m-Double">8333</span><span class="n"> range group </span><span class="s">'dam'</span>
+<span class="c">;</span>
+<span class="c">; 历程</span>
+<span class="nb">history delete</span>
+<span class="nb">model history</span><span class="n"> mechanical unbalanced</span><span class="o">-</span><span class="n">maximum</span>
+<span class="nb">block history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">x position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">80</span>
+<span class="nb">block history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">y position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">80</span>
+<span class="nb">block history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">z position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">80</span>
+<span class="nb">block hide</span><span class="n"> range group </span><span class="s">'dam'</span>
+<span class="nb">block history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">x position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">y position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">z position </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span>
+<span class="nb">block hide</span><span class="n"> </span><span class="sx">off</span>
+<span class="nb">block history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">x position </span><span class="m m-Double">70</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">40</span><span class="n"> </span><span class="m m-Double">66</span>
+<span class="nb">block history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">y position </span><span class="m m-Double">70</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">40</span><span class="n"> </span><span class="m m-Double">66</span>
+<span class="nb">block history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">z position </span><span class="m m-Double">70</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">40</span><span class="n"> </span><span class="m m-Double">66</span>
+<span class="nb">block history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">x position </span><span class="m m-Double">57</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">51</span><span class="n"> </span><span class="m m-Double">40</span>
+<span class="nb">block history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">y position </span><span class="m m-Double">57</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">51</span><span class="n"> </span><span class="m m-Double">40</span>
+<span class="nb">block history</span><span class="n"> displacement</span><span class="o">-</span><span class="n">z position </span><span class="m m-Double">57</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">51</span><span class="n"> </span><span class="m m-Double">40</span>
+<span class="c">;</span>
+<span class="c">; 坝体自重</span>
+<span class="n">feb grav</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">5000</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'damfebs2'</span>
+<span class="c">;</span>
+<span class="c">; --- 阶段 3：水荷载 ---</span>
+<span class="c">; 采用弹性接缝</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'damfebs2'</span>
+<span class="c">;</span>
+<span class="c">; 边界，固定底部</span>
+<span class="nb">block gridpoint apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">x </span><span class="m m-Double">0</span><span class="n"> velocity</span><span class="o">-</span><span class="n">y </span><span class="m m-Double">0</span><span class="n"> velocity</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  range position</span><span class="o">-</span><span class="n">z </span><span class="o">-</span><span class="m m-Double">100</span>
+<span class="c">;</span>
+<span class="c">; 水荷载</span>
+<span class="nb">block face apply</span><span class="n"> stress </span><span class="o">-</span><span class="m m-Double">0.8</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.8</span><span class="n"> </span><span class="o">-</span><span class="m m-Double">0.8</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  gradient</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0.01</span><span class="n"> </span><span class="m m-Double">0.01</span><span class="n"> </span><span class="m m-Double">0.01</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'upstreamface'</span>
+<span class="c">;</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">5000</span>
+<span class="c">;</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'damfebs3'</span>
+<span class="c">; --- 阶段 4：水荷载 ---</span>
+<span class="c">; 坝体接缝和坝基接触面采用非线性模型</span>
+<span class="c">;</span>
+<span class="nb">block contact property</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">10000</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">5000</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  cohesion </span><span class="m m-Double">0</span><span class="n"> tension </span><span class="m m-Double">0</span><span class="n"> friction </span><span class="m m-Double">45</span><span class="n"> range group </span><span class="s">'dam'</span>
+<span class="nb">block contact property</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">10000</span><span class="n"> stiffness</span><span class="o">-</span><span class="n">shear </span><span class="m m-Double">5000</span><span class="n"> </span><span class="sx">...</span>
+<span class="n">  cohesion </span><span class="m m-Double">3</span><span class="n"> tension </span><span class="m m-Double">2</span><span class="n"> friction </span><span class="m m-Double">40</span><span class="n"> range group </span><span class="s">'foundation'</span>
+<span class="c">;</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">5000</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'damfebs4'</span>
+<span class="c">;</span>
+<span class="c">; --- 阶段 5：岩体节理中的孔隙压力 ---</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'damfebs4'</span>
+<span class="c">;</span>
+<span class="nb">fish define</span><span class="ni"> ppjoint</span>
+<span class="ni">  </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> ic </span><span class="k">block.contact.list</span>
+<span class="ni">  </span><span class="c">; 跳过坝体接缝和坝基接触面</span>
+<span class="ni">    b1 </span><span class="p">=</span><span class="ni"> </span><span class="k">block.contact.b1</span><span class="p">(</span><span class="ni">ic</span><span class="p">)</span>
+<span class="ni">    b2 </span><span class="p">=</span><span class="ni"> </span><span class="k">block.contact.b2</span><span class="p">(</span><span class="ni">ic</span><span class="p">)</span>
+<span class="ni">    </span><span class="k">if</span><span class="ni"> </span><span class="k">block.group</span><span class="p">(</span><span class="ni">b1</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'dam'</span><span class="o">|</span><span class="ni"> </span><span class="k">block.group</span><span class="p">(</span><span class="ni">b2</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> </span><span class="s">'dam'</span>
+<span class="ni">      </span><span class="k">continue</span>
+<span class="ni">    </span><span class="k">endif</span>
+<span class="ni">    </span><span class="k">loop</span><span class="ni"> </span><span class="k">foreach</span><span class="ni"> icx </span><span class="k">block.contact.subcontactlist</span><span class="p">(</span><span class="ni">ic</span><span class="p">)</span>
+<span class="ni">      xx </span><span class="p">=</span><span class="ni"> </span><span class="k">block.subcontact.pos.x</span><span class="p">(</span><span class="ni">icx</span><span class="p">)</span>
+<span class="ni">      yy </span><span class="p">=</span><span class="ni"> </span><span class="k">block.subcontact.pos.y</span><span class="p">(</span><span class="ni">icx</span><span class="p">)</span>
+<span class="ni">      zz </span><span class="p">=</span><span class="ni"> </span><span class="k">block.subcontact.pos.z</span><span class="p">(</span><span class="ni">icx</span><span class="p">)</span>
+<span class="ni">      ar </span><span class="p">=</span><span class="ni"> </span><span class="k">block.subcontact.area</span><span class="p">(</span><span class="ni">icx</span><span class="p">)</span>
+<span class="ni">      iver </span><span class="p">=</span><span class="ni"> </span><span class="k">block.subcontact.gp</span><span class="p">(</span><span class="ni">icx</span><span class="p">)</span>
+<span class="ni">      ppold </span><span class="p">=</span><span class="ni"> </span><span class="k">block.subcontact.pp</span><span class="p">(</span><span class="ni">icx</span><span class="p">)</span>
+<span class="ni">    </span><span class="c">;仅在坝体附近的节理中施加孔隙压力</span>
+<span class="ni">      </span><span class="k">if</span><span class="ni"> xx </span><span class="o">&lt;</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">82.1</span><span class="ni"> </span><span class="o">|</span><span class="ni"> xx </span><span class="o">&gt;</span><span class="ni"> </span><span class="m m-Double">82.1</span>
+<span class="ni">        </span><span class="k">continue</span>
+<span class="ni">      </span><span class="k">endif</span>
+<span class="ni">      </span><span class="k">if</span><span class="ni"> yy </span><span class="o">&lt;</span><span class="ni"> </span><span class="o">-</span><span class="m m-Double">60</span><span class="ni"> </span><span class="o">|</span><span class="ni">yy </span><span class="o">&gt;</span><span class="ni"> </span><span class="m m-Double">0.1</span><span class="ni"> </span>
+<span class="ni">        </span><span class="k">continue</span>
+<span class="ni">      </span><span class="k">endif</span>
+<span class="ni">      ppnew </span><span class="p">=</span><span class="ni"> </span><span class="p">(</span><span class="m m-Double">80</span><span class="o">-</span><span class="ni">zz</span><span class="p">)</span><span class="o">*</span><span class="m m-Double">0.01</span>
+<span class="ni">      fpnew </span><span class="p">=</span><span class="ni"> </span><span class="k">math.max</span><span class="p">(</span><span class="ni">ppnew</span><span class="o">*</span><span class="ni">ar</span><span class="p">,</span><span class="m m-Double">0.0</span><span class="p">)</span>
+<span class="ni">      </span><span class="c">; 设置接触中的孔隙压力作用力</span>
+<span class="ni">      </span><span class="k">block.subcontact.force.pp</span><span class="p">(</span><span class="ni">icx</span><span class="p">)</span><span class="ni"> </span><span class="p">=</span><span class="ni"> fpnew</span>
+<span class="ni">    </span><span class="k">endloop</span>
+<span class="ni">  </span><span class="k">endloop</span>
+<span class="nb">end</span>
+<span class="ni">[ppjoint]</span>
+<span class="c">;</span>
+<span class="c">;</span>
+<span class="nb">block update</span><span class="n"> subcontact </span><span class="m m-Double">0</span>
+<span class="c">;</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">5000</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">5000</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'damfebs5'</span>
+<span class="c">;</span>
+<span class="c">; --- 阶段 6：降低岩体节理摩擦角 ---</span>
+<span class="nb">model restore</span><span class="n"> </span><span class="s">'damfebs5'</span>
+<span class="c">;</span>
+<span class="nb">block contact property</span><span class="n"> friction </span><span class="m m-Double">20</span><span class="n"> range group </span><span class="s">'None'</span>
+<span class="c">;</span>
+<span class="nb">block contact property</span><span class="n"> friction </span><span class="m m-Double">20</span><span class="n"> range group </span><span class="s">'fault_1'</span>
+<span class="nb">block contact property</span><span class="n"> friction </span><span class="m m-Double">20</span><span class="n"> range group </span><span class="s">'fault_2'</span>
+<span class="c">; 假定坝基已经开裂</span>
+<span class="nb">block contact property</span><span class="n"> cohesion </span><span class="m m-Double">0</span><span class="n"> tension </span><span class="m m-Double">0</span><span class="n"> rang group </span><span class="s">'foundation'</span>
+<span class="c">;</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">5000</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">5000</span>
+<span class="nb">model </span><span class="ss">cycle</span><span class="n"> </span><span class="m m-Double">5000</span>
+<span class="nb">model save</span><span class="n"> </span><span class="s">'damfebs6'</span>
+<span class="c">;</span>
+<span class="nb">program </span><span class="se">return</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../3dechome.html"><span class="codename">3DEC</span></a> »</li>
+<li class="nav-item nav-item-2"><a accesskey="U" href="examples.html">Examples</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="dfn_advanced.html" title="previous chapter"> Discrete Fracture Network (Advanced)</a> |    
+       <a href="OpenPitFaceblocks.html" title="next chapter">Open Pit with Face Blocks</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Finite Element Dam" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../common/docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../_static/icgscripts.js"></script>
+</body>
+</html>
