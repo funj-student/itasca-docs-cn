@@ -23,8 +23,8 @@
 
 两种方式任选其一：
 
-1. 仓库 Settings -> Pages -> Build and deployment -> Source 选择 **Deploy from a branch**，分支选 `main`、目录选 `/ (root)`，保存后即可通过 `https://<用户名>.github.io/flac3d-zh-manual/` 访问。
-2. 将 Pages 的 Source 选择为 **GitHub Actions**，仓库内已提供 `.github/workflows/deploy-pages.yml`，推送到 `main` 分支会自动构建并发布。
+1. 仓库 Settings -> Pages -> Build and deployment -> Source 选择 **Deploy from a branch**，分支选 `main`、目录选 `/ (root)`，保存后即可通过 `https://<用户名>.github.io/itasca-docs-zh/` 访问。
+2. 将 Pages 的 Source 选择为 **GitHub Actions**，仓库内已提供 `.github/workflows/deploy-pages.yml`，推送到 `main` 分支会自动构建并发布。本站当前采用此方式，访问地址为 `https://funj-student.github.io/itasca-docs-zh/`。
 
 ## 检索用法
 
