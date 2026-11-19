@@ -1,5 +1,6 @@
 function isMobileNav() {
-   return window.innerWidth <= 720 || window.innerHeight <= 500;
+   // screen.width is stable while the browser toolbar hides on scroll
+   return window.innerWidth <= 720 || screen.width <= 1024;
 }
 
 window.onload = function(){
@@ -72,9 +73,7 @@ function sizeMobileNav() {
   try {
     var doc = tocFrame.contentDocument || tocFrame.contentWindow.document;
     var contentHeight = doc.body ? doc.body.scrollHeight : 0;
-    var minHeight = window.innerHeight <= 500
-      ? window.innerHeight
-      : Math.round(window.innerHeight * 0.8);
+    var minHeight = Math.round(window.innerHeight * 0.8);
     var h = Math.max(contentHeight, minHeight);
     tocFrame.style.height = h + 'px';
     var side = document.getElementById('mySidenav');
