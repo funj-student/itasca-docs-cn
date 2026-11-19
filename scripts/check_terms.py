@@ -63,6 +63,36 @@ for p in ROOT.rglob('*.html'):
 if untranslated:
     errors.append(f'仍有未翻译的警示标题：{untranslated[:5]}')
 
+# 4. admonition parity with official English docs
+import json
+BASE = Path(__file__).resolve().parent
+ref = BASE / 'official_admonitions.jsonl'
+if ref.exists():
+    ad_pat = re.compile(r'<div class="([^"]*admonition[^"]*)">\s*<p class="first admonition-title">(.*?)</p>', re.S)
+    def ad_kind(cls, title):
+        c = cls.lower()
+        for k in ('warning', 'caution', 'important', 'tip', 'seealso', 'note'):
+            if k in c: return k
+        tt = re.sub(r'<[^>]+>', '', title).strip().lower()
+        return tt if tt in ('warning', 'caution', 'important', 'tip', 'note') else 'other'
+    official = {}
+    for line in ref.read_text(encoding='utf-8').splitlines():
+        d = json.loads(line)
+        official[d['path']] = d['counts'] or {}
+    bad = []
+    for rel, oc in official.items():
+        f = ROOT / 'doc' / rel
+        if not f.exists(): continue
+        txt = f.read_text(encoding='utf-8', errors='ignore')
+        lc = {}
+        for m in ad_pat.finditer(txt):
+            k = ad_kind(m.group(1), m.group(2))
+            lc[k] = lc.get(k, 0) + 1
+        if lc != oc:
+            bad.append(rel)
+    if bad:
+        errors.append(f'警示块与官网不一致的页面 {len(bad)} 个，示例：{bad[:5]}')
+
 print(f'terms={len(rows)} html_rows={html_rows}')
 if errors:
     for e in errors:
