@@ -1,0 +1,952 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>Plastic-Hardening (PH) Model* — FLAC3D 7.0 中文手册</title>
+<link href="../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../search.html" rel="search" title="Search"/>
+<link href="../../swell/doc/modelswell.html" rel="next" title="Swell Model*"/>
+<link href="../../chsoil/doc/modelchsoil.html" rel="prev" title="Simplified Cap-Yield (CHSoil) Model*"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="hide sectionname docutils container">
+<span class="codename">FLAC3D</span> Theory and Background • Constitutive Models</div>
+<div class="section" id="plastic-hardening-ph-model">
+<span id="modelplastichardening"></span><h1>Plastic-Hardening (PH) Model*</h1>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">*本模型仅在 <span class="codename">FLAC3D</span> 中提供。</p>
+</div>
+<p>塑性硬化（PH）模型是用于模拟土体性状的剪切与体积硬化本构模型。在承受偏应力加载时（例如常规排水三轴试验中），土体通常表现为刚度下降并伴随不可恢复变形。多数情况下，排水三轴试验所得偏应力对轴应变的曲线可近似为双曲线。Duncan 与 Chang（1970）在其著名的“双曲线土”模型中讨论了该特性，该模型以非线性弹性模型表述。PH 模型在硬化塑性理论框架内表述（Schanz 等 1999），从而消除了原始非线性弹性模型表述的主要缺陷（例如加载/卸载模式的判别、非物理的体积模量）。</p>
+<p>PH 模型的主要特性为：</p>
+<ol class="arabic simple">
+<li>hyperbolic stress-strain relationship during axial drained compression;</li>
+<li>plastic strain in mobilizing friction (shear hardening);</li>
+<li>plastic strain in primary compression (volumetric hardening);</li>
+<li>按幂律随应力变化的弹性刚度；</li>
+<li>弹性卸载/再加载相对原始加载；</li>
+<li>先期固结应力的记忆；以及</li>
+<li>Mohr-Coulomb 破坏准则。</li>
+</ol>
+<p>该模型用常规室内试验或原位试验都易于标定。它在土-结构相互作用、开挖、隧道与沉降分析等众多应用中已得到充分验证。</p>
+<p class="h3 rubric">公式</p>
+<p>本节中主应力 <span class="math">\(\sigma_i\)</span> 与应变 <span class="math">\(\varepsilon_i\)</span>（i = 1,3）分量以拉为正。此外，除非明确说明，所有应力默认为有效应力。主有效应力按 <span class="math">\(\sigma_1 \le \sigma_2 \le \sigma_3\)</span> 排序，<span class="math">\(\sigma_1\)</span> 为压性最大的应力。</p>
+<p class="h4 rubric">增量弹性定律</p>
+<p>PH 模型采用亚弹性描述弹性行为，</p>
+<div class="math" id="equation-modelpheqdp">
+<span class="eqno">(1)</span>\[ \Delta p =  -K \Delta \epsilon^e_v\]</div>
+<div class="math" id="equation-modelpheqdsij">
+<span class="eqno">(2)</span>\[ \Delta s_{ij} =  2G \Delta \epsilon_{ij}\]</div>
+<p>其中 <span class="math">\(p\)</span> 为平均压力，定义为 <span class="math">\(p = − \sigma_{ii}/3\)</span>；<span class="math">\(\epsilon^e_v\)</span> 为体积弹性应变，定义为 <span class="math">\(\epsilon^e_v = \varepsilon^e_{ii}\)</span>；<span class="math">\(s_{ij} = \sigma_{ij} + p \delta_{ij}\)</span> 与 <span class="math">\(\epsilon_{ij} = \varepsilon_{ij} - (\epsilon_v/3)\delta_{ij}\)</span> 分别为偏应力张量与偏弹性应变张量。<span class="math">\(\delta_{ij}\)</span> 定义为：当 <span class="math">\(i = j\)</span> 时为 <span class="math">\(\delta_{ij} = 1\)</span>，当 <span class="math">\(i \ne j\)</span> 时为 <span class="math">\(\delta_{ij} = 0\)</span>。<span class="math">\(K\)</span> 与 <span class="math">\(G\)</span> 为弹性体积模量与剪切模量，可由卸载-再加载杨氏模量 <span class="math">\(E_{ur}\)</span> 与卸载-再加载泊松比 <span class="math">\(\nu\)</span> 通过以下关系得到：</p>
+<div class="math" id="equation-modelpheqk">
+<span class="eqno">(3)</span>\[ K = {E_{ur} \over {3(1-2\nu)}}\]</div>
+<div class="math" id="equation-modelpheqg">
+<span class="eqno">(4)</span>\[ G = {E_{ur} \over {2(1+\nu)}}\]</div>
+<p>PH 模型中泊松比假定为常数，典型值 0.2（若输入时未提供）。</p>
+<p>杨氏模量为应力相关参数：</p>
+<div class="math" id="equation-modelpheqeur">
+<span class="eqno">(5)</span>\[E_{ur} = E^{ref}_{ur} Z^m\]</div>
+<p>其中</p>
+<div class="math" id="equation-modelpheqz">
+<span class="eqno">(6)</span>\[Z = {{c \cot \phi - \sigma_3} \over {c \cot \phi + p^{ref}}} \ge f_{cut}\]</div>
+<p>而 <span class="math">\(E^{ref}_{ur}\)</span>、<span class="math">\(m\)</span>、<span class="math">\(c\)</span>、<span class="math">\(p^{ref}\)</span> 与 <span class="math">\(\phi\)</span> 为用户定义常数参数。<span class="math">\(E^{ref}_{ur}\)</span> 为参考压力 <span class="math">\(p^{ref}\)</span> 下的参考卸载-再加载刚度模量。当前卸载-再加载刚度模量 <span class="math">\(E_{ur}\)</span> 取决于最大（最小压缩）主应力 <span class="math">\(\sigma_3\)</span>、黏聚力 <span class="math">\(c\)</span>、极限摩擦角 <span class="math">\(\phi\)</span> 以及幂次 <span class="math">\(m\)</span>。对黏土，<span class="math">\(m\)</span> 通常接近 1；对砂土，<span class="math">\(m\)</span> 通常在 0.4 到 0.9 之间。默认截止因子 <span class="math">\(f_{cut}\)</span> 为 0.1。</p>
+<p>PH 模型还采用附加刚度度量 <span class="math">\(E_{50}\)</span>，它定义双曲线应力-应变曲线的初始斜率（见公式 <a class="reference internal" href="#equation-modelpheqe50">(7)</a> 与 <a href="#modelph-1">图 1（Figure  1）</a>）。参数 <span class="math">\(E_{50}\)</span> 服从以下幂律：</p>
+<div class="math" id="equation-modelpheqe50">
+<span class="eqno">(7)</span>\[E_{50} = E^{ref}_{50} Z^m\]</div>
+<p>此处 <span class="math">\(E^{ref}_{50}\)</span> 为材料参数，可由一组不同围压的三轴压缩试验估算。</p>
+<p class="h4 rubric">剪切屈服准则与流动法则</p>
+<p>决定剪切硬化起始与发展的剪切屈服函数定义为</p>
+<div class="math" id="equation-modelpheqfs">
+<span class="eqno">(8)</span>\[f^s = {{E_{ur}} \over {E_i}} \cdot {{q_a q} \over { (q_a - q)}} - q  - {{E_{ur} \gamma^p} \over 2} = 0\]</div>
+<p>其中 <span class="math">\(\gamma^p\)</span> 为剪切硬化参数（内部变量之一），由 <a class="reference internal" href="#equation-modelpheqdgammapdefinition">(13)</a> 定义，<span class="math">\(E_i = 2 E_{50} / (2 − R_f)\)</span>、<span class="math">\(q = \sigma_3 − \sigma_1\)</span> 与 <span class="math">\(q_a\)</span> 给出为</p>
+<div class="math" id="equation-modelpheqqa">
+<span class="eqno">(9)</span>\[q_a = {{q_f} \over {R_f}} = K_{qa} (c \cot \phi - \sigma_3)\]</div>
+<p>其中</p>
+<div class="math" id="equation-modelpheqkqa">
+<span class="eqno">(10)</span>\[K_{qa} = {{1} \over {R_f}} \cdot {{2 \sin \phi} \over {1 - \sin \phi}}\]</div>
+<p>破坏比 <span class="math">\(R_f = q_f / q_a\)</span> 取值小于 1（通常取 <span class="math">\(R_f\)</span> = 0.9）。注意极限偏应力 <span class="math">\(q_f\)</span> 定义为</p>
+<div class="math" id="equation-modelpheqqf">
+<span class="eqno">(11)</span>\[q_f =  {{2 \sin \phi (c \cot \phi - \sigma_3)} \over {1 - \sin \phi}}\]</div>
+<p>与 Mohr-Coulomb 破坏准则一致（<a href="#modelph-1">图 1（Figure  1）</a>）。</p>
+<p>对标准排水三轴试验，轴向（竖向压缩）应变 <span class="math">\(\varepsilon_1\)</span> 与偏应力 <span class="math">\(q\)</span> 之间的关系可用双曲线关系描述：</p>
+<div class="math" id="equation-modelpheqaxialstrain">
+<span class="eqno">(12)</span>\[\varepsilon_1 = {{q_a q} \over {E_i (q_a - q)}}\]</div>
+<p>公式 <a class="reference internal" href="#equation-modelpheqaxialstrain">(12)</a> 在 <a href="#modelph-1">图 1（Figure  1）</a> 中以 <span class="math">\(q_f\)</span> 处的截止加以图示。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id1">
+<span id="modelph-1"></span><a class="reference internal image-reference" href="../../../../_images/modelph-1.png"><img alt="../../../../_images/modelph-1.png" src="../../../../_images/modelph-1.png" style="width: 500px;"/></a>
+<p class="caption"><span class="caption-text">图 1：初始剪切加载中的双曲线应力-应变关系。</span></p>
+</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p>剪切硬化参数 <span class="math">\(\gamma^p\)</span> 的定义使其增量形式为：</p>
+<div class="math" id="equation-modelpheqdgammapdefinition">
+<span class="eqno">(13)</span>\[\Delta \gamma^p = - (\Delta \varepsilon^p_1 - \Delta \varepsilon^p_2 - \Delta \varepsilon^p_3)\]</div>
+<p>由于 <span class="math">\(\gamma^p\)</span> 增大，剪切屈服面将扩展至极限面，后者由常规 Mohr-Coulomb 破坏准则定义。若材料达到极限剪切破坏，则适用常规 Mohr-Coulomb 破坏准则。</p>
+<p>PH 模型在体积塑性应变与剪切塑性应变之间采用以下流动法则：</p>
+<div class="math" id="equation-modelpheqflowrule">
+<span class="eqno">(14)</span>\[\Delta \varepsilon^p_v = \sin \psi_m \Delta \gamma^p\]</div>
+<p>其中 <span class="math">\(\sin \psi_m\)</span> 为发挥剪胀角，其值应小于或等于用户定义的极限剪胀角 <span class="math">\(\psi\)</span>。发挥剪胀角基于 Rowe 剪胀法则（1962）：</p>
+<div class="math" id="equation-modelpheqrowe1">
+<span class="eqno">(15)</span>\[\sin \psi_m = F_c {{\sin \phi_m - \sin \phi_{cv}} \over {1 - \sin \phi_m \sin \phi_{cv}}} \mbox{, if } \sin \phi_m &lt; \sin \phi_{cv}\]</div>
+<div class="math" id="equation-modelpheqrowe2">
+<span class="eqno">(16)</span>\[\sin \psi_m = {{\sin \phi_m - \sin \phi_{cv}} \over {1 - \sin \phi_m \sin \phi_{cv}}}  \mbox{, if } \sin \phi_m \ge \sin \phi_{cv}\]</div>
+<p>其中参数 <span class="math">\(F_c\)</span> 为收缩比例因子，允许范围 0 到 0.25；对不考虑收缩的大多数土体默认值为 0.0。临界状态摩擦角 <span class="math">\(\phi_{cv}\)</span> 定义为</p>
+<div class="math" id="equation-modelpheqphicv">
+<span class="eqno">(17)</span>\[\sin \psi_{cv} = {{\sin \phi - \sin \psi} \over {1 - \sin \phi \sin \psi}}\]</div>
+<p>发挥摩擦 <span class="math">\(\phi_m\)</span> 由当前应力状态定义为</p>
+<div class="math" id="equation-modelpheqsinphim">
+<span class="eqno">(18)</span>\[\sin \phi_m = {{\sigma_1 - \sigma_3} \over {\sigma_1 + \sigma_3 - 2c \cot \phi}}\]</div>
+<p>模型采用与 Mohr-Coulomb 屈服准则一致的非关联流动法则。剪切势函数定义为</p>
+<div class="math" id="equation-modelpheqgs">
+<span class="eqno">(19)</span>\[g^s = m_1 \sigma_1 + m_3 \sigma_3\]</div>
+<p>其中 <span class="math">\(m_1 = (-1+\sin \psi_m)/2\)</span> 与 <span class="math">\(m_3 = (1+\sin \psi_m)/2\)</span>。</p>
+<p>为避免土体在 <span class="math">\(e_{max}\)</span> 处达到临界孔隙状态时过度剪胀，需对剪胀角作小幅修正。Schanz 等（1999）提出的一种方式是设置截止规则，使</p>
+<div class="math" id="equation-modelpheqdilationcutoff">
+<span class="eqno">(20)</span>\[\sin \psi_m^{cut} = 0 \mbox{, if } e \ge e_{max}\]</div>
+<p>此处引入一种平滑技术，以避免剪胀角突变：</p>
+<div class="math" id="equation-modelpheqdilationsmooth">
+<span class="eqno">(21)</span>\[\sin \psi_m^{smooth} = 100 \left( 1 - {e \over {e_{max}}} \right) \sin \psi_m \mbox{, if } e \ge 0.99 e_{max}\]</div>
+<p><a href="#modelph-2">图 2（Figure  2）</a> 示意比较了带截止、平滑技术以及无剪胀截止的剪胀规则。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id2">
+<span id="modelph-2"></span><img alt="../../../../_images/modelph-2.png" src="../../../../_images/modelph-2.png"/>
+<p class="caption"><span class="caption-text">图 2：标准三轴压缩试验的体积应变曲线，含剪胀截止与平滑。</span></p>
+</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p class="h4 rubric" id="sec-volumetriccapandflowrule">体积帽盖准则与流动法则</p>
+<p>体积（帽盖）屈服函数定义为</p>
+<div class="math" id="equation-modelpheqfvgv">
+<span class="eqno">(22)</span>\[f^v = g^v = {{\tilde{q}^2} \over {\alpha^2}} + p^2 -p^2_c = 0\]</div>
+<p>其中 <span class="math">\(\alpha\)</span> 为由其他材料参数基于虚拟（数值）固结仪试验内部导出的常数，<span class="math">\(\tilde{q}\)</span> 为剪应力度量，定义为 <span class="math">\(\tilde{q} = − [\sigma_1 + (\delta - 1)\sigma_2 − \delta \sigma_3]\)</span>，且 <span class="math">\(\delta = (1 + \sin \phi)/(1 − \sin \phi)\)</span>。硬化参数 <span class="math">\(p_c\)</span>（表示先期固结压力）的初值可用初始应力状态与超固结比 <span class="math">\(OCR\)</span> 确定，使</p>
+<div class="math" id="equation-modelpheqpcini">
+<span class="eqno">(23)</span>\[p_{c,ini} = OCR \cdot \sqrt{{{\tilde{q}^2_{ini}} \over {\alpha^2}} + p^2_{ini}}\]</div>
+<p>若 <span class="math">\(OCR\)</span> 取值很大，则模型表现为不存在帽盖。体积硬化采用关联流动法则，即假定体积势函数与体积屈服函数相同（见公式 <a class="reference internal" href="#equation-modelpheqdgammav">(24)</a>）。</p>
+<p>体积硬化参数 <span class="math">\(\gamma^v\)</span>（内部变量之一）的增量定义为</p>
+<div class="math" id="equation-modelpheqdgammav">
+<span class="eqno">(24)</span>\[\Delta \gamma^v = - \Delta \varepsilon^p_v = - (\Delta \varepsilon^p_1 + \Delta \varepsilon^p_2 + \Delta \varepsilon^p_3)\]</div>
+<p>其中 <span class="math">\(\Delta \varepsilon^p_v\)</span> 为体积塑性应变增量。</p>
+<p>硬化参数 <span class="math">\(p_c\)</span> 的演化由以下关系给出：</p>
+<div class="math" id="equation-modelpheqdpc">
+<span class="eqno">(25)</span>\[\Delta p_c = H_c \left( {c \cot \phi + p_c} \over {c \cot \phi + p^{ref}} \right)^m \Delta \gamma^v\]</div>
+<p>其中 <span class="math">\(H_c\)</span> 为可由其他材料参数内部导出的常数参数。另一种做法是不把 <span class="math">\(\alpha\)</span> 与 <span class="math">\(H_c\)</span> 作为输入材料参数，而指定另外两个参数 <span class="math">\(K_{nc}\)</span> 与 <span class="math">\(E^{ref}_{oed}\)</span> 作为输入。参数 <span class="math">\(K_{nc}\)</span> 表示正常固结系数，<span class="math">\(E^{ref}_{oed}\)</span> 表示参考压力 <span class="math">\(p^{ref}\)</span> 下的切线固结仪刚度。若用户未提供 <span class="math">\(K_{nc}\)</span>，则取 <span class="math">\(K_{nc} = 1 − \sin \phi\)</span>（默认值）。PH 模型保留灵活性，允许用户输入自定义的 <span class="math">\(\alpha\)</span> 与 <span class="math">\(H_c\)</span>，而不使用内部计算的 <span class="math">\(\alpha\)</span> 与 <span class="math">\(H_c\)</span>。对多数土体，<span class="math">\(\alpha\)</span> 的典型值在 0.6 到 2.0 之间。参数 <span class="math">\(H_c\)</span> 按下式计算：<span class="math">\(H_c = k K_p\)</span>，其中 <span class="math">\(k\)</span> 为修正因子，典型值 <span class="math">\(0 &lt; k \le 1\)</span>，<span class="math">\(K_p = K_1 K_2 / (K_1 - K_2)\)</span>，<span class="math">\(K_1 = E^{ref}_{ur} / [3(1-2\nu)]\)</span>，且 <span class="math">\(K_2 = E^{ref}_{oed} (1 + 2 K_{nc})/3\)</span>。具体而言，等向压缩状态下 <span class="math">\(k\)</span> = 1。</p>
+<p class="h4 rubric">拉伸屈服准则与流动法则</p>
+<p>模型检查拉伸破坏条件。拉伸破坏函数与势函数为</p>
+<div class="math" id="equation-modelpheqftgt">
+<span class="eqno">(26)</span>\[f^t = g^t = \sigma_3 - \sigma^t\]</div>
+<p>其中 <span class="math">\(\sigma^t\)</span> 为拉伸极限。默认情况下 <span class="math">\(\sigma^t\)</span> 为零，用户可给出上限为 <span class="math">\(c/\tan \phi\)</span> 的取值。该模型不考虑拉伸硬化。</p>
+<p class="h4 rubric">塑性修正</p>
+<p>在 PH 模型的实现中，先由旧应力 <span class="math">\(\sigma^o_{ij}\)</span> 加上用该步总应变增量 <span class="math">\(\Delta \varepsilon_{ij}\)</span> 计算的弹性增量，得到弹性试探应力 <span class="math">\(\sigma^I_{ij}\)</span>（见式 (1.395)）。该步中为简便起见假定模量与发挥剪胀角为常数，并依据旧应力分量计算。所有应力均假定为有效应力。</p>
+<p>主轴中试探应力（以上标 <span class="math">\(I\)</span> 表示）的公式为：</p>
+<div class="math" id="equation-modelpheqelastictrial">
+<span class="eqno">(27)</span>\[\begin{split}\begin{matrix}
+  \sigma^I_1 = \sigma^o_1 + \alpha_1 \Delta \varepsilon_1 + \alpha_2 \Delta \varepsilon_2 + \alpha_2 \Delta \varepsilon_3 \\
+    \\
+  \sigma^I_2 = \sigma^o_2 + \alpha_1 \Delta \varepsilon_2 + \alpha_2 \Delta \varepsilon_3 + \alpha_2 \Delta \varepsilon_1 \\
+    \\
+  \sigma^I_3 = \sigma^o_3 + \alpha_1 \Delta \varepsilon_3 + \alpha_2 \Delta \varepsilon_1 + \alpha_2 \Delta \varepsilon_2
+\end{matrix}\end{split}\]</div>
+<p>其中 <span class="math">\(\alpha_1 = K +4G/3\)</span>、<span class="math">\(\alpha_2 = K −2G/3\)</span>、<span class="math">\(K\)</span> 与 <span class="math">\(G\)</span> 分别为切线弹性体积模量与剪切模量，而 (<span class="math">\(\Delta \varepsilon_1, \Delta \varepsilon_2, \Delta \varepsilon_3\)</span>) 为主应变增量集合。</p>
+<p>试探内部变量 <span class="math">\(\gamma^p\)</span> 与 <span class="math">\(\gamma^v\)</span> 取上一步的值。若超越硬化屈服准则（公式 <a class="reference internal" href="#equation-modelpheqfs">(8)</a> 和/或 <a class="reference internal" href="#equation-modelpheqfvgv">(22)</a>），则按下文说明同时修正应力分量与内部变量。</p>
+<p>首先考虑仅发生剪切硬化的情形 <span class="math">\(f^s &gt; 0\)</span>。塑性应变增量在主应力空间中沿势函数梯度方向定向。利用公式 <a class="reference internal" href="#equation-modelpheqgs">(19)</a>，可得</p>
+<div class="math" id="equation-modelpheqdeps">
+<span class="eqno">(28)</span>\[\begin{split}\begin{matrix}
+  \Delta \varepsilon^{ps}_1 = \lambda^s {{\partial g^s} \over {\partial \sigma_1}} =  m_1 \lambda^s \\
+    \\
+  \Delta \varepsilon^{ps}_2 = \lambda^s {{\partial g^s} \over {\partial \sigma_2}} =  0 \\
+    \\
+  \Delta \varepsilon^{ps}_3 = \lambda^s {{\partial g^s} \over {\partial \sigma_3}} =  m_3 \lambda^s
+\end{matrix}\end{split}\]</div>
+<p>剪切硬化参数增量由公式 <a class="reference internal" href="#equation-modelpheqdgammapdefinition">(13)</a> 得到，</p>
+<div class="math" id="equation-modelpheqdgammapcalculation">
+<span class="eqno">(29)</span>\[\Delta \gamma^p = - \lambda^s (m_1 - m_3) = \lambda^s\]</div>
+<p>于是修正后（新）的应力分量为：</p>
+<div class="math" id="equation-modelpheqsis2s3shear">
+<span class="eqno">(30)</span>\[\begin{split}\begin{matrix}
+  \sigma_1 = \sigma^I_1 - \lambda^s (\alpha_1 m_1 + \alpha_2 m_3) \\
+    \\
+  \sigma_2 = \sigma^I_2 - \lambda^s (\alpha_2 m_1 + \alpha_2 m_3) \\
+    \\
+  \sigma_3 = \sigma^I_3 - \lambda^s (\alpha_1 m_3 + \alpha_2 m_1)
+\end{matrix}\end{split}\]</div>
+<p>修正后的内部变量为</p>
+<div class="math" id="equation-modelpheqdgammapincr">
+<span class="eqno">(31)</span>\[\gamma^p = \gamma^{p,I} + \Delta \gamma^p = \gamma^{p,I} + \lambda^s\]</div>
+<p>利用公式 <a class="reference internal" href="#equation-modelpheqsis2s3shear">(30)</a> 以及公式 <a class="reference internal" href="#equation-modelpheqgs">(19)</a> 中的定义 <span class="math">\(m_1\)</span> 与 <span class="math">\(m_2\)</span>，按下式计算更新后的剪应力与参数 <span class="math">\(q_a\)</span>（见公式 <a class="reference internal" href="#equation-modelpheqqa">(9)</a>）</p>
+<div class="math" id="equation-modelpheqnewqshear">
+<span class="eqno">(32)</span>\[q = q^I - 2G \lambda^s\]</div>
+<div class="math" id="equation-modelpheqnewqashear">
+<span class="eqno">(33)</span>\[q_a = q^I_a + K_{qa} (\alpha_1 m_3 + \alpha_2 m_1) \lambda^s\]</div>
+<p>把修正后的参数 <span class="math">\(q\)</span>、<span class="math">\(q_a\)</span>、<span class="math">\(\gamma^p\)</span> 代入公式 <a class="reference internal" href="#equation-modelpheqfs">(8)</a> 后，可用迭代法求解非线性方程 <span class="math">\(f^s(\lambda^s)\)</span> = 0 得到参数 <span class="math">\(\lambda^s\)</span>。注意公式 <a class="reference internal" href="#equation-modelpheqdgammapincr">(31)</a> 中的 <span class="math">\(\gamma^p\)</span> 使用每个迭代步所更新的 <span class="math">\(\lambda^s\)</span> 当前值，这意味着修正算法是半隐式的。</p>
+<p>若试探剪应力超过 Mohr-Coulomb 剪切破坏面，则适用 <a class="reference internal" href="../../mohr/doc/modelmohr.html#modelmohr"><span class="std std-ref">Mohr-Coulomb 模型</span>（Mohr-Coulomb model）</a> 实现中所用的修正。</p>
+<p>现考虑弹性试探（公式 <a class="reference internal" href="#equation-modelpheqfvgv">(22)</a>）超过体积屈服判据 <span class="math">\(f^v &gt; 0\)</span>、发生体积硬化的情形。塑性应变增量与应力空间中势函数梯度的关系为</p>
+<div class="math" id="equation-modelpheqdepsv">
+<span class="eqno">(34)</span>\[\begin{split}\begin{matrix}
+  \Delta \varepsilon^{pv}_1 = \lambda^v {{\partial g^v} \over {\partial \sigma_1}} =  \left[ - {{2 \tilde{q}} \over {\alpha^2}} - {2 \over 3} p \right] \lambda^v \\
+    \\
+  \Delta \varepsilon^{pv}_2 = \lambda^v {{\partial g^v} \over {\partial \sigma_2}} =  \left[ - {{2 \tilde{q}} \over {\alpha^2}} (\delta -1) - {2 \over 3} p \right] \lambda^v \\
+    \\
+  \Delta \varepsilon^{pv}_3 = \lambda^v {{\partial g^v} \over {\partial \sigma_3}} =  \left[ {{2 \tilde{q}} \over {\alpha^2}} \delta - {2 \over 3} p \right] \lambda^v
+\end{matrix}\end{split}\]</div>
+<p>硬化参数 <span class="math">\(\gamma^v\)</span> 的演化由以下关系给出：</p>
+<div class="math" id="equation-modelpheqdgammavcalculation">
+<span class="eqno">(35)</span>\[\Delta \gamma^v = - \Delta \varepsilon^p_v = 2 p \lambda^v\]</div>
+<p>上述表述中，塑性应变与体积硬化参数增量都与当前应力度量（<span class="math">\(p\)</span> 或 <span class="math">\(\tilde{q}\)</span>）相关，因此修正算法再次采用半隐式方法。</p>
+<p>修正后的应力分量按与剪切硬化类似的方式得到，</p>
+<div class="math" id="equation-modelpheqsis2s3volume">
+<span class="eqno">(36)</span>\[\begin{split}\begin{matrix}
+  \sigma_1 = \sigma^I_1 + \lambda^v \left[ 2pK + {{4 \tilde{q} G} \over {\alpha^2}} \right] \\
+    \\
+  \sigma_2 = \sigma^I_2 + \lambda^v \left[ 2pK + {{4 (\delta -1) \tilde{q} G} \over {\alpha^2}} \right] \\
+    \\
+  \sigma_3 = \sigma^I_3 + \lambda^v \left[ 2pK - {{4 \delta \tilde{q} G} \over {\alpha^2}} \right]
+\end{matrix}\end{split}\]</div>
+<p>注意到 <span class="math">\(p^{I} = −(\sigma_1 + \sigma_2 + \sigma_3)/3\)</span> 与 <span class="math">\(\tilde{q}^{I} = − [\sigma_1 + (\delta - 1)\sigma_2 − \delta \sigma_3]\)</span>，并利用公式 <a class="reference internal" href="#equation-modelpheqsis2s3volume">(36)</a>，可得</p>
+<div class="math" id="equation-modelpheqnewpvolume">
+<span class="eqno">(37)</span>\[p = {{p^I} \over {1 + 2 K \lambda^v}}\]</div>
+<div class="math" id="equation-modelpheqnewqvolume">
+<span class="eqno">(38)</span>\[\tilde{q} = {{\tilde{q}^I} \over {1 + 2 M \lambda^v}}\]</div>
+<p>其中 <span class="math">\(M = 4G(\delta^2 − \delta + 1) / \alpha^2\)</span>。把修正后的 <span class="math">\(p\)</span> 与 <span class="math">\(\tilde{q}\)</span> 代入屈服函数 <span class="math">\(f^v\)</span>（公式 <a class="reference internal" href="#equation-modelpheqfvgv">(22)</a>）后，可用迭代法求非线性方程 <span class="math">\(f^v(\lambda^v)\)</span> = 0 的最小根，从而得到参数 <span class="math">\(\lambda^v\)</span>。</p>
+<p>最后考虑弹性试探应力同时超过剪切屈服硬化面与体积屈服硬化面的情形。此时塑性应变增量与势函数偏导数的关系如下：</p>
+<div class="math" id="equation-modelpheqdepboth">
+<span class="eqno">(39)</span>\[\begin{split}\begin{matrix}
+  \Delta \varepsilon^{p}_1 = \lambda^s {{\partial g^s} \over {\partial \sigma_1}} + \lambda^v {{\partial g^v} \over {\partial \sigma_1}} =  m_1 \lambda^s + \left[ - {{2 \tilde{q}} \over {\alpha^2}} - {2 \over 3} p \right] \lambda^v \\
+    \\
+  \Delta \varepsilon^{p}_2 = \lambda^s {{\partial g^s} \over {\partial \sigma_2}} + \lambda^v {{\partial g^v} \over {\partial \sigma_2}} =  \left[ - {{2 \tilde{q}} \over {\alpha^2}} (\delta -1) - {2 \over 3} p \right] \lambda^v \\
+    \\
+  \Delta \varepsilon^{p}_3 = \lambda^s {{\partial g^s} \over {\partial \sigma_3}} + \lambda^v {{\partial g^v} \over {\partial \sigma_3}} =  m_3 \lambda^s + \left[ {{2 \tilde{q}} \over {\alpha^2}} \delta - {2 \over 3} p \right] \lambda^v
+\end{matrix}\end{split}\]</div>
+<p>参数 <span class="math">\(\gamma^s\)</span> 与 <span class="math">\(\gamma^v\)</span> 可用类似于剪切或体积硬化修正技术所采用的迭代方法求得。若试探应力同时超出体积硬化面与 Mohr-Coulomb 破坏面，则应使用 Mohr-Coulomb 破坏函数而非剪切硬化函数。</p>
+<p class="h3 rubric">实现步骤</p>
+<p>在初始化步中，为网格单元定义初始应力、可 <span class="math">\(\gamma^v\)</span> 的演化参数 <span class="math">\(\gamma^s\)</span> 与应变增量，并假定在该步内保持不变。为简便起见，依赖当前应力与演化参数的刚度模量与剪胀也假定在该步内于网格单元中保持不变。试探弹性应力与可能的应力修正在子网格单元层面定义。试探应力增量服从线性弹性（虎克）法则。若试探应力超过拉伸极限，则调用拉伸破坏流程。下一步检查拉伸修正后的应力处于受拉侧还是受压侧。若修正后应力为拉伸，则不施加体积硬化。无论哪一侧，若应力超出剪切破坏面或剪切屈服面，则分别调用剪切破坏或剪切硬化流程。在受压侧，若应力超出体积屈服面，则调用体积硬化流程。特别地，若应力同时超出剪切破坏面或剪切屈服面，则调用同时施加体积硬化与剪切破坏/硬化修正的混合流程。为确保网格单元层面的平均应力处于拉伸极限内，若发生任何体积硬化或剪切硬化/破坏，则再次调用拉伸破坏流程。所有子网格单元完成拉伸与剪切破坏、剪切与体积硬化判据的应力检查后，依据网格单元平均应力更新内部变量、刚度模量与剪胀。实现细节见 Cheng 与 Detournay（2016）。</p>
+<p class="h3 rubric" id="comparisonphandcysoil">PH 模型与 CYSoil 模型的比较</p>
+<p>PH 模型与 CYSoil 模型有许多相似特性。例如两者模量都是应力相关的，都有初级剪切与体积硬化，三轴压缩时偏应力对轴应变都采用双曲线关系，两模型的体积屈服函数与势函数也相同等。不过两模型之间也存在一些差别，概述如下。</p>
+<ul class="simple">
+<li>对初始剪切，CYSoil 模型采用与发挥摩擦角相关的 Mohr-Coulomb 型屈服函数，而 PH 模型采用公式 <a class="reference internal" href="#equation-modelpheqgs">(19)</a> 所述的屈服函数。</li>
+<li>CY 模型把累积塑性剪应变作为演化参数之一（<span class="math">\(\gamma^p\)</span>），而 PH 模型中 <span class="math">\(\gamma^p\)</span> 的定义不同于塑性剪应变（见公式 <a class="reference internal" href="#equation-modelpheqdgammapdefinition">(13)</a>）。</li>
+<li>CYSoil 模型的模量取决于平均压力，而 PH 模型的模量取决于最大主应力（压性最小）。</li>
+<li>PH 模型引入模量 <span class="math">\(E_{50}\)</span> 以确定三轴压缩时双曲线的初始斜率，而 CYSoil 模型没有该模量；这意味着尽管极限剪应力相同，两模型在排水三轴压缩过程中可能具有不同的双曲线。</li>
+<li>CYSoil 模型中参数 <span class="math">\(\alpha\)</span> 由用户定义，而 PH 模型中该参数可用其他输入参数在内部计算。</li>
+<li>CYSoil 模型假定在任何压力的等向压缩过程中弹性与塑性体积应变之比为常数，而 PH 模型不采用该假定。因此 PH 模型使用公式 <a class="reference internal" href="#equation-modelpheqdpc">(25)</a> 给出的硬化法则。</li>
+<li>PH 模型的多数学参可通过常规三轴与固结仪压缩试验标定（见下一节关于标定的内容），而 CYSoil 模型参数的标定更为繁复。</li>
+<li>CYSoil 模型中许多参数可通过表格输入。目前 PH 模型不具备该灵活特性。</li>
+</ul>
+<p class="h3 rubric" id="modelphcalibration">用室内试验数据标定材料参数</p>
+<p>本节介绍用常规岩土室内试验标定 PH 模型材料参数的方法。标定算例采用 Monterey 砂三轴压缩试验的原始试验结果（Lade 1972）。该三轴试验先对试样加载，随后进行卸载-再加载。原始试验数据见 <a href="#modelph-calibration-1">图 3（Figure  3）</a> 与 <a href="#modelph-calibration-2"> 4</a>。数据来自三组三轴压缩试验，围压分别为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">1.2</span></span></a>、<a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.6</span></span></a> 与 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.3</span></span></a> kgf/cm<sup>2</sup>，初始孔隙比分别为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.783</span></span></a>、<a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.786</span></span></a> 与 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.781</span></span></a>。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id3">
+<span id="modelph-calibration-1"></span><a class="reference internal image-reference" href="../../../../_images/modelph-calibration-1.png"><img alt="../../../../_images/modelph-calibration-1.png" src="../../../../_images/modelph-calibration-1.png" style="width: 500px;"/></a>
+<p class="caption"><span class="caption-text">图 3：Monterey 砂三轴压缩试验在围压 1.2、0.6 与 0.3 kgf/cm<sup>2</sup> 下的原始 <span class="math">\(q\)</span> 对 <span class="math">\(\varepsilon_1\)</span> 曲线（Lade 1972）。</span></p>
+</div>
+<div class="figure align-center" id="id4">
+<span id="modelph-calibration-2"></span><a class="reference internal image-reference" href="../../../../_images/modelph-calibration-2.png"><img alt="../../../../_images/modelph-calibration-2.png" src="../../../../_images/modelph-calibration-2.png" style="width: 500px;"/></a>
+<p class="caption"><span class="caption-text">图 4：Monterey 砂三轴压缩试验在围压 1.2、0.6 与 0.3 kgf/cm<sup>2</sup> 下的原始 <span class="math">\(\varepsilon_v\)</span> 对 <span class="math">\(\varepsilon_1\)</span> 曲线（Lade 1972）。</span></p>
+</div>
+<div class="pagebreak docutils container">换页</div>
+<p><em>摩擦角的标定</em> <span class="math">\(\phi\)</span> <em>与黏聚力</em> <span class="math">\(c\)</span>：</p>
+<p>这两个参数的标定与 Mohr-Coulomb 模型没有区别。</p>
+<p>用 <span class="math">\(q = \sigma_3 - \sigma_1\)</span> 对 <span class="math">\(p = -(\sigma_1 + 2\sigma_3)/3\)</span> 的关系由三轴试验数据估算摩擦角 <span class="math">\(\phi\)</span> 与黏聚力 <span class="math">\(c\)</span>，请按以下步骤进行。</p>
+<ol class="arabic simple">
+<li>用三轴压缩试验的室内数据绘制偏应力 <span class="math">\(q\)</span> 对 <span class="math">\(p\)</span> 的关系曲线。</li>
+<li>用趋势线拟合 Mohr-Coulomb 包络。</li>
+<li>趋势线斜率为 <span class="math">\(6 \sin \phi / (3 − \sin \phi)\)</span>，它来自 Mohr-Coulomb 破坏准则的一种替代形式。由此确定摩擦角 <span class="math">\(\phi\)</span>。</li>
+<li>趋势线截距为 <span class="math">\(6c \cos \phi / (3 − \sin \phi)\)</span>，由此确定黏聚力 <span class="math">\(c\)</span>，因为摩擦角 <span class="math">\(\phi\)</span> 已由上一步得知。</li>
+</ol>
+<p>或者，可按以下步骤用 <span class="math">\(\hat{q} = (\sigma_3 - \sigma_1)/2\)</span> 对 <span class="math">\(\hat{p} = -(\sigma_1 + \sigma_3)/2\)</span> 的关系由三轴试验数据估算这两个参数。</p>
+<ol class="arabic simple">
+<li>用三轴压缩试验的室内数据绘制偏应力 <span class="math">\(\hat{q}\)</span> 对 <span class="math">\(\hat{p}\)</span> 的关系曲线。</li>
+<li>用趋势线拟合 Mohr-Coulomb 包络。</li>
+<li>趋势线斜率为 <span class="math">\(\sin \phi\)</span>，它来自 Mohr-Coulomb 破坏准则的一种替代形式。由此确定摩擦角 <span class="math">\(\phi\)</span>。</li>
+<li>趋势线截距为 <span class="math">\(c \cos \phi\)</span>，由此确定黏聚力 <span class="math">\(c\)</span>，因为摩擦角 <span class="math">\(\phi\)</span> 已由上一步得知。</li>
+</ol>
+<p>对 Monterey 砂，用 <a href="#modelph-calibration-3">图 5（Figure  5）</a> 所示的 <span class="math">\(q\)</span> 对 <span class="math">\(p\)</span> 关系得到的 Mohr-Coulomb 包络趋势线斜率为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">1.403</span></span></a>。据此算得摩擦角为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">34.65</span></span></a> 度。截距近似为零，意味着黏聚力为零。</p>
+<div class="figure align-center" id="id5">
+<span id="modelph-calibration-3"></span><a class="reference internal image-reference" href="../../../../_images/modelph-calibration-3.png"><img alt="../../../../_images/modelph-calibration-3.png" src="../../../../_images/modelph-calibration-3.png" style="width: 500px;"/></a>
+<p class="caption"><span class="caption-text">图 5：由三轴压缩试验数据确定摩擦角与黏聚力。</span></p>
+</div>
+<p><em>标定</em> <span class="math">\(R_f\)</span>、<span class="math">\(m\)</span> <em>与</em> <span class="math">\(E^{ref}_{50}\)</span>：</p>
+<p>由三轴试验数据估算 <span class="math">\(R_f\)</span>、<span class="math">\(m\)</span> 与 <span class="math">\(E^{ref}_{50}\)</span> 的值，请按以下步骤进行。</p>
+<ol class="arabic simple">
+<li>用三轴压缩试验数据绘制 <span class="math">\(\varepsilon_1/q\)</span> 对 <span class="math">\(\varepsilon_1/q_f\)</span> 的关系曲线。</li>
+<li>用趋势线拟合数据。依据关系 <span class="math">\(\varepsilon_1/q = R_f (\varepsilon_1/q_f) + 1/E_i\)</span>（由公式 <a class="reference internal" href="#equation-modelpheqaxialstrain">(12)</a> 与 <span class="math">\(R_f = q_f / q_a\)</span> 导出），该直线的斜率为 <span class="math">\(R_f\)</span>，截距为 <span class="math">\(1/E_i\)</span>。</li>
+</ol>
+<p>可用多组不同围压的三轴压缩试验产生一组 (<span class="math">\(R_f\)</span>, <span class="math">\(E_{50}\)</span>) 值对。最终的 <span class="math">\(R_f\)</span> 可取平均值估计，而 (<span class="math">\(E_i\)</span>, <span class="math">\(\sigma_3\)</span>) 值对依据公式 <a class="reference internal" href="#equation-modelpheqe50">(7)</a> 确定 <span class="math">\(m\)</span> 与 <span class="math">\(E^{ref}_{50}\)</span>。</p>
+<p><a href="#modelph-calibration-4">图 6（Figure  6）</a> 用围压 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">1.2</span></span></a>、<a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.6</span></span></a> 与 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.3</span></span></a> kgf/cm<sup>2</sup> 下 Monterey 砂的三轴压缩试验数据绘制 <span class="math">\(\varepsilon_1/q\)</span> 对 <span class="math">\(\varepsilon_1/q_a\)</span> 的曲线。这些直线的斜率为 <span class="math">\(R_f\)</span>，截距为 <span class="math">\(100/E_i\)</span>（因应变以百分数给出）。</p>
+<p>该图确定三对 (<span class="math">\(R_f\)</span>, <span class="math">\(E_{50}\)</span>)，汇总于 <a href="#modelph-calibration-table1">表 1（Table  1）</a>。<span class="math">\(R_f\)</span> 的平均值为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.957</span></span></a>。参数 <span class="math">\(p^{ref}\)</span> 无需标定，其值假定为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.1</span></span></a> kgf/cm<sup>2</sup>。最后，绘制参数 <span class="math">\(\ln (−\sigma_3/p^{ref})\)</span> 对 <span class="math">\(\ln (E50)\)</span> 的关系（如 <a href="#modelph-calibration-5">图 7（Figure  7）</a> 所示）并用公式 <a class="reference internal" href="#equation-modelpheqe50">(7)</a>，即可确定 <span class="math">\(m\)</span> 与 <span class="math">\(E^{ref}_{50}\)</span>（注意本例中黏聚力 <span class="math">\(c\)</span> = 0）。<a href="#modelph-calibration-5">图 7（Figure  7）</a> 中趋势线斜率为 <span class="math">\(m\)</span> = <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.707</span></span></a>，截距确定 <span class="math">\(E^{ref}_{50}\)</span> = <span class="math">\(\exp{}\)</span>（<a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">4.63</span></span></a>）= <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">102.5</span></span></a> kgf/cm<sup>2</sup>。</p>
+<span id="modelph-calibration-table1"></span><table border="1" class="colwidths-given icg1 docutils" id="id6">
+<caption><span class="caption-text">表 1：<span class="math">\(R_f\)</span>、<span class="math">\(m\)</span> 与 <span class="math">\(E^{ref}_{50}\)</span> 的确定</span></caption>
+<colgroup>
+<col width="13%"/>
+<col width="13%"/>
+<col width="13%"/>
+<col width="13%"/>
+<col width="13%"/>
+<col width="13%"/>
+<col width="20%"/>
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td><span class="math">\(\sigma_3\)</span></td>
+<td><span class="math">\(R_f\)</span></td>
+<td><span class="math">\(1/E_i\)</span></td>
+<td><span class="math">\(E_i\)</span></td>
+<td><span class="math">\(E_{50}\)</span></td>
+<td><span class="math">\(\ln (E_{50})\)</span></td>
+<td><span class="math">\(\ln \left( {c \cot \phi - \sigma_3} \over {c \cot \phi + p^{ref}} \right)\)</span></td>
+</tr>
+<tr class="row-even"><td>-0.3</td>
+<td>0.9558</td>
+<td>0.002459</td>
+<td>406.7</td>
+<td>212.3</td>
+<td>5.358</td>
+<td>1.099</td>
+</tr>
+<tr class="row-odd"><td>-0.6</td>
+<td>0.9678</td>
+<td>0.001286</td>
+<td>777.6</td>
+<td>401.3</td>
+<td>5.995</td>
+<td>1.792</td>
+</tr>
+<tr class="row-even"><td>-1.2</td>
+<td>0.9476</td>
+<td>0.000930</td>
+<td>1075.3</td>
+<td>565.8</td>
+<td>6.338</td>
+<td>2.485</td>
+</tr>
+</tbody>
+</table>
+<div class="pagebreak docutils container">换页</div>
+<div class="figure align-center" id="id7">
+<span id="modelph-calibration-4"></span><a class="reference internal image-reference" href="../../../../_images/modelph-calibration-4.png"><img alt="../../../../_images/modelph-calibration-4.png" src="../../../../_images/modelph-calibration-4.png" style="width: 500px;"/></a>
+<p class="caption"><span class="caption-text">图 6：由三组不同围压下三轴压缩试验确定 <span class="math">\(R_f\)</span> 与 <span class="math">\(1/E_i\)</span>。</span></p>
+</div>
+<div class="figure align-center" id="id8">
+<span id="modelph-calibration-5"></span><a class="reference internal image-reference" href="../../../../_images/modelph-calibration-5.png"><img alt="../../../../_images/modelph-calibration-5.png" src="../../../../_images/modelph-calibration-5.png" style="width: 500px;"/></a>
+<p class="caption"><span class="caption-text">图 7：由三组不同围压下三轴压缩试验确定 <span class="math">\(m\)</span> 与 <span class="math">\(E^{ref}_{50}\)</span>。</span></p>
+</div>
+<div class="pagebreak docutils container">换页</div>
+<p><em>标定</em> <span class="math">\(E^{ref}_{ur}\)</span>：</p>
+<p>参数 <span class="math">\(m\)</span> 标定后，可利用三轴压缩试验中由原始 <span class="math">\(q\)</span> 对 <span class="math">\(\varepsilon_1\)</span> 数据所得的卸载-再加载模量 <span class="math">\(E_{ur}\)</span>，由公式 <a class="reference internal" href="#equation-modelpheqeur">(5)</a> 直接得到 <span class="math">\(E^{ref}_{ur}\)</span>。<span class="math">\(E^{ref}_{ur}\)</span> 的最终值可用不同围压的数据取平均。以 Monterey 砂为例，<span class="math">\(E^{ref}_{ur}\)</span> 确定为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">320.0</span></span></a> kgf/cm<sup>2</sup>。若没有卸载-再加载模量，对多数土体可取 <span class="math">\((3 \sim 5) E^{ref}_{50}\)</span> 范围内的值。若未提供 <span class="math">\(E^{ref}_{ur}\)</span> 的输入，PH 模型使用默认值 <span class="math">\(4 E^{ref}_{50}\)</span>。</p>
+<p><em>剪胀角的标定</em> <span class="math">\(\psi\)</span>：</p>
+<p>极限剪胀角 <span class="math">\(\psi\)</span> 可估算为 <span class="math">\(\sin \psi = s_m / (s_m+2)\)</span>，其中 <span class="math">\(s_m\)</span> 为三轴压缩试验中 <span class="math">\(\varepsilon_v\)</span> 对 <span class="math">\(\varepsilon_1\)</span> 曲线的最大斜率（<span class="math">\(s_m\)</span>）。斜率 <span class="math">\(s_m\)</span> 按下式求得：<span class="math">\(s_m = -\Delta \varepsilon_v/\Delta \varepsilon_1 \approx -\Delta \varepsilon^p_v/\Delta \varepsilon^p_1 = 2\sin \psi/(1 - \sin \psi)\)</span>。对本文的 Monterey 砂例，剪胀角为 6 ~ 7°（取决于围压）。各值汇总于 <a href="#modelph-calibration-table2">表 2（Table  2）</a>。</p>
+<p><em>标定</em> <span class="math">\(K_{nc}\)</span> <em>与</em> <span class="math">\(E^{ref}_{oed}\)</span>：</p>
+<p>参数 <span class="math">\(K_{nc}\)</span> 与 <span class="math">\(E^{ref}_{oed}\)</span> 可由固结仪试验标定。固结仪试验中 <span class="math">\(\sigma_3 / \sigma_1\)</span> 的极限值为 <span class="math">\(K_{nc}\)</span>。当 <span class="math">\(\sigma_1 = -p^{ref}\)</span> 时，<span class="math">\(\sigma_1\)</span> 对 <span class="math">\(\varepsilon_1\)</span> 曲线的切线模量为 <span class="math">\(E^{ref}_{oed}\)</span>。</p>
+<p><em>泊松比的标定</em>，<span class="math">\(\nu\)</span>：</p>
+<p>泊松比可由 <span class="math">\(\varepsilon_v\)</span> 对 <span class="math">\(\varepsilon_1\)</span> 曲线的初始斜率 <span class="math">\(s_0\)</span>（通常为负值）估计，使 <span class="math">\(\nu = (1+\tan s_0)/2\)</span>。PH 模型中默认值为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.2</span></span></a>。本例的 Monterey 砂估计泊松比为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.3</span></span></a>。</p>
+<p><em>标定</em> <span class="math">\(e_{max}\)</span>：</p>
+<p>若需要剪胀平滑技术（<a href="#modelph-2">图 2（Figure  2）</a>），则需要材料参数 <span class="math">\(e_{max}\)</span>。<span class="math">\(e_{max}\)</span> 的值可通过执行标准室内试验（ASTM D4254）确定。若无标准 ASTM D4254 试验数据，可依据三轴压缩试验中体积应变对轴应变的曲线用试算法估算其值。本例中估算为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.803</span></span></a>。若未作为输入提供，则使用默认值 <span class="math">\(e_{max}\)</span> = <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">999.0</span></span></a>，这意味着不启用剪胀平滑技术。</p>
+<p><em>其他参数的标定</em>：</p>
+<p><span class="math">\(\sigma^{ini}_1\)</span>、<span class="math">\(\sigma^{ini}_2\)</span>、<span class="math">\(\sigma^{ini}_3\)</span>、<span class="math">\(e_{ini}\)</span> 与 <span class="math">\(OCR\)</span> 等材料参数为已知初始参数，应与初始条件一致。部分参数可通过试算方法估算。</p>
+<p>为 Monterey 砂确定的全部材料性质汇总于 <a href="#modelph-calibration-table2">表 2（Table  2）</a>。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<span id="modelph-calibration-table2"></span><table border="1" class="colwidths-given icg1 docutils" id="id9">
+<caption><span class="caption-text">表 2：松散 Monterey 砂的标定材料参数</span></caption>
+<colgroup>
+<col width="21%"/>
+<col width="26%"/>
+<col width="26%"/>
+<col width="26%"/>
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>参数</td>
+<td><span class="math">\(\sigma_3\)</span> = -1.2 (kgf/cm<sup>2</sup>)</td>
+<td><span class="math">\(\sigma_3\)</span> = -0.6 (kgf/cm<sup>2</sup>)</td>
+<td><span class="math">\(\sigma_3\)</span> = -0.3 (kgf/cm<sup>2</sup>)</td>
+</tr>
+<tr class="row-even"><td><span class="math">\(E^{ref}_{50}\)</span> (kgf/cm<sup>2</sup>)</td>
+<td> </td>
+<td>102.5</td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td><span class="math">\(E^{ref}_{ur}\)</span> (kgf/cm<sup>2</sup>)</td>
+<td> </td>
+<td>320.0</td>
+<td> </td>
+</tr>
+<tr class="row-even"><td><span class="math">\(m\)</span></td>
+<td> </td>
+<td>0.707</td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td><span class="math">\(R_f\)</span></td>
+<td> </td>
+<td>0.957</td>
+<td> </td>
+</tr>
+<tr class="row-even"><td><span class="math">\(p^{ref}\)</span> (kgf/cm<sup>2</sup>)</td>
+<td> </td>
+<td>0.1</td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td><span class="math">\(\nu\)</span></td>
+<td> </td>
+<td>0.3</td>
+<td> </td>
+</tr>
+<tr class="row-even"><td><span class="math">\(\phi\)</span> (degrees)</td>
+<td> </td>
+<td>34.65</td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td><span class="math">\(c\)</span> (kgf/cm<sup>2</sup>)</td>
+<td> </td>
+<td>0.0</td>
+<td> </td>
+</tr>
+<tr class="row-even"><td><span class="math">\(e_{max}\)</span></td>
+<td> </td>
+<td>0.803</td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td><span class="math">\(K_{nc}\)</span></td>
+<td> </td>
+<td>0.5</td>
+<td> </td>
+</tr>
+<tr class="row-even"><td><span class="math">\(\psi\)</span> (degrees)</td>
+<td>6.1</td>
+<td>6.4</td>
+<td>7.0</td>
+</tr>
+<tr class="row-odd"><td><span class="math">\(\sigma^{ini}_{1 \sim 3}\)</span> (kgf/cm<sup>2</sup>)</td>
+<td>-1.2</td>
+<td>-0.6</td>
+<td>-0.3</td>
+</tr>
+<tr class="row-even"><td><span class="math">\(OCR\)</span></td>
+<td>1.0</td>
+<td>2.0</td>
+<td>4.0</td>
+</tr>
+<tr class="row-odd"><td><span class="math">\(e_{ini}\)</span></td>
+<td>0.783</td>
+<td>0.786</td>
+<td>0.781</td>
+</tr>
+</tbody>
+</table>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p>用这些参数即可由 PH 模型模拟三轴压缩试验。<a href="#modelph-calibration-6a">图 8（Figures  8）</a> 与 <a href="#modelph-calibration-6b"> 9</a> 所示曲线表明模拟结果与室内试验数据吻合良好。</p>
+<div class="pagebreak docutils container">换页</div>
+<div class="figure align-center" id="id10">
+<span id="modelph-calibration-6a"></span><a class="reference internal image-reference" href="../../../../_images/modelph-calibration-6a.png"><img alt="../../../../_images/modelph-calibration-6a.png" src="../../../../_images/modelph-calibration-6a.png" style="width: 500px;"/></a>
+<p class="caption"><span class="caption-text">图 8：Monterey 细砂固结排水三轴压缩试验的偏应力对轴向应变。</span></p>
+</div>
+<div class="figure align-center" id="id11">
+<span id="modelph-calibration-6b"></span><a class="reference internal image-reference" href="../../../../_images/modelph-calibration-6b.png"><img alt="../../../../_images/modelph-calibration-6b.png" src="../../../../_images/modelph-calibration-6b.png" style="width: 500px;"/></a>
+<p class="caption"><span class="caption-text">图 9：Monterey 细砂固结排水三轴压缩试验的体积应变对轴向应变。</span></p>
+</div>
+<p class="h4 rubric" id="modelphsmallstrain">小应变刚度选项</p>
+<p>用塑性硬化模型模拟卸载-再加载路径时，再加载路径将是卸载路径的反向。但该弹性行为假定应变处于极小应变范围。试验表明土体刚度模量依赖于应变——随剪应变增大而非线性下降。应变可分为三个水平：极小应变，其中刚度模量假定为常数（<span class="math">\(G_0\)</span>，有时称为 <span class="math">\(G_{max}\)</span>）；小应变，其中刚度模量随应变增大而非线性降低；大应变，其中土体接近或处于破坏，刚度模量相对较小。<a href="#modelph-strainrange">图 10（Figure  10）</a> 以岩土工程应用及室内或原位试验量测精度为参照，示出归一化刚度模量退化曲线。重要的是，为模拟所选的土体刚度模量不应与岩土施工末期的应变水平相联系，也不应取自试样受扰严重的室内试验，因为此时土体刚度模量可能已较初始值大幅降低。塑性硬化模型新增的小应变刚度模量选项预期可计入这种应变依赖性。</p>
+<div class="figure align-center" id="id12">
+<span id="modelph-strainrange"></span><a class="reference internal image-reference" href="../../../../_images/modelph-strainrange.png"><img alt="../../../../_images/modelph-strainrange.png" src="../../../../_images/modelph-strainrange.png" style="width: 500px;"/></a>
+<p class="caption"><span class="caption-text">图 10：刚度模量退化曲线与典型应变范围（改绘自 Atkinson 与 Sallfors 1991、Ishihara 1996）。</span></p>
+</div>
+<p>要在塑性硬化模型中激活小应变刚度，应把 <a class="reference internal" href="../../../docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">小应变标志（<span class="varfishsym"><span class="null">flag-smallstrain</span></span>）</a>（默认为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>）转为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>。只需再赋予两个性质：<a class="reference internal" href="../../../docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">0 参考刚度（<span class="varfishsym"><span class="null">stiffness-0-reference</span></span>）</a>（<span class="math">\(E_0^{ref}\)</span>）与 <a class="reference internal" href="../../../docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">应变 70 命令（<span class="varfishsym"><span class="null">strain-70</span></span>）</a>（<span class="math">\(\gamma_{70}\)</span>）。</p>
+<p>参考压力处的初始刚度模量 <span class="math">\(E_0^{ref}\)</span> 决定极小应变水平下的剪切刚度模量（<span class="math">\(G_0\)</span>）。可由以下关系估算</p>
+<div class="math" id="equation-modelpheqsse0">
+<span class="eqno">(40)</span>\[E_0 = E_0^{ref} Z^m\]</div>
+<p>以及</p>
+<div class="math" id="equation-modelpheqssg0">
+<span class="eqno">(41)</span>\[G_0 = \frac{E_0}{2(1+\nu)}\]</div>
+<p>其中 <span class="math">\(Z\)</span>、<span class="math">\(m\)</span> 与 <span class="math">\(\nu\)</span> 按标准塑性硬化模型定义。若无专门数据，<span class="math">\(E_0^{ref}\)</span> 的默认值取 <span class="math">\(3 E_{ur}^{ref}\)</span>。本模型中 <span class="math">\(E_0^{ref}\)</span> 不允许等于或小于 <span class="math">\(E_{ur}^{ref}\)</span>。结合上述两式，<span class="math">\(E_0^{ref}\)</span> 可由下式估算</p>
+<div class="math" id="equation-modelpheqssg02">
+<span class="eqno">(42)</span>\[G_0 = \rho V_s^2\]</div>
+<p>其中 <span class="math">\(\rho\)</span> 为土体密度，<span class="math">\(V_s\)</span> 为实测原位土体剪切波速。<span class="math">\(G_0\)</span> 可由其他原位试验数据（如 SPT、CPT 与 DMT）或某些公认的经验关系估算。</p>
+<p>参考剪应变（<span class="math">\(\gamma_{70}\)</span>）取割线剪切刚度模量约为 <span class="math">\(G_0\)</span> 的 70%（严格说应为 72.2%）时的值。<span class="math">\(\gamma_{70}\)</span> 的默认值为 2e-4。<span class="math">\(\gamma_{70}\)</span> 的典型值列于 <a href="#modelph-gamma70-table">表 3（Table  3）</a>：</p>
+<span id="modelph-gamma70-table"></span><table border="1" class="colwidths-given icg1 docutils" id="id13">
+<caption><span class="caption-text">表 3：<span class="math">\(\gamma_{70}\)</span> 的典型值</span></caption>
+<colgroup>
+<col width="50%"/>
+<col width="50%"/>
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>Sand:</td>
+<td> </td>
+</tr>
+<tr class="row-even"><td>深度 0 至 6 m 处</td>
+<td>1.1e-4</td>
+</tr>
+<tr class="row-odd"><td>深度 6 至 15 m 处</td>
+<td>1.6e-4</td>
+</tr>
+<tr class="row-even"><td>深度 15 至 37 m 处</td>
+<td>2.3e-4</td>
+</tr>
+<tr class="row-odd"><td>深度 37 至 76 m 处</td>
+<td>3.3e-4</td>
+</tr>
+<tr class="row-even"><td>深度 76 至 150 m 处</td>
+<td>4.5e-4</td>
+</tr>
+<tr class="row-odd"><td>深度 150 至 300 m 处</td>
+<td>7.0e-4</td>
+</tr>
+<tr class="row-even"><td>Clay:</td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td>塑性指数 = 30</td>
+<td>3.5e-4</td>
+</tr>
+<tr class="row-even"><td>塑性指数 = 50</td>
+<td>7.7e-4</td>
+</tr>
+<tr class="row-odd"><td>塑性指数 = 100</td>
+<td>1.8e-3</td>
+</tr>
+</tbody>
+</table>
+<p>一旦已知 <span class="math">\(G_0\)</span> 与 <span class="math">\(\gamma_{70}\)</span>，小应变割线刚度模量按下式计算</p>
+<div class="math" id="equation-modelpheqssgs">
+<span class="eqno">(43)</span>\[G_s =  \frac{G_0}{1 + \frac{0.385\gamma}{\gamma_{70}}}\]</div>
+<p>其切线刚度模量为</p>
+<div class="math" id="equation-modelpheqssgt">
+<span class="eqno">(44)</span>\[G =  \frac{G_0}{\left(1 + \frac{0.385\gamma}{\gamma_{70}}\right)^2}\]</div>
+<p>切向剪切刚度模量在本模型中设定 <span class="math">\(G_{ur} = E_{ur} / [3(1-2\nu)]\)</span> 的下限。</p>
+<p>考虑卸载-再加载应变相关刚度模量的详细算法见 Benz（2007）。需注意该算法在嵌套滞回圈上表现可能不佳（Niemunis 与 Cudny，2018），并存在所谓的过冲问题。对于会形成嵌套滞回圈的随机卸载-再加载路径的完全动力问题，不推荐采用带小应变刚度的塑性硬化模型。</p>
+<p class="h3 rubric">参考文献</p>
+<p>Atkinson, J. H., &amp; Sallfors, G. “Experimental determination of stress/strain-time characteristics in laboratory and in situ tests,” in <span class="bi">Proceedings, 10th ECSMFE</span>, Florence, Rotterdam: Balkema, 959-999  (1991).</p>
+<p>Benz, T. <span class="bi">Small-strain stiffness of soils and its numerical consequences (Vol. 5)</span>. Stuttgart: Univ. Stuttgart, Inst. f. Geotechnik (2007).</p>
+<p>Cheng, Z., and C. Detournay. <span class="bi">Plastic hardening model I: Implementation in FLAC3D.</span> In <span class="bi">Proc. 4th Itasca Symposium on Applied Numerical Modeling</span>. 2016.</p>
+<p>Duncan, J. M., and C. Y. Chang.《土中应力与应变的非线性分析》，<em>Soil Mechanics</em>，<span class="bi">96</span>（SM5），1629-1653（1970）。</p>
+<p>Niemunis, A., and M. Cudny. <span class="bi">Discussion on “Dynamic soil-structure interaction: A three-dimensional numerical approach and its application to the Lotung case study”. Poor performance of the HSS model.</span> <em>Computer and Geotechnics</em>, 98(6), 243-245 (2018).</p>
+<p>Ishihara, K. <span class="bi">Soil behaviour in earthquake geotechnics.</span> Clarendon Press (1996).</p>
+<p>Schanz, T., Vermeer, P. A., &amp; Bonnier, P. G. “The hardening soil model: formulation and verification,” in <span class="bi">Beyond 2000 in computational geotechnics</span>, 281-296 (1999).</p>
+<p class="h3 rubric" id="plastichardeningmodelprops"><span class="cmdkey">plastic-hardening</span> 模型性质</p>
+<p>用以下关键字配合 <a class="reference internal" href="../../../../flac3d/zone/doc/manual/zone_manual/zone_commands/cmd_zone.property.html#command:zone.property" title="Make a constitutive model(s) property assignment. Properties are name value
+pairs where the name is the keyword given in the command and the value type
+is specific to the property. The assignment will affect *any* zone whose constitutive
+model includes the property named (noting that some properties, such as  bulk ,
+for instance, appear in *many* constitutive models).  Limiting a property assignment
+to zones that have a particular constitutive model assignment is done using
+the...">设置网格单元属性（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">property</span></code>）</a> 命令设置塑性硬化模型的这些性质。</p>
+<span class="target" id="plastichardeningprops"></span><dl class="command">
+<dt id="command:plastic-hardening">
+<span class="cmdname"><span class="hide">p</span><span class="hide">l</span><span class="hide">a</span><span class="hide">s</span><span class="hide">t</span><span class="hide">i</span><span class="hide">c</span><span class="hide">-</span><span class="hide">h</span><span class="hide">a</span><span class="hide">r</span><span class="hide">d</span><span class="hide">e</span><span class="hide">n</span><span class="hide">i</span><span class="hide">n</span><span class="hide">g</span><span class="hide"> </span></span></dt>
+<dd><dl class="keyword">
+<dt id="kwd:plastic-hardening.cohesion">
+<span class="cmdkey"><span class="pref">c</span><span class="null">o</span><span class="null">h</span><span class="null">e</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>黏聚力 <span class="math">\(c\)</span>。默认值及截止（允许最小值）为 <span class="math">\(10^{-5} \cdot p^{ref}\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.dilation">
+<span class="cmdkey"><span class="pref">d</span><span class="null">i</span><span class="null">l</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>极限剪胀角（度）<span class="math">\(\psi\)</span>。默认为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.0</span></span></a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.exponent">
+<span class="cmdkey"><span class="pref">e</span><span class="null">x</span><span class="null">p</span><span class="null">o</span><span class="null">n</span><span class="null">e</span><span class="null">n</span><span class="null">t</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>弹性模量的指数 <span class="math">\(m\)</span>。允许值为 <span class="math">\(0 \le m \le 0.999\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.friction">
+<span class="cmdkey"><span class="pref">f</span><span class="null">r</span><span class="null">i</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>极限摩擦角，单位为度，<span class="math">\(\phi\)</span>。默认值及截止（允许最小值）为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.001</span></span></a> 度。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.stress-1-effective">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">s</span><span class="null">s</span><span class="null">-</span><span class="pref">1</span><span class="null">-</span><span class="pref">e</span><span class="null">f</span><span class="null">f</span><span class="null">e</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">v</span><span class="null">e</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>初始最小主有效应力 <span class="math">\(\sigma^{ini}_1\)</span>。见注*。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.stress-2-effective">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">s</span><span class="null">s</span><span class="null">-</span><span class="pref">2</span><span class="null">-</span><span class="pref">e</span><span class="null">f</span><span class="null">f</span><span class="null">e</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">v</span><span class="null">e</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>初始中值主有效应力 <span class="math">\(\sigma^{ini}_2\)</span>。见注*。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.stress-3-effective">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">s</span><span class="null">s</span><span class="null">-</span><span class="pref">3</span><span class="null">-</span><span class="pref">e</span><span class="null">f</span><span class="null">f</span><span class="null">e</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">v</span><span class="null">e</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>初始最大主有效应力 <span class="math">\(\sigma^{ini}_3\)</span>。见注*。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.pressure-reference">
+<span class="cmdkey"><span class="pref">p</span><span class="null">r</span><span class="null">e</span><span class="null">s</span><span class="null">s</span><span class="null">u</span><span class="null">r</span><span class="null">e</span><span class="null">-</span><span class="pref">r</span><span class="null">e</span><span class="null">f</span><span class="null">e</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">c</span><span class="null">e</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>参考压力 <span class="math">\(p^{ref}\)</span>。应依据模型所采用的应力/压力单位指定非零值。最常用且强烈推荐的参考压力为标准大气压，例如 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">100.0</span></span></a> kPa/<a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">1.0e5</span></span></a>（若采用 Pa，或其他与所用应力/压力单位相符的值）。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.stiffness-50-reference">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">i</span><span class="null">f</span><span class="null">f</span><span class="null">n</span><span class="null">e</span><span class="null">s</span><span class="null">s</span><span class="null">-</span><span class="pref">5</span><span class="pref">0</span><span class="null">-</span><span class="pref">r</span><span class="null">e</span><span class="null">f</span><span class="null">e</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">c</span><span class="null">e</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>在 <span class="math">\(\sigma_3 = - p^{ref}\)</span> 的三轴试验中，极限偏应力 <span class="math">\(q_f\)</span> 的 50% 处的割线刚度 <span class="math">\(E^{ref}_{50}\)</span>。必须指定非零值。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.stiffness-0-reference">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">i</span><span class="null">f</span><span class="null">f</span><span class="null">n</span><span class="null">e</span><span class="null">s</span><span class="null">s</span><span class="null">-</span><span class="pref">0</span><span class="null">-</span><span class="pref">r</span><span class="null">e</span><span class="null">f</span><span class="null">e</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">c</span><span class="null">e</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>当 <span class="math">\(\sigma_3 = - p^{ref}\)</span> 时零应变下的初始刚度 <span class="math">\(E^{ref}_{0}\)</span>。要求 <span class="math">\(E^{ref}_{0} &gt; E^{ref}_{ur}\)</span>。若未指定，则默认值为 <span class="math">\(E^{ref}_{0} = 3 \cdot E^{ref}_{ur}\)</span>。仅当小应变刚度标志为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 时才需要该性质，否则其取值无用。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.stiffness-oedometer-reference">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">i</span><span class="null">f</span><span class="null">f</span><span class="null">n</span><span class="null">e</span><span class="null">s</span><span class="null">s</span><span class="null">-</span><span class="pref">o</span><span class="null">e</span><span class="null">d</span><span class="null">o</span><span class="null">m</span><span class="null">e</span><span class="null">t</span><span class="null">e</span><span class="null">r</span><span class="null">-</span><span class="pref">r</span><span class="null">e</span><span class="null">f</span><span class="null">e</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">c</span><span class="null">e</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>固结仪试验中 <span class="math">\(\sigma_1 = - p^{ref}\)</span> 时的切线刚度 <span class="math">\(E^{ref}_{oed}\)</span>。默认情况下若未指定 <span class="math">\(E^{ref}_{oed}\)</span> 而已指定 <span class="math">\(E^{ref}_{50}\)</span>，则 <span class="math">\(E^{ref}_{oed} = E^{ref}_{50}\)</span>。若 <span class="math">\(E^{ref}_{oed} &lt; 0.5 E^{ref}_{50}\)</span>，土体压缩性很高，建议改用 <a class="reference internal" href="../../softsoil/doc/modelsoftsoil.html#modelsoftsoil"><span class="std std-ref">Soft-Soil（SS）模型</span>（Soft-Soil (SS) model）</a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.stiffness-ur-reference">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">i</span><span class="null">f</span><span class="null">f</span><span class="null">n</span><span class="null">e</span><span class="null">s</span><span class="null">s</span><span class="null">-</span><span class="pref">u</span><span class="pref">r</span><span class="null">-</span><span class="pref">r</span><span class="null">e</span><span class="null">f</span><span class="null">e</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">c</span><span class="null">e</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>三轴试验中当 <span class="math">\(\sigma_3 = - p^{ref}\)</span> 时的卸载-再加载刚度 <span class="math">\(E^{ref}_{ur}\)</span>。该值必须大于 <span class="math">\(2 \cdot E^{ref}_{50}\)</span>。默认 <span class="math">\(E^{ref}_{ur} = 4 \cdot E^{ref}_{50}\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.coefficient-normally-consolidation">
+<span class="cmdkey"><span class="pref">c</span><span class="null">o</span><span class="null">e</span><span class="null">f</span><span class="null">f</span><span class="null">i</span><span class="null">c</span><span class="null">i</span><span class="null">e</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">n</span><span class="null">o</span><span class="null">r</span><span class="null">m</span><span class="null">a</span><span class="null">l</span><span class="null">l</span><span class="null">y</span><span class="null">-</span><span class="pref">c</span><span class="null">o</span><span class="null">n</span><span class="null">s</span><span class="null">o</span><span class="null">l</span><span class="null">i</span><span class="null">d</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>正常固结系数 <span class="math">\(K_{nc}\)</span>。不允许小于 <span class="math">\(\nu / (1-\nu)\)</span>，常用范围为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.5</span></span></a> 到 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.7</span></span></a>。默认为 <span class="math">\(K_{nc} = 1 - \sin \phi\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.constant-alpha">
+<span class="cmdkey"><span class="pref">c</span><span class="null">o</span><span class="null">n</span><span class="null">s</span><span class="null">t</span><span class="null">a</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">a</span><span class="null">l</span><span class="null">p</span><span class="null">h</span><span class="null">a</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>帽盖屈服函数中的无量纲参数 <span class="math">\(\alpha\)</span>。在内部初始化。备选方案见注*。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.factor-contraction">
+<span class="cmdkey"><span class="pref">f</span><span class="null">a</span><span class="null">c</span><span class="null">t</span><span class="null">o</span><span class="null">r</span><span class="null">-</span><span class="pref">c</span><span class="pref">o</span><span class="null">n</span><span class="null">t</span><span class="null">r</span><span class="null">a</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>收缩因子 <span class="math">\(F_c\)</span>，允许范围 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.0</span></span></a> 到 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.25</span></span></a>。默认为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.0</span></span></a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.factor-cut">
+<span class="cmdkey"><span class="pref">f</span><span class="null">a</span><span class="null">c</span><span class="null">t</span><span class="null">o</span><span class="null">r</span><span class="null">-</span><span class="pref">c</span><span class="pref">u</span><span class="null">t</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>截止因子 <span class="math">\(f_{cut}\)</span>。默认为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.1</span></span></a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.flag-initialization">
+<span class="cmdkey"><span class="pref">f</span><span class="null">l</span><span class="null">a</span><span class="null">g</span><span class="null">-</span><span class="pref">i</span><span class="null">n</span><span class="null">i</span><span class="null">t</span><span class="null">i</span><span class="null">a</span><span class="null">l</span><span class="null">i</span><span class="null">z</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>初始化标志。若设为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">1</span></span></a>，则内部变量将被重新计算。默认为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">0</span></span></a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.flag-smallstrain">
+<span class="cmdkey"><span class="pref">f</span><span class="null">l</span><span class="null">a</span><span class="null">g</span><span class="null">-</span><span class="pref">s</span><span class="null">m</span><span class="null">a</span><span class="null">l</span><span class="null">l</span><span class="null">s</span><span class="null">t</span><span class="null">r</span><span class="null">a</span><span class="null">i</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>小应变刚度标志。若设为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>，则启用小应变刚度。默认为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.over-consolidation-ratio">
+<span class="cmdkey"><span class="pref">o</span><span class="null">v</span><span class="null">e</span><span class="null">r</span><span class="null">-</span><span class="pref">c</span><span class="null">o</span><span class="null">n</span><span class="null">s</span><span class="null">o</span><span class="null">l</span><span class="null">i</span><span class="null">d</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="pref">r</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>超固结比 <span class="math">\(OCR\)</span>。对正常固结土，该值应输入为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">1.0</span></span></a>。默认为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">100.0</span></span></a>，表示“表观”无帽盖的剪切塑性硬化模型。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.poisson">
+<span class="cmdkey"><span class="pref">p</span><span class="null">o</span><span class="null">i</span><span class="null">s</span><span class="null">s</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>泊松比 <span class="math">\(\nu\)</span>。默认为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.2</span></span></a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.stiffness-cap-hardening">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">i</span><span class="null">f</span><span class="null">f</span><span class="null">n</span><span class="null">e</span><span class="null">s</span><span class="null">s</span><span class="null">-</span><span class="pref">c</span><span class="null">a</span><span class="null">p</span><span class="null">-</span><span class="pref">h</span><span class="null">a</span><span class="null">r</span><span class="null">d</span><span class="null">e</span><span class="null">n</span><span class="null">i</span><span class="null">n</span><span class="null">g</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>帽盖硬化的硬化模量 <span class="math">\(H_c\)</span>。在内部初始化。备选方案见注*。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.strain-70">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">r</span><span class="null">a</span><span class="null">i</span><span class="null">n</span><span class="null">-</span><span class="pref">7</span><span class="pref">0</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>使 <span class="math">\(G_s / G_0\)</span> = 72.2% 的剪应变。若未指定，默认值为 <span class="math">\(\gamma_{70} = 2 \times 10^{-4}\)</span>。仅当小应变刚度标志为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 时才需要该性质，否则其值无用。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.failure-ratio">
+<span class="cmdkey"><span class="pref">f</span><span class="null">a</span><span class="null">i</span><span class="null">l</span><span class="null">u</span><span class="null">r</span><span class="null">e</span><span class="null">-</span><span class="pref">r</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>破坏比，<span class="math">\(R_f\)</span>。默认值为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.9</span></span></a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.tension">
+<span class="cmdkey"><span class="pref">t</span><span class="null">e</span><span class="null">n</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>抗拉强度，<span class="math">\(\sigma^t\)</span>。默认值为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.0</span></span></a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.void-initial">
+<span class="cmdkey"><span class="pref">v</span><span class="null">o</span><span class="null">i</span><span class="null">d</span><span class="null">-</span><span class="pref">i</span><span class="null">n</span><span class="null">i</span><span class="null">t</span><span class="null">i</span><span class="null">a</span><span class="null">l</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>初始孔隙比 <span class="math">\(e_{ini}\)</span>。若当前孔隙比不重要，或不愿激活剪胀平滑技术，直接使用默认值即可。默认为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">1.0</span></span></a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.void-maximum">
+<span class="cmdkey"><span class="pref">v</span><span class="null">o</span><span class="null">i</span><span class="null">d</span><span class="null">-</span><span class="pref">m</span><span class="null">a</span><span class="null">x</span><span class="null">i</span><span class="null">m</span><span class="null">u</span><span class="null">m</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>允许的最大孔隙比 <span class="math">\(e_{max}\)</span>。默认为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">999.0</span></span></a>，该值并不真实，但可确保剪胀平滑不会被有效激活。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.bulk">
+<span class="cmdkey"><span class="pref">b</span><span class="null">u</span><span class="null">l</span><span class="null">k</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>当前加载-卸载体积模量 <span class="math">\(K\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.shear">
+<span class="cmdkey"><span class="pref">s</span><span class="null">h</span><span class="null">e</span><span class="null">a</span><span class="null">r</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>当前卸载-再加载剪切模量 <span class="math">\(G\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.plastic-hardening-shear">
+<span class="cmdkey"><span class="pref">p</span><span class="null">l</span><span class="null">a</span><span class="null">s</span><span class="null">t</span><span class="null">i</span><span class="null">c</span><span class="null">-</span><span class="pref">h</span><span class="null">a</span><span class="null">r</span><span class="null">d</span><span class="null">e</span><span class="null">n</span><span class="null">i</span><span class="null">n</span><span class="null">g</span><span class="null">-</span><span class="pref">s</span><span class="null">h</span><span class="null">e</span><span class="null">a</span><span class="null">r</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>累积剪切塑性硬化参数 <span class="math">\(\gamma^p\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.plastic-hardening-volume">
+<span class="cmdkey"><span class="pref">p</span><span class="null">l</span><span class="null">a</span><span class="null">s</span><span class="null">t</span><span class="null">i</span><span class="null">c</span><span class="null">-</span><span class="pref">h</span><span class="null">a</span><span class="null">r</span><span class="null">d</span><span class="null">e</span><span class="null">n</span><span class="null">i</span><span class="null">n</span><span class="null">g</span><span class="null">-</span><span class="pref">v</span><span class="null">o</span><span class="null">l</span><span class="null">u</span><span class="null">m</span><span class="null">e</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>累积体积塑性硬化参数 <span class="math">\(\varepsilon^p_v\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.pressure-cap">
+<span class="cmdkey"><span class="pref">p</span><span class="null">r</span><span class="null">e</span><span class="null">s</span><span class="null">s</span><span class="null">u</span><span class="null">r</span><span class="null">e</span><span class="null">-</span><span class="pref">c</span><span class="null">a</span><span class="null">p</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>帽盖（先期固结）压力 <span class="math">\(p_c\)</span>。由当前应力 <span class="math">\(\alpha\)</span> 与 <span class="math">\(OCR\)</span> 确定。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:plastic-hardening.void">
+<span class="cmdkey"><span class="pref">v</span><span class="null">o</span><span class="null">i</span><span class="null">d</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>当前孔隙比 <span class="math">\(e\)</span></p>
+</dd></dl>
+<p><strong>图例</strong></p>
+<dl class="docutils">
+<dt>(a) 高级属性。</dt>
+<dd>该属性具有默认值；在较简单的模型应用中，无需专门赋值。</dd>
+<dt>(r) 只读属性。</dt>
+<dd>该属性不能由用户设置，但可以列出、绘图显示，或通过 <span class="codename">FISH</span> 访问。</dd>
+</dl>
+<p><strong>注意事项</strong></p>
+<ul class="simple">
+<li>抗拉截断为 <span class="math">\({\sigma}^t = min({\sigma}^t, c/\tan \phi)\)</span>。</li>
+<li>由于 PH 模型是应力相关模型，首次赋予该模型时必须通过命令或 <span class="codename">FISH</span> 函数指定参数 <span class="math">\(\sigma^{ini}_1\)</span>、<span class="math">\(\sigma^{ini}_2\)</span>、<span class="math">\(\sigma^{ini}_3\)</span>。负值表示压应力。</li>
+<li>某些参数组合可能因以下原因而被拒绝：1）一个或多个参数超出预定限制；2）无法正确确定内部参数；或 3）出现数值不稳定。</li>
+<li>若用户为 <span class="math">\(\alpha\)</span> 与 <span class="math">\(H_c\)</span> 都指定了非零值，则 PH 模型将使用这些用户定义的参数 <span class="math">\(\alpha\)</span> 与 <span class="math">\(H_c\)</span>，不再对 <span class="math">\(\alpha\)</span> 与 <span class="math">\(H_c\)</span> 进行内部计算。</li>
+</ul>
+</dd></dl>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../docproject/source/manual/program_guide/program_guide.html">程序指南</a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../docproject/source/manual/program_guide/models/models.html">Constitutive Models</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../../../docproject/source/manual/program_guide/models/theory/plasticmodel.html">Plastic Model Group</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../../chsoil/doc/modelchsoil.html" title="previous chapter"> Simplified Cap-Yield (CHSoil) Model*</a> |    
+       <a href="../../swell/doc/modelswell.html" title="next chapter">Swell Model*</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Plastic-Hardening (PH) Model*" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../_static/icgscripts.js"></script>
+</body>
+</html>

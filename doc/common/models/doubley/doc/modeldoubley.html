@@ -1,0 +1,557 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>双屈服模型 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../search.html" rel="search" title="Search"/>
+<link href="../../camclay/doc/modelcamclay.html" rel="next" title="Modified Cam-Clay Model"/>
+<link href="../../subi/doc/modelsubi.html" rel="prev" title="Bilinear Strain-Softening/Hardening Ubiquitous-Joint (SUBI) Model"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="hide sectionname docutils container">
+<span class="codename">FLAC3D</span> Theory and Background • Constitutive Models</div>
+<div class="section" id="double-yield-model">
+<span id="modeldoubley"></span><h1>双屈服模型</h1>
+<p>该模型通过应变软化/硬化模型中除剪切与拉伸破坏包络之外的体积屈服面（或称“帽盖”）计入等向压力引起的永久体积变化。为简便起见，由“帽盖压力” <span class="math">\(p_c &gt;\)</span> 0 定义的帽盖面与剪应力无关；在剪应力-平均应力图上它是一条竖直线。帽盖压力的硬化行为由体积塑性应变激活，并遵循 <a class="reference internal" href="../../ssoft/doc/modelssoft.html#userdefinedfunctions4tables"><span class="std std-ref">用户提供表格</span>（user-supplied table）</a> 中规定的分段线性法则。随塑性体积应变发展，切线体积模量与剪切模量按特定法则演化，该法则由一个假定为常数的因子 <span class="math">\(R\)</span> 定义，即弹性体积模量与塑性体积模量之比。</p>
+<p class="h3 rubric">公式</p>
+<p>除应变软化模型相关参数外，只需再增加两个材料参数与一个表格：</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><span class="math">\(p_c\)</span> 的初值，对应材料过去经历过的最大平均压力；</li>
+<li>大于 1 的 <span class="math">\(R\)</span> 值，控制体积卸载时应力-应变曲线的斜率（土力学中称为“回弹”线）；以及</li>
+<li>“硬化曲线”的表格表示，该曲线把帽盖压力 <span class="math">\(p_c\)</span> 与塑性体积应变 <span class="math">\(e^{pv}\)</span> 关联。</li>
+</ol>
+</div></blockquote>
+<p>因此，在双参数模型所施加的约束范围内，可模拟任何由试验室测定的硬化性状。</p>
+<p class="h4 rubric">增量弹性定律</p>
+<p>在该模型的 <span class="codename">FLAC3D</span>/<span class="codename">3DEC</span> 实现中，使用主应力 <span class="math">\(\sigma_1\)</span>、<span class="math">\(\sigma_2\)</span>、<span class="math">\(\sigma_3\)</span>。主应力与主方向由应力张量分量求得，并按下式排序（回想压应力为负）</p>
+<div class="math" id="equation-modeldoubleyeqstressorder">
+<span class="eqno">(1)</span>\[ \sigma_1 \leq \sigma_2 \leq \sigma_3\]</div>
+<p>相应的主应变增量 <span class="math">\(\Delta e_{1}, \Delta e_{2}, \Delta e_{3}\)</span> 被分解为：</p>
+<div class="math" id="equation-modeldoubleyeqstraindecomp">
+<span class="eqno">(2)</span>\[ \Delta e_i = \Delta e_i^e + \Delta e_i^p \qquad i=1,3\]</div>
+<p>其中上标 <span class="math">\(e\)</span> 与 <span class="math">\(p\)</span> 分别指弹性与塑性部分，塑性分量仅在塑性流动期间非零。（注意伸长应变取正。）假定剪切、拉伸与体积屈服的塑性贡献可叠加，故可写为</p>
+<div class="math" id="equation-modeldoubleyeqplasticstraindecomp">
+<span class="eqno">(3)</span>\[ \Delta e_i^p = \Delta e_i^{ps} + \Delta e_i^{pt} + \Delta e_i^{pv}\]</div>
+<p>其中上标 <span class="math">\(ps\)</span>、<span class="math">\(pt\)</span> 与 <span class="math">\(pv\)</span> 分别表示塑性剪切、塑性拉伸与塑性体积应变。按本节约定，符号 <span class="math">\(\Delta e\)</span> 用于指代体积应变增量 <span class="math">\((\Delta e_1 + \Delta e_2 + \Delta e_3)\)</span> 的<em>负值</em>，其塑性部分为 <span class="math">\(\Delta e^p\)</span>、弹性部分为 <span class="math">\(\Delta e^e\)</span>。符号 <span class="math">\(\Delta e^{pv}\)</span> 指代塑性体积应变 <span class="math">\((\Delta e_1^{pv} + \Delta e_2^{pv} + \Delta e_3^{pv})\)</span> 的<em>负值</em>。</p>
+<p>以主应力与主应变表示的虎克定律增量表达式形式为</p>
+<div class="math" id="equation-modeldoubleyeqds1ds2ds3">
+<span class="eqno">(4)</span>\[\begin{split}\begin{matrix}
+   \Delta \sigma_1 =  \alpha_1 \Delta e_1^e + \alpha_2 (\Delta e_2^e + \Delta e_3^e) \\
+      \\
+   \Delta \sigma_2 =  \alpha_1 \Delta e_2^e + \alpha_2 (\Delta e_1^e + \Delta e_3^e) \\
+      \\
+   \Delta \sigma_3 =  \alpha_1 \Delta e_3^e + \alpha_2 (\Delta e_1^e + \Delta e_2^e)
+\end{matrix}\end{split}\]</div>
+<p>其中 <span class="math">\(\alpha_1 = K_c + 4G_c/3\)</span>、<span class="math">\(\alpha_2 = K_c-2G_c/3\)</span>、<span class="math">\(K_c\)</span> 与 <span class="math">\(G_c\)</span> 为按以下考虑定义的当前切向体积模量与剪切模量。</p>
+<p>考虑压力 <span class="math">\(p_c\)</span> 递增的等向压缩试验。随材料变得更密实，其塑性刚度（<span class="math">\(d p_c / d e^{pv}\)</span>）通常增大。由于颗粒被挤压得更近，弹性刚度也增大似乎合理。该模型采用一条简单规则：在一般加载条件下，增量弹性刚度 <span class="math">\(K_c\)</span> 为当前增量塑性刚度乘以常数因子 <span class="math">\(R\)</span>。用户给出的体积模量与剪切模量 <span class="math">\(K\)</span> 与 <span class="math">\(G\)</span> 取为 <span class="math">\(K_c\)</span> 与 <span class="math">\(G_c\)</span> 的上限，并假定比值 <span class="math">\(K_c/G_c\)</span> 保持常数且等于 <span class="math">\(K/G\)</span>。用增量记号，该法则由以下关系定义</p>
+<div class="math" id="equation-modeldoubleyeqkc">
+<span class="eqno">(5)</span>\[ K_c = R\,{\Delta p_c \over \Delta e^{pv}} \qquad K_c: = \min(K_c,K)\]</div>
+<div class="math" id="equation-modeldoubleyeqgc">
+<span class="eqno">(6)</span>\[ G_c = G\,{K_c \over K}\]</div>
+<p>其中系数 <span class="math">\(R\)</span> 已给出，<span class="math">\(\Delta p_c / \Delta e^{pv}\)</span> 为 <span class="math">\(p_c\)</span> 值表格的当前斜率。</p>
+<p>双屈服模型所表现的行为类型示于 <a href="#modeldoubley-1">图 1（Figure  1）</a>，该图显示含若干卸载段的非线性体积加载曲线；这些卸载段是弹性的，其斜率与卸载点处塑性刚度通过 <span class="math">\(R\)</span> 相关联。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id1">
+<span id="modeldoubley-1"></span><a class="reference internal image-reference" href="../../../../_images/modeldoubley-1.png"><img alt="../../../../_images/modeldoubley-1.png" src="../../../../_images/modeldoubley-1.png" style="width: 500px;"/></a>
+<p class="caption"><span class="caption-text">图 1：弹性体积加载/卸载路径。</span></p>
+</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p class="h4 rubric">屈服函数与势函数</p>
+<p>剪切与拉伸屈服函数（记为 <span class="math">\(f^s\)</span> 与 <span class="math">\(f^t\)</span>）形式为</p>
+<div class="math" id="equation-modeldoubleyeqfs">
+<span class="eqno">(7)</span>\[ f^s = \sigma_1 - \sigma_3 N_\phi + 2c \sqrt{N_\phi}\]</div>
+<div class="math" id="equation-modeldoubleyeqft">
+<span class="eqno">(8)</span>\[ f^t = \sigma^t - \sigma_3\]</div>
+<p>其中</p>
+<div class="math" id="equation-modeldoubleyeqnphi">
+<span class="eqno">(9)</span>\[ N_\phi = {{1+ \sin \phi} \over {1- \sin \phi}}\]</div>
+<p>且 <span class="math">\(\phi\)</span> 为摩擦角，<span class="math">\(c\)</span> 为黏聚力，<span class="math">\(\sigma^t\)</span> 为抗拉强度。</p>
+<p>体积屈服函数 <span class="math">\(f^v\)</span> 定义为</p>
+<div class="math" id="equation-modeldoubleyeqfv">
+<span class="eqno">(10)</span>\[ f^v = {1 \over 3} \bigl(\sigma_1 + \sigma_2 + \sigma_3 \bigr) + p_c\]</div>
+<p>其中 <span class="math">\(p_c\)</span> 为帽盖压力。</p>
+<p>剪切势函数 <span class="math">\(g^s\)</span> 对应非关联流动法则；拉伸与体积势函数 <span class="math">\(g^t\)</span> 与 <span class="math">\(g^v\)</span> 对应关联法则。其形式为</p>
+<div class="math" id="equation-modeldoubleyeqgs">
+<span class="eqno">(11)</span>\[ g^s = \sigma_1 - \sigma_3 N_\psi\]</div>
+<div class="math" id="equation-modeldoubleyeqgt">
+<span class="eqno">(12)</span>\[ g^t = - \sigma_3\]</div>
+<div class="math" id="equation-modeldoubleyeqgv">
+<span class="eqno">(13)</span>\[ g^v = {1 \over 3} \bigl(\sigma_1 + \sigma_2 + \sigma_3 \bigr)\]</div>
+<p>其中</p>
+<div class="math" id="equation-modeldoubleyeqnpsi">
+<span class="eqno">(14)</span>\[ N_\psi = {{1+\sin\psi} \over {1-\sin\psi}}\]</div>
+<p>且 <span class="math">\(\psi\)</span> 为剪胀角。</p>
+<p class="h4 rubric">硬化/软化参数</p>
+<p>剪切与体积屈服面可硬化（或软化），拉伸屈服面可软化，其硬化规则由 <a class="reference internal" href="../../ssoft/doc/modelssoft.html#userdefinedfunctions4tables"><span class="std std-ref">用户定义表格</span>（user-defined tables）</a> 指定。表格以记录某种累积塑性应变度量的硬化参数为输入。剪切与拉伸中硬化参数的增量形式为</p>
+<div class="math" id="equation-modeldoubleydeps">
+<span class="eqno">(15)</span>\[ \Delta e^{ps} = \biggl\{\ {1 \over 2} \bigl(\Delta e_1^{ps} - \Delta e^{ps}_m \bigr)^2 + {1 \over 2} \bigl(\Delta e^{ps}_m \bigr)^2 + {1 \over 2} \bigl(\Delta e_3^{ps} - \Delta e^{ps}_m \bigr)^2 \ \biggl\}^{1 \over 2}\]</div>
+<div class="math" id="equation-modeldoubleydept">
+<span class="eqno">(16)</span>\[ \Delta e^{pt} = e_3^{pt}\]</div>
+<p>其中</p>
+<div class="math" id="equation-modeldoubleydepsm">
+<span class="eqno">(17)</span>\[ \Delta e_m^{ps} = {1 \over3 } \bigl(\Delta e^{ps}_1  + \Delta e^{ps}_3)\]</div>
+<p><span class="math">\(\Delta e_j^{ps}, j\)</span> = 1,3，而 <span class="math">\(\Delta e_3^{pt}\)</span> 为主方向上的塑性剪切与拉伸应变增量。</p>
+<p>在体积方向，硬化参数增量为</p>
+<div class="math" id="equation-modeldoubleydepv">
+<span class="eqno">(18)</span>\[ \Delta e^{pv} = \vert \Delta e^{pv}_1 + \Delta e^{pv}_2 + \Delta e^{pv}_3 \vert\]</div>
+<p>其中 <span class="math">\(\Delta e_j^{pv}, j\)</span> = 1,3 为主方向上的塑性体积应变增量。</p>
+<p>这些硬化参数用于在表格中确定摩擦、黏聚力、剪胀、抗拉强度与帽盖压力的新值。当前体积模量与剪切模量也按公式 <a class="reference internal" href="#equation-modeldoubleyeqkc">(5)</a> 与 <a class="reference internal" href="#equation-modeldoubleyeqgc">(6)</a> 由表格值计算。</p>
+<p class="h4 rubric">塑性修正</p>
+<p>用上标 <span class="math">\(I\)</span> 表示由旧应力 <span class="math">\(\sigma_{ij}^O\)</span> 加上用总应变增量计算的弹性增量所得的弹性试探。在主轴上则有</p>
+<div class="math" id="equation-modeldoubleydeps1is2is3i">
+<span class="eqno">(19)</span>\[\begin{split}\begin{matrix}
+   \sigma_1^I = \sigma_1^O + \alpha_1 \Delta e_1 + \alpha_2 (\Delta e_2 + \Delta e_3)  \\
+     \\
+   \sigma_2^I = \sigma_2^O + \alpha_1 \Delta e_2  + \alpha_2 (\Delta e_1  + \Delta e_3) \\
+     \\
+   \sigma_3^I = \sigma_3^O + \alpha_1 \Delta e_3  + \alpha_2 (\Delta e_1 + \Delta e_2)
+\end{matrix}\end{split}\]</div>
+<p>在 <span class="codename">FLAC3D</span>/<span class="codename">3DEC</span> 实现中，若 <span class="math">\(f^s(\sigma_1^I,\sigma_3^I) &lt;\)</span> 0 则检测到剪切屈服，若 <span class="math">\(f_v(\sigma_1^I,\sigma_2^I,\sigma_3^I) &lt;\)</span> 0 则检测到体积屈服，若 <span class="math">\(f^t(\sigma_3^I) &lt;\)</span> 0 则检测到拉伸屈服。相应的塑性修正用以下方法计算。</p>
+<p>先考虑该步 <em>未</em> 检测到拉伸破坏、但剪切与体积屈服条件都超限的情形。利用公式 <a class="reference internal" href="#equation-modeldoubleyeqstraindecomp">(2)</a> 与 <a class="reference internal" href="#equation-modeldoubleyeqplasticstraindecomp">(3)</a>，主应变增量可表示为</p>
+<div class="math" id="equation-modeldoubleydepdei">
+<span class="eqno">(20)</span>\[ \Delta e_i = \Delta e_i^e + \Delta e_i^{ps} + \Delta e_i^{pv} \qquad i=1,3\]</div>
+<p>剪切与体积屈服的流动法则为</p>
+<div class="math" id="equation-modeldoubleydepdeips">
+<span class="eqno">(21)</span>\[ \Delta e_i^{ps} = \lambda^s {\partial g^s \over \partial \sigma_i}\]</div>
+<div class="math" id="equation-modeldoubleydepdeipv">
+<span class="eqno">(22)</span>\[ \Delta e_i^{pv} = \lambda^v {\partial g^{v} \over \partial \sigma_i}\]</div>
+<p>其中 <span class="math">\(i\)</span> = 1,3。利用公式 <a class="reference internal" href="#equation-modeldoubleyeqgs">(11)</a> 至 <a class="reference internal" href="#equation-modeldoubleyeqgv">(13)</a>，微分后这些表达式变为：</p>
+<div class="math" id="equation-modeldoubleydepde123ps">
+<span class="eqno">(23)</span>\[\begin{split}\begin{matrix}
+   \Delta e_1^{ps} = \lambda^s  \\
+      \\
+   \Delta e_2^{ps} = 0 \\
+      \\
+   \Delta e_3^{ps} = - \lambda^s N_{\psi}
+\end{matrix}\end{split}\]</div>
+<p>以及</p>
+<div class="math" id="equation-modeldoubleydepde123pv">
+<span class="eqno">(24)</span>\[\begin{split}\begin{matrix}
+   \Delta e_1^{pv} = \lambda^v /3 \\
+      \\
+   \Delta e_2^{pv} = \lambda^v /3 \\
+      \\
+   \Delta e_3^{pv} = \lambda^v /3
+\end{matrix}\end{split}\]</div>
+<p>代入公式 <a class="reference internal" href="#equation-modeldoubleydeps">(15)</a> 可得</p>
+<div class="math" id="equation-modeldoubleydepde123e">
+<span class="eqno">(25)</span>\[\begin{split}\begin{matrix}
+   \Delta e_1^e = \Delta e_1 - \lambda^s - \lambda^v/3 \\
+     \\
+   \Delta e_2^e = \Delta e_2 - \lambda^v/3 \\
+     \\
+   \Delta e_3^e = \Delta e_3 + \lambda^s N_{\psi} - \lambda^v/3
+\end{matrix}\end{split}\]</div>
+<p>有了这些弹性应变增量表达式，虎克增量方程给出（见公式 <a class="reference internal" href="#equation-modeldoubleyeqds1ds2ds3">(4)</a>）</p>
+<div class="math" id="equation-modeldoubleydepds123n">
+<span class="eqno">(26)</span>\[\begin{split}\begin{matrix}
+   \sigma_1^N = \sigma_1^I - \lambda^s (\alpha_1 - \alpha_2 N_{\psi}) - \lambda^vK \\
+      \\
+   \sigma_2^N = \sigma_2^I - \alpha_2 \lambda^s (1 - N_{\psi}) - \lambda^vK \\
+      \\
+   \sigma_3^N = \sigma_3^I - \lambda^s (\alpha_2 - \alpha_1 N_{\psi}) - \lambda^vK
+\end{matrix}\end{split}\]</div>
+<p>其中 <span class="math">\(\sigma_i^I\)</span>，<span class="math">\(i\)</span> = 1,3 为公式 <a class="reference internal" href="#equation-modeldoubleydeps1is2is3i">(19)</a> 中的初始试探应力，<span class="math">\(\sigma_i^N = \sigma_i^O + \Delta \sigma_i\)</span>，<span class="math">\(i\)</span> = 1,3 为该步的新主应力。</p>
+<p>为确定乘子 <span class="math">\(\lambda^s\)</span> 与 <span class="math">\(\lambda^v\)</span>，我们要求：若发生剪切与体积屈服，则新应力同时位于两个屈服面上，且必须有 <span class="math">\(f^s(\sigma_1^N,\sigma_3^N)\)</span> = 0 与 <span class="math">\(f^{\sigma}(\sigma_1^N,\sigma_2^N,\sigma_3^N)\)</span> = 0。把公式 <a class="reference internal" href="#equation-modeldoubleydepde123e">(25)</a> 代入公式 <a class="reference internal" href="#equation-modeldoubleyeqfs">(7)</a> 与 <a class="reference internal" href="#equation-modeldoubleyeqfv">(10)</a> 中 <span class="math">\(\sigma_i,i\)</span> = 1,3 的情形，并对 <span class="math">\(\lambda^s\)</span> 求解，可得</p>
+<div class="math" id="equation-modeldoubleyeqlambdas2">
+<span class="eqno">(27)</span>\[ \lambda^s = {f^{sI} - f^{vI} (1 - N_{\phi}) \over \alpha_1 - \alpha_2 N_{\psi} - \alpha_2 N_{\phi} + \alpha_1 N_{\phi} N_{\psi} - K (1 - N_{\phi}) (1 - N_{\psi})}\]</div>
+<p>因此，</p>
+<div class="math" id="equation-modeldoubleyeqlambdav2">
+<span class="eqno">(28)</span>\[ \lambda^v = {f^{vI} \over K} - \lambda^s (1 - N_{\psi})\]</div>
+<p>这些公式中，记号 <span class="math">\(f^I\)</span> 表示对初始试探应力求值的函数 <span class="math">\(f\)</span>。</p>
+<p>现在可用公式 <a class="reference internal" href="#equation-modeldoubleyeqlambdas2">(27)</a> 与 <a class="reference internal" href="#equation-modeldoubleyeqlambdav2">(28)</a> 由公式 <a class="reference internal" href="#equation-modeldoubleydepds123n">(26)</a> 计算新应力；这些应力同时满足两个屈服条件与两个流动法则。</p>
+<p>若单元仅在剪切方向屈服，则</p>
+<div class="math" id="equation-modeldoubleyeqlambdavs">
+<span class="eqno">(29)</span>\[ \lambda^v = 0\]</div>
+<div class="math" id="equation-modeldoubleyeqlambdass">
+<span class="eqno">(30)</span>\[ \lambda^s = {f^{sI} \over \alpha_1 -\alpha_2 N_{\psi} - \alpha_2 N_{\phi} + \alpha_1 N_{\phi} N_{\psi}}\]</div>
+<p>若单元仅在体积方向屈服，则</p>
+<div class="math" id="equation-modeldoubleyeqlambdasv">
+<span class="eqno">(31)</span>\[ \lambda^s = 0\]</div>
+<div class="math" id="equation-modeldoubleyeqlambdavv">
+<span class="eqno">(32)</span>\[ \lambda^v = {f^{vI} \over K}\]</div>
+<p>可视情况把公式 <a class="reference internal" href="#equation-modeldoubleyeqlambdavs">(29)</a> 至 <a class="reference internal" href="#equation-modeldoubleyeqlambdavv">(32)</a> 代入公式 <a class="reference internal" href="#equation-modeldoubleydepds123n">(26)</a> 以计算新应力。</p>
+<p>现在考虑由条件 <span class="math">\(f^t(\sigma_3^I) &lt;\)</span> 0 检测到拉伸破坏的情形。若<em>未</em>检测到体积破坏，则采用与 Mohr-Coulomb 模型所述相同的技术与应力修正。若除拉伸破坏外还检测到体积破坏，则 <span class="math">\(f^s(\sigma_1^I,\sigma_3^I) \leq\)</span> 0 或 <span class="math">\(f^s(\sigma_1^I,\sigma_3^I) &gt;\)</span> 0。先假定三个屈服条件均被超越。假定剪切、体积与拉伸屈服的塑性贡献可叠加：</p>
+<div class="math" id="equation-modeldoubleyeqdeidecomp2svt">
+<span class="eqno">(33)</span>\[ \Delta e_i = \Delta e_i^e + \Delta e_i^{ps} + \Delta e_i^{pv} + \Delta e_i^{pt} \qquad i=1,3\]</div>
+<p>拉伸屈服的流动法则形式为</p>
+<div class="math" id="equation-modeldoubleyeqdeipt">
+<span class="eqno">(34)</span>\[ \Delta e_i^{pt} = \lambda^t {\partial g^t \over \partial \sigma_i} \qquad i=1,3\]</div>
+<p>利用公式 <a class="reference internal" href="#equation-modeldoubleyeqft">(8)</a>，这些表达式在偏微分后变为：</p>
+<div class="math" id="equation-modeldoubleydepde123pt">
+<span class="eqno">(35)</span>\[\begin{split}\begin{matrix}
+   \Delta e_1^{pt} = 0  \\
+      \\
+   \Delta e_2^{pt} = 0  \\
+      \\
+   \Delta e_3^{pt} = - \lambda^t
+\end{matrix}\end{split}\]</div>
+<p>按与上述相同的推理，并利用剪切与体积流动法则的公式 <a class="reference internal" href="#equation-modeldoubleydepde123ps">(23)</a> 与 <a class="reference internal" href="#equation-modeldoubleydepde123pv">(24)</a>，可得</p>
+<div class="math" id="equation-modeldoubleys1ns2ns3n4svt">
+<span class="eqno">(36)</span>\[\begin{split}\begin{matrix}
+   \sigma_1^N = \sigma_1^I - \lambda^s (\alpha_1 - \alpha_2 N_{\psi}) - \lambda^vK + \lambda^t \alpha_2 \\
+      \\
+   \sigma_2^N = \sigma_2^I - \alpha_2 \lambda^s (1 - N_{\psi}) - \lambda^vK + \lambda^t \alpha_2 \\
+      \\
+   \sigma_3^N = \sigma_3^I - \lambda^s (\alpha_2 - \alpha_1 N_{\psi}) - \lambda^vK + \lambda^t \alpha_1
+\end{matrix}\end{split}\]</div>
+<p>乘子 <span class="math">\(\lambda^s\)</span>、<span class="math">\(\lambda^v\)</span> 与 <span class="math">\(\lambda^t\)</span> 通过求解 <span class="math">\(f^s (\sigma_1^N, \sigma_3^N)\)</span> = 0、<span class="math">\(f^v (\sigma_1^N, \sigma_2^N, \sigma_3^N)\)</span> = 0 与 <span class="math">\(f^t (\sigma_3^N)\)</span> = 0 三个方程组成的方程组确定。由此得</p>
+<div class="math" id="equation-modeldoubleylambdasvt">
+<span class="eqno">(37)</span>\[\begin{split}\begin{matrix}
+   \lambda^s = {f^{tI}(1+2N_{\phi}) + 3f^{vI} -2f^{sI} \over \alpha_2 - \alpha_1} \\
+      \\
+   \lambda^v = {f^{vI} \over K} +{-3(1+N_{\phi})f^{tI} -6f^{vI} + 3f^{sI} \over \alpha_2 - \alpha_1} \\
+      \\
+   \lambda^t = {-f^{tI}[N_{\psi}(1+2N_{\phi})+2+N_{\phi}] -3(1+N_{\psi})f^{vI}+(1+2N_{\psi})f^{sI} \over \alpha_2 - \alpha_1}
+\end{matrix}\end{split}\]</div>
+<p>把这些表达式代入公式 <a class="reference internal" href="#equation-modeldoubleys1ns2ns3n4svt">(36)</a> 可得</p>
+<div class="math" id="equation-modeldoubleys1ns2ns3n4all">
+<span class="eqno">(38)</span>\[\begin{split}\begin{matrix}
+   \sigma_1^N = \sigma^t N_{\phi} - 2c \sqrt{N_{\phi}} \\
+      \\
+   \sigma_2^N = -3p_c - \sigma^t (1+N_{\phi}) + 2c\sqrt{N_{\phi}}  \\
+      \\
+   \sigma_3^N = \sigma_t
+\end{matrix}\end{split}\]</div>
+<p>若只检测到拉伸与体积屈服，则公式 <a class="reference internal" href="#equation-modeldoubleylambdasvt">(37)</a> 中 <span class="math">\(\lambda^s\)</span> = 0。常数 <span class="math">\(\lambda^v\)</span> 与 <span class="math">\(\lambda^t\)</span> 由同时满足 <span class="math">\(f^v(\sigma_1^N,\sigma_2^N,\sigma_3^N)\)</span> = 0 与 <span class="math">\(f^t(\sigma_3^N)\)</span> = 0 的条件确定。经若干变换得</p>
+<div class="math" id="equation-modeldoubleylambdavt">
+<span class="eqno">(39)</span>\[\begin{split}\begin{matrix}
+   \lambda^v = {\alpha_1 f^{vI} + K f^{tI} \over K(\alpha_1 - K)} \\
+      \\
+   \lambda^t = {f^{vI} + f^{tI} \over \alpha_1 - K}
+\end{matrix}\end{split}\]</div>
+<p>把这些表达式代入公式 <a class="reference internal" href="#equation-modeldoubleys1ns2ns3n4svt">(36)</a> 得</p>
+<div class="math" id="equation-modeldoubleys1ns2ns3nvt">
+<span class="eqno">(40)</span>\[\begin{split}\begin{matrix}
+   \sigma_1^N = \sigma_1^I - {3f^{vI} + f^{tI} \over 2}  \\
+     \\
+   \sigma_2^N = \sigma_2^I - {3f^{vI} + f^{tI} \over 2}  \\
+     \\
+   \sigma_3^N = \sigma_t
+\end{matrix}\end{split}\]</div>
+<p class="h3 rubric">实现步骤</p>
+<p>黏聚力、摩擦与剪胀随剪切参数 <span class="math">\(e^{ps}\)</span> 的硬化与软化行为（见公式 <a class="reference internal" href="#equation-modeldoubleydeps">(15)</a>）由用户以表格形式提供。抗拉强度的软化以类似方式用参数 <span class="math">\(e^{pt}\)</span> 描述（见公式 <a class="reference internal" href="#equation-modeldoubleydept">(16)</a>）。帽盖压力的变化则用参数 <span class="math">\(e^{pv}\)</span> 在表格中指定（见公式 <a class="reference internal" href="#equation-modeldoubleydepv">(18)</a>）。每个表格含数值对：一个为参数值，一个为相应性质值。假定性质在表格中两个相邻参数条目之间线性变化。</p>
+<p>在 <span class="codename">FLAC3D</span>/<span class="codename">3DEC</span> 的双屈服模型实现中，该步的新应力用当前模型性质值计算。过程中先由旧应力分量加上对该步总应变增量应用虎克定律所得的增量，得到弹性试探 <span class="math">\(\sigma_{ij}^I\)</span>。计算并排序主应力 <span class="math">\(\sigma_1^I, \sigma_2^I, \sigma_3^I\)</span> 及相应主方向。若这些应力违反复合屈服准则，则对弹性试探施加修正以得到新应力状态。随后假定主方向未受塑性修正影响，由主值计算参考轴系中的应力张量分量。</p>
+<p>塑性应变增量由公式 <a class="reference internal" href="#equation-modeldoubleydepde123ps">(23)</a>、<a class="reference internal" href="#equation-modeldoubleydepde123pv">(24)</a> 与 <a class="reference internal" href="#equation-modeldoubleydepde123pt">(35)</a> 计算，其中 <span class="math">\(\lambda^s\)</span>、<span class="math">\(\lambda^t\)</span> 与 <span class="math">\(\lambda^v\)</span> 取当前破坏模式下的相应表达式。随后按网格单元所含全部三角形，对由公式 <a class="reference internal" href="#equation-modeldoubleydeps">(15)</a>、<a class="reference internal" href="#equation-modeldoubleydepv">(18)</a> 与 <a class="reference internal" href="#equation-modeldoubleydept">(16)</a> 所得值取面积平均，计算网格单元硬化增量。硬化参数被更新，并通过对表格线性插值求黏聚力、摩擦、剪胀、抗拉强度与帽盖压力的网格单元新性质。新弹性常数按公式 <a class="reference internal" href="#equation-modeldoubleys1ns2ns3n4svt">(36)</a> 由帽盖压力表导出。所有这些性质都被存储以备下一步使用。硬化或软化滞后于相应塑性变形一个时步。在显式程序中，由于步长很小，该误差很小。</p>
+<p>对于有摩擦的材料，抗拉强度的最大值由 <span class="math">\(c/\tan \phi\)</span> 用新的黏聚力与摩擦角计算。若该值小于由表格更新的抗拉强度，则程序保留该值。</p>
+<p class="h3 rubric" id="modeldy-vol-props">体积性质的选择</p>
+<p>“硬化曲线”以及弹性体积模量与塑性体积模量之比 <span class="math">\(R\)</span> 是可从三轴试验结果导出的体积性质，该试验中轴应力与围压 <span class="math">\(p\)</span> 保持相等。推荐该试验（此时 <span class="math">\(de^p = de^{pv}\)</span>），因为最好从<em>仅</em>涉及某一破坏模式的试验来确定与该模式相关的参数。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id2">
+<span id="modeldoubley-2"></span><a class="reference internal image-reference" href="../../../../_images/modeldoubley-2.png"><img alt="../../../../_images/modeldoubley-2.png" src="../../../../_images/modeldoubley-2.png" style="width: 500px;"/></a>
+<p class="caption"><span class="caption-text">图 2：各向同性固结试验。</span></p>
+</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p>考虑由该类试验所得、示于 <a href="#modeldoubley-2">图 2（Figure  2）</a> 的试验曲线：压力（负平均应力）对负体积应变，应力水平递增并带有小幅卸载。主加载路径上某点的体积应变增量 <span class="math">\(de\)</span>（假定处于任何初始先期固结应力水平之上）由弹性部分 <span class="math">\(de^e\)</span> 与塑性部分 <span class="math">\(de^p\)</span> 组成。（回想本节中 <span class="math">\(de\)</span>、<span class="math">\(de^e\)</span> 与 <span class="math">\(de^p\)</span> 指体积应变的<em>负值</em>。）所观测的切线模量可表示为</p>
+<div class="math" id="equation-modeldoubleyeq2dpode">
+<span class="eqno">(41)</span>\[ {dp \over de} = {hK_c \over h + K_c}\]</div>
+<p>其中 <span class="math">\(h\)</span> 为塑性模量，<span class="math">\(K_c\)</span> 为弹性模量，且按定义：</p>
+<div class="math" id="equation-modeldoubleyeq2eyh">
+<span class="eqno">(42)</span>\[ h = {dp_c \over de^p}\]</div>
+<div class="math" id="equation-modeldoubleyeq2kc">
+<span class="eqno">(43)</span>\[ K_c = {dp \over de^e}\]</div>
+<p>按前述记号约定，体积性质 <span class="math">\(R\)</span> 可定义为</p>
+<div class="math" id="equation-modeldoubleyeq2r">
+<span class="eqno">(44)</span>\[ R = K_c/h\]</div>
+<p>则公式 <a class="reference internal" href="#equation-modeldoubleyeq2dpode">(41)</a> 变为</p>
+<div class="math" id="equation-modeldoubleyeq2dpode2">
+<span class="eqno">(45)</span>\[ {dp \over de} = {K_c \over 1 + R}\]</div>
+<p>由该关系解出 <span class="math">\(R\)</span>，得</p>
+<div class="math" id="equation-modeldoubleyeq2kr2">
+<span id="modeldoubleyeq2kr2"></span><span class="eqno">(46)</span>\[ R = {K_c \over dp/de} - 1\]</div>
+<p><span class="math">\(dp/de\)</span> 与 <span class="math">\(K_c\)</span> 的值可由图上主加载与卸载增量估算。因此 <span class="math">\(R\)</span> 可由公式 <a class="reference internal" href="#equation-modeldoubleyeq2r">(44)</a> 算出。注意在本模型框架中假定比值 <span class="math">\(R\)</span> 为常数。把 <span class="math">\(K_c = Rh\)</span> 与 <span class="math">\(h = dp_c/de^p\)</span> 代入公式 <a class="reference internal" href="#equation-modeldoubleyeq2dpode">(41)</a> 并经若干变换，可写为</p>
+<div class="math" id="equation-modeldoubleyeq2dpcodep">
+<span id="modeldoubleyeq2dpcodep"></span><span class="eqno">(47)</span>\[ {dp_c \over de^p} = h = \left({1 + R \over R} \right) {dp \over de}\]</div>
+<p>由此可知，对特定 <span class="math">\(e^p\)</span> 的 <span class="math">\(p_c\)</span> 值可通过把图上对应 <span class="math">\(e = e^p\)</span> 的值 <span class="math">\(p\)</span> 乘以比值 <span class="math">\((1 + R)/R\)</span> 得到一阶近似。例如若 <span class="math">\(R\)</span> = 5，则在无超固结的假定下，图线须乘以 1.2 以换算为表格值。</p>
+<p>双屈服模型最初是为表示矿山充填材料的行为而开发的，其先期固结压力较低。修正 Cam-clay 模型更适用于软黏土之类先期固结压力对材料行为有显著影响的土体。</p>
+<p class="h3 rubric" id="modeldy-comparison-mcc"><span id="comparison-dy-mcc"></span>双屈服模型与修正 Cam-clay 模型的比较</p>
+<p>在 <a class="reference internal" href="#modeldoubley"><span class="std std-ref">双屈服模型</span>（double-yield model）</a> 中：</p>
+<ul class="simple">
+<li>弹性加载与卸载过程中弹性模量保持不变。</li>
+<li>剪切与拉伸破坏不与体积屈服引起的塑性体积变化耦合。剪切屈服函数对应 Mohr-Coulomb 准则，拉伸屈服则基于抗拉强度评定。</li>
+<li>剪切或拉伸破坏时的材料硬化或软化，由把摩擦角与黏聚力关联到塑性剪应变、把抗拉强度关联到塑性拉应变的表格定义。</li>
+<li>发生体积屈服；发生屈服时的等向应力（帽盖压力）不受剪切或拉伸塑性变形量的影响，但随体积塑性应变增大（即硬化）。</li>
+<li>可定义抗拉强度限值与拉伸软化。</li>
+</ul>
+<p>在 <a class="reference internal" href="../../camclay/doc/modelcamclay.html#modelcamclay"><span class="std std-ref">修正 Cam-clay 模型</span>（modified Cam-clay model）</a> 中：</p>
+<ul class="simple">
+<li>弹性变形是非线性的，弹性模量取决于平均应力。</li>
+<li>剪切破坏受塑性体积变形发生的影响：材料可依据先期固结程度硬化或软化。</li>
+<li>随着剪切加载增大，材料向临界状态演化，此时发生无限剪切应变而比容或应力不再变化。</li>
+<li>对拉伸平均应力没有抗力。</li>
+</ul>
+<div class="line-block">
+<div class="line"><br/></div>
+<div class="line"><br/></div>
+</div>
+<p class="h3 rubric" id="doubleyieldmodelprops"><span class="cmdkey">double-yield</span> 模型性质</p>
+<p>用以下关键字配合 <a class="reference internal" href="../../../../flac3d/zone/doc/manual/zone_manual/zone_commands/cmd_zone.property.html#command:zone.property" title="Make a constitutive model(s) property assignment. Properties are name value
+pairs where the name is the keyword given in the command and the value type
+is specific to the property. The assignment will affect *any* zone whose constitutive
+model includes the property named (noting that some properties, such as  bulk ,
+for instance, appear in *many* constitutive models).  Limiting a property assignment
+to zones that have a particular constitutive model assignment is done using
+the...">设置网格单元属性（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">property</span></code>）</a>（<span class="codename">FLAC3D</span>）或 <a class="reference internal" href="../../../../3dec/block/doc/manual/block_manual/block_commands/block.zone/cmd_block.zone.property.html#command:block.zone.property" title="Make a constitutive model(s) property assignment. Properties are name value
+pairs where the name is the keyword given in the command and the value type
+is specific to the property...">设置块体网格单元属性（<code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">zone</span> <span class="pre">property</span></code>）</a>（<span class="codename">3DEC</span>）命令设置双屈服模型的这些性质。</p>
+<span class="target" id="doubyieldprops"></span><dl class="command">
+<dt id="command:double-yield">
+<span class="cmdname"><span class="hide">d</span><span class="hide">o</span><span class="hide">u</span><span class="hide">b</span><span class="hide">l</span><span class="hide">e</span><span class="hide">-</span><span class="hide">y</span><span class="hide">i</span><span class="hide">e</span><span class="hide">l</span><span class="hide">d</span><span class="hide"> </span></span></dt>
+<dd><dl class="keyword">
+<dt id="kwd:double-yield.bulk-maximum">
+<span class="cmdkey"><span class="pref">b</span><span class="null">u</span><span class="null">l</span><span class="null">k</span><span class="null">-</span><span class="pref">m</span><span class="null">a</span><span class="null">x</span><span class="null">i</span><span class="null">m</span><span class="null">u</span><span class="null">m</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>最大弹性体积模量，<span class="math">\(K_{max}\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:double-yield.cohesion">
+<span class="cmdkey"><span class="pref">c</span><span class="null">o</span><span class="null">h</span><span class="null">e</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>黏聚力，<span class="math">\(c\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:double-yield.dilation">
+<span class="cmdkey"><span class="pref">d</span><span class="null">i</span><span class="null">l</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>剪胀角 <span class="math">\(\psi\)</span>。默认为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.0</span></span></a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:double-yield.friction">
+<span class="cmdkey"><span class="pref">f</span><span class="null">r</span><span class="null">i</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>内摩擦角 <span class="math">\(\phi\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:double-yield.multiplier">
+<span class="cmdkey"><span class="pref">m</span><span class="null">u</span><span class="null">l</span><span class="null">t</span><span class="null">i</span><span class="null">p</span><span class="null">l</span><span class="null">i</span><span class="null">e</span><span class="null">r</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>当前塑性帽盖模量的乘子，用于给出弹性体积与剪切模量 <span class="math">\(R\)</span>。默认为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">5.0</span></span></a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:double-yield.pressure-cap">
+<span class="cmdkey"><span class="pref">p</span><span class="null">r</span><span class="null">e</span><span class="null">s</span><span class="null">s</span><span class="null">u</span><span class="null">r</span><span class="null">e</span><span class="null">-</span><span class="pref">c</span><span class="null">a</span><span class="null">p</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>体积屈服面与压力轴的当前交点 <span class="math">\(p_c\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:double-yield.shear-maximum">
+<span class="cmdkey"><span class="pref">s</span><span class="null">h</span><span class="null">e</span><span class="null">a</span><span class="null">r</span><span class="null">-</span><span class="pref">m</span><span class="null">a</span><span class="null">x</span><span class="null">i</span><span class="null">m</span><span class="null">u</span><span class="null">m</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>最大弹性剪切模量 <span class="math">\(G_{max}\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:double-yield.tension">
+<span class="cmdkey"><span class="pref">t</span><span class="null">e</span><span class="null">n</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>抗拉强度，<span class="math">\(\sigma^t\)</span>。默认值为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.0</span></span></a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:double-yield.flag-brittle">
+<span class="cmdkey"><span class="pref">f</span><span class="null">l</span><span class="null">a</span><span class="null">g</span><span class="null">-</span><span class="pref">b</span><span class="null">r</span><span class="null">i</span><span class="null">t</span><span class="null">t</span><span class="null">l</span><span class="null">e</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ..."><span class="varbool"><span class="null">b</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>若为真，则在发生拉伸破坏时把拉伸极限设为 0。默认为 <span class="cmdkey">false</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:double-yield.table-cohesion">
+<span class="cmdkey"><span class="pref">t</span><span class="null">a</span><span class="null">b</span><span class="null">l</span><span class="null">e</span><span class="null">-</span><span class="pref">c</span><span class="null">o</span><span class="null">h</span><span class="null">e</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">s</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>把黏聚力与塑性剪应变关联的表格名称。默认为空字符串。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:double-yield.table-dilation">
+<span class="cmdkey"><span class="pref">t</span><span class="null">a</span><span class="null">b</span><span class="null">l</span><span class="null">e</span><span class="null">-</span><span class="pref">d</span><span class="null">i</span><span class="null">l</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">s</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>把剪胀角与塑性剪应变关联的表格名称。默认为空字符串。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:double-yield.table-friction">
+<span class="cmdkey"><span class="pref">t</span><span class="null">a</span><span class="null">b</span><span class="null">l</span><span class="null">e</span><span class="null">-</span><span class="pref">f</span><span class="null">r</span><span class="null">i</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">s</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>把摩擦角与塑性剪应变关联的表格名称。默认为空字符串。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:double-yield.table-pressure-cap">
+<span class="cmdkey"><span class="pref">t</span><span class="null">a</span><span class="null">b</span><span class="null">l</span><span class="null">e</span><span class="null">-</span><span class="pref">p</span><span class="null">r</span><span class="null">e</span><span class="null">s</span><span class="null">s</span><span class="null">u</span><span class="null">r</span><span class="null">e</span><span class="null">-</span><span class="pref">c</span><span class="null">a</span><span class="null">p</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">s</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>把帽盖压力与塑性体积应变关联的表格名称。默认为空字符串。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:double-yield.table-tension">
+<span class="cmdkey"><span class="pref">t</span><span class="null">a</span><span class="null">b</span><span class="null">l</span><span class="null">e</span><span class="null">-</span><span class="pref">t</span><span class="null">e</span><span class="null">n</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">s</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>把抗拉极限与塑性拉应变关联的表格名称。默认为空字符串。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:double-yield.bulk">
+<span class="cmdkey"><span class="pref">b</span><span class="null">u</span><span class="null">l</span><span class="null">k</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>当前弹性体积模量，<span class="math">\(K\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:double-yield.poisson">
+<span class="cmdkey"><span class="pref">p</span><span class="null">o</span><span class="null">i</span><span class="null">s</span><span class="null">s</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>当前泊松比，<span class="math">\(\nu\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:double-yield.shear">
+<span class="cmdkey"><span class="pref">s</span><span class="null">h</span><span class="null">e</span><span class="null">a</span><span class="null">r</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>当前弹性剪切模量 <span class="math">\(G\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:double-yield.strain-shear-plastic">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">r</span><span class="null">a</span><span class="null">i</span><span class="null">n</span><span class="null">-</span><span class="pref">s</span><span class="null">h</span><span class="null">e</span><span class="null">a</span><span class="null">r</span><span class="null">-</span><span class="pref">p</span><span class="null">l</span><span class="null">a</span><span class="null">s</span><span class="null">t</span><span class="null">i</span><span class="null">c</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>累计塑性剪应变</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:double-yield.strain-tensile-plastic">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">r</span><span class="null">a</span><span class="null">i</span><span class="null">n</span><span class="null">-</span><span class="pref">t</span><span class="null">e</span><span class="null">n</span><span class="null">s</span><span class="null">i</span><span class="null">l</span><span class="null">e</span><span class="null">-</span><span class="pref">p</span><span class="null">l</span><span class="null">a</span><span class="null">s</span><span class="null">t</span><span class="null">i</span><span class="null">c</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>累计塑性拉应变</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:double-yield.strain-volumetric-plastic">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">r</span><span class="null">a</span><span class="null">i</span><span class="null">n</span><span class="null">-</span><span class="pref">v</span><span class="null">o</span><span class="null">l</span><span class="null">u</span><span class="null">m</span><span class="null">e</span><span class="null">t</span><span class="null">r</span><span class="null">i</span><span class="null">c</span><span class="null">-</span><span class="pref">p</span><span class="null">l</span><span class="null">a</span><span class="null">s</span><span class="null">t</span><span class="null">i</span><span class="null">c</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>累积塑性体积应变</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:double-yield.young">
+<span class="cmdkey"><span class="pref">y</span><span class="null">o</span><span class="null">u</span><span class="null">n</span><span class="null">g</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>当前弹性杨氏模量，<span class="math">\(E\)</span></p>
+</dd></dl>
+<p><strong>图例</strong></p>
+<dl class="docutils">
+<dt>(a) 高级属性。</dt>
+<dd>该属性具有默认值；在较简单的模型应用中，无需专门赋值。</dd>
+<dt>(r) 只读属性。</dt>
+<dd>该属性不能由用户设置，但可以列出、绘图显示，或通过 <span class="codename">FISH</span> 访问。</dd>
+</dl>
+<p><strong>注意事项</strong></p>
+<ul class="simple">
+<li>若未赋予 <span class="cmdkey">table-pressure-cap</span>，则模型模量为常量，即 <span class="math">\(K\)</span> = <span class="math">\(K_{max}\)</span> 且 <span class="math">\(G\)</span> = <span class="math">\(G_{max}\)</span>。无论如何，<span class="math">\(K_{max}\)</span> 与 <span class="math">\(G_{max}\)</span> 都是模量的上限。</li>
+<li>抗拉截断为 <span class="math">\({\sigma}^t = min({\sigma}^t, c/\tan \phi)\)</span>。</li>
+<li>拉伸表与 <span class="cmdkey">flag-brittle</span> 不应同时处于活动状态。</li>
+</ul>
+</dd></dl>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../docproject/source/manual/program_guide/program_guide.html">程序指南</a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../docproject/source/manual/program_guide/models/models.html">Constitutive Models</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../../../docproject/source/manual/program_guide/models/theory/plasticmodel.html">Plastic Model Group</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../../subi/doc/modelsubi.html" title="previous chapter"> Bilinear Strain-Softening/Hardening Ubiquitous-Joint (SUBI) Model</a> |    
+       <a href="../../camclay/doc/modelcamclay.html" title="next chapter">Modified Cam-Clay Model</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Double-Yield Model" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../_static/icgscripts.js"></script>
+</body>
+</html>

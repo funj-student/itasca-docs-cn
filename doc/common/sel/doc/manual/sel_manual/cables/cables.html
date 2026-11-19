@@ -1,0 +1,309 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>锚索结构单元 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="../../../../../../flac3d/zonesel/test3d/Cable/ReinforcedBeam/ReinforcedBeam.html" rel="next" title="Cable-Reinforced Beam"/>
+<link href="../beams/fish/sel.beam_intrinsics/fish_sel.beam.young.html" rel="prev" title="struct.beam.young"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="cable-structural-elements">
+<span id="id1"></span><h1>锚索结构单元</h1>
+<p>岩石中的锚索与锚杆加筋有两种略有不同的功能。在承受低量级原位应力场的硬岩中，破坏往往局部化，局限于紧邻洞室的岩楔。此处锚杆加筋的作用是在节理面上提供对岩楔位移的局部抗力。某些情形下，除加筋的轴向刚度外，抗弯能力对抗剪切变形也可能重要。这类锚杆作用可用具有抗弯刚度的桩结构单元模拟（见 <a class="reference internal" href="../piles/piles.html#pile-structural-elements"><span class="std std-ref">桩结构单元</span>（Pile Structural Elements）</a>）。若弯曲效应不重要，锚索结构单元即可胜任，因为它们沿其长度提供抗剪阻力（借助浆体性质）。可以模拟这样一类加筋体系（例如锚索锚杆）：其粘结剂（浆体）可能在加筋体某段长度上发生剪切破坏。计入浆体环这种剪切行为的数值表述见 <a class="reference internal" href="#sel-cable-shear-behavior"><span class="std std-ref">浆体环的剪切行为</span>（Shear Behavior of Grout Annulus）</a>。</p>
+<div class="section" id="mechanical-behavior">
+<h2>力学行为</h2>
+<p>每个锚索结构单元由其几何、材料与浆体性质定义。锚索单元假定为具有均匀截面与材料性质、位于两节点之间的直线段。任意弯曲的结构锚索可建模为由一组锚索单元组成的曲线结构。锚索单元表现为弹性理想塑性材料，可拉压屈服，但不能承受弯矩。锚索可与浆体粘结，使力沿其长度随锚索与网格之间的相对运动而发展。浆体表现为弹性理想塑性材料，其峰值强度与围压相关，破坏后强度不降低。锚索单元适用于模拟抗拉能力重要、且与岩土体沿轴向发生摩擦作用的结构支护构件。</p>
+<p>每个锚索单元都有各自的局部坐标系，如 <a href="#cable-coordinate-system">图 1（Figure  1）</a> 所示。该系用于定义锚索的平均轴向方向。锚索单元坐标系由其两个节点位置定义（<a href="#cable-coordinate-system">图 1（Figure  1）</a> 中标为 1 与 2）。单元坐标系的定义使</p>
+<ol class="arabic simple">
+<li>形心轴与 <span class="math">\(x\)</span> 轴重合，</li>
+<li><span class="math">\(x\)</span> 轴由节点 1 指向节点 2，且</li>
+<li><span class="math">\(y\)</span> 轴与全局 <span class="math">\(y\)</span> 或 <span class="math">\(x\)</span> 方向（取与局部 <span class="math">\(x\)</span> 轴不平行的那个）在横截面平面上的投影对齐。</li>
+</ol>
+<div class="figure" id="id2">
+<span id="cable-coordinate-system"></span><img alt="../../../../../../_images/coordinate-system1.png" src="../../../../../../_images/coordinate-system1.png"/>
+<p class="caption"><span class="caption-text">图 1：锚索单元坐标系与锚索有限单元的 2 个活动自由度</span></p>
+</div>
+<p>锚索单元坐标系不可修改。可用 Cable 绘图项查看，并用 <a class="reference internal" href="commands/cmd_structure.cable.list.html#kwd:structure.cable.list.system-local" title="the element local coordinate system...">列出锚索单元局部坐标系命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">cable</span> <span class="pre">list</span> <span class="pre">system-local</span></code>）</a> 命令打印。节点连接关系可用 <a class="reference internal" href="commands/cmd_structure.cable.list.html#kwd:structure.cable.list.information" title="lists general element information, including  id  and  component-id 
+numbers, connected nodes, centroids, surface area, volume, and the hide and
+select status...">列出锚索单元信息命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">cable</span> <span class="pre">list</span> <span class="pre">information</span></code>）</a> 命令打印。</p>
+<p>锚索单元所用全部节点的节点局部系方位在一组循环开始时（或在执行 <a class="reference internal" href="../../../../../kernel/doc/manual/model/commands/cmd_model.cycle.html#command:model.cycle" title="Execute timesteps. The synonym  model.step  may also be used.  This is
+the equivalent of calling  model.solve  with the  cycles  keyword
+set to  i ...">执行计算时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">cycle</span></code>）</a> <a class="reference internal" href="../../../../../docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">0</span></span></a> 命令时）自动设定，使 <span class="math">\(x\)</span> 轴与使用该节点的所有锚索单元的平均轴向方向对齐，而 <span class="math">\(yz\)</span> 轴在锚索横截面平面内任意取向。</p>
+<p>锚索支持大应变滑动（把 <span class="cmdkey">slide</span> 性质设为 <span class="cmdkey">on</span>），此时在大应变模式下运行时，插值位置（锚索节点用于与网格单元之间传递力与速度——见 <a class="reference internal" href="../formulation/formulation.html#sel-links"><span class="std std-ref">结构单元连接</span>（Structural-Element Links）</a>）将随网格迁移。这可计算锚索的大应变破坏后行为，此时锚索节点与网格单元之间发生显著滑动。若某锚索节点移出所有网格单元，则即便该节点后来又移回网格单元内，也不会重建与网格单元的连接；不过在锚索节点于网格单元之间滑动期间，该连接保持完好。</p>
+<p>锚索有限单元的两个活动自由度示于 <a href="#cable-coordinate-system">图 1（Figure  1）</a>。图中每个轴向位移都对应一个轴力。锚索有限单元的刚度矩阵在每个节点只含该单一自由度，以表示锚索结构中的轴向作用。</p>
+<p>以下四个小节分别描述：(1) 锚索本身的轴向行为；(2) 浆体环的剪切行为；(3) 浆体界面的法向行为；(4) 对锚索施加预拉力的方式。行为描述所依据的锚索性质见 <a class="reference internal" href="#cable-properties"><span class="std std-ref">性质</span>（Properties）</a>（相关记号汇总参见该列表）。</p>
+<p class="h3 rubric">轴向行为</p>
+<p>常规加筋体系的轴向行为可假定完全由加筋构件本身控制。加筋构件通常由钢材制成，可为钢筋或钢绞线。由于加筋构件细长，其抗弯能力很小（对钢绞线尤其如此），因此按能承受单轴拉力的三维一维结构构件处理。（也允许受压；不过当模拟以受压为主的支护时，建议采用桩结构单元。）</p>
+<p>一维本构模型足以描述加筋构件的轴向行为。轴向刚度 <span class="math">\(K\)</span> 由加筋体横截面积 <span class="math">\(A\)</span>、杨氏模量 <span class="math">\(E\)</span> 与单元长度 <span class="math">\(L\)</span> 按以下关系确定</p>
+<div class="math">
+\[K = {A E \over L}\]</div>
+<p>可为锚索单元赋予抗拉与抗压屈服强度 <span class="math">\(F_t\)</span> 与 <span class="math">\(F_c\)</span>，使大于该限值的锚索力无法发展（见 <a href="#cable-material-behavior">图 2（Figure  2）</a>）。若未指定 <span class="math">\(F_t\)</span> 或 <span class="math">\(F_c\)</span>，则锚索在该方向加载时强度无限。</p>
+<div class="figure" id="id3">
+<span id="cable-material-behavior"></span><img alt="../../../../../../_images/material-behavior.png" src="../../../../../../_images/material-behavior.png"/>
+<p class="caption"><span class="caption-text">图 2：单元的锚索材料行为</span></p>
+</div>
+<p>锚索在累积足够的塑性拉应变后可能断裂。若设置了破坏限值且拉应变超过该值，则认为该单元已破坏，不再承受拉力或压力。</p>
+<div class="figure" id="id4">
+<span id="cable-mechanical-representation"></span><img alt="../../../../../../_images/mechanical-representation.png" src="../../../../../../_images/mechanical-representation.png"/>
+<p class="caption"><span class="caption-text">图 3：全粘结加筋的力学表示</span></p>
+</div>
+<p class="h3 rubric" id="sel-cable-shear-behavior">浆体环的剪切行为</p>
+<p>锚索-岩体界面的剪切行为兼具黏聚与摩擦性质。该体系经理想化（如 <a href="#cable-grouted-system">图 4（Figure  4）</a> (a) 所示），在数值上表示为位于锚索轴线上各节点的弹簧-滑块系统（如 <a href="#cable-mechanical-representation">图 3（Figure  3）</a> 所示）。在锚索/浆体界面与浆体/岩体界面之间发生相对剪切位移时（如 <a href="#cable-grouted-system">图 4（Figure  4）</a> (b) 所示），浆体环的剪切行为在数值上由以下参数描述：(1) 浆体剪切刚度 <span class="math">\(k_g\)</span>；(2) 浆体黏聚强度 <span class="math">\(c_g\)</span>；(3) 浆体摩擦角 <span class="math">\(\phi_g\)</span>；(4) 浆体外露周长 <span class="math">\(p_g\)</span>；(5) 有效围压 <span class="math">\(\sigma_m\)</span>（<a href="#cable-grouted-system">图 4（Figure  4）</a> (c)）。注浆锚索体系的力学行为用这些参数表示于 <a href="#cable-grout-material-behavior">图 5（Figure  5）</a>。注意各锚索单元对应的浆体性质在锚索节点处取平均。</p>
+<div class="figure" id="id5">
+<span id="cable-grouted-system"></span><a class="reference internal image-reference" href="../../../../../../_images/grouted-cable-system.png"><img alt="../../../../../../_images/grouted-cable-system.png" src="../../../../../../_images/grouted-cable-system.png" style="width: 95%;"/></a>
+<p class="caption"><span class="caption-text">图 4：注浆锚索体系的理想化</span></p>
+</div>
+<div class="figure" id="id6">
+<span id="cable-grout-material-behavior"></span><a class="reference internal image-reference" href="../../../../../../_images/grout-material-behavior.png"><img alt="../../../../../../_images/grout-material-behavior.png" src="../../../../../../_images/grout-material-behavior.png" style="width: 95%;"/></a>
+<p class="caption"><span class="caption-text">图 5：锚索单元的浆体材料行为</span></p>
+</div>
+<p>有效围压 <span class="math">\(\sigma_m\)</span> 作用于垂直于锚索轴线的平面内，并沿锚索轴线在每个节点处依据节点所连网格单元中的应力计算。记锚索轴向为 <span class="math">\(x'\)</span>，并记作用于 <span class="math">\(y'z'\)</span> 平面内的主应力为 <span class="math">\(\sigma_1\)</span> 与 <span class="math">\(\sigma_2\)</span>，使 <span class="math">\(\sigma_1 &gt; \sigma_2\)</span>（拉为正）。则 <span class="math">\(\sigma_m\)</span> 取为</p>
+<div class="math" id="cable-confining-stress-eq">
+\[\sigma_m = - \bigl ({{\sigma_1 + \sigma_2}\over 2} + p \bigr )\]</div>
+<p>其中：       <span class="math">\(p\)</span> = 孔隙压力</p>
+<p>计算锚索-岩体界面相对位移时，采用插值方案依据节点所连网格单元内的位移场，计算每个锚索节点处岩体沿锚索轴向的位移。插值方案的权重因子由到该网格单元各网格点的距离确定。同一插值方案也用于把锚索-岩体界面处发展的力反向施加到该网格单元的网格点上。</p>
+<p class="h3 rubric">浆体界面的法向行为</p>
+<p>如上所述，在每个锚索节点处对网格速度作出插值估计。垂直于锚索轴线方向的速度 <em>normal</em> 被直接传递给节点（即锚索节点在法向“从属”于网格运动）。若共享该节点的两个锚索单元共线，则节点对网格不施加法向力；但若两个单元不共线，则其轴力的一部分将在法向起作用。该净力同时作用于网格与锚索节点（方向相反）。因此，初始为直线的锚索若允许有限挠度，用大应变求解模式即可承受法向荷载。</p>
+<p class="h3 rubric" id="cable-pretensioning">Pretensioning</p>
+<p>可用 <a class="reference internal" href="commands/cmd_structure.cable.apply.html#kwd:structure.cable.apply.tension" title="assign a specific axial tension value in the cable element that will be maintained
+during cycling.  Incomplete sentence follows:   This is intended
+as a way to pre-tension cables, but applying the pre-tension force as a tension
+to the end cable element(s), that are generally ungrouted. [DR: why is this
+flagged?]   Note that this setting will override the normal force-displacement
+law for the cable element as long as it is active.  Removing the condition...">施加锚索单元拉力命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">cable</span> <span class="pre">apply</span> <span class="pre">tension</span></code>）</a> 命令对锚索施加预拉力。正值对范围内所有锚索单元施加轴向拉力。该拉力将一直保持，直到用 <a class="reference internal" href="commands/cmd_structure.cable.apply.html#kwd:structure.cable.apply.tension.active" title="make the tensile apply condition active or inactive.  If active, the last specified
+value of tension is used, which is  0.0  by default...">施加锚索单元主动拉力命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">cable</span> <span class="pre">apply</span> <span class="pre">tension</span> <span class="pre">active</span></code>）</a> <a class="reference internal" href="../../../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a> 命令释放。注意移除拉力施加条件并不会改变锚索单元当前的轴力，只是去掉了把该力保持在特定水平的条件。</p>
+<p>实际中，预张拉锚索可全长注浆，也可部分长度不注浆。无论哪种情形，都提供一定锚固长度（通常在远端）以在预张拉期间支承锚索。为模拟该预张拉，只需为构成锚固长度的锚索单元指定锚固性质，为构成自由长度的单元指定其他性质（例如 <span class="math">\(c_g = 0\)</span>）。</p>
+<p>需注意，指定了预拉力的锚索在初始时刻很可能并不与所连接的其他结构单元或模型网格平衡。换言之，通常需要锚索节点与相连实体产生一定位移才能达到平衡。因此，正确施加锚索预拉力一般通过三条命令完成：</p>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">struct cable apply</span><span class="n"> tension value </span><span class="m m-Double">1000</span><span class="n"> range group </span><span class="s">'pretension'</span>
+<span class="nb">model </span><span class="ss">solve</span>
+<span class="nb">struct cable apply</span><span class="n"> tension active </span><span class="sx">off</span>
+</pre></div>
+</div>
+<p>第一条命令对一组特定锚索单元施加拉力（此前为此外已用 <a class="reference internal" href="../../../../../docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information...">预拉力（<span class="varstring"><span class="null">pretension</span></span>）</a> 组名标记）。第二条命令求解至平衡。第三条命令移除所施加的拉力值，此后锚索将自然响应。</p>
+<p>实际应用示例见 <a class="reference internal" href="../../../../../../flac3d/zonesel/test3d/ExampleApplications/AnchoredExcavation/anchoredexcavation.html#anchoredexcavation"><span class="std std-ref">三锚头开挖墙的安装</span>（Installation of a Triple-Anchored Excavation Wall）</a> 或 <a class="reference internal" href="../../../../../../flac3d/zonesel/test3d/ExampleApplications/CaissonWithTiebacks/caissonwithtiebacks.html#caissonwithtiebacks"><span class="std std-ref">带预张拉锚杆的不透水混凝土沉箱墙</span>（Impermeable Concrete Caisson Wall with Pretensioned Tiebacks）</a>。</p>
+<p class="h3 rubric">响应量</p>
+<p>锚索的响应包括锚索单元本身的力、应力与屈服状态，以及代表浆体的剪切耦合弹簧的应力、位移与滑动状态。附加耦合弹簧信息包括当前加载方向与围压。锚索的响应可通过 <span class="codename">FISH</span> 访问，并用</p>
+<ol class="arabic simple">
+<li>用 <a class="reference internal" href="commands/cmd_structure.cable.list.html#command:structure.cable.list" title="List information about cables...">列出锚索单元（<code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">cable</span> <span class="pre">list</span></code>）</a> 命令可用的某个关键字打印，</li>
+<li>用 <a class="reference internal" href="commands/cmd_structure.cable.history.html#command:structure.cable.history" title="Sample cable responses.  Quantities for sampling include cable element force,
+stress and yield state, and shear coupling spring displacement, stress and slip
+state.  If a cable is created using the  structure.cable.create , then
+the nodes of each element so created will be ordered such that the overall cable
+direction goes from the begin point to the end point (i.e., the nodal connectivity
+of each element will be ordered such that the direction from end-1...">锚索单元历程设置（<code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">cable</span> <span class="pre">history</span></code>）</a> 命令监测，以及</li>
+<li>用 Cable 绘图项绘制。</li>
+</ol>
+<p>浆体应力的符号以锚索平均轴向方向为参照，即正浆体应力沿锚索平均轴向正方向作用于锚索。该符号约定假定构成锚索的单元方向一致，使其局部坐标系对锚索方位构成连续描述。若锚索是用 <a class="reference internal" href="commands/cmd_structure.cable.create.html#command:structure.cable.create" title="Create a cable, represented by one or more elements..."><code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">cable</span> <span class="pre">create</span></code></a> 命令创建的，情况正是如此。如此创建的每个单元的节点排序使锚索整体方向从第一个点指向第二个点。节点连接关系可用 <a class="reference internal" href="commands/cmd_structure.cable.list.html#kwd:structure.cable.list.information" title="lists general element information, including  id  and  component-id 
+numbers, connected nodes, centroids, surface area, volume, and the hide and
+select status...">列出锚索单元信息命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">cable</span> <span class="pre">list</span> <span class="pre">information</span></code>）</a> 命令打印。</p>
+</div>
+<div class="section" id="properties">
+<span id="cable-properties"></span><h2>属性</h2>
+<p>各锚索单元具有 12 个性质：</p>
+<ol class="arabic simple">
+<li><span class="cmdkey">density</span>，质量密度 <span class="math">\(ρ\)</span>，可选，启用动力模式或重力时需要［M/L<sup>3</sup>］</li>
+<li><span class="cmdkey">young</span>，杨氏模量 <span class="math">\(E\)</span>［F/L<sup>2</sup>］</li>
+<li><span class="cmdkey">grout-cohesion</span>，单位长度上的注浆黏结强度（力），<span class="math">\(c_g\)</span> [F/L]</li>
+<li><span class="cmdkey">grout-friction</span>，浆体摩擦角，<span class="math">\(ϕ_g\)</span> [度]</li>
+<li><span class="cmdkey">grout-stiffness</span>，单位长度浆体刚度 <span class="math">\(k_g\)</span>［F/L<sup>2</sup>］</li>
+<li><span class="cmdkey">grout_perimeter</span>，浆体外露周长，<span class="math">\(p_g\)</span> [L]</li>
+<li><span class="cmdkey">slide</span>，大应变滑动标志（默认：<strong>off</strong>）</li>
+<li><span class="cmdkey">slide-tolerance</span>，大应变滑动容差</li>
+<li><span class="cmdkey">thermal-expansion</span>，热膨胀系数，<span class="math">\(α_t\)</span> [1/T]（可选，用于热分析）</li>
+<li><span class="cmdkey">cross-section-area</span>，横截面积，<span class="math">\(A\)</span> [L<sup>2</sup>]</li>
+<li><span class="cmdkey">yield-compression</span>，抗压屈服强度（力），<span class="math">\(F_c\)</span> [F]</li>
+<li><span class="cmdkey">yield-tension</span>，抗拉屈服强度（力），<span class="math">\(F_t\)</span> [F]</li>
+</ol>
+<p>锚索的面积、模量与屈服强度通常可从手册、厂家规格等资料直接获得。浆体性质则较难估算。浆体环假定为弹性理想塑性固体。由于筋体表面与钻孔表面之间发生相对剪切位移 <span class="math">\(u^t\)</span>，单位锚索长度发挥的剪力 <span class="math">\(F^t\)</span> 与浆体刚度 <span class="math">\(k_g\)</span> 的关系为：</p>
+<div class="math">
+\[F^t\ =\ k_g \ u^t\]</div>
+<p>通常 <span class="math">\(k_g\)</span> 可由室内拉拔试验直接量测。或者，刚度可由弹性剪应力的数值估算 <span class="math">\(\tau_G\)</span> 计算，后者由描述浆体/岩石界面剪应力的方程得到（St. John 与 Van Dillen 1983）：</p>
+<div class="math">
+\[\tau_G  =\ {G \over {(D/2+t)}}\ \ \ {\Delta u \over {\ln (1+2t/D)}}\]</div>
+<table border="1" class="colwidths-auto blank docutils">
+<tbody valign="top">
+<tr class="row-odd"><td>其中：</td>
+<td><span class="math">\(\Delta u\)</span></td>
+<td>=</td>
+<td>单元与周围材料之间的相对位移；</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td><span class="math">\(G\)</span></td>
+<td>=</td>
+<td>grout shear modulus;</td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td><span class="math">\(D\)</span></td>
+<td>=</td>
+<td>reinforcing diameter; and</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td><span class="math">\(t\)</span></td>
+<td>=</td>
+<td>环带厚度。</td>
+</tr>
+</tbody>
+</table>
+<p>因此，浆体剪切刚度 <span class="math">\(k_g\)</span> 直接由下式给出</p>
+<div class="math">
+\[k_g\ =\ {2\pi\ G  \over {\ln\ (1+2t/D)}}\]</div>
+<p>许多情形下发现以下表达式可为程序中所用 <span class="math">\(k_g\)</span> 提供合理估计：</p>
+<div class="math" id="equation-cable-grout-stiffness">
+<span class="eqno">(1)</span>\[k_g\ \simeq\ {2\pi\ G \over {10\ \ln\ (1+2t/D)}}\]</div>
+<p>十分之一因子用于计入宿主网格单元网格点与钻孔表面之间发生的相对剪切位移。当前表述未计入该相对剪切位移。</p>
+<p>浆体中单位锚索长度最大剪力由 <a href="#cable-material-behavior">图 2（Figure  2）</a> 所示关系确定。粘结黏聚强度 <span class="math">\(c_g\)</span> 与摩擦角 <span class="math">\(\phi_g\)</span> 的值可由不同围压下拉拔试验的结果估算；若无此类结果，则单位长度最大力可由峰值抗剪强度近似（St. John 与 Van Dillen 1983）：</p>
+<div class="math">
+\[{\tau_{peak}\ =\ \tau_IQ_B}\]</div>
+<p>其中 <span class="math">\(\tau_I\)</span> 约为岩石与浆体中较弱者单轴抗压强度的一半，<span class="math">\(Q_B\)</span> 为浆体与岩石之间粘结质量（<span class="math">\(Q_B\)</span> = 1 表示完全粘结）。</p>
+<p>忽略摩擦围压效应后，<span class="math">\(c_g\)</span> 可由下式得到</p>
+<div class="math" id="equation-cable-bond-cohesive-strength">
+<span class="eqno">(2)</span>\[c_g\ =\ \pi (D + 2t)\ \tau_{peak}\]</div>
+<p>加筋体系的破坏并不总在浆体/岩石界面发生。破坏也可能在加筋体/浆体界面发生，锚索加筋常见如此。此时应在该界面处评估剪应力。这意味着把 <a class="reference internal" href="#equation-cable-bond-cohesive-strength">(2)</a> 中的表达式（<span class="math">\(D + 2t\)</span>）替换为（<span class="math">\(D\)</span>）。</p>
+<p>下例演示锚索单元性质的计算。一根直径 25.4 mm（1 英寸）的锁口钢丝绳锚索按 2.5 m 间距安装。该加筋体系由若干性质表征：</p>
+<table border="1" class="colwidths-given blank docutils">
+<colgroup>
+<col width="64%"/>
+<col width="36%"/>
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>锚索直径（<span class="math">\(D\)</span>）</td>
+<td>25.4 mm</td>
+</tr>
+<tr class="row-even"><td>孔径（<span class="math">\(D+2t\)</span>）</td>
+<td>38 mm</td>
+</tr>
+<tr class="row-odd"><td>锚索模量（<span class="math">\(E\)</span>）</td>
+<td>98.6 GPa</td>
+</tr>
+<tr class="row-even"><td>锚索极限抗拉能力</td>
+<td>0.548 MN</td>
+</tr>
+<tr class="row-odd"><td>浆体抗压强度</td>
+<td>20 MPa</td>
+</tr>
+<tr class="row-even"><td>浆体剪切模量（<span class="math">\(G_g\)</span>）</td>
+<td>9 GPa</td>
+</tr>
+<tr class="row-odd"><td>friction (ignored)</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p>评估浆体最大剪力时采用两种独立方法。第一种方法假定粘结抗剪强度为浆体单轴抗压强度的一半。若浆体材料抗压强度为 20 MPa 且浆体弱于周围岩体，则浆体抗剪强度为 10 MPa。</p>
+<p>第二种方法用所报告的拉拔数据估算浆体抗剪强度。该报告给出直径 15.9 mm（5/8 英寸）钢索在深度各异的孔中以 0.15 m（5.9 英寸）粘结长度注浆的结果。试验表明承载力约为 70 kN。若假定锚索表面积为 0.0075 m<sup>2</sup>（0.15 m × 0.05 m），则算得浆体最大抗剪强度为</p>
+<div class="math">
+\[{70\ \hbox{x}\ 10^3\ \hbox{N} \over {0.0075\ \hbox{m}^2}} = 9.33\ \hbox{x}\ 10^6\ \hbox{N/m}^2 = 9.33\ \hbox{MPa}\]</div>
+<p>该值与上面估算的 10 MPa 很接近，两者均可采用。假定破坏发生在锚索/浆体界面上，则单位长度最大粘结力为（用 <a class="reference internal" href="#equation-cable-bond-cohesive-strength">(2)</a> 且把 <span class="math">\(D+2t\)</span> 替换为 <span class="math">\(D\)</span>）</p>
+<div class="math">
+\[c_g = \pi (0.0254 m) (10 MPa) = 800 kN/m\]</div>
+<p>浆体刚度 <span class="math">\(k_g\)</span> 由 <a class="reference internal" href="#equation-cable-grout-stiffness">(1)</a> 估算。按上表所示假定值，算得浆体刚度为 1.5 × 10<sup>10</sup> <span class="math">\({N/m \over {m}}\)</span>。</p>
+<p>由拉拔试验估算浆体性质的另一算例见 <a class="reference internal" href="../../../../../../flac3d/zonesel/test3d/ExampleApplications/PullTestsRockReinforcement/pulltestsrockreinforcement.html#pulltestsrockreinforcement"><span class="std std-ref">全粘结岩石加筋拉拔试验模拟</span>（Simulation of Pull-Tests for Fully Bonded Rock Reinforcement）</a></p>
+</div>
+<div class="section" id="example-applications">
+<h2>工程应用算例</h2>
+<p>下面给出若干简单示例以说明锚索的用法。</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../flac3d/zonesel/test3d/Cable/ReinforcedBeam/ReinforcedBeam.html">锚索加固梁（Cable-Reinforced Beam）</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../flac3d/zonesel/test3d/Cable/SoilNailing/SoilNailing.html">土钉支护（Soil Nailing）</a></li>
+</ul>
+</div>
+<p>使用锚索单元的全部示例清单见 <a class="reference internal" href="../../../../../../flac3d/docproject/source/elements/examples.html#selcableproblemtable"><span class="std std-ref">结构锚索示例</span>（Structural Cable Examples）</a>。</p>
+</div>
+<div class="section" id="commands-fish">
+<h2>Commands &amp; FISH</h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="commands/cable_commands.html">命令（Commands）</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fish/cable_fish.html"><span class="codename">FISH</span> 函数（FISH Functions）</a></li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../../../docproject/source/manual/program_guide/program_guide.html">程序指南</a> »</li>
+<li class="nav-item nav-item-2"><a accesskey="U" href="../../sels.html">Structural Elements</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../beams/fish/sel.beam_intrinsics/fish_sel.beam.young.html" title="previous chapter"> <code class="docutils literal"><span class="pre">struct.beam.young</span></code></a> |    
+       <a href="../../../../../../flac3d/zonesel/test3d/Cable/ReinforcedBeam/ReinforcedBeam.html" title="next chapter">Cable-Reinforced Beam</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Cable Structural Elements" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

@@ -1,0 +1,620 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>结构单元逻辑的一般表述 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="../sel_commands/sel_commands.html" rel="next" title="Commands"/>
+<link href="../liners/fish/sel.liner_intrinsics/fish_sel.liner.slide.tol.html" rel="prev" title="struct.liner.slide.tol"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="general-formulation-of-structural-element-logic">
+<span id="sel-formulation"></span><h1>结构单元逻辑的一般表述</h1>
+<p>此处给出结构单元逻辑的底层实现细节。只有希望深入理解该实现（例如为实现结构单元与网格之间的非标准相互作用）的用户才需阅读。结构单元逻辑以通用而灵活的方式开发，以支持各种（目前尚未预见的）应用情形。</p>
+<div class="section" id="structural-element-links">
+<span id="sel-links"></span><h2>结构单元连接</h2>
+<p>结构单元之间仅通过节点相互作用；而节点又仅通过连接与网格相互作用。因此结构单元连接是结构单元与网格相互作用的唯一途径。每个连接把节点连到目标实体。每个节点只能有一个与之关联的连接。连接有两类：(1) <em>node-to-zone</em>，把节点连到网格单元（而非仅连到网格点）；(2) <em>node-to-node</em>，把节点连到其他节点。</p>
+<p>除把结构单元与网格之间的相互作用局部化外，连接还提供一种以节点局部坐标系表述、在节点处实现非线性本构行为的通用机制。连接支持以下三种附着条件，它们对其源节点的每个局部方向独立指定：</p>
+<ol class="arabic simple">
+<li><strong>free</strong>        源节点在该局部方向上的速度与目标实体的速度无关。</li>
+<li><strong>rigid</strong>       源节点在该局部方向上的速度从属于目标实体在该方向上的速度分量，二者保持相等（见 <a href="#sel-rigid-attachment">图 1（Figure  1）</a>）。</li>
+<li><strong>deformable</strong>       以 <span class="math">\({\bf n}^{[{\rm S}]}\)</span> 表示附着方向。源节点与目标实体通过沿 <span class="math">\({\bf n}^{[{\rm S}]}\)</span> 方向定向的弹簧相连。弹簧刚度为与该连接关联的平均单位面积刚度（见 <a href="#sel-deformable-attachment">图 2（Figure  2）</a>）。</li>
+</ol>
+<div class="figure" id="id1">
+<span id="sel-rigid-attachment"></span><a class="reference internal image-reference" href="../../../../../../_images/rigid-attachment.png"><img alt="../../../../../../_images/rigid-attachment.png" src="../../../../../../_images/rigid-attachment.png" style="width: 95%;"/></a>
+<p class="caption"><span class="caption-text">图 1：刚性附着条件的物理类比</span></p>
+</div>
+<div class="figure" id="id2">
+<span id="sel-deformable-attachment"></span><a class="reference internal image-reference" href="../../../../../../_images/deformable-attachment.png"><img alt="../../../../../../_images/deformable-attachment.png" src="../../../../../../_images/deformable-attachment.png" style="width: 95%;"/></a>
+<p class="caption"><span class="caption-text">图 2：可变形附着条件的物理类比</span></p>
+</div>
+<p>可变形附着条件允许把广义本构模型纳入模型，这些模型关联某一局部方向上位移增量与总力。共有五个此类模型用于实现锚索、桩、土工格栅与衬砌的网格相互作用（见 <a href="#sel-attachment-conditions">表 1（Table  1）</a>）。只有线性弹簧与法向屈服弹簧可供一般使用（见 <a class="reference internal" href="../links/commands/cmd_structure.link.attach.html#command:structure.link.attach" title="Set attachment conditions for the specified link directions. The current attachment
+condition will be replaced by the condition specified here. Conditions are specified
+in keyword pairs, the first ( keyword ) being the degree-of-freedom and
+the second ([linkattachblock]) being the type of condition to use.  The following
+keywords are available to specify the degree-of-freedom:..."><code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">link</span> <span class="pre">attach</span></code></a> 命令）。法向屈服弹簧可用于在梁单元或桩单元之间引入塑性铰（见 <a class="reference internal" href="../../../../test3d/Beam/PlasticHinge/PlasticHinge.html#plastichinge"><span class="std std-ref">梁结构中塑性铰的形成</span>（Plastic Hinge Formation in a Beam Structure）</a>），以及在壳类单元之间沿边缘引入塑性铰线（见 <a class="reference internal" href="../../../../test3d/Shell/PlasticHinge/PlasticHinge.html#shellplastichinge"><span class="std std-ref">壳结构中塑性铰的形成</span>（Plastic Hinge Formation in a Shell Structure）</a>）。法向屈服弹簧在拉伸与压缩下都提供弹性理想塑性行为，并能跟踪各方向屈服期间可能形成的间隙。</p>
+<span id="sel-attachment-conditions"></span><table border="1" class="colwidths-given icg1 docutils" id="id3">
+<caption><span class="caption-text">表 1：各单元类型的默认连接附着条件</span></caption>
+<colgroup>
+<col width="14%"/>
+<col width="14%"/>
+<col width="14%"/>
+<col width="14%"/>
+<col width="14%"/>
+<col width="14%"/>
+<col width="14%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">DOF</th>
+<th class="head">beam</th>
+<th class="head">cable</th>
+<th class="head">pile</th>
+<th class="head">shell</th>
+<th class="head">geogrid</th>
+<th class="head">衬砌</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>1</td>
+<td>rigid</td>
+<td>SY</td>
+<td>SY</td>
+<td>rigid</td>
+<td>PY</td>
+<td>PY</td>
+</tr>
+<tr class="row-odd"><td>2</td>
+<td>rigid</td>
+<td>rigid</td>
+<td>PY</td>
+<td>rigid</td>
+<td>PYDP</td>
+<td>PYDP</td>
+</tr>
+<tr class="row-even"><td>3</td>
+<td>rigid</td>
+<td>rigid</td>
+<td>PYDP</td>
+<td>rigid</td>
+<td>rigid</td>
+<td>NY</td>
+</tr>
+<tr class="row-odd"><td>4</td>
+<td>free</td>
+<td>free</td>
+<td>free</td>
+<td>free</td>
+<td>free</td>
+<td>free</td>
+</tr>
+<tr class="row-even"><td>5</td>
+<td>free</td>
+<td>free</td>
+<td>free</td>
+<td>free</td>
+<td>free</td>
+<td>free</td>
+</tr>
+<tr class="row-odd"><td>6</td>
+<td>free</td>
+<td>free</td>
+<td>free</td>
+<td>free</td>
+<td>free</td>
+<td>free</td>
+</tr>
+</tbody>
+</table>
+<p><a href="#sel-attachment-conditions">表 1（Table  1）</a> 中各符号定义如下。“Rigid”表示与单元所嵌入的网格单元刚性连接；“free”表示该自由度方向无连接。SY 表示剪切屈服弹簧。PY 与 PYDP 表示桩屈服与桩屈服相关弹簧，二者共同作用产生在由这两个方向所定义平面内的单个非线性弹簧行为。NY 表示法向屈服弹簧。此处不描述非线性弹簧行为；使用这些弹簧的各单元类型的整体单元-网格相互作用行为在其各自小节中描述。</p>
+<p>可在两节点之间引入塑性铰：在这两个节点之间创建节点-节点连接，调整目标节点的节点局部系，使法向屈服弹簧可插入到铰所绕轴的方向上，同时保持其他所有方向自由（见 <a class="reference internal" href="../../../../test3d/Beam/PlasticHinge/PlasticHinge.html#plastichinge"><span class="std std-ref">梁结构中塑性铰的形成</span>（Plastic Hinge Formation in a Beam Structure）</a> 与 <a class="reference internal" href="../../../../test3d/Shell/PlasticHinge/PlasticHinge.html#shellplastichinge"><span class="std std-ref">壳结构中塑性铰的形成</span>（Plastic Hinge Formation in a Shell Structure）</a>）。法向屈服弹簧的性质应按如下设置：</p>
+<ol class="arabic simple">
+<li>把面积设为一，并把单位面积刚度设为使用该节点的结构构件刚度约十倍。</li>
+<li>把抗压与抗拉屈服强度设为塑性弯矩承载力（对梁与桩），或单位长度塑性弯矩承载力（对壳类单元）。</li>
+</ol>
+<p>节点局部系的方位在一组循环开始时（或执行 <a class="reference internal" href="../../../../../kernel/doc/manual/model/commands/cmd_model.cycle.html#command:model.cycle" title="Execute timesteps. The synonym  model.step  may also be used.  This is
+the equivalent of calling  model.solve  with the  cycles  keyword
+set to  i ...">执行计算时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">cycle</span></code>）</a> <a class="reference internal" href="../../../../../docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">0</span></span></a> 命令时）依据使用该节点的单元类型自动设定（见 <a class="reference internal" href="../nodes/nodes.html#structural-element-nodes"><span class="std std-ref">结构单元节点</span>（Structural Element Nodes）</a>）。使用单元创建命令（<a class="reference internal" href="../shells/commands/cmd_structure.shell.create.html#command:structure.shell.create" title="Create a shell. The four main keywords articulate four different techniques
+of creation: by creating a collection of elements from a group of zone faces
+( by-face ); by creating a single element from four existing nodes ( by-nodes );
+from a specified quadrilateral ( by-quadrilateral ); or from a triangle
+( by-triangle )..."><code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">shell</span> <span class="pre">create</span></code></a> 等）时，若构成新建单元的某些节点位于网格单元内，则会创建节点-网格单元连接，并赋予 <a href="#sel-rigid-attachment">图 1（Figure  1）</a> 所示的默认附着条件：</p>
+<p>单元-网格相互作用通过节点-网格单元连接发生。这些连接存储网格单元以及网格单元内的一个插值位置，以便在节点与网格单元之间传递力与速度。默认情况下即便在大应变模式下运行，这些插值位置也不改变。把连接的大应变滑动标志设为 <a class="reference internal" href="../../../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 可允许插值位置随网格迁移。通常对锚索、桩、土工格栅与衬砌把该标志设为 <a class="reference internal" href="../../../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>，此时这些单元所用所有连接的该标志会自动设为 <a class="reference internal" href="../../../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>。迁移过程使用大应变滑动容差（见 <a class="reference internal" href="../links/commands/link_commands.html#sel-link-commands">结构链接（<span class="std std-ref">structure link</span>）</a> 命令可用的 <span class="cmdkey">tolerance</span> 选项）。</p>
+</div>
+<div class="section" id="finite-element-stiffness-matrices">
+<span id="sel-finite-element-stiffness-matrices"></span><h2>有限单元刚度矩阵</h2>
+<p>各结构单元的结构响应由其通过节点为周围体系提供的刚度描述。每个结构单元都有用有限元技术形成的刚度矩阵。刚度矩阵 <span class="math">\([\bf k]\)</span> 通过关系 <span class="math">\(\{ {\bf F} \} = [{\bf k}] \{ {\bf d} \}\)</span> 把广义节点位移（平动与转动）<span class="math">\(\{\bf d \}\)</span> 与广义节点力（力与力矩）<span class="math">\(\{\bf F \}\)</span> 联系起来，其中 <span class="math">\([\bf k]\)</span> 为方阵、对称，其阶数等于该有限单元的自由度数。</p>
+<p>已实现六种有限元刚度矩阵：一个两节点梁有限单元与五种三节点壳有限单元。这些刚度矩阵表述在下面两个小节中描述。梁单元与桩单元采用梁有限单元；锚索单元采用梁有限单元的退化形式，即只使用局部轴向自由度；而壳单元、土工格栅单元与衬砌单元采用不同的壳有限单元。注意单元与网格之间的相互作用通过连接实现，连接把单元所用节点与网格单元相连。</p>
+<p class="h3 rubric" id="sel-beam-finite-element">梁有限单元</p>
+<p>程序中的梁有限单元是两节点直线有限单元，每节点六个自由度：三个平动分量与三个转动分量（见 <a class="reference internal" href="../beams/beams.html#beam-sign-convention"><span class="std std-ref">梁符号约定</span>（Beam Sign Convention）</a>）。梁有限单元刚度矩阵表述由 McGuire 与 Gallagher（1979，第 81-91 页）以显式形式给出。该单元模拟直线、等截面且关于两个横截面主轴均对称（双对称）、由各向同性材料构成的梁的结构行为。表述考虑均匀轴向变形、弯曲变形与扭转变形引起的位移，忽略横向剪切变形引起的位移，以及扭转力可能引起的横截面平面外（纵向）翘曲引起的位移。按 McGuire 与 Gallagher 的说法，所得刚度矩阵所体现的方程足以分析结构工程实践中遇到的大多数框架。</p>
+<p class="h3 rubric" id="struct-shell-finite-elements">壳有限单元</p>
+<p>壳类单元可用的三节点三角形有限单元共五种：2 个平面应力单元、1 个板弯曲单元与 2 个壳单元。平面应力单元只模拟膜作用，板弯曲单元只模拟弯曲作用，壳单元则把一般壳行为模拟为膜作用与弯曲作用的叠加（见 <a class="reference internal" href="../../sels.html#sel-bending-action"><span class="std std-ref">弯曲作用</span>（Bending Action）</a> 与 <a class="reference internal" href="../../sels.html#sel-membrane-action"><span class="std std-ref">膜作用</span>（Membrance Action）</a>）。这些单元作用于壳类单元可用的 18 个自由度（见 <a class="reference internal" href="../shelltypes/shelltypes.html#shell-type-coordinate-system"><span class="std std-ref">壳类坐标系</span>（Shell-Type Coordinate System）</a>）。</p>
+<p><em>CST 平面应力单元（6 自由度）</em></p>
+<p>CST 平面应力单元是三节点平面应力有限单元，每节点两个平动自由度（去除转动自由度后示于 <a href="#sel-dkt-cst-element">图 3（Figure  3）</a> (a)）。CST 杂交单元的描述及 <span class="math">\([{\bf k}_{\rm CST}]\)</span> 的显式表述由 Cook 等（1989）给出。</p>
+<p><em>CST 杂交平面应力单元（9 自由度）</em></p>
+<p>CST 杂交平面应力单元是三节点平面应力有限单元，每节点三个自由度：两个平动分量与一个转动分量（示于 <a href="#sel-dkt-cst-element">图 3（Figure  3）</a> (a)）。CST 杂交平面应力单元采用假定应力杂交方法建立。通过在自由度中引入“钻孔自由度” <span class="math">\(\theta_z\)</span>，它比常应变三角形（CST）提供更强的膜响应。CST 杂交单元的描述及 <span class="math">\([{\bf k}_{\rm CSTH}]\)</span> 的显式表述由 Cook（1987）给出。</p>
+<p id="struct-shell-dkt-element"><em>DKT 板弯曲单元（9 自由度）</em></p>
+<p>DKT 板弯曲单元是三节点板有限单元，每节点三个自由度：一个平动分量与两个转动分量（示于 <a href="#sel-dkt-cst-element">图 3（Figure  3）</a> (b)）。DKT 板弯曲单元在单元内六个离散位置（角点与边中点）上强制满足 Kirchhoff 板理论假定，故称 DKT（离散 Kirchhoff 三角形）。该单元由 Batoz 等（1980）描述，他们总结认为该单元是发表时最有效、最可靠的三节点（9 自由度）板弯曲单元之一。<span class="math">\([{\bf k}_{\rm DKT}]\)</span> 的显式表述由 Batoz（1982）给出。</p>
+<p id="struct-shell-dkt-cst-element"><em>DKT-CST 杂交壳单元（18 自由度）</em></p>
+<p>DKT-CST 杂交壳单元是三节点平面薄壳有限单元，每节点六个自由度：三个平动分量与三个转动分量。它把模拟壳中膜作用的九自由度 CST 杂交平面单元与模拟壳中弯曲作用的九自由度 DKT 板单元相结合。这种组合平面壳单元称为 DKT-CST 杂交单元，由 Cook 等（1989，第 351-352 页）描述。</p>
+<p>设某典型单元位于局部坐标系 <span class="math">\(xyz\)</span> 的 <span class="math">\(xy\)</span> 平面内。节点自由度示于 <a href="#sel-dkt-cst-element">图 3（Figure  3）</a>，其中 <span class="math">\(\lfloor \theta_x \quad \theta_y \rfloor = \lfloor {\partial w \over \partial y} \quad -{\partial w \over \partial x} \rfloor\)</span>。把这些自由度记为 <span class="math">\(\{{\bf d'} \}\)</span>，并按以下顺序排列</p>
+<div class="math">
+\[\begin{Bmatrix} {\bf d^{\prime}} \end{Bmatrix} =
+{\lfloor {\bf u}_i \; {\bf v}_i \; {\bf \theta}_{zi} \; {\bf w}_i \; {\bf \theta}_{xi} \; {\bf \theta}_{yi} \rfloor}^T\]</div>
+<p>其中 <span class="math">\(\lfloor {\bf u}_i \rfloor = \lfloor u_1\quad u_2 \quad u_3 \rfloor\)</span>、<span class="math">\(\lfloor {\bf\theta}_{xi} \rfloor = \lfloor \theta_{x1}\quad \theta_{x2} \quad \theta_{x3} \rfloor\)</span> 等。对 DKT-CST 杂交壳单元，其局部 <span class="math">\(xyz\)</span> 坐标中的刚度矩阵记为 <span class="math">\([{\bf k'}]\)</span>，则有</p>
+<div class="math" id="equation-dkt-csth-stiffness-matrix">
+<span class="eqno">(1)</span>\[\begin{split}\begin{bmatrix} {\bf k^{\prime}} \end{bmatrix} \begin{Bmatrix} {\bf d^{\prime}} \end{Bmatrix} =
+\begin{bmatrix} \begin{matrix} \begin{bmatrix} {\bf k}_{CSTH} \end{bmatrix} \\
+                              9\times 9 \end{matrix} &amp;
+               \begin{matrix} \begin{bmatrix} {\bf 0} \end{bmatrix} \\
+                              9\times 9 \end{matrix} \\
+               \begin{matrix} \begin{bmatrix} {\bf 0} \end{bmatrix} \\
+                              9\times 9 \end{matrix} &amp;
+               \begin{matrix} \begin{bmatrix} {\bf k}_{DKT} \end{bmatrix} \\
+                              9\times 9 \end{matrix} \end{bmatrix}
+\begin{Bmatrix} {\bf u}_i \\ {\bf v}_i \\  {\bf \theta}_{zi} \\ {\bf w}_i \\ {\bf \theta}_{xi} \\ {\bf \theta}_{yi} \end{Bmatrix}\end{split}\]</div>
+<p>其中 <span class="math">\([{\bf k}_{\rm CSTH}]\)</span> 为 CST 杂交平面应力单元的刚度矩阵，<span class="math">\([{\bf k}_{\rm DKT}]\)</span> 为 DKT 板弯曲单元的刚度矩阵。</p>
+<p>关于 DKT-CST 杂交单元有以下几点观察（另见下一节关于 DKT-CST 单元的观察）。</p>
+<ol class="arabic simple">
+<li><span class="math">\([{\bf k}_{\rm CSTH}]\)</span> 只含与膜作用相关的自由度，<span class="math">\([{\bf k}_{\rm DKT}]\)</span> 只含与弯曲作用相关的自由度。虽然实际曲面壳中处处存在膜-弯曲耦合，但单个单元中并不存在（由 <a class="reference internal" href="#equation-dkt-csth-stiffness-matrix">(1)</a> 的 9 × 9 零矩阵可见）。不过如 Carpenter 等（1986）所示，该单元性能足以与曲面单元相竞争。</li>
+<li>该单元给出的解收敛于经典 Kirchhoff 薄板解。因此该单元适用于模拟横向剪切变形引起的位移可忽略的薄壳。</li>
+</ol>
+<div class="figure" id="id4">
+<span id="sel-dkt-cst-element"></span><a class="reference internal image-reference" href="../../../../../../_images/dkt-cst-element.png"><img alt="../../../../../../_images/dkt-cst-element.png" src="../../../../../../_images/dkt-cst-element.png" style="width: 95%;"/></a>
+<p class="caption"><span class="caption-text">图 3：局部 xy 平面中的 DKT-CST 杂交平面壳有限单元：(a) 与膜作用相关的自由度（CST 杂交子单元）；(b) 与弯曲作用相关的自由度（DKT 子单元）</span></p>
+</div>
+<p><em>DKT-CST 壳单元（15 自由度）</em></p>
+<p>DKT-CST 壳单元是三节点平面薄壳有限单元，每节点五个自由度：三个平动分量与两个转动分量。它把模拟壳中膜作用的六自由度 CST 平面单元与模拟壳中弯曲作用的九自由度 DKT 板单元相结合。这种组合平面壳单元称为 DKT-CST，由 Cook 等（1989，第 351-352 页）描述。</p>
+<p>设某典型单元位于局部坐标系 <span class="math">\(xyz\)</span> 的 <span class="math">\(xy\)</span> 平面内。去除 <span class="math">\(\theta_z\)</span>（其中 <span class="math">\(\lfloor \theta_x \quad \theta_y \rfloor = \lfloor {\partial w \over \partial y} \quad -{\partial w \over \partial x} \rfloor\)</span>）后，节点自由度示于 <a href="#sel-dkt-cst-element">图 3（Figure  3）</a>。把这些自由度记为 <span class="math">\(\{{\bf d^\star} \}\)</span>，并按以下顺序排列</p>
+<div class="math">
+\[\begin{Bmatrix} {\bf d^{\star}} \end{Bmatrix} =
+{\lfloor {\bf u}_i \, {\bf v}_i \, {\bf w}_i \, {\bf \theta}_{xi} \, {\bf \theta}_{yi} \rfloor}^T\]</div>
+<p>其中 $lfloor {bf u}_i rfloor = lfloor u_1quad u_2 quad u_3 rfloor$，$lfloor {ubmtheta}_{xi} rfloor = lfloor theta_{x1}quad theta_{x2} quad theta_{x3} rfloor$，依此类推。对 DKT-CST 壳单元，其局部 $xyz$ 坐标中的刚度矩阵记为 $[{bf k^star}]$，则</p>
+<div class="math" id="equation-dkt-cst-stiffness-matrix">
+<span class="eqno">(2)</span>\[\begin{split}\begin{bmatrix} {\bf k^{\prime}} \end{bmatrix} \begin{Bmatrix} {\bf d^{\star}} \end{Bmatrix} =
+\begin{bmatrix} \begin{matrix} \begin{bmatrix} {\bf k}_{CST} \end{bmatrix} \\
+                              6\times 6 \end{matrix} &amp;
+               \begin{matrix} \begin{bmatrix} {\bf 0} \end{bmatrix} \\
+                              6\times 9 \end{matrix} \\
+               \begin{matrix} \begin{bmatrix} {\bf 0} \end{bmatrix} \\
+                              9\times 6 \end{matrix} &amp;
+               \begin{matrix} \begin{bmatrix} {\bf k}_{DKT} \end{bmatrix} \\
+                              9\times 9 \end{matrix} \end{bmatrix}
+\begin{Bmatrix} {\bf u}_i \\ {\bf v}_i \\  {\bf w}_i \\ {\bf \theta}_{xi} \\ {\bf \theta}_{yi} \end{Bmatrix}\end{split}\]</div>
+<p>其中 <span class="math">\([{\bf k}_{\rm CST}]\)</span> 为 CST 平面应力单元的刚度矩阵，<span class="math">\([{\bf k}_{\rm DKT}]\)</span> 为 DKT 板弯曲单元的刚度矩阵。</p>
+<p>以下关于 DKT-CST 单元的观察是恰当的。</p>
+<ol class="arabic simple">
+<li><span class="math">\([{\bf k}_{\rm CST}]\)</span> 只含与膜作用相关的自由度，<span class="math">\([{\bf k}_{\rm DKT}]\)</span> 只含与弯曲作用相关的自由度。虽然实际曲面壳中处处存在膜-弯曲耦合，但单个单元中并不存在（由 <a class="reference internal" href="#equation-dkt-cst-stiffness-matrix">(2)</a> 的零矩阵可见）。</li>
+<li>该单元给出的解收敛于经典 Kirchhoff 薄板解。因此该单元适用于模拟横向剪切变形引起的位移可忽略的薄壳。</li>
+<li>该单元与 DKT-CST 杂交单元的区别在于没有钻孔自由度。这使该单元在膜应力梯度大的问题中过刚；此类问题用 DKT-CST 杂交单元表现更好。对无大膜应力梯度的问题，DKT-CST 单元性能大为改善，可与 DKT-CST 杂交单元相比。</li>
+<li>由于没有钻孔自由度，该单元比 DKT-CST 杂交单元更适合与模型网格耦合。网格单元的位移为线性变化，而 3 个钻孔自由度使 DKT-CST 杂交单元沿其边的面内位移呈二次变化。当壳类单元与网格刚性连接时，只有平动自由度被从属于网格运动，转动自由度保持自由。由于未约束钻孔自由度，单元与网格之间可能出现间隙。当不同尺寸的壳类单元沿同一直线相接时，这种不协调似会被激活。DKT-CST 单元沿其边的面内位移为线性变化，与网格单元完全协调，因此这些单元与网格单元刚性连接时不会形成间隙。</li>
+<li>上述两点观察得出关于壳有限单元选择的以下一般建议：对壳单元需与网格单元连接的问题，采用 DKT-CST 单元；对其他所有问题，采用 DKT-CST 杂交单元。</li>
+</ol>
+</div>
+<div class="section" id="stress-recovery-procedure">
+<span id="sel-stress-recovery-formulation"></span><h2>应力恢复流程</h2>
+<p>应力恢复流程概述于 <a class="reference internal" href="../../sels.html#sel-stress-recovery-procedure"><span class="std std-ref">应力恢复流程</span>（Stress Recovery Procecure）</a>。此处给出更详细的描述。应力恢复施加于一组壳类单元，弯曲与膜应力合力的节点平均只在该组内单元之间进行。应力恢复包括两个步骤：</p>
+<ol class="arabic">
+<li><p class="first">计算应力合力场。</p>
+<ol class="loweralpha">
+<li><p class="first">在每个节点处定义表面坐标系。</p>
+<p>该体系的 <span class="math">\(z\)</span> 方向等于使用该节点的所有壳类单元的平均 <span class="math">\(z\)</span> 方向，<span class="math">\(x\)</span> 方向等于用户指定 <span class="cmdkey">surface</span> 向量在 <span class="math">\(z\)</span> 平面上的投影。</p>
+</li>
+<li><p class="first">计算弯曲与膜应力合力</p>
+<p>（<span class="math">\(M_x\)</span>、<span class="math">\(M_y\)</span>、<span class="math">\(M_{xy}\)</span>、<span class="math">\(N_x\)</span>、<span class="math">\(N_y\)</span> 与 <span class="math">\(N_{xy}\)</span>）在每个节点处。这些值先在各壳类单元的节点上计算，再对所有使用该节点的壳类单元的贡献取平均得到。</p>
+<p>注意这六种应力合力在各单元内线性变化。</p>
+<p>各壳类单元内的弯曲与膜应力合力采用 McGuire 与 Gallagher（1979，第 76-77 页）的柔度-刚度变换求得，以确定哪些位移与作用于该单元的一组给定节点力相协调。做法是形成由单元刚度矩阵导出的柔度矩阵：先定义一个稳定、静定的支承体系，从刚度矩阵中去除支承分量对应的行列，再对其余部分求逆。随后把这些位移输入适用于该特定有限单元的应力恢复流程。</p>
+</li>
+<li><p class="first">通过强制满足平衡方程，计算各壳类单元内的横向剪应力合力（<span class="math">\(Q_x\)</span> 与 <span class="math">\(Q_y\)</span>）</p>
+<div class="math">
+\[ \begin{align}\begin{aligned}Q_x =   {\partial M_x \over \partial x} + {\partial M_{xy} \over \partial y}\\Q_y =   {\partial M_y \over \partial y} + {\partial M_{xy} \over \partial x}\end{aligned}\end{align} \]</div>
+<p>做法是假定弯曲合力场在每个单元内线性变化。注意 <span class="math">\(Q_x\)</span> 与 <span class="math">\(Q_y\)</span> 在每个壳类单元内为常数，不在节点处平均。</p>
+</li>
+</ol>
+</li>
+<li><p class="first">用 <a class="reference internal" href="../../sels.html#shell-stresses"><span class="std std-ref">由合力求应力</span>（Stresses From Resultants）</a> 计算指定壳深处的应力场，再把应力旋转到全局系。</p>
+</li>
+</ol>
+</div>
+<div class="section" id="governing-equations">
+<h2>控制方程</h2>
+<p>结构单元及其相关实体（即节点与连接）动力响应控制方程的离散与时间积分采用标准有限元做法。此处描述与 Cook 等（1989）第 13 章所述相似。</p>
+<p>结构动力响应的控制方程可通过要求外力的功在任一微小运动学容许运动中被内力、惯性力与阻尼力的功所吸收来导出。对单个单元，该功平衡变为</p>
+<div class="math" id="equation-sel-work-balance">
+<span class="eqno">(3)</span>\[\begin{split}\int_{V_e} \begin{Bmatrix} \delta {\bf u} \end{Bmatrix}^T \begin{Bmatrix} {\bf F} \end{Bmatrix} dV +
+\int_{S_e} \begin{Bmatrix} \delta {\bf u} \end{Bmatrix}^T \begin{Bmatrix} {\bf \Phi} \end{Bmatrix} dS +\
+\sum_{i=1}^n \begin{Bmatrix} \delta {\bf u} \end{Bmatrix}_i^T \begin{Bmatrix} {\bf p} \end{Bmatrix}_i
+= \\
+\qquad \qquad \int_{V_e} \bigg( \begin{Bmatrix} \delta {\bf \epsilon} \end{Bmatrix}^T  \begin{Bmatrix} {\bf \sigma} \end{Bmatrix} +
+\begin{Bmatrix} \delta {\bf u} \end{Bmatrix}^T \rho \begin{Bmatrix} {\ddot{\bf u}} \end{Bmatrix} +
+\begin{Bmatrix} \delta {\bf u} \end{Bmatrix}^T \kappa_d  \begin{Bmatrix} {\dot{\bf u}} \end{Bmatrix} \bigg) dV\end{split}\]</div>
+<p>其中 <span class="math">\(\{ \delta {\bf u} \}\)</span> 与 <span class="math">\(\{ \delta {\bf \epsilon} \}\)</span> 分别为任意小位移及相应应变，<span class="math">\(\{ {\bf F} \}\)</span> 为体积力，<span class="math">\(\{ {\bf \Phi} \}\)</span> 为作用于单元表面一部分 <span class="math">\(S_e\)</span> 上的给定面力，<span class="math">\(\{ {\bf p}_i \}\)</span> 为作用于单元上共 <span class="math">\(n\)</span> 个点的集中荷载，<span class="math">\(\{ {\bf u} \}_i^T\)</span> 为施加荷载 <span class="math">\(\{ {\bf p}_i \}\)</span> 之点的位移，<span class="math">\(\{ {\bf \sigma} \}\)</span> 为应力，<span class="math">\(\rho\)</span> 为材料质量密度，<span class="math">\(\kappa_d\)</span> 为类比于黏度的材料阻尼参数，体积积分在单元体积 <span class="math">\(V_e\)</span> 上进行。</p>
+<p>若把位移场 <span class="math">\(\{ {\bf u} \}\)</span>（它是空间与时间的函数）及其前两阶时间导数写为</p>
+<div class="math" id="equation-sel-disp-field-eq">
+<span class="eqno">(4)</span>\[\{      {\bf u} \} = [{\bf N}] \{      {\bf d} \} \quad\quad
+\{  \dot{\bf u} \} = [{\bf N}] \{  \dot{\bf d} \} \quad\quad
+\{ \ddot{\bf u} \} = [{\bf N}] \{ \ddot{\bf d} \}\]</div>
+<p>其中形函数 <span class="math">\([{\bf N}]\)</span> 只是空间的函数，节点自由度 <span class="math">\(\{{\bf d}\}\)</span> 只是时间的函数，则 <a class="reference internal" href="#equation-sel-disp-field-eq">(4)</a> 表示一种局部变量分离。把 <a class="reference internal" href="#equation-sel-disp-field-eq">(4)</a> 代入 <a class="reference internal" href="#equation-sel-work-balance">(3)</a>，并注意到 <span class="math">\(\{ \delta{\bf u} \}\)</span>（从而 <span class="math">\(\{ \delta{\bf d} \}\)</span>）是任意的，可得</p>
+<div class="math" id="equation-shell-finite-system">
+<span class="eqno">(5)</span>\[[{\bf m}] \{ \ddot{\bf d} \} + [{\bf c}] \{ \dot{\bf d} \} + \{ {\bf r}^{\rm int} \} = \{ {\bf r}^{\rm ext} \}\]</div>
+<p>其中单元质量矩阵与阻尼矩阵定义为</p>
+<div class="math">
+\[[{\bf m}] = \int_{V\!{\scriptscriptstyle e}} \rho [{\bf N}]^T [{\bf N}]\,dV\]</div>
+<div class="math" id="equation-shell-damping-matrix">
+<span class="eqno">(6)</span>\[[{\bf c}] = \int_{V\!{\scriptscriptstyle e}} \kappa_{\scriptscriptstyle d} [{\bf N}]^T [{\bf N}]\,dV\]</div>
+<p>单元内力向量与外荷载向量定义为</p>
+<div class="math" id="equation-shell-mrleftout">
+<span class="eqno">(7)</span>\[\begin{Bmatrix} {\bf r}^{int} \end{Bmatrix} =
+\int_{V_e} \begin{bmatrix} {\bf B} \end{bmatrix}^T \begin{Bmatrix} {\bf \sigma} \end{Bmatrix} dV\]</div>
+<div class="math" id="equation-shell-mrleftout2">
+<span class="eqno">(8)</span>\[\begin{Bmatrix} {\bf r}^{ext} \end{Bmatrix} =
+\int_{V_e} \begin{bmatrix} {\bf N} \end{bmatrix}^T \begin{Bmatrix} {\bf F} \end{Bmatrix} dV +
+\int_{S_e} \begin{bmatrix} {\bf N} \end{bmatrix}^T \begin{Bmatrix} {\bf \Phi} \end{Bmatrix} dS +
+\sum_{i=1}^{n} \begin{bmatrix} {\bf p} \end{bmatrix}_i\]</div>
+<p>其中 <span class="math">\([{\bf B}]\)</span> 为满足 <span class="math">\(\{\delta {\bf \epsilon}\} = [{\bf B}]\{{\bf d}\}\)</span> 的应变-位移矩阵。</p>
+<p><a class="reference internal" href="#equation-shell-finite-system">(5)</a> 是关于时间的耦合二阶常微分方程组，称为有限元半离散化，因为尽管位移 <span class="math">\([{\bf d}]\)</span> 是空间的离散函数，它们仍是时间的连续函数。结构单元逻辑采用显式直接积分法，用中心差分法把 <a class="reference internal" href="#equation-shell-finite-system">(5)</a> 在时间上离散，得到一系列解耦的代数方程。</p>
+<p>回想 <a class="reference internal" href="#equation-shell-finite-system">(5)</a> 是针对单个单元写出的。组装后结构体系的方程可写为</p>
+<div class="math" id="equation-sel-equations-of-motion">
+<span class="eqno">(9)</span>\[\begin{bmatrix} {\bf M} \end{bmatrix} \begin{Bmatrix} \ddot{\bf D} \end{Bmatrix} +
+\begin{bmatrix} {\bf C} \end{bmatrix} \begin{Bmatrix} \dot{\bf D} \end{Bmatrix} =
+\begin{Bmatrix} {\bf R}^{ext} \end{Bmatrix} - \begin{Bmatrix} {\bf R}^{int} \end{Bmatrix} =
+\begin{Bmatrix} {\bf A} \end{Bmatrix}\]</div>
+<p>其中 <span class="math">\(\{{\bf A}\}\)</span> 表示累积不平衡力，大写英文字母表示结构矩阵，它们由单元矩阵按概念扩展到“结构尺寸”后相加重叠系数构成。组装过程的详细描述见任何标准有限元教材（例如 Cook 等 1989）。</p>
+<p>运动方程 <a class="reference internal" href="#equation-sel-equations-of-motion">(9)</a> 针对特定时刻写出：</p>
+<div class="math" id="equation-sel-eom-discretized">
+<span class="eqno">(10)</span>\[\begin{bmatrix} {\bf M} \end{bmatrix} \begin{Bmatrix} \ddot{\bf D} \end{Bmatrix}_n +
+\begin{bmatrix} {\bf C} \end{bmatrix} \begin{Bmatrix} \dot{\bf D} \end{Bmatrix}_n =
+\begin{Bmatrix} {\bf A} \end{Bmatrix}_n\]</div>
+<p>其中下标 <span class="math">\(n\)</span> 表示时刻 <span class="math">\(n\Delta t\)</span>，<span class="math">\(\Delta t\)</span> 为时间增量即时步的大小。</p>
+</div>
+<div class="section" id="central-difference-approximations">
+<h2>中心差分近似</h2>
+<p>时刻 <span class="math">\(n\Delta t\)</span> 加速度、时刻 <span class="math">\((n - {\scriptstyle 1/2})\Delta t\)</span> 速度与时刻 <span class="math">\(n\Delta t\)</span> 速度的中心差分近似为</p>
+<div class="math" id="equation-sel-central-difference-acc">
+<span class="eqno">(11)</span>\[\{ \ddot{\bf D} \}_n = {1\over\Delta t} \biggl( \{ \dot{\bf D} \}_{n \scriptscriptstyle + 1/2} - \{ \dot{\bf D} \}_{n \scriptscriptstyle - 1/2} \biggr) + O( \Delta t^2 )\]</div>
+<div class="math" id="equation-sel-central-difference-vel">
+<span class="eqno">(12)</span>\[\{ \dot{\bf D} \}_{n \scriptscriptstyle - 1/2} = {1\over\Delta t} \biggl( \{ {\bf D} \}_{n} - \{ {\bf D} \}_{n \scriptscriptstyle - 1} \biggr) + O( \Delta t^2 )\]</div>
+<div class="math" id="equation-sel-final-vel">
+<span class="eqno">(13)</span>\[\{ \dot{\bf D} \}_n = {1\over2} \biggl( \{ \dot{\bf D} \}_{n \scriptscriptstyle - 1/2} + \{ \dot{\bf D} \}_{n \scriptscriptstyle + 1/2} \biggr) + O( \Delta t^2 )\]</div>
+<p>这些表达式具有二阶精度，意味着时步减半应使近似误差约减为四分之一。</p>
+</div>
+<div class="section" id="accumulated-out-of-balance-force-vector">
+<span id="sel-out-of-balance-force"></span><h2>累积不平衡力向量</h2>
+<p>构成 <a class="reference internal" href="#equation-sel-eom-discretized">(10)</a> 中累积不平衡力向量 <span class="math">\(\{{\bf A}\}_n\)</span> 一部分的结构内力向量，由组装各结构单元以及各连接各个可变形方向的贡献得到</p>
+<div class="math">
+\[\{ {\bf R}^{\rm int} \}_n = \sum_{j} \left( \{ {\bf r}^{\rm int} \}_n \right)_j\]</div>
+<p>其中</p>
+<div class="math">
+\[ \begin{align}\begin{aligned}\{ {\bf r}^{\rm int} \}_n &amp;= \{ {\bf r}^{\rm int} \}_{n \scriptscriptstyle - 1} + \{ \Delta {\bf r}^{\rm int} \}\\= \{ {\bf r}^{\rm int} \}_{n \scriptscriptstyle - 1} + [{\bf k}]_{n \scriptscriptstyle - 1/2} \bigl( \{ {\bf d} \}_n - \{ {\bf d} \}_{n \scriptscriptstyle - 1} \bigr)\\= \{ {\bf r}^{\rm int} \}_{n \scriptscriptstyle - 1} + [{\bf k}]_{n \scriptscriptstyle - 1/2} \{ \dot{\bf d} \}_{n \scriptscriptstyle - 1/2} \Delta t\end{aligned}\end{align} \]</div>
+<p>其中采用了 <a class="reference internal" href="#equation-sel-central-difference-vel">(12)</a> 的中心差分近似。各结构单元及每个连接的每个可变形方向所维护的内力向量 <span class="math">\(\{ {\bf r}^{\rm int} \}\)</span> 也在计算 <span class="math">\(\{ {\bf R}^{\rm int} \}\)</span> 期间更新。</p>
+<p>把所有内力分配到相应节点后，每个连接的每个刚性附着方向 <span class="math">\({\bf n}^{[{\rm S}]}\)</span> 按下式把其源节点 <span class="math">\({\bf A}^{[{\rm S}]}\)</span> 的不平衡力相应部分贡献给其目标实体 <span class="math">\({\bf A}^{[{\rm T}]}\)</span> 的累积不平衡力</p>
+<div class="math">
+\[{\bf A}^{[{\rm T}]} \leftarrow {\bf A}^{[{\rm T}]} + \left( {\bf A}^{[{\rm S}]} \cdot {\bf n}^{[{\rm S}]} \right) {\bf n}^{[{\rm S}]}\]</div>
+</div>
+<div class="section" id="mass-matrix">
+<span id="sel-mass-matrix"></span><h2>质量矩阵</h2>
+<p><a class="reference internal" href="#equation-sel-eom-discretized">(10)</a> 中的结构质量矩阵通过采用节点集中方案并把各结构单元的贡献组装得到</p>
+<div class="math">
+\[[ {\bf M} ] = \lceil {\bf M} \rfloor = \sum_{j=1}^{\rm numel} \lceil {\bf m} \rfloor_j\]</div>
+<p>其中</p>
+<div class="math">
+\[\begin{split}\lceil {\bf m} \rfloor_j = \begin{cases} \frac{\rho_j V_j}{n_j}, &amp; \text{all 3 translational d.o.f.} \\
+                                         \frac{2}{5}\Bigg(\frac{\rho_j V_j}{n_j}\Bigg)\Bigg(\frac{3V_j}{4\pi n_j}\Bigg)^{2/3}, &amp; \text{all 3 rotational d.o.f.} \end{cases}\end{split}\]</div>
+<p>其中 <span class="math">\(\rho_j\)</span>、<span class="math">\(V_j\)</span> 与 <span class="math">\(n_j\)</span> 分别为单元 <span class="math">\(j\)</span> 的质量密度、体积与节点数。转动惯量通过假定各节点所分配的单元质量部分按球体分布求得。</p>
+<p>在把所有结构单元的质量分配到相应节点后，每个连接的每个刚性附着方向按下述加权函数，把其源质量在方向 <span class="math">\(k\)</span> <span class="math">\(m_k^{[{\rm S}]}\)</span> 上的相应部分贡献给目标方向 <span class="math">\(i\)</span> <span class="math">\(m_i^{[{\rm T}]}\)</span> 的累积质量</p>
+<div class="math" id="equation-sel-weighting-function">
+<span class="eqno">(14)</span>\[m_i^{[{\rm T}]} \leftarrow m_i^{[{\rm T}]} + m_k^{[{\rm S}]} \left( { \left| {\bf n}_k^{[{\rm S}]} \cdot {\bf n}_i^{[{\rm T}]} \right| \over \sum^3_{l=1} \left| {\bf n}_k^{[{\rm S}]} \cdot {\bf n}_l^{[{\rm T}]} \right| } \right)\]</div>
+<p>其中 <span class="math">\({\bf n}_i^{[{\rm S}]}\)</span> 与 <span class="math">\({\bf n}_i^{[{\rm T}]}\)</span> 分别为源与目标局部坐标系的单位向量三元组。</p>
+</div>
+<div class="section" id="damping-formulation">
+<h2>阻尼表述</h2>
+<p>公式 <a class="reference internal" href="#equation-shell-damping-matrix">(6)</a> 的推导采用了适合模拟牛顿流体的黏性阻尼参数；然而在模拟结构体系时，我们更关心的不是黏性阻尼，而是干摩擦与滞回耗能。这些耗能机制尚未被充分理解，且从实用角度看 <a class="reference internal" href="#equation-shell-damping-matrix">(6)</a> 并不能正确表示结构阻尼。因此提供了三种经验性阻尼方案（局部阻尼、局部阻尼与 Rayleigh 或比例阻尼的组合）。此处给出三种阻尼方案的实现细节；各方案背后理据的说明见 <a class="reference internal" href="../../../../../../flac3d/docproject/source/theory/theoreticalbackground/formulation.html#mechanical-damping"><span class="std std-ref">力学阻尼</span>（Mechanical Damping）</a> 与 <a class="reference internal" href="../../../../../../flac3d/docproject/source/options/dynamic/considerations/considerations.html#dynamic-rayleigh-damping"><span class="std std-ref">Rayleigh 阻尼</span>（Rayleigh Damping）</a>。</p>
+<p>三种阻尼方案都从把 <a class="reference internal" href="#equation-sel-eom-discretized">(10)</a> 改写为下式出发</p>
+<div class="math" id="equation-damping-starting-eq">
+<span class="eqno">(15)</span>\[[{\bf M}] \{ \ddot{\bf D} \}_n + \{ {\bf R}^{\rm d} \}_n = \{ {\bf A} \}_n\]</div>
+<p>其中 <span class="math">\(\{ {\bf R}^{\rm d} \}_n\)</span> 表示时刻 <span class="math">\(n\Delta t\)</span> 阻尼机制产生的力。</p>
+<p class="h3 rubric">局部阻尼</p>
+<p>把 <a class="reference internal" href="#equation-sel-central-difference-acc">(11)</a> 代入 <a class="reference internal" href="#equation-damping-starting-eq">(15)</a> 可得</p>
+<div class="math" id="equation-sel-local-damping-2">
+<span class="eqno">(16)</span>\[\{ \dot{\bf D} \}_{n \scriptscriptstyle + 1/2} = \{ \dot{\bf D} \}_{n \scriptscriptstyle - 1/2} + \Delta t [{\bf M}]^{-1} \left( \{ {\bf A} \}_n - \{ {\bf R}^{\rm d} \}_n \right)\]</div>
+<p>采用对角质量矩阵（见 <a class="reference internal" href="#sel-mass-matrix"><span class="std std-ref">质量矩阵</span>（Mass Matrix）</a>）可解耦该方程组，从而可对单个自由度 <span class="math">\(i\)</span> 重写为</p>
+<div class="math">
+\[( \dot D_i )_{n \scriptscriptstyle + 1/2} = ( \dot D_i )_{n \scriptscriptstyle - 1/2} + {\Delta t \over M_i}  \left( (A_i)_n - ( R_i^{\rm d} )_n \right)\]</div>
+<p>局部阻尼通过按下式设置提供</p>
+<div class="math" id="equation-sel-local-damping-1">
+<span class="eqno">(17)</span>\[( R_i^{\rm d} )_n = \lambda_i \&gt; \bigl| (A_i)_n \bigr| \&gt; {\rm sgn}  ( \dot D_i )_n\]</div>
+<p>其中 <span class="math">\(\lambda_i\)</span> 为自由度 <span class="math">\(i\)</span> 的局部阻尼因子，且</p>
+<div class="math">
+\[\begin{split}{\rm sgn}(x) =
+\begin{cases} +1, &amp; \text{if} x \geq 0 \\
+              -1, &amp; \text{if} x &lt; 0 \end{cases}\end{split}\]</div>
+<p>局部阻尼表述的实现方式是计算无阻尼新速度 <span class="math">\((\dot D_i )^{\rm ud}\)</span> 与有阻尼新速度 <span class="math">\(( \dot D_i )^{\rm d}\)</span>：</p>
+<div class="math">
+\[ \begin{align}\begin{aligned}( \dot D_i )^{\rm ud} = ( \dot D_i )_{n \scriptscriptstyle - 1/2} + {\Delta t \over M_i} (A_i)_n\\( \dot D_i )^{\rm d} = ( \dot D_i )_{n \scriptscriptstyle - 1/2} + {\Delta t \over M_i} \biggl( (A_i)_n - \lambda_i \&gt; | (A_i)_n | \&gt; {\rm sgn}  ( \dot D_i )_{n \scriptscriptstyle - 1/2} \biggr)\end{aligned}\end{align} \]</div>
+<p>并把实际新速度设为阻尼后的速度（仅当速度未改变符号时），即</p>
+<div class="math" id="equation-sel-new-velocity-1">
+<span class="eqno">(18)</span>\[\begin{split}\begin{pmatrix} \dot{D}_i \end{pmatrix}_{n+1/2} =
+\begin{cases} \begin{pmatrix} \dot{D}_i \end{pmatrix}^{ud}, &amp;
+              \text{if} \begin{pmatrix} \dot{D}_i \end{pmatrix}_{n-1/2}\begin{pmatrix} \dot{D}_i \end{pmatrix}^d \leq 0 \\
+              \begin{pmatrix} \dot{D}_i \end{pmatrix}^{d}, &amp;
+              \text{otherwise} \end{cases}\end{split}\]</div>
+<p>可证明该实现保持二阶精度，说明如下。假定</p>
+<div class="math" id="equation-sel-local-damping-assumption">
+<span class="eqno">(19)</span>\[( \dot D_i )_{n \scriptscriptstyle + 1/2} ( \dot D_i )_{n \scriptscriptstyle - 1/2} &gt; 0\]</div>
+<p>这意味着</p>
+<div class="math">
+\[{\rm sgn}( \dot D_i )_n = {\rm sgn}( \dot D_i )_{n \scriptscriptstyle - 1/2}\]</div>
+<p>这使 <a class="reference internal" href="#equation-sel-new-velocity-1">(18)</a> 成为 <a class="reference internal" href="#equation-sel-local-damping-1">(17)</a> 的精确表达式。注意若不满足 <a class="reference internal" href="#equation-sel-local-damping-assumption">(19)</a> 的假定（即速度改变符号或为零），则不对该自由度施加阻尼。</p>
+<p class="h3 rubric">组合局部阻尼</p>
+<p>组合局部阻尼采用与局部阻尼所述相同的流程，只是把 <a class="reference internal" href="#equation-sel-local-damping-1">(17)</a> 替换为</p>
+<div class="math">
+\[( R_i^{\rm d} )_n = \lambda_i \&gt; \bigl| (A_i)_n \bigr| \&gt; {1\over2} \bigl( {\rm sgn} ( \dot D_i )_n - {\rm sgn} ( \dot A_i )_n \bigr)\]</div>
+<p>其中</p>
+<div class="math">
+\[{\rm sgn} ( \dot A_i )_n = {\rm sgn} \bigl( ( A_i )_n - ( A_i )_{n-1} \bigr)\]</div>
+<p class="h3 rubric">瑞利阻尼</p>
+<p>Rayleigh 阻尼通过把阻尼矩阵 <span class="math">\([ {\bf C} ]\)</span> 构造为刚度矩阵与质量矩阵的线性组合得到：</p>
+<div class="math">
+\[[ {\bf C} ] = \beta [ {\bf K} ]  +  \alpha [ {\bf M} ]\]</div>
+<p>其中 <span class="math">\(\beta\)</span> 与 <span class="math">\(\alpha\)</span> 分别称为刚度比例与质量比例阻尼常数。<span class="math">\(\beta\)</span>、<span class="math">\(\alpha\)</span> 与频率 <span class="math">\(\omega\)</span> 处临界阻尼比 <span class="math">\(\xi\)</span> 之间的关系为</p>
+<div class="math">
+\[\xi = {1\over2} \left( \beta\omega + {\alpha\over\omega} \right)\]</div>
+<p>刚度相关阻尼随频率增大而增大，而质量相关阻尼随频率减小而增大。</p>
+<p>阻尼常数 <span class="math">\(\beta\)</span> 与 <span class="math">\(\alpha\)</span> 与频率（<span class="math">\(\omega_1\)</span> 与 <span class="math">\(\omega_2\)</span>）处的临界阻尼比（<span class="math">\(\xi_1\)</span> 与 <span class="math">\(\xi_2\)</span>）按以下关系联系</p>
+<div class="math">
+\[ \begin{align}\begin{aligned}\beta  &amp;= 2(\xi_2\omega_2 - \xi_1\omega_1) / (\omega_2^2 - \omega_1^2)\\\alpha &amp;= 2\omega_1\omega_2(\xi_1\omega_2 - \xi_2\omega_1) / (\omega_2^2 - \omega_1^2)\end{aligned}\end{align} \]</div>
+<p>Rayleigh 阻尼处于活动状态时所用运动控制方程推导如下。把阻尼机制产生的力（<a class="reference internal" href="#equation-damping-starting-eq">(15)</a> 中的 <span class="math">\(\{ {\bf R}^{\rm d} \}_n\)</span>）表示为刚度贡献与质量贡献之和：</p>
+<div class="math">
+\[\{ {\bf R}^{\rm d} \}_n = \{ {\bf R}^{\beta} \}_n + \{ {\bf R}^{\alpha} \}_n = \{ {\bf R}^{\beta} \}_n + \alpha [{\bf M}] \{ \dot{\bf D} \}_n\]</div>
+<p>并把这个表达式代入 <a class="reference internal" href="#equation-damping-starting-eq">(15)</a> 得</p>
+<div class="math" id="equation-sel-rayleigh-system">
+<span class="eqno">(20)</span>\[[{\bf M}] \{ \ddot{\bf D} \}_n + \alpha [{\bf M}] \{ \dot{\bf D} \}_n = \{ {\bf A} \}_n - \{ {\bf R}^{\alpha} \}_n\]</div>
+<p>把 <a class="reference internal" href="#equation-sel-central-difference-acc">(11)</a> 与 <a class="reference internal" href="#equation-sel-final-vel">(13)</a> 所给中心差分近似代入 <a class="reference internal" href="#equation-sel-rayleigh-system">(20)</a> 并整理各项，可得</p>
+<div class="math" id="equation-sel-rayleigh-system-2">
+<span class="eqno">(21)</span>\[\{ \dot{\bf D} \}_{n \scriptscriptstyle + 1/2} = \left( {2 - \alpha\Delta t \over 2 + \alpha\Delta t} \right) \{ \dot{\bf D} \}_{n \scriptscriptstyle - 1/2} + \left( {2\Delta t \over 2 + \alpha\Delta t} \right) [{\bf M}]^{-1} \biggl( \{ {\bf A} \}_n - \{ {\bf R}^{\beta} \}_n \biggr)\]</div>
+<p>其中阻尼力的刚度贡献由组装各结构单元以及各连接各可变形方向的贡献得到：</p>
+<div class="math" id="equation-rayleigh-eq-1">
+<span class="eqno">(22)</span>\[\{ {\bf R}^{\beta} \}_n = \sum_j \left( \{ {\bf r}^{\beta} \}_n \right)_j\]</div>
+<p>其中</p>
+<div class="math" id="equation-rayleigh-eq-2">
+<span class="eqno">(23)</span>\[ \begin{align}\begin{aligned}\{ {\bf r}^{\beta} \}_n &amp; = \beta [{\bf k}]_{n \scriptscriptstyle - 1/2} \bigl( \{ {\bf d} \}_n - \{ {\bf d} \}_{n \scriptscriptstyle - 1} \bigr) / \Delta t\\&amp; = \beta [{\bf k}]_{n \scriptscriptstyle - 1/2} \{ \dot{\bf d} \}_{n \scriptscriptstyle - 1/2}\end{aligned}\end{align} \]</div>
+</div>
+<div class="section" id="computation-of-stable-timestep">
+<span id="sel-timestep"></span><h2>稳定时步的计算</h2>
+<p>用中心差分法进行的时间积分是条件稳定过程。中心差分方程（若局部或组合局部阻尼处于活动状态为 <a class="reference internal" href="#equation-sel-local-damping-2">(16)</a>，若 Rayleigh 阻尼处于活动状态为 <a class="reference internal" href="#equation-sel-rayleigh-system">(20)</a>）的稳定时步由下式给出（Belytschko 1983）</p>
+<div class="math" id="equation-sel-timestep-1">
+<span class="eqno">(24)</span>\[\Delta t_{\rm stab} = {2\over\omega_{\rm max}} F(\xi_{\rm max})\quad\hbox{where } F(\xi) = \sqrt{1+\xi^2} - \xi\]</div>
+<p>其中 <span class="math">\(\omega_{\rm max}\)</span> 为离散体系的最高固有频率，<span class="math">\(\xi_{\rm max}\)</span> 为 <span class="math">\(\omega_{\rm max}\)</span> 处的临界阻尼比。<span class="math">\(\xi_{\rm max}\)</span> 的取值取决于阻尼方案，</p>
+<div class="math" id="equation-sel-timestep-2">
+<span class="eqno">(25)</span>\[\begin{split}\xi_{max} =
+\begin{cases} \frac{1}{2} ( \beta\omega_{max} + \alpha /  \omega_{max} ), &amp; \text{(Rayleigh Damping)} \\
+                             \text{max} \lambda_i / \pi,                  &amp; \text{(local or combined local damping)} \end{cases}\end{split}\]</div>
+<p>离散体系的各阶固有频率 <span class="math">\(\omega_n\)</span> 由特征值问题的解给出，</p>
+<div class="math" id="equation-sel-timestep-eigenproblem">
+<span class="eqno">(26)</span>\[\left( [{\bf K}] - \omega^2 [{\bf M}] \right) \{ \tilde{\bf D} \} = \{ {\bf 0} \}\]</div>
+<p>最大频率可通过把 Gerschgorin 定理（Isaacson 与 Keller 1963）应用于 <a class="reference internal" href="#equation-sel-timestep-eigenproblem">(26)</a> 加以界定；对对角质量矩阵，该定理表明</p>
+<div class="math" id="equation-sel-timestep-3">
+<span class="eqno">(27)</span>\[\omega_{\rm max}^2 \leq \max_i \left( G_i / M_i \right) \qquad\hbox{with}\quad i = 1,2,\ldots,n_e\]</div>
+<p>其中 <span class="math">\(n_e\)</span> 为自由度数，<span class="math">\(G_i\)</span> 为组装刚度矩阵第 <span class="math">\(i\)</span> 行的刚度之和</p>
+<div class="math">
+\[G_i = K_{ii} + \sum_{j=1 \atop j \neq i}^{n_e} \left| K_{ij} \right|\]</div>
+<p><span class="math">\(G_i\)</span> 的六个分量存储于每个结构单元节点，并以节点局部系表示。刚度贡献由所有结构单元以及所有连接的所有可变形方向提供。把所有刚度分配到相应节点后，每个连接的每个刚性附着方向按下式把其源刚度在方向 <span class="math">\(k\)</span> <span class="math">\(G_k^{[{\rm S}]}\)</span> 上的相应部分贡献给目标方向 <span class="math">\(i\)</span> <span class="math">\(G_i^{[{\rm T}]}\)</span> 的累积刚度，所用加权函数与 <a class="reference internal" href="#equation-sel-weighting-function">(14)</a> 给出者相同，即</p>
+<div class="math">
+\[G_i^{[{\rm T}]} \leftarrow G_i^{[{\rm T}]} + G_k^{[{\rm S}]} \left( { \left| {\bf n}_k^{[{\rm S}]} \cdot {\bf n}_i^{[{\rm T}]} \right| \over \sum^3_{l=1} \left| {\bf n}_k^{[{\rm S}]} \cdot {\bf n}_l^{[{\rm T}]} \right| } \right)\]</div>
+<p>其中 <span class="math">\({\bf n}_i^{[{\rm S}]}\)</span> 与 <span class="math">\({\bf n}_i^{[{\rm T}]}\)</span> 分别为源与目标局部坐标系的单位向量三元组。</p>
+<p>程序结构单元部分计算的最终时步为</p>
+<div class="math">
+\[\Delta t = \beta_u \Delta t_{\rm stab}\]</div>
+<p>其中 <span class="math">\(\beta_u\)</span> 为用户指定的安全系数，<span class="math">\(\Delta t_{\rm stab}\)</span> 用 <a class="reference internal" href="#equation-sel-timestep-1">(24)</a>、<a class="reference internal" href="#equation-sel-timestep-2">(25)</a> 与 <a class="reference internal" href="#equation-sel-timestep-3">(27)</a> 计算，其中 <a class="reference internal" href="#equation-sel-timestep-3">(27)</a> 仅施加于活动自由度。</p>
+</div>
+<div class="section" id="mass-scaling">
+<span id="sel-mass-scaling"></span><h2>质量缩放</h2>
+<p>程序的结构单元部分可在三种模式之一运行（完全动力、完全静态或部分动力）：</p>
+<ul class="simple">
+<li>在完全动力模式下运行（<a class="reference internal" href="../sel_commands/cmd_structure.scale-rotational-mass.html#command:structure.scale-rotational-mass" title="This value applies to dynamic analysis only. If set to off, then the rotational
+degree-of-freedom masses are computed using a sphere with a volume equal to
+that contributed by elements using the node. This is described as fully dynamic
+mode in  Mass Scaling &lt;sel-mass-scaling&gt; . If set to on, then the rotational
+degree-of-freedom masses are scaled based on rotational stiffnesses. This is
+described as partially dynamic mode in the structural element section  Mass
+Scaling &lt;sel-mass-scaling&gt; ..."><code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">scale-rotational-mass</span></code></a> <a class="reference internal" href="../../../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>）时不施加质量缩放；质量矩阵反映结构体系的实际质量，并按 <a class="reference internal" href="#sel-mass-matrix"><span class="std std-ref">质量矩阵</span>（Mass Matrix）</a> 所述组装。确保运动方程稳定积分所需的时步按 <a class="reference internal" href="#sel-timestep"><span class="std std-ref">稳定时步的计算</span>（Computation of Stable Timestep）</a> 所述确定。</li>
+<li>在完全静态模式下运行时，会调整质量矩阵中各值，以确保所有自由度具有相同的频率响应——该响应应能保证在给定时步下运动方程稳定积分。实现该目标的流程描述如下。</li>
+<li>在部分动力模式下运行（<a class="reference internal" href="../sel_commands/cmd_structure.scale-rotational-mass.html#command:structure.scale-rotational-mass" title="This value applies to dynamic analysis only. If set to off, then the rotational
+degree-of-freedom masses are computed using a sphere with a volume equal to
+that contributed by elements using the node. This is described as fully dynamic
+mode in  Mass Scaling &lt;sel-mass-scaling&gt; . If set to on, then the rotational
+degree-of-freedom masses are scaled based on rotational stiffnesses. This is
+described as partially dynamic mode in the structural element section  Mass
+Scaling &lt;sel-mass-scaling&gt; ..."><code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">scale-rotational-mass</span></code></a> <a class="reference internal" href="../../../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>）时，质量矩阵反映平动自由度的实际质量，且在确定确保运动方程稳定积分所需时步时只考虑平动自由度。转动自由度的质量被调整，以确保所有转动自由度具有相同的频率响应——该响应应能保证在为平动自由度所确定的固定时步下运动方程稳定积分。实现该目标的流程描述如下。</li>
+</ul>
+<p><em>完全静态模式</em></p>
+<p>对给定时步 <span class="math">\(\Delta\tilde t\)</span>，稳定性要求</p>
+<div class="math">
+\[\Delta t_{\rm stab} = {2\Delta\tilde t \over \beta_u} = {2\over\omega_{\rm max}} F(\xi_{\rm max})\]</div>
+<p>其中估计的稳定时步已乘以二分之一的安全系数。</p>
+<p>通过把最大频率取为 <a class="reference internal" href="#equation-sel-timestep-3">(27)</a> 所给的上界值，可写出</p>
+<div class="math">
+\[\omega_{\rm max}^2 = \left( {F(\xi_{\rm max}) \beta_u \over \Delta\tilde t} \right)^2 \equiv \psi^2 = \max_i \left( G_i / M_i \right)\]</div>
+<p>其中引入 <span class="math">\(\psi\)</span> 表示第二项。可通过设置各 <span class="math">\(M_i\)</span> 使所有自由度具有相同频率响应，即</p>
+<div class="math">
+\[M_i = G_i / \psi^2\]</div>
+<p>由于 <span class="math">\(\xi_{\rm max}\)</span> 由 <a class="reference internal" href="#equation-sel-timestep-2">(25)</a> 给出，可直接计算 <span class="math">\(\psi\)</span>。</p>
+<p><em>部分动力模式</em></p>
+<ol class="arabic">
+<li><p class="first">按 <a class="reference internal" href="#sel-mass-matrix"><span class="std std-ref">质量矩阵</span>（Mass Matrix）</a> 所述流程设置所有平动质量。</p>
+</li>
+<li><p class="first">按 <a class="reference internal" href="#sel-timestep"><span class="std std-ref">稳定时步的计算</span>（Computation of Stable Timestep）</a> 所述流程、只考虑平动自由度，确定确保运动方程稳定积分所需的时步。</p>
+</li>
+<li><p class="first">把 <a class="reference internal" href="#equation-sel-timestep-3">(27)</a> 仅施加于平动自由度，确定离散体系的最高固有频率，记该值为 <span class="math">\(\omega^\star\)</span>。设置与转动自由度关联的所有质量，使其满足</p>
+<div class="math">
+\[M_i = G_i / {\omega^\star}^2\]</div>
+<p>以确保转动自由度不产生大于 <span class="math">\(\omega^\star\)</span> 的固有频率。</p>
+</li>
+</ol>
+</div>
+<div class="section" id="computational-algorithm">
+<h2>计算算法</h2>
+<ol class="arabic simple">
+<li>假定已指定由外加载荷 <span class="math">\(\{{\bf R}^{\rm ext}\}\)</span> 组成的边界条件，以及结构单元、连接与节点性质。</li>
+<li>设置初始条件：</li>
+</ol>
+<div class="math">
+\[\begin{split}\begin{split}
+   n &amp;= 0 \\
+   \{ {\bf D} \}_0 &amp;= \{ {\bf D}(t = 0) \} \\
+   \{ \dot{\bf D} \}_{\scriptscriptstyle - 1/2} &amp;= \{ \dot{\bf D}(t = 0) \} \\
+   [{\bf k}]_{\scriptscriptstyle - 1/2} &amp;=   [{\bf k}(t=0)] \quad \hbox{for all elements} \\
+   \{ {\bf r}^{\rm int} \}_{\scriptscriptstyle - 1} &amp;=  \{ {\bf 0} \} \quad\qquad\hbox{for all elements}
+\end{split}\end{split}\]</div>
+<ol class="arabic" start="3">
+<li><p class="first">按程序结构单元部分的运行模式组装结构质量矩阵 <span class="math">\(\lceil {\bf M} \rfloor\)</span>。完全动力情形采用 <a class="reference internal" href="#sel-mass-matrix"><span class="std std-ref">质量矩阵</span>（Mass Matrix）</a> 所述流程；完全静态或部分动力情形采用 <a class="reference internal" href="#sel-mass-scaling"><span class="std std-ref">质量缩放</span>（Mass Scaling）</a> 所述流程。</p>
+</li>
+<li><p class="first">按 <a class="reference internal" href="#sel-timestep"><span class="std std-ref">稳定时步的计算</span>（Computation of Stable Timestep）</a> 所述计算稳定时步 <span class="math">\(\Delta t\)</span>。</p>
+</li>
+<li><p class="first">计算累积不平衡力向量 <span class="math">\(\{ {\bf A} \}_n\)</span>：</p>
+<ol class="loweralpha simple">
+<li>Set <span class="math">\(\{ {\bf A} \}_n = \{ {\bf R}^{\rm ext} \}_n\)</span>.</li>
+<li>按 <a class="reference internal" href="#sel-out-of-balance-force"><span class="std std-ref">累积不平衡力向量</span>（Accumulated Out-of-Balance Force Vector）</a> 所述，组装各结构单元、各连接的各个可变形方向以及各连接的各个刚性附着方向的贡献。</li>
+<li>若 Rayleigh 阻尼处于活动状态，则用 <a class="reference internal" href="#equation-rayleigh-eq-1">(22)</a> 与 <a class="reference internal" href="#equation-rayleigh-eq-2">(23)</a> 组装阻尼力的刚度贡献 <span class="math">\(\{ {\bf R}^{\beta} \}_n\)</span>。</li>
+</ol>
+</li>
+<li><p class="first">更新所有节点速度 <span class="math">\(\{ \dot{\bf D} \}_{n \scriptscriptstyle + 1/2}\)</span>：</p>
+<ol class="loweralpha simple">
+<li>对所有活动自由度（即未固定且未从属的自由度），若局部或组合局部阻尼处于活动状态则用 <a class="reference internal" href="#equation-sel-local-damping-2">(16)</a> 更新速度，若 Rayleigh 阻尼处于活动状态则用 <a class="reference internal" href="#equation-sel-rayleigh-system">(20)</a>。</li>
+<li>对每个连接的每个刚性附着方向 <span class="math">\({\bf n}^{[{\rm S}]}\)</span>，把源节点 <span class="math">\(\dot{\bf D}^{[{\rm S}]}\)</span> 的速度设为目标实体在附着方向上的速度分量：<span class="math">\(\quad\dot{\bf D}^{[{\rm S}]} = \left( \dot{\bf D}^{[{\rm T}]} \cdot {\bf n}^{[{\rm S}]} \right) {\bf n}^{[{\rm S}]}\)</span></li>
+</ol>
+</li>
+<li><p class="first">更新所有节点位置。各节点存储：</p>
+<ol class="arabic simple">
+<li>其参考位置 <span class="math">\({\bf x}^{\rm ref}\)</span>，即所有相关刚度矩阵形成时它所处的位置，</li>
+<li>其当前位置 <span class="math">\({\bf x}^{\rm cur}\)</span>，以及</li>
+<li>其自上次更新 <span class="math">\({\bf x}^{\text{ref}}\)</span> 以来的累积转角 <span class="math">\({\bf \theta}^{\text{cur}}\)</span>。</li>
+</ol>
+<p>自上次更新 <span class="math">\({\bf x}^{\text{ref}}\)</span> 以来发生的位移由下式给出</p>
+<div class="math">
+\[\begin{split}\begin{Bmatrix} {\bf d} \end{Bmatrix} =
+\begin{Bmatrix} {\bf d}^{\text{tran}} \\ {\bf d}^{\text{rot}} \end{Bmatrix} =
+\begin{Bmatrix} {\bf x}^{\text{cur}} - {\bf x}^{\text{ref}} \\ {\bf \theta}^{\text{cur}} \end{Bmatrix}\end{split}\]</div>
+<p>并用 <a class="reference internal" href="#equation-sel-central-difference-vel">(12)</a> 的中心差分近似更新当前位置与转角：</p>
+<div class="math">
+\[ \begin{align}\begin{aligned}\begin{Bmatrix} {\bf x}^{\text{cur}} \end{Bmatrix}_{n+1} =
+\begin{Bmatrix} {\bf x}^{\text{cur}} \end{Bmatrix}_n + \begin{Bmatrix} {\bf \dot{d}}^{\text{tran}} \end{Bmatrix}_{n+1/2} \Delta t\\\begin{Bmatrix} {\bf \theta}^{\text{cur}} \end{Bmatrix}_{n+1} =
+\begin{Bmatrix} {\bf \theta}^{\text{cur}} \end{Bmatrix}_n + \begin{Bmatrix} {\bf \dot{d}}^{\text{rot}} \end{Bmatrix}_{n+1/2} \Delta t\end{aligned}\end{align} \]</div>
+</li>
+<li><p class="first">若应进行大应变更新则更新所有结构单元刚度矩阵；否则置</p>
+<div class="math">
+\[[{\bf k}]_{n \scriptscriptstyle + 1/2} = [{\bf k}]_{n \scriptscriptstyle - 1/2} \;  \text{for all elements}\]</div>
+</li>
+<li><p class="first">置 <span class="math">\(n \leftarrow n + 1\)</span>，转到第 3 步。</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="section" id="references">
+<h1>参考文献</h1>
+<p>AISC. <span class="bi">Manual of Steel Construction</span>, Eighth Edition. Chicago: American Institute of Steel Construction Inc. (1980).</p>
+<p>Batoz, J. L. “An Explicit Formulation for an Efficient Triangular Plate-Bending Element,” <em>Int. J. Num. Meth. Engng.</em>, <span class="bi">18</span>(7), 1077-1089 (1982).</p>
+<p>Batoz, J. L., K. J. Bathe and L. W. Lo. “A Study of Three-Node Triangular Plate Bending Elements,” <em>Int. J. Num. Meth. Engng.</em>, <span class="bi">15</span>(12), 1771-1812 (1980).</p>
+<p>Belytschko, T. “An Overview of Semidiscretization and Time Integration Procedures,” in <span class="bi">Computational Methods for Transient Analysis</span>, Chapter 1, pp. 1-65. T. Belytschko and T. J. R. Hughes, eds. New York: Elsevier Science Publishers, B. V. (1983).</p>
+<p>Beneito, C. and Ph. Gotteland. “Three-Dimensional Numerical Modeling of Geosynthetics Mechanical Behavior,” in <span class="bi">FLAC and Numerical Modeling in Geomechanics (Proceedings of the Second International FLAC Symposium on Numerical Modeling in Geomechanics, Lyon, France, 29-31 October 2001)</span>. D. Billaux et al., eds. Lisse: Balkema (2001).</p>
+<p>Carpenter, N., H. Stolarski and T. Belytschko. “Improvements in 3-Node Triangular Shell Elements,” <em>Int. J. Num. Meth. Engng.</em>, <span class="bi">23</span>(9), 1643-1667 (1986).</p>
+<p>Cernica, J. N. <span class="bi">Geotechnical Engineering: Foundation Design</span>, New York: John Wiley &amp; Sons Inc. (1995).</p>
+<p>Clayton, C. R. I., J. Milititsky and R. T. Woods. <span class="bi">Earth Pressure and Earth-Retaining Structures</span>, pp. 145-148. London: Blackie Academic &amp; Professional (1993).</p>
+<p>Cook, R. D. “A Plane Hybrid Element with Rotational D. O. F. and Adjustable Stiffness,” <em>Int. J. Num. Meth. Engng.</em>, <span class="bi">24</span>(8), 1499-1508 (1987).</p>
+<p>Cook, R. D., D. S. Malkus and M. E. Plesha. <span class="bi">Concepts and Applications of Finite Element Analysis</span>, Third Edition. New York: John Wiley &amp; Sons Inc. (1989).</p>
+<p>Isaacson, E., and H. B. Keller. <span class="bi">Analysis of Numerical Methods</span>, pp. 135-136. New York: John Wiley &amp; Sons Inc. (1963).</p>
+<p>Massonnet, C. E. <span class="bi">Résistance Des Matériaux</span>. Sciences Et Lettres, Liége (1960).</p>
+<p>McGuire, W., and R. H. Gallagher. <span class="bi">Matrix Structural Analysis</span>. New York: John Wiley &amp; Sons Inc. (1979).</p>
+<p>St. John, C. M., and D. E. Van Dillen. “Rockbolts: A New Numerical Representation and Its Application in Tunnel Design,” in <span class="bi">Rock Mechanics — Theory - Experiment - Practice (Proceedings of the 24th U.S. Symposium on Rock Mechanics, Texas A&amp;M University, June 1983)</span>, pp. 13-26. New York: Association of Engineering Geologists (1983).</p>
+<p>Ugural, A. C. <span class="bi">Stresses in Plates and Shells</span>, pp. 1-16. New York: McGraw-Hill Publishing Company Inc. (1981).</p>
+<script>
+   //and now, some filth of the highest order (setting a style-sheet attribute)
+   $("ol ol").css("list-style","lower-alpha");
+</script></div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../../../docproject/source/manual/program_guide/program_guide.html">程序指南</a> »</li>
+<li class="nav-item nav-item-2"><a accesskey="U" href="../../sels.html">Structural Elements</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../liners/fish/sel.liner_intrinsics/fish_sel.liner.slide.tol.html" title="previous chapter"> <code class="docutils literal"><span class="pre">struct.liner.slide.tol</span></code></a> |    
+       <a href="../sel_commands/sel_commands.html" title="next chapter">Commands</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?General Formulation of Structural-Element Logic" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

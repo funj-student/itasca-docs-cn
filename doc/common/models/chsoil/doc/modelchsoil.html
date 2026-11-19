@@ -1,0 +1,518 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>简化帽盖屈服（CHSoil）模型* — FLAC3D 7.0 中文手册</title>
+<link href="../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../search.html" rel="search" title="Search"/>
+<link href="../../hardening/doc/modelhardening.html" rel="next" title="Plastic-Hardening (PH) Model*"/>
+<link href="../../cysoil/doc/modelcysoil.html" rel="prev" title="Cap-Yield (CYSoil) Model*"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="hide sectionname docutils container">
+<span class="codename">FLAC3D</span> Theory and Background • Constitutive Models</div>
+<div class="section" id="simplified-cap-yield-chsoil-model">
+<span id="modelchsoil"></span><h1>简化帽盖屈服（CHSoil）模型*</h1>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">*本模型仅在 <span class="codename">FLAC3D</span> 中提供。</p>
+</div>
+<p>如<a class="reference internal" href="../../cysoil/doc/modelcysoil.html#modelcysoil"><span class="std std-ref">CYSoil 模型</span>（CYSoil model）</a>部分所述，土体承受偏应力加载时，通常会出现刚度降低，并伴随不可逆变形。著名的 Duncan–Chang 模型（1970）常用于模拟这种双曲线应力—应变行为，且相对容易使用。但正如<a class="reference internal" href="../../cysoil/doc/modelcysoil.html#modelcysoil"><span class="std std-ref">CYSoil 模型</span>（CYSoil model）</a>部分指出的，该模型有若干缺点。此外，基于非线性弹性的双曲线关系还存在明显局限（Duncan 等，1980）：1）这些关系适用于破坏前，但在破坏时及破坏后可能给出不真实的土体行为；2）它们不包含剪应力变化引起的体积变化，隐含的剪胀依赖泊松比，因此可能无法准确预测剪胀土体的变形，例如低围压下的密砂；3）这些关系预测 <span class="math">\(\pi\)</span> 平面中的行为为各向同性，而这并不总是符合实际，因为土体的三轴压缩强度与三轴伸长强度通常不同。</p>
+<p>CYSoil 模型的简化版本称为 <em>CHSoil</em> 模型，可替代 Duncan–Chang 模型，并避免后者的缺点。CHSoil 模型源自 CYSoil 模型相同的应变硬化/软化逻辑，因此能够给出较为真实的破坏及破坏后应力—应变关系。CHSoil 模型提供内置功能，但不包含体积帽盖。</p>
+<p>CHSoil 模型具有三个特定功能：</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>内置摩擦硬化规律，直接采用双曲线模型参数作为输入；</li>
+<li>摩擦型 Mohr-Coulomb 剪切包络线；以及</li>
+<li>两种内置剪胀规律：一种基于 Rowe 应力—剪胀理论（Rowe，1962），另一种为用户自定义的剪胀硬化/软化规律。</li>
+</ol>
+</div></blockquote>
+<p>CHSoil 模型的卸载行为为弹性。再加载时，在达到此前最外侧屈服包络线之前，也保持弹性。请注意，当前形式的 CHSoil 模型并非用于模拟循环加载。</p>
+<p class="h3 rubric">公式</p>
+<p class="h4 rubric">增量弹性定律</p>
+<p>CHSoil 模型的弹性行为采用胡克定律表示。用主应力和主应变表示的增量形式为</p>
+<div class="math" id="equation-modelchsoileqds123prime">
+<span class="eqno">(1)</span>\[\begin{split}\begin{matrix}
+   \Delta \sigma^{\prime}_1 &amp;=  \alpha_1 \Delta e_1^e + \alpha_2 (\Delta e_2^e + \Delta e_3^e)  \\
+     \\
+   \Delta \sigma^{\prime}_2 &amp;=  \alpha_1 \Delta e_2^e + \alpha_2 (\Delta e_1^e + \Delta e_3^e)  \\
+     \\
+   \Delta \sigma^{\prime}_3 &amp;=  \alpha_1 \Delta e_3^e + \alpha_2 (\Delta e_1^e + \Delta e_2^e)
+\end{matrix}\end{split}\]</div>
+<p>其中，<span class="math">\(\alpha_1 = K^e + 4G^e / 3\)</span>、<span class="math">\(\alpha_2  = K^e - 2G^e / 3\)</span>，以及 <span class="math">\(K^e\)</span> 和 <span class="math">\(G^e\)</span> 分别为切线弹性体积模量和剪切模量。</p>
+<p>在 CHSoil 模型中，弹性剪切模量取决于平均有效应力的初始值 <span class="math">\(p^{\prime}_m\)</span>。平均有效应力由用户指定，例如可以使用以下表达式：</p>
+<div class="math" id="equation-modelchsoileqpmprime">
+<span class="eqno">(2)</span>\[ p^{\prime}_m = - {{\sigma^{\prime}_1+\sigma^{\prime}_2+ \sigma^{\prime}_3}\over 3}\]</div>
+<p><span class="math">\(G^e\)</span> 随 <span class="math">\(p^{\prime}_m\)</span> 的变化可由以下方程表示，例如参见 Byrne 等（2003）：</p>
+<div class="math" id="equation-modelchsoileqge">
+<span class="eqno">(3)</span>\[ G^e = G_{ref} p_{ref} \Bigl( {p^{\prime}_m \over p_{ref}}\Bigr)^n\]</div>
+<p>参数 <span class="math">\(p_{ref}\)</span> 为参考压力，<span class="math">\(G_{ref}\)</span> 为剪切模量数，其中 <span class="math">\(G_{ref} \times p_{ref}\)</span> 为参考压力下的切线弹性剪切模量。<span class="math">\(n\)</span> 为恒定的模量指数（<span class="math">\(n \le 1\)</span>）。切线弹性体积模量也由以下关系描述：</p>
+<div class="math" id="equation-modelchsoileqke">
+<span class="eqno">(4)</span>\[ K^e = K_{ref} p_{ref} \Bigl( {p^{\prime}_m \over p_{ref}}\Bigr)^m\]</div>
+<p>参数 <span class="math">\(K_{ref}\)</span> 为体积模量数，乘积 <span class="math">\(K_{ref} \times p_{ref}\)</span> 为参考压力下的切线弹性体积模量；<span class="math">\(m\)</span> 为恒定的模量指数（<span class="math">\(m \le 1\)</span>）。</p>
+<p>下面列出 <span class="math">\(K_{ref}\)</span>、<span class="math">\(G_{ref}\)</span>、杨氏模量数 <span class="math">\(E_{ref}\)</span> 及参考压力下泊松比 <span class="math">\(\nu_{ref}\)</span> 之间的一些有用关系，供参考：</p>
+<div class="math" id="equation-modelchsoileqkandgref">
+<span class="eqno">(5)</span>\[ K_{ref} = {E_{ref} \over {3 (1 - 2\nu_{ref})}} \qquad G_{ref} = {E_{ref} \over {2 (1 + \nu_{ref})}}\]</div>
+<div class="math" id="equation-modelchsoileqkovergref">
+<span class="eqno">(6)</span>\[ {K_{ref} \over G_{ref}} = {{2(1 + \nu_{ref})} \over {3 (1 - 2\nu_{ref})}}\]</div>
+<p>用户可以输入 <span class="math">\(E_{ref}\)</span> 与 <span class="math">\(\nu_{ref}\)</span>，也可以输入 <span class="math">\(K_{ref}\)</span> 与 <span class="math">\(G_{ref}\)</span> 作为模型属性。如果指定了 <span class="math">\(E_{ref}\)</span> 和 <span class="math">\(\nu_{ref}\)</span>，则程序根据式 <a class="reference internal" href="#equation-modelchsoileqkandgref">(5)</a> 在内部计算 <span class="math">\(K_{ref}\)</span> 和 <span class="math">\(G_{ref}\)</span>，并将所得值用于式 <a class="reference internal" href="#equation-modelchsoileqge">(3)</a> 和 <a class="reference internal" href="#equation-modelchsoileqke">(4)</a>。泊松比仅允许取小于 0.49 的正值。因此，程序在内部为 <span class="math">\(K^e\)</span> 指定以下上下限：</p>
+<div class="math" id="equation-modelchsoileqnoneq">
+<span class="eqno">(7)</span>\[ {2 G^e \over 3} &lt; K^e &lt; 49.66 G^e\]</div>
+<p>如上所述，必须将初始平均有效压力 <span class="math">\(p^{\prime}_m\)</span> 作为模型的输入属性。可以使用 <span class="codename">FISH</span> 计算该值，并将其存入对应网格单元属性的偏移位置。程序根据式 <a class="reference internal" href="#equation-modelchsoileqge">(3)</a> 和 <a class="reference internal" href="#equation-modelchsoileqke">(4)</a>，利用 <span class="math">\(p^{\prime}_m\)</span> 计算切线弹性剪切模量和体积模量。在本实现中，<span class="math">\(G^e\)</span> 和 <span class="math">\(K^e\)</span> 保持恒定；模量不会随平均有效压力自动更新。</p>
+<p class="h4 rubric">剪切屈服准则与流动法则</p>
+<p>剪切屈服采用 Mohr-Coulomb 准则定义，屈服包络线表示为</p>
+<div class="math" id="equation-modelchsoileqfs">
+<span class="eqno">(8)</span>\[ f^s = \sigma^{\prime}_1 -   \sigma^{\prime}_3 N_{\phi_m} +2 c \sqrt{N_{\phi_m}}\]</div>
+<p>其中，<span class="math">\(c\)</span> 为黏聚力，<span class="math">\(\phi_m\)</span> 为动员摩擦角；按定义，有</p>
+<div class="math" id="equation-modelchsoileqnphim">
+<span class="eqno">(9)</span>\[ N_{\phi_m}\ =\ {1 + \sin \phi_m \over {1 - \sin \phi_m}}\]</div>
+<p>势函数为非关联形式，表示为</p>
+<div class="math" id="equation-modelchsoileqg">
+<span class="eqno">(10)</span>\[ g = \sigma^{\prime}_1 -   \sigma^{\prime}_3 N_{\psi_m}\]</div>
+<p>其中</p>
+<div class="math" id="equation-modelchsoileqpsim">
+<span class="eqno">(11)</span>\[ N_{\psi_m}\ =\ {1 + \sin \psi_m \over {1 - \sin \psi_m}}\]</div>
+<p>其中，<span class="math">\(\psi_m\)</span> 为动员剪胀角。文献中有多种不同规律可用于表征 <span class="math">\(\psi_m\)</span>。</p>
+<p>默认情况下，可以通过用户自定义的 <span class="math">\(\psi_m\)</span>—<span class="math">\(\gamma^p\)</span> 关系表，将 <span class="math">\(\psi_m\)</span> 定义为塑性剪应变的函数。剪切屈服的演化参数 <span class="math">\(\gamma^p\)</span> 采用以下增量定义：</p>
+<div class="math" id="equation-modelchsoileqdgammap">
+<span class="eqno">(12)</span>\[  \Delta \gamma^p = \Delta \epsilon^{ps} = \sqrt{{(\Delta \varepsilon^{dp}_1)^2} + {(\Delta \varepsilon^{dp}_2)^2}  +  {(\Delta \varepsilon^{dp}_3)^2} } / \sqrt{2}\]</div>
+<p>其中，<span class="math">\(\Delta \varepsilon^{dp}_i, i\)</span> = 1,3 为主方向上的偏塑性剪应变增量。</p>
+<p>必须将模型参数 <span class="cmdkey">flag-dilation</span> 设为零，才能启用此选项。如果 <span class="cmdkey">flag-dilation</span> = 0 且未提供表，则假定剪胀角等于通过 <span class="cmdkey">dilation</span> 设置的极限剪胀角输入值。请注意，提供剪胀表时，不再使用 <span class="cmdkey">dilation</span>。</p>
+<p>还提供两种内置剪胀规律。当 <span class="cmdkey">flag-dilation</span> = 1 时，采用基于 Rowe（1962）剪胀理论的规律，这是默认设置。另一种选择是简单的阶跃函数：在 <span class="math">\(\phi_m &lt; \phi_{cv}\)</span> 条件下，<span class="math">\(\psi_m\)</span> 为零，其中 <span class="math">\(\phi_{cv}\)</span> 为用户指定的常数；当动员摩擦角大于 <span class="math">\(\psi_{cv}\)</span> 时，<span class="math">\(\psi_m\)</span> 等于通过 <span class="cmdkey">dilation</span> 设置的极限剪胀值 <span class="math">\(\psi_f\)</span>。必须将模型属性 <span class="cmdkey">flag-dilation</span> 设为 2，才能启用此选项。程序还会在内部强制施加 <span class="math">\(\psi_m\)</span> 不得超过 <span class="math">\(\phi_m\)</span> 的额外约束，以防止产生非预期的能量。</p>
+<p class="h4 rubric">拉伸屈服准则与流动法则</p>
+<p>拉伸屈服函数与 CYSoil 模型采用的函数相同，形式为</p>
+<div class="math" id="equation-modelchsoileqft">
+<span class="eqno">(13)</span>\[ f^t = \sigma^t - \sigma_3\]</div>
+<p>抗拉强度 <span class="math">\(\sigma^t\)</span> 表示为塑性拉应变度量 <span class="math">\(e^{pt}\)</span> 的函数，通过用户自定义表输入。如果未提供表，则假定抗拉强度恒定，等于抗拉强度属性的输入值。</p>
+<p>拉伸屈服的演化参数为塑性拉应变的模 <span class="math">\(e^{pt}\)</span>。塑性拉应变增量定义为</p>
+<div class="math" id="equation-modelchsoileqdept">
+<span class="eqno">(14)</span>\[ \Delta \epsilon^{pt} = \Delta \epsilon^{pt}_3\]</div>
+<p>其中，<span class="math">\(\Delta \epsilon_3^{pt}\)</span> 为最大主应力方向的塑性拉应变增量；请注意，拉应力取正。</p>
+<p class="h4 rubric">摩擦硬化</p>
+<p>对于大多数土体，排水三轴试验得到的偏应力—轴向应变关系可以用双曲线近似。CHSoil 模型引入摩擦应变硬化规律来描述这种行为。该公式通过以下微分规律，将动员摩擦角 <span class="math">\(\phi_m\)</span> 表示为塑性剪应变度量 <span class="math">\(\gamma^p\)</span> 的函数；此规律类似于 Byrne 等（2003）在 UBCSAND 液化模型中采用的形式：</p>
+<div class="math" id="equation-modelchsoileqdsinphim">
+<span class="eqno">(15)</span>\[ d(\sin{\phi_m}) = {G^p \over p^{\prime}_m} d(\gamma^p)\]</div>
+<p>其中，塑性剪切模量 <span class="math">\(G^p\)</span> 为</p>
+<div class="math" id="equation-modelchsoileqgp">
+<span class="eqno">(16)</span>\[ \phi_m \le \phi_f : G^p = G^e  \Bigl(1 - {\sin{\phi_m} \over \sin{\phi_f}} R_f \Bigr)^2\]</div>
+<p>式中，<span class="math">\(G^e\)</span> 为弹性切线剪切模量，<span class="math">\(\phi_f\)</span> 为极限摩擦角，<span class="math">\(R_f\)</span> 为破坏比，是小于 1 的常数，通常取 0.9，用于给定 <span class="math">\(G^p\)</span> 的下限。</p>
+<p>根据式 <a class="reference internal" href="#equation-modelchsoileqdept">(14)</a>，弹性切线剪切模量是 <span class="math">\(p^{\prime}_m\)</span> 的函数：</p>
+<div class="math" id="equation-modelchsoileqge3">
+<span class="eqno">(17)</span>\[ G^e = G_{ref} p_{ref} \biggl({p^{\prime}_m \over p_{ref}} \biggr)^n\]</div>
+<p>将式 <a class="reference internal" href="#equation-modelchsoileqge3">(17)</a> 代入式 <a class="reference internal" href="#equation-modelchsoileqgp">(16)</a>，再将所得表达式代入式 <a class="reference internal" href="#equation-modelchsoileqdsinphim">(15)</a>，整理后得到</p>
+<div class="math" id="equation-modelchsoileqdgammap2">
+<span class="eqno">(18)</span>\[ d(\gamma^p) = {p^{\prime}_m \over G^e} {d(\sin{\phi_m}) \over \Bigl(1 - {\sin{\phi_m} \over \sin{\phi_f}} R_f \Bigr)^2}\]</div>
+<p>利用 <span class="math">\(\gamma^p\)</span> = 0 时 <span class="math">\(\phi_m\)</span> = 0 的条件，对该方程积分得到</p>
+<div class="math" id="equation-modelchsoileqgammap">
+<span class="eqno">(19)</span>\[ \gamma^p = {p^{\prime}_m \over G^e} {\sin{\phi_f} \over R_f} \Bigl( {1 \over  {1 - {\sin{\phi_m} \over \sin{\phi_f}} R_f}} - 1  \Bigr)\]</div>
+<div class="math">
+\[\]</div>
+<p>求解 <span class="math">\(\sin{\phi_m}\)</span>，得到</p>
+<div class="math" id="equation-modelchsoileqsinphim">
+<span class="eqno">(20)</span>\[ \sin{\phi_m} = {\sin{\phi_f} \over R_f} \Bigl( 1 - {1 \over {1 + \gamma^p {G^e \over p^{\prime}_m} {R_f \over \sin{\phi_f}}}} \Bigr)\]</div>
+<p>CHSoil 模型使用该表达式，按塑性剪应变标定动员摩擦角。用这一硬化规律模拟三轴试验的初次加载，可以得到双曲线型的偏应力—轴向应变曲线。</p>
+<p class="h4 rubric">超固结</p>
+<p>通过指定摩擦角属性的初始值，可以设定正常固结土或超固结土的初始状态；该值应等于或大于正常固结对应的值 <span class="math">\(\phi_{nc}\)</span>。对于正常固结状态，由式 <a class="reference internal" href="#equation-modelchsoileqdsinphim">(15)</a> 和 <a class="reference internal" href="#equation-modelchsoileqgammap">(19)</a> 得到</p>
+<div class="math" id="equation-modelchsoileqphinc">
+<span class="eqno">(21)</span>\[ \phi_{nc} = \arcsin{  {\sigma^{\prime}_1 - \sigma^{\prime}_3} \over {\sigma^{\prime}_1 + \sigma^{\prime}_3 }}\]</div>
+<p>应力点位于当前屈服包络线以内时，材料行为视为弹性。</p>
+<p>摩擦角的初始值必须小于极限值 <span class="math">\(\phi_f\)</span>，模型会自动将其上限设为 <span class="math">\(\phi_f\)</span>。程序还会自动给演化参数 <span class="math">\(\gamma^p\)</span> 赋予与所指定初始动员摩擦角相容的初始值。</p>
+<p class="h4 rubric">剪切引起的压密与剪胀</p>
+<p>土体剪切预计会引起一定量的不可恢复体积应变 <span class="math">\(\epsilon^p\)</span>。在较小的单调剪应变下，颗粒重排使土骨架倾向于收缩；剪应变较大时，如果土体密实，颗粒相互爬升则可能使土骨架剪胀。模型中引入剪胀应变硬化规律来模拟这一行为。</p>
+<p>CHSoil 模型中实现的剪切硬化流动法则形式为</p>
+<div class="math" id="equation-modelchsoileqdepsilonp">
+<span class="eqno">(22)</span>\[ \Delta \epsilon^p = \Delta \gamma^p \sin{\psi_m}\]</div>
+<p>其中，<span class="math">\(\Delta \epsilon^p\)</span> 为塑性体积应变增量，<span class="math">\(\Delta \gamma^p\)</span> 为塑性剪应变增量，<span class="math">\(\psi_m\)</span> 为动员剪胀角。</p>
+<p>表征 <span class="math">\(\psi_m\)</span> 的一种方法，是采用基于 Rowe 应力—剪胀理论的方程（Rowe，1962）。该理论认为，存在一个等体积摩擦角 <span class="math">\(\phi_{cv}\)</span>：低于该值时，即 <span class="math">\(\phi_m \le \phi_{cv}\)</span> 条件下，材料收缩；应力比更高时，即 <span class="math">\(\phi_m &gt; \phi_{cv}\)</span> 条件下，材料剪胀。方程形式为</p>
+<div class="math" id="equation-modelchsoileqsinpsim">
+<span class="eqno">(23)</span>\[ \sin{\psi_m} = {{\sin{\phi_m} - \sin{\phi_{cv}} \over {1 - \sin{\phi_m}\sin{\phi_{cv}}}}}\]</div>
+<p>其中</p>
+<div class="math" id="equation-modelchsoileqsinphicv">
+<span class="eqno">(24)</span>\[ \sin{\phi_{cv}} = {{\sin{\phi_f} - \sin{\psi_f} \over {1 - \sin{\phi_f}\sin{\psi_f}}}}\]</div>
+<p>其中，<span class="math">\(\phi_f\)</span> 和 <span class="math">\(\psi_f\)</span> 分别为已知的极限摩擦角与极限剪胀角。</p>
+<p>根据前两个方程，以及式 <a class="reference internal" href="#equation-modelchsoileqgammap">(19)</a> 中假定的 <span class="math">\(\phi_m\)</span> 与 <span class="math">\(\gamma^p\)</span> 之间的关系，可按塑性剪应变计算剪胀。将材料属性 <span class="cmdkey">flag-dilation</span> 设为 1，即默认值，可选择 Rowe 剪胀规律。还可以采用一种简单剪胀规律：在 <span class="math">\(\phi_m &lt; \phi_{cv}\)</span> 时，<span class="math">\(\psi_m\)</span> = 0；在 <span class="math">\(\phi_m \ge \phi_{cv}\)</span> 时，其值为 <span class="math">\(\psi_m = \psi_{f}\)</span>。将 <span class="cmdkey">flag-dilation</span> 设为 2 可启用这一选项。最后，用户还可通过创建剪胀值—塑性剪应变输入表，自定义其他剪胀规律。必须将模型属性 <span class="cmdkey">flag-dilation</span> 设为零，才能启用该选项。</p>
+<p class="h3 rubric">CHSoil 属性与 Duncan–Chang 模型属性的相关关系</p>
+<p>对于某些特定情况，可以将 Duncan 等（1980）给出的 Duncan–Chang 模型双曲线应力—应变关系所用属性，与 CHSoil 模型的属性建立对应关系。这些对应关系取决于输入属性，列于下表。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<table border="1" class="colwidths-given icg1 docutils" id="id1">
+<caption><span class="caption-text">表 1：<span class="math">\(K_{ref}\)</span> 与 <span class="math">\(G_{ref}\)</span> 的属性相关关系</span></caption>
+<colgroup>
+<col width="33%"/>
+<col width="33%"/>
+<col width="33%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">模型</th>
+<th class="head"><span class="math">\(m\)</span> = <span class="math">\(n\)</span></th>
+<th class="head">无剪胀</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Duncan 和 Chang</td>
+<td><span class="math">\(K_{ur}\)</span> &amp; <span class="math">\(n\)</span></td>
+<td><span class="math">\(K_{b}\)</span> &amp; <span class="math">\(m\)</span></td>
+</tr>
+<tr class="row-odd"><td>CHSoil <span class="math">\(K_{ref}\)</span> 与 <span class="math">\(G_{ref}\)</span></td>
+<td><span class="math">\({9K_{ref}G_{ref}} \over {3K_{ref}  + G_{ref}}\)</span> &amp; <span class="math">\(n\)</span></td>
+<td><span class="math">\(K_{ref}\)</span> &amp; <span class="math">\(m\)</span></td>
+</tr>
+<tr class="row-even"><td>CHSoil <span class="math">\(E_{ref}\)</span> 与 <span class="math">\(\nu_{ref}\)</span></td>
+<td><span class="math">\(E_{ref}\)</span> &amp; <span class="math">\(n\)</span></td>
+<td><span class="math">\({E_{ref}} \over {3(1-2\nu_{ref})}\)</span> &amp; <span class="math">\(m\)</span></td>
+</tr>
+</tbody>
+</table>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p class="h3 rubric" id="modelchsoilcalibration">根据 Nevada 砂三轴试验结果进行标定</p>
+<p>以平均有效应力 <span class="math">\(p^{\prime}\)</span> 恒定条件下 Nevada 砂的排水三轴压缩试验结果为例，说明 CHSoil 模型属性的标定方法。试验结果列于数据文件“40-40.txt”“40-80.txt”和“40-160.txt”中，分别对应 40 kPa、80 kPa 和 160 kPa 的平均应力。试验所用砂的相对密度为 40%。这些试验结果包括以下三组数据，更多细节见<a class="reference internal" href="../../../../flac3d/zone/test3d/ConstitutiveModels/DrainedTriaxialCHSoil/drainedtriaxialchsoil.html#drainedtriaxialchsoil"><span class="std std-ref">排水三轴压缩试验</span>（drained triaxial compression tests）</a>：</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li>偏应力与平均有效应力的关系；</li>
+<li>偏应力与轴向应变的关系，轴向应变最大为 25%；以及</li>
+<li>体积应变与轴向应变的关系，轴向应变最大为 25%。</li>
+</ol>
+</div></blockquote>
+<p>本次标定只考虑不超过 5% 的轴向应变，因为对于预定的静力排水应用，预计不会出现更大的应变。Nevada 砂表现为纯摩擦性材料。试验数据有两个主要特点：一是偏应力—轴向应变关系呈双曲线特征；二是体积应变—轴向应变关系呈双线性剪胀特征。使用 CHSoil 模型的摩擦硬化和可变剪胀功能来模拟这些特点。</p>
+<p>弹性切线剪切模量和体积模量按式 <a class="reference internal" href="#equation-modelchsoileqge">(3)</a> 至 <a class="reference internal" href="#equation-modelchsoileqkandgref">(5)</a>，取为初始平均有效应力的函数。摩擦硬化使用内置规律，即式 <a class="reference internal" href="#equation-modelchsoileqgammap">(19)</a>。剪胀规律为双线性形式：应力比低于 <span class="math">\(\phi=\phi_{cv}\)</span> 时，其值为零；高于该值时，取常数 <span class="math">\(\psi_f\)</span>：</p>
+<div class="math" id="equation-modelchsoileqbilineardilation">
+<span class="eqno">(25)</span>\[\begin{split}\begin{matrix}
+     \psi &amp;= 0 \qquad   \ \ \ \phi &lt; \phi_{cv} \\
+       \\
+     \psi  &amp;= \psi_f \qquad   \phi \ge \phi_{cv}
+\end{matrix}\end{split}\]</div>
+<p>本次标定中，破坏比 <span class="math">\(R_f\)</span> 取 0.99。需要定义以下八项属性：</p>
+<div class="math">
+\[E_{ref}, \nu, p_{ref}, \phi_f, \psi_f, \phi_{cv}, m, n\]</div>
+<p>模型属性标定分两步进行。首先，根据理论分析及文献中的数值，得到属性值的初步估计；然后，对三轴试验进行数值模拟，并与室内试验结果对比拟合，以改进这些估计值。</p>
+<p><em>初步估计</em>——将室内试验所得的偏应力 <span class="math">\(q\)</span> 与平均有效应力 <span class="math">\(p^{\prime}\)</span> 关系进行线性拟合，可以确定极限摩擦角。对给定 <span class="math">\(p^{\prime}\)</span> 下的最大 <span class="math">\(q\)</span> 进行线性拟合，可得到最大应力比 <span class="math">\(a\)</span>：</p>
+<div class="math" id="equation-modelchsoileqa">
+<span class="eqno">(26)</span>\[ a = {q \over p^{\prime}}\]</div>
+<p>根据纯摩擦型 Mohr-Coulomb 准则的定义，可得到以下关系：</p>
+<div class="math" id="equation-modelchsoileqsinphif">
+<span class="eqno">(27)</span>\[ \sin{\phi_f} = {3a \over 6 + a}\]</div>
+<p>由此可以推导极限摩擦角 <span class="math">\(\phi_f\)</span>。对于 <span class="math">\(D_r\)</span> = 40% 的砂，估计值为 <span class="math">\(\phi_f\)</span> = 34°。</p>
+<p>极限剪胀角由室内负体积应变—轴向应变曲线的线性拟合斜率 <span class="math">\(b\)</span> 推导。为建立 <span class="math">\(b\)</span> 与 <span class="math">\(\psi_f\)</span> 的关系，首先采用 Vermeer 和 de Borst（1984）给出的三轴应力结果双线性理想化表达式进行近似：</p>
+<div class="math" id="equation-modelchsoileqb">
+<span class="eqno">(28)</span>\[ b = {2 \sin{\psi_f} \over 1 - \sin{\psi_f}}\]</div>
+<p>对于 <span class="math">\(D_r\)</span> = 40% 的砂，<span class="math">\(\psi_f\)</span> 的初步估计值为 8.2°。</p>
+<p>为估计给定 <span class="math">\(D_r\)</span> 时的参数 <span class="math">\(\phi_{cv}\)</span>，首先根据该 <span class="math">\(p^{\prime}\)</span> 条件下的室内体积应变—轴向应变曲线，确定体积应变变化可忽略时的最大轴向应变 <span class="math">\(\varepsilon^*_a\)</span>。已知轴向应变 <span class="math">\(\varepsilon^*_a\)</span> 后，再由相应 <span class="math">\(p^{\prime}\)</span> 条件下的室内偏应力—轴向应变曲线估计 <span class="math">\(q\)</span>，进而求出比值 <span class="math">\(q/p^{\prime}\)</span>。每个 <span class="math">\(p^{\prime}\)</span> 对应一个比值，共有三个比值。使用 <span class="math">\(q/p^{\prime}\)</span> 的平均值，并按式 <a class="reference internal" href="#equation-modelchsoileqsinphif">(27)</a> 计算相应摩擦角；此时将 <span class="math">\(\phi_f\)</span> 替换为 <span class="math">\(\phi_{cv}\)</span>，将 <span class="math">\(a\)</span> 替换为平均值 <span class="math">\(q/p^{\prime}\)</span>，见式 <a class="reference internal" href="#equation-modelchsoileqa">(26)</a>。对 <span class="math">\(D_r\)</span> = 40% 的砂，估计得到 <span class="math">\(\phi_{cv}\)</span> = 27.7°。</p>
+<p>对于 <span class="math">\(D_r\)</span> = 40% 的砂，在大气压力下，将 <span class="math">\(E_{ref}\)</span> 的初始估计值取为 1200；该值与采用帽盖屈服（CYSoil）模型的<a class="reference internal" href="../../../../flac3d/zone/test3d/ConstitutiveModels/DrainedTriaxialConstantDilationCYSoil/drainedtriaxialconstantdilationcysoil.html#drainedtriaxialconstantdilationcysoil"><span class="std std-ref">密砂三轴数值试验</span>（triaxial numerical experiment for dense sand）</a>中使用的值相同。</p>
+<p>本例将 <span class="math">\(\nu\)</span> 任意选为 0.35，并取 <span class="math">\(n = m = 0.5\)</span>。弹性常数 <span class="math">\(E_{ref}\)</span> 通过拟合数值试验和室内试验所得的 <span class="math">\(q\)</span>—轴向应变曲线初始斜率来估计；这两类三轴试验采用相同的恒定平均应力条件。这些估计可能不十分准确；通过小幅卸载—再加载的室内试验结果，可以更可靠地估计弹性常数，但本例未获得此类结果。</p>
+<p class="h3 rubric">参考文献</p>
+<p>Duncan, J. M., et al.《土体中应力与位移有限元分析的强度、应力-应变与体积模量参数》，University of California, Berkeley, College of Engineering，报告编号 UCB/GT/80-01（1980）。</p>
+<p>Rowe, P. W.《接触颗粒集合体静态平衡的应力-剪胀关系》，<em>Proc. Roy. Soc. A.</em>，<span class="bi">269</span>，500-527（1962）。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+<div class="line"><br/></div>
+</div>
+<p class="h3 rubric" id="capyieldsimplifiedmodelprops"><span class="cmdkey">cap-yield-simplified</span> 模型性质</p>
+<p>使用以下关键字，配合 <a class="reference internal" href="../../../../flac3d/zone/doc/manual/zone_manual/zone_commands/cmd_zone.property.html#command:zone.property" title="Make a constitutive model(s) property assignment. Properties are name value
+pairs where the name is the keyword given in the command and the value type
+is specific to the property. The assignment will affect *any* zone whose constitutive
+model includes the property named (noting that some properties, such as  bulk ,
+for instance, appear in *many* constitutive models).  Limiting a property assignment
+to zones that have a particular constitutive model assignment is done using
+the...">设置网格单元属性（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">property</span></code>）</a> 命令，设置简化帽盖屈服（CHSoil）模型的这些属性。</p>
+<span class="target" id="simplifiedcapyieldprops"></span><dl class="command">
+<dt id="command:cap-yield-simplified">
+<span class="cmdname"><span class="hide">c</span><span class="hide">a</span><span class="hide">p</span><span class="hide">-</span><span class="hide">y</span><span class="hide">i</span><span class="hide">e</span><span class="hide">l</span><span class="hide">d</span><span class="hide">-</span><span class="hide">s</span><span class="hide">i</span><span class="hide">m</span><span class="hide">p</span><span class="hide">l</span><span class="hide">i</span><span class="hide">f</span><span class="hide">i</span><span class="hide">e</span><span class="hide">d</span><span class="hide"> </span></span></dt>
+<dd><dl class="keyword">
+<dt id="kwd:cap-yield-simplified.bulk-reference">
+<span class="cmdkey"><span class="pref">b</span><span class="null">u</span><span class="null">l</span><span class="null">k</span><span class="null">-</span><span class="pref">r</span><span class="null">e</span><span class="null">f</span><span class="null">e</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">c</span><span class="null">e</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>无量纲体积模量参考值，<span class="math">\(K_{ref}\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:cap-yield-simplified.cohesion">
+<span class="cmdkey"><span class="pref">c</span><span class="null">o</span><span class="null">h</span><span class="null">e</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>极限黏聚力，<span class="math">\(c\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:cap-yield-simplified.dilation">
+<span class="cmdkey"><span class="pref">d</span><span class="null">i</span><span class="null">l</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>极限剪胀角，<span class="math">\(\psi_f\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:cap-yield-simplified.friction">
+<span class="cmdkey"><span class="pref">f</span><span class="null">r</span><span class="null">i</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>极限摩擦角，<span class="math">\(\phi_f\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:cap-yield-simplified.friction-mobilized">
+<span class="cmdkey"><span class="pref">f</span><span class="null">r</span><span class="null">i</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="pref">m</span><span class="null">o</span><span class="null">b</span><span class="null">i</span><span class="null">l</span><span class="null">i</span><span class="null">z</span><span class="null">e</span><span class="null">d</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>动员摩擦角，<span class="math">\(\phi_m\)</span>；应通过命令或 <span class="codename">FISH</span> 函数进行初始化，且不小于由<a class="reference internal" href="../../cysoil/doc/modelcysoil.html#modelcysoileqsinphimnc"><span class="std std-ref">此式</span>（this equation）</a>确定的值。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:cap-yield-simplified.poisson">
+<span class="cmdkey"><span class="pref">p</span><span class="null">o</span><span class="null">i</span><span class="null">s</span><span class="null">s</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>当前泊松比，<span class="math">\(\nu\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:cap-yield-simplified.pressure-initial">
+<span class="cmdkey"><span class="pref">p</span><span class="null">r</span><span class="null">e</span><span class="null">s</span><span class="null">s</span><span class="null">u</span><span class="null">r</span><span class="null">e</span><span class="null">-</span><span class="pref">i</span><span class="null">n</span><span class="null">i</span><span class="null">t</span><span class="null">i</span><span class="null">a</span><span class="null">l</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>初始平均有效压力，<span class="math">\(p_m\)</span>；应通过命令或 <span class="codename">FISH</span> 函数初始化。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:cap-yield-simplified.pressure-reference">
+<span class="cmdkey"><span class="pref">p</span><span class="null">r</span><span class="null">e</span><span class="null">s</span><span class="null">s</span><span class="null">u</span><span class="null">r</span><span class="null">e</span><span class="null">-</span><span class="pref">r</span><span class="null">e</span><span class="null">f</span><span class="null">e</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">c</span><span class="null">e</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>参考压力，<span class="math">\(p_{ref}\)</span>。应根据模型采用的应力或压力单位，指定一个非零值。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:cap-yield-simplified.shear-reference">
+<span class="cmdkey"><span class="pref">s</span><span class="null">h</span><span class="null">e</span><span class="null">a</span><span class="null">r</span><span class="null">-</span><span class="pref">r</span><span class="null">e</span><span class="null">f</span><span class="null">e</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">c</span><span class="null">e</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>无量纲剪切模量参考值，<span class="math">\(G_{ref}\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:cap-yield-simplified.tension">
+<span class="cmdkey"><span class="pref">t</span><span class="null">e</span><span class="null">n</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>抗拉强度，<span class="math">\(\sigma^t\)</span>。默认值为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.0</span></span></a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:cap-yield-simplified.young-reference">
+<span class="cmdkey"><span class="pref">y</span><span class="null">o</span><span class="null">u</span><span class="null">n</span><span class="null">g</span><span class="null">-</span><span class="pref">r</span><span class="null">e</span><span class="null">f</span><span class="null">e</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">c</span><span class="null">e</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>无量纲杨氏模量参考值，<span class="math">\(E_{ref}\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:cap-yield-simplified.dilation-mobilized">
+<span class="cmdkey"><span class="pref">d</span><span class="null">i</span><span class="null">l</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="pref">m</span><span class="null">o</span><span class="null">b</span><span class="null">i</span><span class="null">l</span><span class="null">i</span><span class="null">z</span><span class="null">e</span><span class="null">d</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>当前发挥的剪胀角 <span class="math">\(\psi_m\)</span>。除 <span class="cmdkey">table-dilation</span> ǂ 0 外，该值为只读。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:cap-yield-simplified.flag-brittle">
+<span class="cmdkey"><span class="pref">f</span><span class="null">l</span><span class="null">a</span><span class="null">g</span><span class="null">-</span><span class="pref">b</span><span class="null">r</span><span class="null">i</span><span class="null">t</span><span class="null">t</span><span class="null">l</span><span class="null">e</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ..."><span class="varbool"><span class="null">b</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>若为真，则在发生拉伸破坏时把拉伸极限设为 0。默认为 <span class="cmdkey">false</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:cap-yield-simplified.flag-dilation">
+<span class="cmdkey"><span class="pref">f</span><span class="null">l</span><span class="null">a</span><span class="null">g</span><span class="null">-</span><span class="pref">d</span><span class="null">i</span><span class="null">l</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">i</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>= 0：动员剪胀角 <span class="math">\(\psi_m\)</span> 等于输入属性 <span class="cmdkey">dilation</span> 的值；如果通过 <span class="cmdkey">table-dilation</span> 输入了表，则为塑性剪应变的函数。</p>
+<p>= <a class="reference internal" href="../../../docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">1</span></span></a>（默认）：动员剪胀角 <span class="math">\(\psi_m\)</span> 由 Rowe 应力—剪胀理论确定。</p>
+<p>= <a class="reference internal" href="../../../docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">2</span></span></a>：动员剪胀角在 <span class="math">\(\phi_m\)</span> &lt; <span class="math">\(\phi_{cv}\)</span> 时为 <span class="math">\(\psi_m\)</span> = 0；在 <span class="math">\(\phi_m \ge \phi_{cv}\)</span> 时为 <span class="math">\(\psi_m\)</span> = <span class="math">\(\psi_f\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:cap-yield-simplified.exponent-bulk">
+<span class="cmdkey"><span class="pref">e</span><span class="null">x</span><span class="null">p</span><span class="null">o</span><span class="null">n</span><span class="null">e</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">b</span><span class="null">u</span><span class="null">l</span><span class="null">k</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>体积模量指数，<span class="math">\(m\)</span>。默认值为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.5</span></span></a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:cap-yield-simplified.exponent-shear">
+<span class="cmdkey"><span class="pref">e</span><span class="null">x</span><span class="null">p</span><span class="null">o</span><span class="null">n</span><span class="null">e</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">s</span><span class="null">h</span><span class="null">e</span><span class="null">a</span><span class="null">r</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>剪切模量指数，<span class="math">\(n\)</span>。默认值为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.5</span></span></a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:cap-yield-simplified.friction-0">
+<span class="cmdkey"><span class="pref">f</span><span class="null">r</span><span class="null">i</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="pref">0</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>与零塑性剪应变对应的初始发挥摩擦角 <span class="math">\(\phi_0\)</span>。默认情况下若 <span class="cmdkey">strain-shear-plastic</span> 初始化为 0，则 <span class="math">\(\phi_0\)</span> = <span class="math">\(\phi_m\)</span>；否则若未指定则 <span class="math">\(\phi_0\)</span> = 0。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:cap-yield-simplified.friction-critical">
+<span class="cmdkey"><span class="pref">f</span><span class="null">r</span><span class="null">i</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="pref">c</span><span class="null">r</span><span class="null">i</span><span class="null">t</span><span class="null">i</span><span class="null">c</span><span class="null">a</span><span class="null">l</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>剪胀法则中所用常数（<span class="cmdkey">flag-dilation</span> = 1 或 2），<span class="math">\(\phi_{cv}\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:cap-yield-simplified.strain-shear-plastic">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">r</span><span class="null">a</span><span class="null">i</span><span class="null">n</span><span class="null">-</span><span class="pref">s</span><span class="null">h</span><span class="null">e</span><span class="null">a</span><span class="null">r</span><span class="null">-</span><span class="pref">p</span><span class="null">l</span><span class="null">a</span><span class="null">s</span><span class="null">t</span><span class="null">i</span><span class="null">c</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>累计塑性剪应变，<span class="math">\(\epsilon^{ps}\)</span>。默认在程序内部初始化。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:cap-yield-simplified.strain-tensile-plastic">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">r</span><span class="null">a</span><span class="null">i</span><span class="null">n</span><span class="null">-</span><span class="pref">t</span><span class="null">e</span><span class="null">n</span><span class="null">s</span><span class="null">i</span><span class="null">l</span><span class="null">e</span><span class="null">-</span><span class="pref">p</span><span class="null">l</span><span class="null">a</span><span class="null">s</span><span class="null">t</span><span class="null">i</span><span class="null">c</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>累计塑性拉应变，<span class="math">\(\epsilon^{pt}\)</span>。默认初始值为 0。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:cap-yield-simplified.failure-ratio">
+<span class="cmdkey"><span class="pref">f</span><span class="null">a</span><span class="null">i</span><span class="null">l</span><span class="null">u</span><span class="null">r</span><span class="null">e</span><span class="null">-</span><span class="pref">r</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>破坏比，<span class="math">\(R_f\)</span>。默认值为 0.9。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:cap-yield-simplified.table-cohesion">
+<span class="cmdkey"><span class="pref">t</span><span class="null">a</span><span class="null">b</span><span class="null">l</span><span class="null">e</span><span class="null">-</span><span class="pref">c</span><span class="null">o</span><span class="null">h</span><span class="null">e</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">s</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>用于关联黏聚力 <span class="math">\(c\)</span> 与塑性剪应变的表名</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:cap-yield-simplified.table-dilation">
+<span class="cmdkey"><span class="pref">t</span><span class="null">a</span><span class="null">b</span><span class="null">l</span><span class="null">e</span><span class="null">-</span><span class="pref">d</span><span class="null">i</span><span class="null">l</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">s</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>用于关联动员剪胀角与塑性剪应变的表名</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:cap-yield-simplified.table-tension">
+<span class="cmdkey"><span class="pref">t</span><span class="null">a</span><span class="null">b</span><span class="null">l</span><span class="null">e</span><span class="null">-</span><span class="pref">t</span><span class="null">e</span><span class="null">n</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">s</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>用于关联动员抗拉强度与塑性拉应变的表名</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:cap-yield-simplified.bulk">
+<span class="cmdkey"><span class="pref">b</span><span class="null">u</span><span class="null">l</span><span class="null">k</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>当前弹性体积模量，<span class="math">\(K^e\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:cap-yield-simplified.shear">
+<span class="cmdkey"><span class="pref">s</span><span class="null">h</span><span class="null">e</span><span class="null">a</span><span class="null">r</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>当前弹性剪切模量，<span class="math">\(G^e\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:cap-yield-simplified.young">
+<span class="cmdkey"><span class="pref">y</span><span class="null">o</span><span class="null">u</span><span class="null">n</span><span class="null">g</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>当前弹性杨氏模量，<span class="math">\(E\)</span></p>
+</dd></dl>
+<p><strong>图例</strong></p>
+<dl class="docutils">
+<dt>(a) 高级属性。</dt>
+<dd>该属性具有默认值；在较简单的模型应用中，无需专门赋值。</dd>
+<dt>(r) 只读属性。</dt>
+<dd>该属性不能由用户设置，但可以列出、绘图显示，或通过 <span class="codename">FISH</span> 访问。</dd>
+</dl>
+<p><strong>注意事项</strong></p>
+<ul class="simple">
+<li>定义弹性性质时，只需提供以下两种组合中的一种：1）<span class="math">\(K_{ref}\)</span> 和 <span class="math">\(G_{ref}\)</span>；2）<span class="math">\(E_{ref}\)</span> 和 <span class="math">\(\nu\)</span>。采用后一种组合时，必须先赋予 <span class="math">\(E_{ref}\)</span>，再赋予 <span class="math">\(\nu\)</span>。</li>
+<li>抗拉截断为 <span class="math">\({\sigma}^t = min({\sigma}^t, c/\tan \phi)\)</span>。</li>
+<li>拉伸表与 <span class="cmdkey">flag-brittle</span> 不应同时处于活动状态。</li>
+</ul>
+</dd></dl>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../docproject/source/manual/program_guide/program_guide.html">程序指南</a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../docproject/source/manual/program_guide/models/models.html">Constitutive Models</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../../../docproject/source/manual/program_guide/models/theory/plasticmodel.html">Plastic Model Group</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../../cysoil/doc/modelcysoil.html" title="previous chapter"> Cap-Yield (CYSoil) Model*</a> |    
+       <a href="../../hardening/doc/modelhardening.html" title="next chapter">Plastic-Hardening (PH) Model*</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Simplified Cap-Yield (CHSoil) Model*" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../_static/icgscripts.js"></script>
+</body>
+</html>

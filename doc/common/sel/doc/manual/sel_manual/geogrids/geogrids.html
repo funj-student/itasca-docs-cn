@@ -1,0 +1,169 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>土工格栅结构单元 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="../../../../../../flac3d/zonesel/test3d/Geogrid/SoilInterfaceTest/SoilInterfaceTest.html" rel="next" title="Simple Test of Geogrid-Soil Interface Behavior"/>
+<link href="../shells/fish/sel.shell_intrinsics/fish_sel.shell.young.html" rel="prev" title="struct.shell.young"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="geogrid-structural-elements">
+<span id="id1"></span><h1>土工格栅结构单元</h1>
+<p>注意壳结构单元基于 <a class="reference internal" href="../shelltypes/shelltypes.html#shelltype-structural-elements"><span class="std std-ref">壳类结构单元</span>（Shell-Type Structural Element）</a>，共享其底层表述与实现。</p>
+<div class="section" id="mechanical-behavior">
+<h2>力学行为</h2>
+<p>各土工格栅单元的力学行为可分为土工格栅材料本身的结构响应（见 <a class="reference internal" href="../shelltypes/shelltypes.html#shell-type-mechanical-behavior"><span class="std std-ref">壳类力学行为</span>（Shell-Type Mechanical Behavior）</a>）以及土工格栅单元与模型网格的相互作用方式。默认情况下土工格栅单元被赋予 CST 平面应力单元，它承受膜作用但不承受弯曲荷载（见 <a class="reference internal" href="../formulation/formulation.html#struct-shell-finite-elements"><span class="std std-ref">壳有限单元</span>（Shell Finite Elements）</a>）。膜结构可建模为土工格栅单元的集合。土工格栅表现为各向同性或正交各向异性的线弹性材料，无破坏限值。土工格栅与模型网格之间发生沿剪切方向（土工格栅表面切平面内）的摩擦作用，且土工格栅在法向从属于网格运动。可把土工格栅视为一维锚索的二维类比。土工格栅用于模拟与土体剪切作用重要的柔性膜，如土工布与土工格栅。</p>
+<p>土工格栅单元所用全部节点的节点局部系方位在一组循环开始时（或执行 <a class="reference internal" href="../../../../../kernel/doc/manual/model/commands/cmd_model.cycle.html#command:model.cycle" title="Execute timesteps. The synonym  model.step  may also be used.  This is
+the equivalent of calling  model.solve  with the  cycles  keyword
+set to  i ...">执行计算时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">cycle</span></code>）</a> <a class="reference internal" href="../../../../../docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">0</span></span></a> 命令时）自动设定，使 <span class="math">\(z\)</span> 轴与使用该节点的所有土工格栅单元的平均法向对齐，<span class="math">\(xy\)</span> 轴在土工格栅切平面内任意取向（见 <a href="#geogrid-interface-idealization">图 2（Figure  2）</a>）。</p>
+<p>土工格栅嵌于模型网格内部。土工格栅-土体界面的行为汇总于 <a href="#geogrid-stresses">图 1（Figures  1）</a> 至 <a href="#geogrid-interface-idealization"> 2</a>。作用于土工格栅上的应力示于 <a href="#geogrid-stresses">图 1（Figure  1）</a>。这些应力由有效围压 <span class="math">\(\sigma_m\)</span> 与总剪应力 <span class="math">\(\tau\)</span> 组成，由土工格栅本身发展的膜应力平衡。这些膜应力合力（见 <a class="reference internal" href="../../sels.html#sel-shell-stresses"><span class="std std-ref">壳中的应力</span>（Stresses in Shells）</a>）在 <a href="#geogrid-stresses">图 1（Figure  1）</a> 中记为 <span class="math">\(\bar N\)</span>。界面行为在每个土工格栅节点处以法向刚性附着与土工格栅表面切平面内的弹簧-滑块表示。弹簧-滑块的方位随土工格栅与宿主介质之间的相对剪切位移 <span class="math">\({\bf u}_s\)</span> 变化，如 <a href="#geogrid-interface-idealization">图 2（Figure  2）</a> 所示。每个节点只有<em>单个</em>弹簧滑块，这使土工格栅的行为类似于粗网格的交叉杆件。弹簧-滑块承担土工格栅表面<em>两侧</em> tributary 面积上的总剪力。此外假定有效围压等量作用于土工格栅表面两侧。</p>
+<div class="figure" id="id2">
+<span id="geogrid-stresses"></span><img alt="../../../../../../_images/stresses.png" src="../../../../../../_images/stresses.png"/>
+<p class="caption"><span class="caption-text">图 1：作用于某节点周围土工格栅单元上的应力</span></p>
+</div>
+<div class="figure" id="id3">
+<span id="geogrid-interface-idealization"></span><a class="reference internal image-reference" href="../../../../../../_images/interface-idealization.png"><img alt="../../../../../../_images/interface-idealization.png" src="../../../../../../_images/interface-idealization.png" style="width: 95%;"/></a>
+<p class="caption"><span class="caption-text">图 2：土工格栅节点处界面行为的理想化</span></p>
+</div>
+<p>土工格栅-土体界面的法向行为如下所述。土工格栅-土体界面的剪切行为（见 <a href="#geogrid-interface-behavior">图 3（Figure  3）</a>）兼具黏聚与摩擦性质，由以下耦合弹簧性质控制：(1) 单位面积刚度 <span class="math">\(k\)</span>；(2) 黏聚强度 <span class="math">\(c\)</span>；(3) 摩擦角 <span class="math">\(\phi\)</span>；(4) 有效围压 <span class="math">\(\sigma_m\)</span>。注意各土工格栅单元对应的耦合弹簧性质在土工格栅节点处取平均。</p>
+<p>有效围压 <span class="math">\(\sigma_m\)</span> 垂直于土工格栅表面作用，在每个土工格栅节点处依据该节点所连单个网格单元中的应力计算。记土工格栅表面法向为 <span class="math">\(z\)</span>。<span class="math">\(\sigma_m\)</span> 的取值取为</p>
+<div class="math">
+\[\sigma_m = \sigma_{zz} + p\]</div>
+<p>其中：       <span class="math">\(p\)</span> = 孔隙压力</p>
+<div class="figure" id="id4">
+<span id="geogrid-interface-behavior"></span><a class="reference internal image-reference" href="../../../../../../_images/interface-behavior.png"><img alt="../../../../../../_images/interface-behavior.png" src="../../../../../../_images/interface-behavior.png" style="width: 95%;"/></a>
+<p class="caption"><span class="caption-text">图 3：土工格栅单元的剪切向界面行为</span></p>
+</div>
+<p>计算土工格栅-土体界面相对位移时，采用插值方案依据节点所连网格单元内的位移场计算网格位移。插值方案的权重因子由到各网格点的距离确定。同一插值方案也用于把土工格栅-土体界面发展的力反向施加到该网格单元的网格点上。</p>
+<p>如上所述，在每个土工格栅节点处对网格速度作出插值估计。垂直于土工格栅表面的速度被直接传递给节点（即土工格栅节点在法向从属于网格运动）。若共享该节点的所有土工格栅单元共面，则节点对网格不施加法向力；但若它们不共面，则其膜力的一部分将在法向起作用。该净力同时作用于网格与土工格栅节点（方向相反）。因此初始为平面的土工格栅若允许有限挠度，用大应变求解模式即可承受法向荷载。该法向力被传递给节点所附着的单个网格单元的网格点。附着只连到土工格栅表面一侧的一个网格单元，而该侧未必对应受压侧。没有提供土工格栅与土体之间间隙形成或跟踪的机制（即假定土工格栅始终完全嵌于土体中）。</p>
+<p>土工格栅支持大应变滑动（把 <span class="cmdkey">slide</span> 性质设为 <a class="reference internal" href="../../../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>），此时在大应变模式下运行时，插值位置（土工格栅节点用于与网格单元之间传递力与速度——见 <a class="reference internal" href="../links/links.html#structural-element-links"><span class="std std-ref">结构单元连接</span>（Structural Element Links）</a>）将随网格迁移。这可计算土工格栅的大应变破坏后行为，此时土工格栅节点与网格单元之间发生显著滑动。若某土工格栅节点移出所有网格单元，则即便该节点后来又移回网格单元内，也不会重建与网格单元的连接；不过在土工格栅节点于网格单元之间滑动期间，该连接保持完好。</p>
+</div>
+<div class="section" id="response-quantities">
+<h2>响应量</h2>
+<p>土工格栅的响应包括格栅本身的应力，以及剪切耦合弹簧中的应力、位移与屈服状态。附加耦合弹簧信息包括当前加载方向与有效围压。土工格栅的响应可通过 <span class="codename">FISH</span> 访问，并</p>
+<ol class="arabic simple">
+<li>用 <a class="reference internal" href="commands/cmd_structure.geogrid.list.html#command:structure.geogrid.list" title="List properties and response of each geogrid element in the range..."><code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">geogrid</span> <span class="pre">list</span></code></a> 命令打印，</li>
+<li>用 <a class="reference internal" href="commands/cmd_structure.geogrid.history.html#command:structure.geogrid.history" title="Sample geogrid responses.  The nodes of an element will be ordered counterclockwise
+with respect to the outside of the zone faces upon which the geogrid was created..."><code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">geogrid</span> <span class="pre">history</span></code></a> 命令监测，以及</li>
+<li>用 Geogrid 绘图项绘制。</li>
+</ol>
+<p>关于支持恢复土工格栅本身应力的命令汇总，见 <a class="reference internal" href="../shelltypes/shelltypes.html#shell-type-response-quantities"><span class="std std-ref">壳类响应量</span>（Shell-Type Response Quantities）</a>。</p>
+</div>
+<div class="section" id="properties">
+<h2>属性</h2>
+<p>每个土工格栅单元除 <a class="reference internal" href="../shelltypes/shelltypes.html#shell-type-properties"><span class="std std-ref">壳类性质</span>（Shell-Type Properties）</a> 所述所有壳类单元共有的性质外，还有 5 个性质。这些性质控制土工格栅-土体界面的剪切行为。</p>
+<ol class="arabic simple" start="5">
+<li><span class="cmdkey">coupling-cohesion-shear</span>，耦合弹簧黏聚力（应力单位），<span class="math">\(c\)</span> [F/L<sup>2</sup>]</li>
+<li><span class="cmdkey">coupling-friction-shear</span>，耦合弹簧摩擦角，<span class="math">\(\phi\)</span> [度]</li>
+<li><span class="cmdkey">copling-stiffness-shear</span>，单位面积耦合弹簧刚度，<span class="math">\(k\)</span> [F/L<sup>3</sup>]</li>
+<li><span class="cmdkey">slide</span>，大应变滑动标志（默认：<a class="reference internal" href="../../../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>）</li>
+<li><span class="cmdkey">slide-tolerance</span>，大应变滑动容差</li>
+</ol>
+</div>
+<div class="section" id="example-applications">
+<h2>工程应用算例</h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../flac3d/zonesel/test3d/Geogrid/SoilInterfaceTest/SoilInterfaceTest.html">土工格栅与土接触面行为的简单测试（Simple Test of Geogrid-Soil Interface Behavior）</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../flac3d/zonesel/test3d/Geogrid/PullOutTest/PullOutTest.html">土工格栅拔出试验（Geogrid Pull-out Test）</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../flac3d/zonesel/test3d/Geogrid/ReinforcedEmbankment/ReinforcedEmbankment.html">土工格栅加筋路堤（Geogrid-Reinforced Embankment）</a></li>
+</ul>
+</div>
+<p>使用土工格栅单元的完整示例清单见 <a class="reference internal" href="../../../../../../flac3d/docproject/source/elements/examples.html#selgeogridproblemtable"><span class="std std-ref">结构土工格栅示例</span>（Structural Geogrid Examples）</a>。</p>
+</div>
+<div class="section" id="commands-fish">
+<h2>Commands &amp; FISH</h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="commands/geogrid_commands.html">命令（Commands）</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fish/geogrid_fish.html"><span class="codename">FISH</span> 函数（FISH Functions）</a></li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../../../docproject/source/manual/program_guide/program_guide.html">程序指南</a> »</li>
+<li class="nav-item nav-item-2"><a accesskey="U" href="../../sels.html">Structural Elements</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../shells/fish/sel.shell_intrinsics/fish_sel.shell.young.html" title="previous chapter"> <code class="docutils literal"><span class="pre">struct.shell.young</span></code></a> |    
+       <a href="../../../../../../flac3d/zonesel/test3d/Geogrid/SoilInterfaceTest/SoilInterfaceTest.html" title="next chapter">Simple Test of Geogrid-Soil Interface Behavior</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Geogrid Structural Elements" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

@@ -1,0 +1,291 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>桩结构单元 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="../../../../../../flac3d/zonesel/test3d/Pile/AxiallyLoaded/AxiallyLoaded.html" rel="next" title="Axially Loaded Pile"/>
+<link href="../cables/fish/sel.cable_intrinsics/fish_sel.cable.young.html" rel="prev" title="struct.cable.young"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="pile-structural-elements">
+<span id="id1"></span><h1>桩结构单元</h1>
+<div class="section" id="mechanical-behavior">
+<h2>力学行为</h2>
+<p>各桩结构单元由其几何、材料与耦合弹簧性质定义。桩单元假定为位于两节点之间、具有均匀双对称截面性质的直线段。任意弯曲的结构桩可建模为由桩单元集合构成的曲线结构。桩单元的刚度矩阵与梁单元相同；但除提供梁的结构行为（包括可指定极限塑性弯矩）外，桩与网格之间还发生法向（垂直于桩轴）与剪切向（平行于桩轴）的摩擦作用。就此而言，桩兼具梁与锚索的特点。除侧壁摩擦效应外，还可模拟端承效应（见 <a class="reference internal" href="../../../../../../flac3d/zonesel/test3d/Pile/AxiallyLoaded/AxiallyLoaded.html#axiallyloaded"><span class="std std-ref">轴向受载桩</span>（Axially Loaded Pile）</a>）。桩单元适用于模拟与岩土体之间同时存在法向与剪切向摩擦作用的结构支护构件，如基础桩。</p>
+<p>还有一种特殊材料模型作为桩单元的扩展，用于模拟锚杆支护的性状。该模型通过指定 <a class="reference internal" href="commands/cmd_structure.pile.property.html#kwd:structure.pile.property.rockbolt-flag" title="flag to activate rockbolt logic (default:  off )...">设置桩单元锚杆标志属性命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">pile</span> <span class="pre">property</span> <span class="pre">rockbolt-flag</span></code>）</a> <a class="reference internal" href="../../../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 激活，可计入支护周围围压的变化、桩与网格之间材料的应变软化行为以及桩的拉伸断裂。</p>
+<p>各桩单元都有各自的局部坐标系，如 <a href="#pile-coordinate-system">图 1（Figure  1）</a> 所示。该系用于指定截面惯性矩与所施加的均布荷载，也用于定义构成单根桩的各桩单元上力与力矩分布的符号约定（见 <a href="#pile-sign-convention">图 5（Figure  5）</a>）。桩单元坐标系由其两个节点位置（<a href="#pile-coordinate-system">图 1（Figure  1）</a> 中标为 1 与 2）以及向量 <span class="math">\(\bf Y\)</span> 定义。单元坐标系的定义使</p>
+<ol class="arabic simple">
+<li>形心轴与 <span class="math">\(x\)</span> 轴重合，</li>
+<li><span class="math">\(x\)</span> 轴由节点 1 指向节点 2，且</li>
+<li><span class="math">\(y\)</span> 轴与 <span class="math">\(\bf Y\)</span> 在横截面平面（即法向沿 <span class="math">\(x\)</span> 轴的平面）上的投影对齐。</li>
+</ol>
+<div class="figure" id="id2">
+<span id="pile-coordinate-system"></span><img alt="../../../../../../_images/coordinate-system2.png" src="../../../../../../_images/coordinate-system2.png"/>
+<p class="caption"><span class="caption-text">图 1：桩单元坐标系与各单元所用梁有限单元的 12 个活动自由度</span></p>
+</div>
+<p>桩单元坐标系可用 <a class="reference internal" href="commands/cmd_structure.pile.property.html#kwd:structure.pile.property.direction-y" title="`y`-direction vector components...">结构桩单元属性方向 y（<code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">pile</span> <span class="pre">property</span> <span class="pre">direction-y</span></code>）</a> 命令修改。（若未指定 <span class="math">\(\bf Y\)</span>，或它与局部 <span class="math">\(x\)</span> 轴平行，则 <span class="math">\(\bf Y\)</span> 默认为全局 <span class="math">\(y\)</span> 或 <span class="math">\(x\)</span> 方向中与局部 <span class="math">\(x\)</span> 轴不平行的那个。）单元坐标系可用 Pile 绘图项查看，并用 <a class="reference internal" href="commands/cmd_structure.pile.list.html#kwd:structure.pile.list.system-local" title="the element local coordinate system...">结构桩单元列表系统局部（<code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">pile</span> <span class="pre">list</span> <span class="pre">system-local</span></code>）</a> 命令打印。节点连接关系可用 <a class="reference internal" href="commands/cmd_structure.pile.list.html#kwd:structure.pile.list.information" title="lists general element information, including  id  and  component-id 
+numbers, connected nodes, centroids, surface area, volume, and the hide and
+select status...">结构桩单元列表信息（<code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">pile</span> <span class="pre">list</span> <span class="pre">information</span></code>）</a> 命令打印。</p>
+<p>桩单元所用全部节点的节点局部系方位在一组循环开始时（或执行 <a class="reference internal" href="../../../../../kernel/doc/manual/model/commands/cmd_model.cycle.html#command:model.cycle" title="Execute timesteps. The synonym  model.step  may also be used.  This is
+the equivalent of calling  model.solve  with the  cycles  keyword
+set to  i ...">执行计算时步（<code class="xref fish fish-cmd docutils literal"><span class="pre">model</span> <span class="pre">cycle</span></code>）</a> <a class="reference internal" href="../../../../../docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">0</span></span></a> 命令时）自动设定，使 <span class="math">\(x\)</span> 轴与使用该节点的所有桩单元的平均轴向方向对齐，<span class="math">\(yz\)</span> 轴在桩横截面平面内任意取向。</p>
+<p>桩支持大应变滑动（把 <span class="cmdkey">slide</span> 性质设为 <a class="reference internal" href="../../../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>），此时在大应变模式下运行时，插值位置（桩节点用于与网格单元之间传递力与速度——见 <a class="reference internal" href="../formulation/formulation.html#sel-links"><span class="std std-ref">结构单元连接</span>（Structural-Element Links）</a>）将随网格迁移。这可计算桩的大应变破坏后行为，此时桩节点与网格单元之间发生显著滑动。若某桩节点移出所有网格单元，则即便该节点后来又移回网格单元内，也不会重建与网格单元的连接；不过在桩节点于网格单元之间滑动期间，该连接保持完好。</p>
+<p>桩通过剪切与法向耦合弹簧与网格相互作用。耦合弹簧是非线性弹簧-滑块连接件，在桩节点处（经由自各桩节点发出的连接）在桩与网格之间传递力与运动。剪切耦合弹簧的行为与注浆锚索的剪切行为相同，如 <a class="reference internal" href="../cables/cables.html#sel-cable-shear-behavior"><span class="std std-ref">浆体环的剪切行为</span>（Shear Behavior of Grout Annulus）</a> 所述。法向耦合弹簧的行为包括可模拟荷载反向以及桩与网格之间间隙的形成。法向耦合弹簧可模拟宿主介质围绕桩挤压的效应。剪切与法向耦合弹簧以及锚杆逻辑的表述在以下三个小节中给出。行为以 <a class="reference internal" href="#pile-properties"><span class="std std-ref">桩性质</span>（Pile Properties）</a> 所列桩单元性质描述（相关记号汇总参见该列表）。</p>
+<p class="h3 rubric" id="pile-shear-coupling-springs">剪切耦合弹簧的行为</p>
+<p>桩-网格界面的剪切行为兼具黏聚与摩擦性质。其建模方式与注浆锚索体系相同（见 <a class="reference internal" href="../cables/cables.html#sel-cable-shear-behavior"><span class="std std-ref">浆体环的剪切行为</span>（Shear Behavior of Grout Annulus）</a>），只是把浆体性质替换为相应的剪切耦合弹簧性质：(1) 刚度 <span class="math">\(k_s\)</span>；(2) 黏聚强度 <span class="math">\(c_s\)</span>；(3) 摩擦角 <span class="math">\(\phi_s\)</span>；(4) 外露周长 <span class="math">\(p\)</span>。桩在剪切方向的力学行为用这些参数以及有效围压 <span class="math">\(\sigma_m\)</span>（同样在 <a class="reference internal" href="../cables/cables.html#sel-cable-shear-behavior"><span class="std std-ref">浆体环的剪切行为</span>（Shear Behavior of Grout Annulus）</a> 中定义）表示于 <a href="#pile-shear-material-behavior">图 2（Figure  2）</a>。注意各桩单元对应的剪切耦合弹簧性质在桩节点处取平均。</p>
+<div class="figure" id="id3">
+<span id="pile-shear-material-behavior"></span><a class="reference internal image-reference" href="../../../../../../_images/shear-material-behavior.png"><img alt="../../../../../../_images/shear-material-behavior.png" src="../../../../../../_images/shear-material-behavior.png" style="width: 95%;"/></a>
+<p class="caption"><span class="caption-text">图 2：桩单元的剪切向材料行为。</span></p>
+</div>
+<p class="h3 rubric">法向耦合弹簧的行为</p>
+<p>桩-网格界面的法向行为兼具黏聚与摩擦性质。其建模方式与注浆锚索体系相似，在数值上表示为沿桩轴线各节点的弹簧-滑块系统，如 <a class="reference internal" href="../cables/cables.html#cable-mechanical-representation"><span class="std std-ref">浆体环的剪切行为</span>（Shear Behavior of Grout Annulus）</a> 所示。桩与宿主介质之间发生相对法向位移 <span class="math">\(u_n\)</span> 时（如 <a href="#pile-normal-behavior-idealization">图 3（Figure  3）</a> 所示），桩-网格界面的法向行为在数值上由以下法向耦合弹簧性质描述：(1) 刚度 <span class="math">\(k_n\)</span>；(2) 黏聚强度 <span class="math">\(c_n\)</span>；(3) 摩擦角 <span class="math">\(\phi_n\)</span>；(4) 外露周长 <span class="math">\(p\)</span>；(5) 间隙启用标志 <span class="math">\(g\)</span>。桩在法向的力学行为用这些参数以及有效围压 <span class="math">\(\sigma_m\)</span>（定义见 <a class="reference internal" href="../cables/cables.html#cable-mechanical-representation"><span class="std std-ref">浆体环的剪切行为</span>（Shear Behavior of Grout Annulus）</a>）表示于 <a href="#pile-normal-material-behavior">图 4（Figure  4）</a>。注意各桩单元对应的法向耦合弹簧性质在桩节点处取平均。</p>
+<div class="figure" id="id4">
+<span id="pile-normal-behavior-idealization"></span><a class="reference internal image-reference" href="../../../../../../_images/normal-behavior-idealization.png"><img alt="../../../../../../_images/normal-behavior-idealization.png" src="../../../../../../_images/normal-behavior-idealization.png" style="width: 95%;"/></a>
+<p class="caption"><span class="caption-text">图 3：桩单元法向行为的理想化。</span></p>
+</div>
+<div class="figure" id="id5">
+<span id="pile-normal-material-behavior"></span><a class="reference internal image-reference" href="../../../../../../_images/normal-material-behavior.png"><img alt="../../../../../../_images/normal-material-behavior.png" src="../../../../../../_images/normal-material-behavior.png" style="width: 95%;"/></a>
+<p class="caption"><span class="caption-text">图 4：桩单元的法向材料行为。</span></p>
+</div>
+<p>桩受侧向荷载时，桩与宿主介质之间可能张开间隙。若荷载反向，桩必须先穿过该间隙才能对另一侧的宿主介质加载。通过把间隙启用标志设为 <a class="reference internal" href="../../../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 可考虑间隙效应。当前间隙行为的实现中，对由每个桩节点发出的连接的两个法向方向各存储两个间隙值。这两个间隙值记录沿相应方向的正、负相对位移。因此“间隙”表现为平行四边形，其边与 <a href="#pile-normal-behavior-idealization">图 3（Figure  3）</a> 的 <span class="math">\(y'z'\)</span> 轴平行。初始时每个桩节点没有间隙，间隙在最大法向力作用期间发生相对法向位移时沿两个法向方向独立增长。间隙不会闭合，只会扩展。间隙大小可通过 <span class="codename">FISH</span> 访问，并用 <a class="reference internal" href="commands/cmd_structure.pile.list.html#kwd:structure.pile.list.coupling-yield" title="state of the coupling springs in the shear and normal direction, and the current
+gap values...">列出桩单元屈服耦合命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">pile</span> <span class="pre">list</span> <span class="pre">coupling-yield</span></code>）</a> 命令打印。</p>
+<p class="h3 rubric" id="pile-rockbolt-behavior">锚杆行为</p>
+<p>桩单元逻辑有一个扩展版本可用于模拟锚杆支护的性状。这些单元的性状与锚索单元相似，只是还包含抗弯能力。通过调用 <a class="reference internal" href="commands/cmd_structure.pile.property.html#kwd:structure.pile.property.rockbolt-flag" title="flag to activate rockbolt logic (default:  off )...">设置桩单元锚杆标志属性命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">pile</span> <span class="pre">property</span> <span class="pre">rockbolt-flag</span></code>）</a> <a class="reference internal" href="../../../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 命令，单元中将包含以下附加行为。</p>
+<ol class="arabic">
+<li><p class="first">桩单元本身可沿轴向屈服。屈服强度由性质（<span class="cmdkey">tensile-yield</span>）指定。</p>
+</li>
+<li><p class="first">锚杆断裂依据用户定义的拉伸破坏应变（<span class="cmdkey">tfstrain</span>）模拟。在每个桩节点处计算基于轴向与弯曲塑性应变之和的应变度量。轴向塑性应变 <span class="math">\(\varepsilon^{ax}_{pl}\)</span> 依据使用该节点的桩单元平均应变累积；弯曲塑性应变先在单元上取平均再累积。总塑性拉应变 <span class="math">\(\varepsilon_{pl}\)</span> 按下式计算</p>
+<div class="math">
+\[\varepsilon_{pl} = \Sigma \varepsilon^{ax}_{pl} + \Sigma {d \over 2} {\theta_{pl} \over L}\]</div>
+<table border="1" class="colwidths-auto blank docutils">
+<tbody valign="top">
+<tr class="row-odd"><td>其中：</td>
+<td><span class="math">\(d\)</span></td>
+<td>=</td>
+<td>rockbolt diameter;</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td><span class="math">\(L\)</span></td>
+<td>=</td>
+<td>element length; and</td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td><span class="math">\(\theta\)</span></td>
+<td>=</td>
+<td>单元上的平均转角</td>
+</tr>
+</tbody>
+</table>
+<p>若该应变超过限值 <span class="cmdkey">tensile-failure-strain</span>，则该单元中的力与力矩被设为零，并认为该单元已破坏。</p>
+</li>
+<li><p class="first">作用于桩单元的有效围压依据安装以来的应力变化计算。单元安装时存储其周围网格中的应力，计算推进过程中，单元周围的有效围压按相对安装状态的应力变化计算。（对默认桩单元，有效围压依据桩周围网格单元中的当前应力状态。）</p>
+</li>
+<li><p class="first">可指定用户定义表格（<span class="cmdkey">coupling-friction-table</span>），在应力非各向同性时给出有效围压的修正因子，其作为偏应力比的函数。默认情况下作用于桩的围压由 <a class="reference internal" href="../cables/cables.html#cable-confining-stress-eq"><span class="std std-ref">围压关系</span>（confining stress relation）</a> 给出。通过用 <span class="cmdkey">coupling-friction-table</span> 指定表格并设置 <span class="cmdkey">coupling-confining-flag</span> 标志，可对 <span class="math">\(\sigma_m\)</span> 的值施加因子以计入非各向同性应力。</p>
+</li>
+<li><p class="first">剪切耦合弹簧黏聚力与摩擦角随剪切位移的软化，可通过用户定义表格 <span class="cmdkey">coupling-cohesion-table</span> 与 <span class="cmdkey">coupling-friction-table</span> 规定。</p>
+</li>
+</ol>
+</div>
+<div class="section" id="response-quantities">
+<h2>响应量</h2>
+<p>桩响应包括作用于桩本身的力与力矩，以及法向与剪切耦合弹簧中的应力、位移与屈服状态。附加耦合弹簧信息包括当前加载方向、围压以及法向弹簧所跟踪的间隙。桩响应可通过 <span class="codename">FISH</span> 访问，并</p>
+<ol class="arabic simple">
+<li>用 <a class="reference internal" href="commands/cmd_structure.pile.list.html#command:structure.pile.list" title="List information about piles..."><code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">pile</span> <span class="pre">list</span></code></a> 命令打印，</li>
+<li>用 <a class="reference internal" href="commands/cmd_structure.pile.history.html#command:structure.pile.history" title="Sample pile responses.  Quantities for sampling include force and moment acting
+on the pile itself, and displacement, stress, and yield state in both the normal
+and shear coupling springs..."><code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">pile</span> <span class="pre">history</span></code></a> 命令监测，以及</li>
+<li>用 Pile 绘图项绘制。</li>
+</ol>
+<p><a href="#pile-sign-convention">图 5（Figure  5）</a> 中的符号约定为构成单根桩的各单元上的力与力矩分布给出连续描述。它假定构成该桩的各单元方向一致，使其局部坐标系对桩的方位构成连续描述。若桩是用 <a class="reference internal" href="commands/cmd_structure.pile.create.html#command:structure.pile.create" title="Create a pile represented by one or more elements..."><code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">pile</span> <span class="pre">create</span></code></a> 命令创建的，情况正是如此。如此创建的每个单元的节点按整体桩方向从第一个点指向第二个点排序。节点连接关系可用 <a class="reference internal" href="commands/cmd_structure.pile.list.html#kwd:structure.pile.list.information" title="lists general element information, including  id  and  component-id 
+numbers, connected nodes, centroids, surface area, volume, and the hide and
+select status...">结构桩单元列表信息（<code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">pile</span> <span class="pre">list</span> <span class="pre">information</span></code>）</a> 命令打印。</p>
+<div class="figure align-center" id="id6">
+<span id="pile-sign-convention"></span><img alt="../../../../../../_images/sign-convention1.png" src="../../../../../../_images/sign-convention1.png"/>
+<p class="caption"><span class="caption-text">图 5：桩单元端部力与力矩的符号约定（坐标轴表示单元坐标系，端 1 与端 2 对应节点连接列表中的顺序，所有量均按正方向绘出。）</span></p>
+</div>
+</div>
+<div class="section" id="properties">
+<span id="pile-properties"></span><h2>属性</h2>
+<p>各桩单元具有 22 个性质（另有 7 个性质控制锚杆逻辑，列于 <a class="reference internal" href="#pile-rockbolt-properties"><span class="std std-ref">锚杆性质</span>（Rockbolt Properties）</a>）：</p>
+<ol class="arabic simple">
+<li><span class="cmdkey">density</span>，质量密度，<span class="math">\(\rho\)</span>（可选——动力模式或重力启用时需要）[M/L<sup>3</sup>]</li>
+<li><span class="cmdkey">youngs</span>，杨氏模量，<span class="math">\(E\)</span> [F/L<sup>2</sup>]</li>
+<li><span class="cmdkey">poisson</span>, Poisson’s ratio, <span class="math">\(\nu\)</span></li>
+<li><span class="cmdkey">plastic-moment</span>，Y 与 Z 方向的塑性弯矩承载力，<span class="math">\(M^P\)</span>（可选——若未指定，则假定 <span class="math">\(M^P\)</span> 为无穷大）[F<span class="math">\(\cdot\)</span>L]。若已分别指定 Y 与 Z 方向的塑性弯矩，则该值为其中较大者。</li>
+<li><span class="cmdkey">plastic-moment-y</span>，仅 Y 方向的塑性弯矩承载力，<span class="math">\(M^P\)</span>（可选——若未指定，则假定 <span class="math">\(M^P\)</span> 为无穷大）[F<span class="math">\(\cdot\)</span>L]</li>
+<li><span class="cmdkey">plastic-moment-z</span>，仅 Z 方向的塑性弯矩承载力，<span class="math">\(M^P\)</span>（可选——若未指定，则假定 <span class="math">\(M^P\)</span> 为无穷大）[F<span class="math">\(\cdot\)</span>L]</li>
+<li><span class="cmdkey">thermal-expansion</span>，热膨胀系数，<span class="math">\(\alpha_t\)</span> [1/T]</li>
+<li><span class="cmdkey">cross-sectional-area</span>，截面积 <span class="math">\(A\)</span>［L<sup>2</sup>］</li>
+<li><span class="cmdkey">direction-y</span>，向量 <span class="math">\(\bf Y\)</span>，其在桩单元横截面上的投影定义单元 <span class="math">\(y\)</span> 轴（可选——若未指定，则 <span class="math">\(\bf Y\)</span> 默认为全局 <span class="math">\(y\)</span> 或 <span class="math">\(x\)</span> 方向中与单元 <span class="math">\(x\)</span> 轴不平行的那个）</li>
+<li><span class="cmdkey">moi-y</span>，关于单元 <span class="math">\(y\)</span> 轴的二次矩，<span class="math">\(I_y\)</span> [L<sup>4</sup>]</li>
+<li><span class="cmdkey">moi-z</span>，关于单元 <span class="math">\(z\)</span> 轴的二次矩，<span class="math">\(I_z\)</span> [L<sup>4</sup>]</li>
+<li><span class="cmdkey">moi-polar</span>，极惯性矩，<span class="math">\(J\)</span> [L<sup>4</sup>]</li>
+<li><span class="cmdkey">perimeter</span>，外露周长，<span class="math">\(p\)</span> [L]</li>
+<li><span class="cmdkey">coupling-cohesion-normal</span>，单位长度法向耦合弹簧黏聚力，<span class="math">\(c_n\)</span>  [F/L]</li>
+<li><span class="cmdkey">coupling-friction-normal</span>，法向耦合弹簧摩擦角，<span class="math">\(\phi_n\)</span> [度]</li>
+<li><span class="cmdkey">coupling-gap-normal</span>，法向耦合弹簧间隙启用标志，<span class="math">\(g\)</span>（默认：<a class="reference internal" href="../../../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>）</li>
+<li><span class="cmdkey">coupling-stiffness-normal</span>，单位长度法向耦合弹簧刚度，<span class="math">\(k_n\)</span>  [F/L<sup>2</sup>]</li>
+<li><span class="cmdkey">coupling-cohesion-shear</span>，单位长度剪切耦合弹簧黏聚力，<span class="math">\(c_s\)</span>  [F/L]</li>
+<li><span class="cmdkey">coupling-friction-shear</span>，剪切耦合弹簧摩擦角，<span class="math">\(\phi_s\)</span> [度]</li>
+<li><span class="cmdkey">coupling-stiffness-shear</span>，单位长度剪切耦合弹簧刚度，<span class="math">\(k_s\)</span> [F/L<sup>2</sup>]</li>
+<li><span class="cmdkey">slide</span>，大应变滑动标志（默认：<a class="reference internal" href="../../../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>）</li>
+<li><span class="cmdkey">slide-tolerance</span>，大应变滑动容差</li>
+</ol>
+<p>材料行为由性质 1-6 描述，截面几何由性质 7-10 描述，耦合行为由性质 11-20 描述。对 <a class="reference internal" href="../beams/beams.html#sel-beam-cross-section"><span class="std std-ref">梁横截面</span>（Beam Cross Section）</a> 所示的一般截面，极惯性矩 <span class="math">\(J\)</span> 与二次矩 <span class="math">\(I_y\)</span>、<span class="math">\(I_z\)</span> 在单元坐标系 <span class="math">\(xyz\)</span> 中由 <a class="reference internal" href="../beams/beams.html#beam-moi-integrals"><span class="std std-ref">这些积分</span>（these integrals）</a> 定义，其中横截面的两个主轴由单元的<span class="math">\(y\)</span> 与 <span class="math">\(z\)</span> 轴定义。</p>
+<p>桩单元性质的确定方式与 <a class="reference internal" href="../beams/beams.html#beam-properties"><span class="std std-ref">梁单元</span>（beam elements）</a> 相似。</p>
+<p>桩单元的外露周长与耦合弹簧性质应根据所分析问题选取，以代表桩/介质界面的行为。对土中的桩，桩/土相互作用可表示为沿桩身长度由轴向加载引起的剪切响应（如摩擦桩），或表示为加载方向垂直于桩轴线时的法向响应（如用于稳定边坡的桩）。</p>
+<p>桩/土相互作用取决于桩是打入还是现浇。该相互作用以沿桩长可发展的抗剪阻力表示。例如打入式摩擦桩主要依靠沿桩身土体的摩擦或黏附获得支承；而现浇端承桩主要依靠桩端附近土体获得支承。</p>
+<p>许多情形下无法获得描述桩/土相互作用现场响应的所需性质。不过现场土性的合理认识通常可由标准原位与室内试验提供。此类情形下桩/土剪切响应可由土性估算。若假定与桩/土响应相关的破坏发生在土体中，则 <span class="cmdkey">coupling-friction-shear</span> 与 <span class="cmdkey">coupling-cohesion-shear</span> 的下限可分别与土的内摩擦角（对 <span class="cmdkey">coupling-friction-shear</span>）以及土的黏聚力乘以桩周长（对 <span class="cmdkey">coupling-cohesion-shear</span>）相联系。若假定破坏发生在桩/土界面，则可降低 <span class="cmdkey">coupling-friction-shear</span> 与 <span class="cmdkey">coupling-cohesion-shear</span> 的取值以反映桩面光滑程度。</p>
+<p class="h3 rubric" id="pile-rockbolt-properties">锚杆性质</p>
+<p>若锚杆逻辑处于活动状态（<a class="reference internal" href="commands/cmd_structure.pile.property.html#kwd:structure.pile.property.rockbolt-flag" title="flag to activate rockbolt logic (default:  off )...">设置桩单元锚杆标志属性命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">pile</span> <span class="pre">property</span> <span class="pre">rockbolt-flag</span></code>）</a> <a class="reference internal" href="../../../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>），则还可（在 <a class="reference internal" href="#pile-properties"><span class="std std-ref">桩性质</span>（Pile Properties）</a> 所列之外）赋予 7 个性质：</p>
+<table border="1" class="colwidths-auto blank docutils">
+<tbody valign="top">
+<tr class="row-odd"><td>(21)</td>
+<td><code class="docutils literal"><span class="pre">coupling-confining-flag</span></code></td>
+<td>激活增量围压逻辑的标志（默认：<a class="reference internal" href="../../../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>）</td>
+</tr>
+<tr class="row-even"><td>(22)</td>
+<td><code class="docutils literal"><span class="pre">coupling-confining-table</span></code></td>
+<td>把有效围压因子与偏应力关联的表格名称</td>
+</tr>
+<tr class="row-odd"><td>(23)</td>
+<td><code class="docutils literal"><span class="pre">coupling-cohesion-table</span></code></td>
+<td>把剪切耦合弹簧的黏聚力与相对剪切位移关联的表格名称</td>
+</tr>
+<tr class="row-even"><td>(24)</td>
+<td><code class="docutils literal"><span class="pre">coupling-friction-table</span></code></td>
+<td>把剪切耦合弹簧的摩擦角与相对剪切位移关联的表格名称</td>
+</tr>
+<tr class="row-odd"><td>(25)</td>
+<td><code class="docutils literal"><span class="pre">rockbolt-flag</span></code></td>
+<td>激活锚杆逻辑的标志（默认：<a class="reference internal" href="../../../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>）</td>
+</tr>
+<tr class="row-even"><td>(26)</td>
+<td><code class="docutils literal"><span class="pre">tensile-failure-strain</span></code></td>
+<td>拉伸破坏应变（无量纲）</td>
+</tr>
+<tr class="row-odd"><td>(27)</td>
+<td><code class="docutils literal"><span class="pre">tensile-yield</span></code></td>
+<td>轴向抗拉屈服强度（力单位），[F]</td>
+</tr>
+</tbody>
+</table>
+<p>说明这些性质效应的示例见 <a class="reference internal" href="../../../../../../flac3d/zonesel/test3d/ExampleApplications/PullTestsRockReinforcement/pulltestsrockreinforcement.html#pulltestsrockreinforcement"><span class="std std-ref">全粘结岩石加筋拉拔试验模拟</span>（Simulation of Pull-Tests for Fully Bonded Rock Reinforcement）</a>。</p>
+</div>
+<div class="section" id="example-applications">
+<h2>工程应用算例</h2>
+<p>下面给出简单示例以说明桩的用法。</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../flac3d/zonesel/test3d/Pile/AxiallyLoaded/AxiallyLoaded.html">轴向受载桩（Axially Loaded Pile）</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../flac3d/zonesel/test3d/Pile/LaterallyLoaded/LaterallyLoaded.html">横向受载桩（Laterally Loaded Pile）</a></li>
+</ul>
+</div>
+<p>使用桩单元的完整示例清单见 <a class="reference internal" href="../../../../../../flac3d/docproject/source/elements/examples.html#selpileproblemtable"><span class="std std-ref">结构桩示例</span>（Structural Pile Examples）</a>。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+</div>
+<div class="section" id="commands-fish">
+<h2>Commands &amp; FISH</h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="commands/pile_commands.html">命令（Commands）</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fish/pile_fish.html"><span class="codename">FISH</span> 函数（FISH Functions）</a></li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../../../docproject/source/manual/program_guide/program_guide.html">程序指南</a> »</li>
+<li class="nav-item nav-item-2"><a accesskey="U" href="../../sels.html">Structural Elements</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../cables/fish/sel.cable_intrinsics/fish_sel.cable.young.html" title="previous chapter"> <code class="docutils literal"><span class="pre">struct.cable.young</span></code></a> |    
+       <a href="../../../../../../flac3d/zonesel/test3d/Pile/AxiallyLoaded/AxiallyLoaded.html" title="next chapter">Axially Loaded Pile</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Pile Structural Elements" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>

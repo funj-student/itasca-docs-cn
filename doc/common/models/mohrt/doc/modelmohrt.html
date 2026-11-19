@@ -1,0 +1,260 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>Mohr-Coulomb 拉伸裂缝（MohrT）模型 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../search.html" rel="search" title="Search"/>
+<link href="../../softsoil/doc/modelsoftsoil.html" rel="next" title="Soft-Soil Model*"/>
+<link href="../../swell/doc/modelswell.html" rel="prev" title="Swell Model*"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="hide sectionname docutils container">
+<span class="codename">FLAC3D</span> Theory and Background • Constitutive Models</div>
+<div class="section" id="mohr-coulomb-tension-crack-mohrt-model">
+<span id="modelmohrt"></span><h1>Mohr-Coulomb 拉伸裂缝（MohrT）模型</h1>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">*本模型仅在 <span class="codename">FLAC3D</span> 中提供。</p>
+</div>
+<p><a class="reference internal" href="../../mohr/doc/modelmohr.html#modelmohr"><span class="std std-ref">Mohr-Coulomb 模型</span>（Mohr-Coulomb model）</a> 不太适合模拟拉伸破坏（破裂）。Mohr-Coulomb 本构模型在拉伸破坏方面的一种非物理行为是拉伸塑性应变 <span class="math">\(\varepsilon^p_i\)</span> 不可恢复。因此，只要导致拉伸破坏的塑性应变发生任何反向，就立即产生压应力。地质材料中拉伸塑性应变的不可恢复部分通常相对较小（即可假定为零）。换言之，拉伸裂隙须完全闭合后才会在垂直于裂隙方向产生压应力。Mohr-Coulomb 法则中该近似的后果之一是：材料一旦发生拉伸破坏就会过度剪胀或体积增大。例如在动力响应（如地震或爆破）情形中，或在采空区上方覆盖层变形（直接顶板冒落时裂隙张开、随后整个覆盖层下沉时裂隙闭合）情形中，这可能成为问题。本节所述本构模型是 Mohr-Coulomb 本构模型的扩展，它把拉伸塑性应变视为可恢复，并防止在裂隙闭合前产生（垂直于裂隙的）法向压应力。</p>
+<p class="h3 rubric">模型描述</p>
+<p>模型假定一个网格单元最多可有三条相互垂直的裂隙，每条裂隙贯穿整个网格单元。若无拉伸破坏或所有拉伸裂隙均闭合，则模型表现为理想塑性 Mohr-Coulomb 本构模型。若抗拉强度（初始为各向同性）被超过，</p>
+<div class="math" id="equation-modelmohrteqft">
+<span class="eqno">(1)</span>\[f^t = \sigma^t - \sigma_3 &lt; 0\]</div>
+<p>则发生以下情况：</p>
+<ol class="arabic simple">
+<li>裂隙垂直于拉伸主应力 <span class="math">\(\sigma_3\)</span> 形成。网格单元中裂隙数的模型参数 <a class="reference internal" href="../../../docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">裂缝数量（<span class="varfishsym"><span class="null">number-cracks</span></span>）</a> 设为一。</li>
+<li>裂隙方位（即单位法向的方位）信息被计算并存储为模型参数 <span class="math">\(n_{1,x}\)</span>、<span class="math">\(n_{1,y}\)</span> 与 <span class="math">\(n_{1,z}\)</span>。</li>
+<li>由于瞬时软化，垂直于裂隙的抗拉强度（此时变为各向异性）设为零 <span class="math">\(\sigma_1 = 0\)</span>。</li>
+<li>按拉伸破坏包络与关联流动法则（二者均按 <a class="reference internal" href="../../mohr/doc/modelmohr.html#modelmohr"><span class="std std-ref">Mohr-Coulomb 模型</span>（Mohr-Coulomb model）</a> 定义）修正应力（即把垂直于裂隙的法向应力设为零），得到参数 <span class="math">\(\lambda^t\)</span> 的值。</li>
+<li>裂隙开度 <span class="math">\(\varepsilon^p_1\)</span>（模型参数 <a class="reference internal" href="../../../docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">应变抗拉塑性 1 命令（<span class="varfishsym"><span class="null">strain-tension-plastic-1</span></span>）</a>）每步增加 <span class="math">\(\lambda^t\)</span>、<span class="math">\(\Delta \varepsilon^{p}_1 = \lambda^{t}\)</span>。</li>
+</ol>
+<p>在后续计算步中，只要 <span class="math">\(\varepsilon^p_1\)</span> 大于零，就按材料垂直于裂纹方向发生拉伸屈服来修正应力，并计算 <span class="math">\(\lambda^t\)</span> 加到 <span class="math">\(\varepsilon^p_1\)</span> 上。此外，裂纹面上的剪应力设为零（或网格单元内应力状态使裂纹面上的牵引为零）。裂纹闭合后（即 <span class="math">\(\varepsilon^p_1 = 0\)</span>），模型行为如同裂纹不存在，只是垂直于裂纹的拉伸强度为零。</p>
+<p>若网格单元中已有一条裂隙，则第二条裂隙将与其垂直。（第一条裂隙的方位是任意的，由成缝时的主应力方位决定。）此外，第二条（与第三条）裂隙的抗拉强度不受网格单元中此前裂隙的影响。网格单元中最多可有三条相互垂直的裂隙。因此当第一、第二条裂隙形成后，第三条裂隙的方位即已确定。除此之外，第二、第三条裂隙的行为与第一条相同。各裂隙的开度分别追踪。参数 <a class="reference internal" href="../../../docproject/utilities/types.html#type:sym" title="A |FISH| symbol ( name ) — where  name  is the name of either a |FISH|
+variable or a |FISH| function...">裂缝数量（<span class="varfishsym"><span class="null">number-cracks</span></span>）</a> 给出网格单元中裂隙总数。各裂隙的开度存储于 <span class="math">\(\varepsilon^p_i \mbox{ , } i=1{\sim}3\)</span>。裂隙方位存储于 <span class="math">\((n_{i,x}, n_{i,y}, n_{i,z}) \mbox{ , } i=1{\sim}3\)</span>。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+<div class="line"><br/></div>
+</div>
+<p class="h3 rubric" id="mohrcoulombtensionmodelprops"><span class="cmdkey">mohr-coulomb-tension</span> 模型性质</p>
+<p>用以下关键字配合 <a class="reference internal" href="../../../../flac3d/zone/doc/manual/zone_manual/zone_commands/cmd_zone.property.html#command:zone.property" title="Make a constitutive model(s) property assignment. Properties are name value
+pairs where the name is the keyword given in the command and the value type
+is specific to the property. The assignment will affect *any* zone whose constitutive
+model includes the property named (noting that some properties, such as  bulk ,
+for instance, appear in *many* constitutive models).  Limiting a property assignment
+to zones that have a particular constitutive model assignment is done using
+the...">设置网格单元属性（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">property</span></code>）</a> 命令设置 Mohr-Coulomb 拉伸模型的这些性质。</p>
+<span class="target" id="mohrcoulumbtensionprops"></span><dl class="command">
+<dt id="command:mohr-coulomb-tension">
+<span class="cmdname"><span class="hide">m</span><span class="hide">o</span><span class="hide">h</span><span class="hide">r</span><span class="hide">-</span><span class="hide">c</span><span class="hide">o</span><span class="hide">u</span><span class="hide">l</span><span class="hide">o</span><span class="hide">m</span><span class="hide">b</span><span class="hide">-</span><span class="hide">t</span><span class="hide">e</span><span class="hide">n</span><span class="hide">s</span><span class="hide">i</span><span class="hide">o</span><span class="hide">n</span><span class="hide"> </span></span></dt>
+<dd><dl class="keyword">
+<dt id="kwd:mohr-coulomb-tension.bulk">
+<span class="cmdkey"><span class="pref">b</span><span class="null">u</span><span class="null">l</span><span class="null">k</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>弹性体积模量，<span class="math">\(K\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:mohr-coulomb-tension.cohesion">
+<span class="cmdkey"><span class="pref">c</span><span class="null">o</span><span class="null">h</span><span class="null">e</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>黏聚力，<span class="math">\(c\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:mohr-coulomb-tension.dilation">
+<span class="cmdkey"><span class="pref">d</span><span class="null">i</span><span class="null">l</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>剪胀角 <span class="math">\(\psi\)</span>。默认为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.0</span></span></a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:mohr-coulomb-tension.friction">
+<span class="cmdkey"><span class="pref">f</span><span class="null">r</span><span class="null">i</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>内摩擦角 <span class="math">\(\phi\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:mohr-coulomb-tension.poisson">
+<span class="cmdkey"><span class="pref">p</span><span class="null">o</span><span class="null">i</span><span class="null">s</span><span class="null">s</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>泊松比，<span class="math">\(\nu\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:mohr-coulomb-tension.shear">
+<span class="cmdkey"><span class="pref">s</span><span class="null">h</span><span class="null">e</span><span class="null">a</span><span class="null">r</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>弹性剪切模量，<span class="math">\(G\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:mohr-coulomb-tension.tension">
+<span class="cmdkey"><span class="pref">t</span><span class="null">e</span><span class="null">n</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>抗拉强度，<span class="math">\(\sigma^t\)</span>。默认值为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.0</span></span></a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:mohr-coulomb-tension.young">
+<span class="cmdkey"><span class="pref">y</span><span class="null">o</span><span class="null">u</span><span class="null">n</span><span class="null">g</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>杨氏模量，<span class="math">\(E\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:mohr-coulomb-tension.normal-1">
+<span class="cmdkey"><span class="pref">n</span><span class="null">o</span><span class="null">r</span><span class="null">m</span><span class="null">a</span><span class="null">l</span><span class="null">-</span><span class="null">1</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:vec" title='A vector ( v  or  v2  or  v3 ) expressed as a matrix with one
+row.   v2  and  v3  denote that a 2D or 3D vector, respectively, is
+required.  A plain " v " indicates that a vector of the same dimensionality
+as the code is required, that is, a 3D vector is required if the code is a 3D
+code, and a 2D vector is required if the code is a 2D code. In |flac3d|,  v...'><span class="varvec"><span class="null">v</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>裂隙面 2 的法向方向（<span class="math">\(n_{1,x}\)</span>, <span class="math">\(n_{1,y}\)</span>, <span class="math">\(n_{1,z}\)</span>）</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:mohr-coulomb-tension.normal-2">
+<span class="cmdkey"><span class="pref">n</span><span class="null">o</span><span class="null">r</span><span class="null">m</span><span class="null">a</span><span class="null">l</span><span class="null">-</span><span class="null">2</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:vec" title='A vector ( v  or  v2  or  v3 ) expressed as a matrix with one
+row.   v2  and  v3  denote that a 2D or 3D vector, respectively, is
+required.  A plain " v " indicates that a vector of the same dimensionality
+as the code is required, that is, a 3D vector is required if the code is a 3D
+code, and a 2D vector is required if the code is a 2D code. In |flac3d|,  v...'><span class="varvec"><span class="null">v</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>裂隙面 2 的法向方向（<span class="math">\(n_{2,x}\)</span>, <span class="math">\(n_{2,y}\)</span>, <span class="math">\(n_{2,z}\)</span>）</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:mohr-coulomb-tension.normal-3">
+<span class="cmdkey"><span class="pref">n</span><span class="null">o</span><span class="null">r</span><span class="null">m</span><span class="null">a</span><span class="null">l</span><span class="null">-</span><span class="null">3</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:vec" title='A vector ( v  or  v2  or  v3 ) expressed as a matrix with one
+row.   v2  and  v3  denote that a 2D or 3D vector, respectively, is
+required.  A plain " v " indicates that a vector of the same dimensionality
+as the code is required, that is, a 3D vector is required if the code is a 3D
+code, and a 2D vector is required if the code is a 2D code. In |flac3d|,  v...'><span class="varvec"><span class="null">v</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>裂隙面 3 的法向方向（<span class="math">\(n_{3,x}\)</span>, <span class="math">\(n_{3,y}\)</span>, <span class="math">\(n_{3,z}\)</span>）</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:mohr-coulomb-tension.number-cracks">
+<span class="cmdkey"><span class="pref">n</span><span class="null">u</span><span class="null">m</span><span class="null">b</span><span class="null">e</span><span class="null">r</span><span class="null">-</span><span class="pref">c</span><span class="null">r</span><span class="null">a</span><span class="null">c</span><span class="null">k</span><span class="null">s</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">i</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>所发育的裂隙组数</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:mohr-coulomb-tension.strain-tension-plastic-1">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">r</span><span class="null">a</span><span class="null">i</span><span class="null">n</span><span class="null">-</span><span class="pref">t</span><span class="null">e</span><span class="null">n</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="pref">p</span><span class="null">l</span><span class="null">a</span><span class="null">s</span><span class="null">t</span><span class="null">i</span><span class="null">c</span><span class="null">-</span><span class="null">1</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>沿 <span class="math">\(n_1\)</span> 方向的累积塑性拉应变</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:mohr-coulomb-tension.strain-tension-plastic-2">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">r</span><span class="null">a</span><span class="null">i</span><span class="null">n</span><span class="null">-</span><span class="pref">t</span><span class="null">e</span><span class="null">n</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="pref">p</span><span class="null">l</span><span class="null">a</span><span class="null">s</span><span class="null">t</span><span class="null">i</span><span class="null">c</span><span class="null">-</span><span class="null">2</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>沿 <span class="math">\(n_2\)</span> 方向的累积塑性拉应变</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:mohr-coulomb-tension.strain-tension-plastic-3">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">r</span><span class="null">a</span><span class="null">i</span><span class="null">n</span><span class="null">-</span><span class="pref">t</span><span class="null">e</span><span class="null">n</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="pref">p</span><span class="null">l</span><span class="null">a</span><span class="null">s</span><span class="null">t</span><span class="null">i</span><span class="null">c</span><span class="null">-</span><span class="null">3</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>沿 <span class="math">\(n_3\)</span> 方向的累积塑性拉应变</p>
+</dd></dl>
+<p><strong>图例</strong></p>
+<dl class="docutils">
+<dt>(r) 只读属性。</dt>
+<dd>该属性不能由用户设置，但可以列出、绘图显示，或通过 <span class="codename">FISH</span> 访问。</dd>
+</dl>
+<p><strong>注意事项</strong></p>
+<ul class="simple">
+<li>定义弹性性质时，只需提供以下两种组合中的一种：体积模量 <span class="math">\(K\)</span> 与剪切模量 <span class="math">\(G\)</span>，或杨氏模量 <span class="math">\(E\)</span> 与泊松比 <span class="math">\(\nu\)</span>。采用后一种组合时，必须先赋予杨氏模量 <span class="math">\(E\)</span>，再赋予泊松比 <span class="math">\(\nu\)</span>。</li>
+<li>抗拉截断为 <span class="math">\({\sigma}^t = min({\sigma}^t, c/\tan \phi)\)</span>。</li>
+</ul>
+</dd></dl>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../docproject/source/manual/program_guide/program_guide.html">程序指南</a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../docproject/source/manual/program_guide/models/models.html">Constitutive Models</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../../../docproject/source/manual/program_guide/models/theory/plasticmodel.html">Plastic Model Group</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../../swell/doc/modelswell.html" title="previous chapter"> Swell Model*</a> |    
+       <a href="../../softsoil/doc/modelsoftsoil.html" title="next chapter">Soft-Soil Model*</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Mohr-Coulomb Tension Crack (MohrT) Model*" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../_static/icgscripts.js"></script>
+</body>
+</html>

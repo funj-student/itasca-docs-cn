@@ -1,0 +1,471 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>NorSand 模型* — FLAC3D 7.0 中文手册</title>
+<link href="../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../search.html" rel="search" title="Search"/>
+<link href="../../../docproject/source/manual/program_guide/models/creep/creep.html" rel="next" title="Creep Constitutive Models in 3DEC and FLAC3D"/>
+<link href="../../softsoil/doc/modelsoftsoil.html" rel="prev" title="Soft-Soil Model*"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="hide sectionname docutils container">
+<span class="codename">FLAC3D</span> Theory and Background • Constitutive Models</div>
+<div class="section" id="norsand-model">
+<span id="modelnorsand"></span><h1>NorSand 模型*</h1>
+<div class="aside admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">*本模型仅在 <span class="codename">FLAC3D</span> 中提供。</p>
+</div>
+<p>NorSand（Jefferies 1993，Jefferies 与 Been 2015）是适用于颗粒间相互作用由接触力与滑移而非粘结控制的土体的临界状态模型，它内在地包含状态参数，从而能刻画颗粒土在广泛围压与密度范围内的行为。NorSand 所需土性参数相对较少，且都较为熟悉、可由常规室内或原位试验估算。NorSand 明确刻画从极松砂的静态液化到极密砂剪胀的完整土体行为范围。</p>
+<p class="h3 rubric">公式</p>
+<p class="h4 rubric">弹性法则</p>
+<p>NorSand 模型的实现中，弹性部分假定弹性剪切模量为</p>
+<div class="math" id="equation-eq:nor:elastic:g">
+<span class="eqno">(1)</span>\[ G = G_{ref}\left( \frac{p}{p_{ref}} \right)^m\]</div>
+<p>其中 <span class="math">\(p\)</span> 为当前平均压力，<span class="math">\(G_{ref}\)</span> 为材料常数。<span class="math">\(m\)</span> 的有效范围为 <span class="math">\(0 \le m \le 1\)</span>。<span class="math">\(p_{ref}\)</span> 为参考压力（通常且默认为 100 kPa）。</p>
+<p>对 <span class="math">\(m = 0\)</span>，<span class="math">\(G=G_{ref}\)</span>，对应常数弹性剪切模量。对 <span class="math">\(m = 1\)</span>，<span class="math">\(G = (G_{ref}/p_{ref})p = I_r p\)</span>，对应弹性剪切模量与当前 <span class="math">\(p\)</span> 成线性关系、剪切刚度 <span class="math">\(I_r=G_{ref}/p_{ref}\)</span> 为常数。</p>
+<p>相应的弹性体积模量为</p>
+<div class="math" id="equation-eq:nor:elastic:k">
+<span class="eqno">(2)</span>\[ K = \frac{2(1+\nu)}{3(1-2\nu)} G\]</div>
+<p class="h4 rubric">临界状态</p>
+<p>临界状态要求 <span class="math">\(D^p=0\)</span> 与 <span class="math">\(\dot{D}^p/\dot{e}_q^p=0\)</span>，其中剪胀 <span class="math">\(D^p\)</span> 定义为 <span class="math">\(D^p=(\dot{e}_v^p)/(\dot{e}_q^p )\)</span>，而 <span class="math">\(\dot{e}_v^p\)</span> 与 <span class="math">\(\dot{e}_q^p\)</span> 分别为塑性体积应变率与塑性偏应变率。若仅 <span class="math">\(D^p=0\)</span>，则为<em>映象</em>状态（以下标 <span class="math">\(i\)</span> 表示），也常称为准稳态或相变状态。</p>
+<p>临界状态孔隙比 <span class="math">\(e_c\)</span> 可取双参数半对数形式，即</p>
+<div class="math" id="equation-eq:nor:cs:1">
+<span class="eqno">(3)</span>\[ e_c(p) = \Gamma - \lambda \ln{\left( \frac{100p}{p_{ref}} \right)}\]</div>
+<p>其中 <span class="math">\(\Gamma\)</span> 与 <span class="math">\(\lambda\)</span> 为材料常数。</p>
+<p>临界状态孔隙比 <span class="math">\(e_c\)</span> 也可取三参数幂律形式，即</p>
+<div class="math" id="equation-eq:nor:cs:2">
+<span class="eqno">(4)</span>\[ e_c(p) = C_1 - C_2 \left( \frac{p}{p_{ref}} \right)^{C_3}\]</div>
+<p>其中 <span class="math">\(C_1\)</span>、<span class="math">\(C_2\)</span> 与 <span class="math">\(C_3\)</span> 为材料常数。</p>
+<p class="h4 rubric">状态参数</p>
+<p>状态参数定义为当前孔隙比与临界状态孔隙比之差：</p>
+<div class="math" id="equation-eq:nor:sp">
+<span class="eqno">(5)</span>\[ \psi = e - e_c(p)\]</div>
+<p>当 <span class="math">\(p=p_i\)</span>（<span class="math">\(p_i\)</span> 称为映象应力）时的状态参数由下式定义为 <span class="math">\(\psi_i\)</span>：</p>
+<div class="math" id="equation-eq:nor:spi">
+<span class="eqno">(6)</span>\[ \psi_i = e - e_c(p_i)\]</div>
+<p class="h4 rubric">屈服面</p>
+<p>NorSand 模型的外屈服面具有原 Cam-Clay 模型熟悉的子弹状外形（<a href="#modelnorsand-1">图 1（Figure  1）</a>），表示为</p>
+<div class="math" id="equation-eq:nor:ys">
+<span class="eqno">(7)</span>\[ \frac{\eta}{M_i} = 1 - \ln{\left( \frac{p}{p_i} \right)}\]</div>
+<p>其中 <span class="math">\(p_i\)</span> 称为映象应力，控制屈服面的大小。<span class="math">\(\eta = q/p\)</span> 与 <span class="math">\(q = \sqrt{3J_2}\)</span>，且 <span class="math">\(J_2\)</span> 为偏应力张量的第二不变量。</p>
+<div class="figure align-center" id="id1">
+<span id="modelnorsand-1"></span><a class="reference internal image-reference" href="../../../../_images/norsand1.png"><img alt="../../../../_images/norsand1.png" src="../../../../_images/norsand1.png" style="width: 500px;"/></a>
+<p class="caption"><span class="caption-text">图 1：NorSand 屈服面与极限应力比示意。</span></p>
+</div>
+<p>存在一个内帽盖，使土体不能在不屈服的情况下卸载到很低的平均应力。该内帽盖取为平面，以极限应力比 <span class="math">\(\eta_L\)</span> 穿过外部屈服面，其位置取决于土体的当前参数。<a href="#modelnorsand-1">图 1（Figure  1）</a> 示出极密与极松两种情形下的 NorSand 屈服面。</p>
+<p><span class="math">\(M_i\)</span> 定义为</p>
+<div class="math" id="equation-eq:nor:mi">
+<span class="eqno">(8)</span>\[ M_i = M \left( 1 - \frac{N \chi_i |\psi_i|}{M_{tc}} \right)\]</div>
+<p>其中 <span class="math">\(M_{tc}\)</span> 为材料常数，表示 TC（三轴压缩）条件下临界状态的 <span class="math">\(\eta\)</span>；<span class="math">\(N\)</span> 为 Nova（1982）的体积耦合系数；<span class="math">\(M\)</span> 为考虑 Lode 角 <span class="math">\(\theta\)</span> 影响的临界摩擦比，由下式给出</p>
+<div class="math" id="equation-eq:nor:m">
+<span class="eqno">(9)</span>\[ M = M_{tc} - \frac{M_{tc}^2}{3+M_{tc}}\cos{\left( \frac{3\theta}{2} + \frac{\pi}{4}\right)}\]</div>
+<p>容易分别导出 TC 与 TE（三轴拉伸）条件下的 <span class="math">\(M_i\)</span>：</p>
+<div class="math" id="equation-eq:nor:mitc">
+<span class="eqno">(10)</span>\[ M_{i,tc} = M_{tc} - N \chi_i |\psi_i|, \; \mbox{at} \; \theta = \frac{\pi}{6}\]</div>
+<div class="math" id="equation-eq:nor:mite">
+<span class="eqno">(11)</span>\[ M_{i,te} = \frac{3 M_{i,tc}}{3+M_{tc}}, \; \mbox{at} \; \theta = -\frac{\pi}{6}\]</div>
+<p>按 Jefferies 与 Been（2015），<span class="math">\(\chi_i\)</span> 可近似为</p>
+<div class="math" id="equation-eq:nor:chii">
+<span class="eqno">(12)</span>\[ \chi_i = \frac{M_{tc} \chi_{tc}}{M_{tc} - \lambda \chi_{tc}}\]</div>
+<p>其中 <span class="math">\(\chi_{tc}\)</span> 为材料常数。</p>
+<p class="h4 rubric">应力剪胀</p>
+<p>假定关联流动法则，应力剪胀可表示为</p>
+<div class="math" id="equation-eq:nor:dp">
+<span class="eqno">(13)</span>\[ D^p = \frac{\dot{e}_v^p}{\dot{e}_q^p} = M_i - \eta\]</div>
+<p>其中 <span class="math">\(\dot{e}_v^p\)</span> 与 <span class="math">\(\dot{e}_q^p\)</span> 分别为塑性体积应变率与塑性偏应变率。</p>
+<p>主应力空间中塑性应变率的详细表达式略显繁复，可见 Jefferies 与 Shuttle（2005）。</p>
+<p class="h4 rubric">外帽盖的硬化法则</p>
+<p>映象应力 <span class="math">\(p_i\)</span> 控制屈服面的大小。实现中的硬化法则定义为</p>
+<div class="math" id="equation-eq:nor:hardening">
+<span class="eqno">(14)</span>\[ \frac{\dot{p}_i}{p_i} = H \frac{M_i}{M_{i,tc}} \left( \frac{p}{p_i} \right)^2 \left( \frac{p_{i,m}}{p} \frac{p_i}{p} \right) \dot{e}_q^p + S T_S + T_{PSR}\]</div>
+<p>其中硬化模量 <span class="math">\(H\)</span> 表示为</p>
+<div class="math" id="equation-eq:nor:h">
+<span class="eqno">(15)</span>\[ H = H_0 + H_y \psi\]</div>
+<p>其中 <span class="math">\(H_0\)</span> 与 <span class="math">\(H_y\)</span> 为材料常数。<span class="math">\(H_y\)</span> 默认值为零，故此时 <span class="math">\(H\)</span> 等于常数 <span class="math">\(H_0\)</span>。</p>
+<p><span class="math">\(p_{i,m}\)</span> 定义为</p>
+<div class="math" id="equation-eq:nor:pim">
+<span class="eqno">(16)</span>\[ p_{i,m} = p \exp{\left( -\frac{\chi_i\psi_i}{M_{i,tc}} \right)}\]</div>
+<p>附加帽盖软化项 <span class="math">\(T_S\)</span> 可选（例如输入 <span class="math">\(S=0\)</span> 即令该项失效），<span class="math">\(T_S\)</span> 的当前版本为</p>
+<div class="math" id="equation-eq:nor:ts">
+<span class="eqno">(17)</span>\[ T_S = \left( \frac{K}{p} \right) \left( \frac{\eta}{\eta_L} \right) \dot{e}_q^p \frac{1}{1+\frac{\chi_i\lambda}{M_{i,tc}}}\]</div>
+<p><span class="math">\(S\)</span> 默认为 0，在不排水分析中允许取 <span class="math">\(0 \le S \le 1\)</span>。<span class="math">\(S\)</span> 取值越大，松散砂在<em>不排水</em>剪切加载中软化越快。请注意附加项 <span class="math">\(T_S\)</span> 仍在开发中，使用 <span class="math">\(S&gt;0\)</span> 应谨慎。任何排水加载情形都不建议使用 <span class="math">\(S&gt;0\)</span>。</p>
+<p>式 <a class="reference internal" href="#equation-eq:nor:hardening">(14)</a> 中最后一项 <span class="math">\(T_{PSR}\)</span> 捕捉主应力旋转的影响（Jefferies 等 2015）：</p>
+<div class="math" id="equation-eq:nor:tpsr">
+<span class="eqno">(18)</span>\[ T_{PSR} = \left[ -Z \left( \frac{p_i}{p} - \frac{1}{r}\right) \left| \frac{\dot{\alpha}}{\pi} \right|+ \frac{1}{r} \right] |\psi_i|\]</div>
+<p>其中 <span class="math">\(Z\)</span> 为土性参数，<span class="math">\(r=\exp{(1)} \approx 2.718\)</span> 为屈服面间距比（固定值），<span class="math">\(\alpha\)</span> 为三维版本中最大主应力方向与 z 坐标参考系之间的当前夹角。为在动力模拟中刻画循环迁移性，<span class="math">\(Z\)</span> 应输入正值。</p>
+<p class="h4 rubric">内帽盖的硬化法则</p>
+<p>实现中内帽盖的硬化法则定义为</p>
+<div class="math" id="equation-eq:nor:hardeninginner">
+<span class="eqno">(19)</span>\[ \frac{\dot{p}_i}{p_i} = - H_i H \left| \dot{e}_v^p \right|\]</div>
+<p>其中 <span class="math">\(H_i\)</span> 为材料参数，默认值为 5.0。内帽盖屈服总使子弹状外表面收缩变小。NorSand 采用一种合理的理想化处理：把帽盖上的应力 <span class="math">\(q\)</span> 通过外屈服面镜像（Jefferies 与 Been 2015）。默认情况下（<em>flag-inner</em> = <a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>）不激活内帽盖硬化。要激活该选项，请把材料性质 <em>flag-inner</em> 输入为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>。请注意内帽盖硬化仍在开发中，尚需更多验证。</p>
+<p class="h3 rubric">初始条件</p>
+<p>NorSand 模型是应力相关模型。初始条件包括初始应力 <span class="math">\(\sigma_{ij,0}\)</span>、初始状态 <span class="math">\(e_0\)</span> 或 <span class="math">\(\psi_0\)</span> 以及超固结比 OCR。该模型中 OCR（<a href="#modelnorsand-2">图 2（Figure  2）</a>）定义为当前 <span class="math">\(p_i\)</span> 与计算所得 <span class="math">\(p_{i, OCR=1}\)</span> 之比，使初始应力在 OCR = 1 的假定下位于屈服面上。</p>
+<div class="math" id="equation-eq:nor:ocr">
+<span class="eqno">(20)</span>\[ OCR = \frac{p_i}{p_{i, OCR=1}}\]</div>
+<div class="figure align-center" id="id2">
+<span id="modelnorsand-2"></span><a class="reference internal image-reference" href="../../../../_images/norsand2.png"><img alt="../../../../_images/norsand2.png" src="../../../../_images/norsand2.png" style="width: 500px;"/></a>
+<p class="caption"><span class="caption-text">图 2：NorSand 模型中 OCR 的示意图。</span></p>
+</div>
+<p>首次赋予 NorSand 模型时应输入合理的初始应力。应力可通过命令或 <span class="codename">FISH</span> 函数初始化。常用做法是先用较简单的本构模型（例如线弹性或 Mohr-Coulomb 模型）运行模型生成初始应力，然后把本构模型改为 NorSand 并保留所算得的应力。由其他模型算得的应力可作为 NorSand 模型的初始应力。实现与验证的细节见 Cheng 与 Jefferies（2019）。</p>
+<p class="h3 rubric">Acknowledgment</p>
+<p>该模型的实现部分由 VALE S. A. 与 Inst. Tecnológico Vale 资助。</p>
+<p class="h3 rubric">参考文献</p>
+<p>Cheng, Z. and M. Jefferies. <span class="bi">Implementation and verification of NorSand model in general 3D framework.</span> in <span class="bi">Proceedings of Geo-Congress 2020, Minneapolis, MN</span>, ASCE (2020).</p>
+<p>Jefferies, M.G. <span class="bi">Nor-Sand: a simle critical state model for sand.</span> <em>Géotechnique</em>, 43(1), 91-103 (1993).</p>
+<p>Jefferies, M., and K. Been. <span class="bi">Soil liquefaction: a critical state approach.</span> CRC press (2015).</p>
+<p>Jefferies, M.G., and D.A. Shuttle. <span class="bi">NorSand: Features, calibration and use.</span> in <span class="bi">Soil Constitutive Models: Evaluation, Selection, and Calibration</span>, 204-236 (2005).</p>
+<p>Jefferies, M., D. Shuttle, and K. Been. <span class="bi">Principal stress rotation as cause of cyclic mobility</span>. <em>Geotechnical Research</em>, 2(2), 66-96 (2015).</p>
+<div class="line-block">
+<div class="line"><br/></div>
+<div class="line"><br/></div>
+</div>
+<p class="h3 rubric" id="norsandmodelprops"><span class="cmdkey">norsand</span> 模型性质</p>
+<p>用以下关键字配合 <a class="reference internal" href="../../../../flac3d/zone/doc/manual/zone_manual/zone_commands/cmd_zone.property.html#command:zone.property" title="Make a constitutive model(s) property assignment. Properties are name value
+pairs where the name is the keyword given in the command and the value type
+is specific to the property. The assignment will affect *any* zone whose constitutive
+model includes the property named (noting that some properties, such as  bulk ,
+for instance, appear in *many* constitutive models).  Limiting a property assignment
+to zones that have a particular constitutive model assignment is done using
+the...">设置网格单元属性（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">property</span></code>）</a> 命令设置 NorSand 模型的这些性质。</p>
+<span class="target" id="norsandprops"></span><dl class="command">
+<dt id="command:norsand">
+<span class="cmdname"><span class="hide">n</span><span class="hide">o</span><span class="hide">r</span><span class="hide">s</span><span class="hide">a</span><span class="hide">n</span><span class="hide">d</span><span class="hide"> </span></span></dt>
+<dd><dl class="keyword">
+<dt id="kwd:norsand.critical-state-1">
+<span class="cmdkey"><span class="pref">c</span><span class="null">r</span><span class="null">i</span><span class="null">t</span><span class="null">i</span><span class="null">c</span><span class="null">a</span><span class="null">l</span><span class="null">-</span><span class="pref">s</span><span class="null">t</span><span class="null">a</span><span class="null">t</span><span class="null">e</span><span class="null">-</span><span class="pref">1</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd></dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.critical-state-2">
+<span class="cmdkey"><span class="pref">c</span><span class="null">r</span><span class="null">i</span><span class="null">t</span><span class="null">i</span><span class="null">c</span><span class="null">a</span><span class="null">l</span><span class="null">-</span><span class="pref">s</span><span class="null">t</span><span class="null">a</span><span class="null">t</span><span class="null">e</span><span class="null">-</span><span class="pref">2</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd></dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.critical-state-3">
+<span class="cmdkey"><span class="pref">c</span><span class="null">r</span><span class="null">i</span><span class="null">t</span><span class="null">i</span><span class="null">c</span><span class="null">a</span><span class="null">l</span><span class="null">-</span><span class="pref">s</span><span class="null">t</span><span class="null">a</span><span class="null">t</span><span class="null">e</span><span class="null">-</span><span class="pref">3</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>临界状态参数 <span class="math">\(C_1\)</span>、<span class="math">\(C_2\)</span> 与 <span class="math">\(C_3\)</span>，即用于确定临界状态线的参数。若 <span class="math">\(C_3=0\)</span>（默认），则临界状态基于双参数方程，假定 <span class="math">\(C_1=\Gamma\)</span> 与 <span class="math">\(C_2=\gamma\)</span>；若 <span class="math">\(C_3&gt;0\)</span>，则临界状态基于三参数方程。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.factor-coupling">
+<span class="cmdkey"><span class="pref">f</span><span class="null">a</span><span class="null">c</span><span class="null">t</span><span class="null">o</span><span class="null">r</span><span class="null">-</span><span class="pref">c</span><span class="null">o</span><span class="null">u</span><span class="null">p</span><span class="null">l</span><span class="null">i</span><span class="null">n</span><span class="null">g</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>体积耦合因子 <span class="math">\(N\)</span>。默认值为 0.3。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.factor-dilatancy">
+<span class="cmdkey"><span class="pref">f</span><span class="null">a</span><span class="null">c</span><span class="null">t</span><span class="null">o</span><span class="null">r</span><span class="null">-</span><span class="pref">d</span><span class="null">i</span><span class="null">l</span><span class="null">a</span><span class="null">t</span><span class="null">a</span><span class="null">n</span><span class="null">c</span><span class="null">y</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>把最小剪胀与 TC 条件下相应 <span class="math">\(\psi\)</span> 关联的参数 <span class="math">\(\chi_{tc}\)</span>。默认值为 4.0。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.hardening-0">
+<span class="cmdkey"><span class="pref">h</span><span class="null">a</span><span class="null">r</span><span class="null">d</span><span class="null">e</span><span class="null">n</span><span class="null">i</span><span class="null">n</span><span class="null">g</span><span class="null">-</span><span class="pref">0</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p><span class="math">\(\psi=0\)</span>、<span class="math">\(H_0\)</span> 时的塑性硬化模量。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.modulus-annealing">
+<span class="cmdkey"><span class="pref">m</span><span class="null">o</span><span class="null">d</span><span class="null">u</span><span class="null">l</span><span class="null">u</span><span class="null">s</span><span class="null">-</span><span class="pref">a</span><span class="null">n</span><span class="null">n</span><span class="null">e</span><span class="null">a</span><span class="null">l</span><span class="null">i</span><span class="null">n</span><span class="null">g</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>PSR 的塑性软化模量 <span class="math">\(Z\)</span>。默认值为 0，表示不考虑 PSR 效应。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.shear-reference">
+<span class="cmdkey"><span class="pref">s</span><span class="null">h</span><span class="null">e</span><span class="null">a</span><span class="null">r</span><span class="null">-</span><span class="pref">r</span><span class="null">e</span><span class="null">f</span><span class="null">e</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">c</span><span class="null">e</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>参考剪切模量 <span class="math">\(G_{ref}\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.ratio-critical">
+<span class="cmdkey"><span class="pref">r</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">-</span><span class="pref">c</span><span class="null">r</span><span class="null">i</span><span class="null">t</span><span class="null">i</span><span class="null">c</span><span class="null">a</span><span class="null">l</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>TC 条件下临界状态的应力比 <span class="math">\(M_{tc}\)</span>。默认值为 1.2，对应临界摩擦角 30 度。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.exponent">
+<span class="cmdkey"><span class="pref">e</span><span class="null">x</span><span class="null">p</span><span class="null">o</span><span class="null">n</span><span class="null">e</span><span class="null">n</span><span class="null">t</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>定义弹性的压力相关指数 <span class="math">\(m\)</span>。默认值为 1.0。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.flag-inner">
+<span class="cmdkey"><span class="pref">f</span><span class="null">l</span><span class="null">a</span><span class="null">g</span><span class="null">-</span><span class="pref">i</span><span class="null">n</span><span class="null">n</span><span class="null">e</span><span class="null">r</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ..."><span class="varbool"><span class="null">b</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>激活内帽盖硬化的标志。默认值为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.hardening-inner">
+<span class="cmdkey"><span class="pref">h</span><span class="null">a</span><span class="null">r</span><span class="null">d</span><span class="null">e</span><span class="null">n</span><span class="null">i</span><span class="null">n</span><span class="null">g</span><span class="null">-</span><span class="pref">i</span><span class="null">n</span><span class="null">n</span><span class="null">e</span><span class="null">r</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>内帽盖硬化的塑性硬化模量值 <span class="math">\(H_i\)</span>。仅当 <em>flag-inner = :lbool:`on`</em> 时该值有意义。默认值为 5.0。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.index-softening">
+<span class="cmdkey"><span class="pref">i</span><span class="null">n</span><span class="null">d</span><span class="null">e</span><span class="null">x</span><span class="null">-</span><span class="pref">s</span><span class="null">o</span><span class="null">f</span><span class="null">t</span><span class="null">e</span><span class="null">n</span><span class="null">i</span><span class="null">n</span><span class="null">g</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>考虑 <span class="math">\(T_S\)</span> 附加软化项的指标。默认为 0。允许范围为 <span class="math">\(0 \le S \le 1\)</span>。<span class="math">\(S\)</span> 取值越大，松散砂在<em>不排水</em>剪切加载中软化越快。请注意附加项 <span class="math">\(T_S\)</span> 仍在开发中，使用 <span class="math">\(S&gt;0\)</span> 应谨慎。任何排水加载情形都不建议使用 <span class="math">\(S&gt;0\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt>
+<span class="cmdkey"><span class="pref">m</span><span class="null">o</span><span class="null">d</span><span class="null">u</span><span class="null">l</span><span class="null">u</span><span class="null">s</span><span class="null">-</span><span class="pref">a</span><span class="null">n</span><span class="null">n</span><span class="null">e</span><span class="null">a</span><span class="null">l</span><span class="null">i</span><span class="null">n</span><span class="null">g</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>PSR 的塑性软化模量 <span class="math">\(Z\)</span>。默认值为 0，表示不考虑 PSR 效应。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.over-consolidation-ratio">
+<span class="cmdkey"><span class="pref">o</span><span class="null">v</span><span class="null">e</span><span class="null">r</span><span class="null">-</span><span class="pref">c</span><span class="null">o</span><span class="null">n</span><span class="null">s</span><span class="null">o</span><span class="null">l</span><span class="null">i</span><span class="null">d</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="pref">r</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>超固结比 <span class="math">\(OCR\)</span>。默认为 1。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.hardening-y">
+<span class="cmdkey"><span class="pref">h</span><span class="null">a</span><span class="null">r</span><span class="null">d</span><span class="null">e</span><span class="null">n</span><span class="null">i</span><span class="null">n</span><span class="null">g</span><span class="null">-</span><span class="pref">y</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>另一个硬化模量参数 <span class="math">\(H_y\)</span>，使真实塑性硬化模量为 <span class="math">\(H=H_0+H_y\psi\)</span>。默认值为零。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.pressure-reference">
+<span class="cmdkey"><span class="pref">p</span><span class="null">r</span><span class="null">e</span><span class="null">s</span><span class="null">s</span><span class="null">u</span><span class="null">r</span><span class="null">e</span><span class="null">-</span><span class="pref">r</span><span class="null">e</span><span class="null">f</span><span class="null">e</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">c</span><span class="null">e</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>参考压力（通常为标准大气压）<span class="math">\(p_{atm}\)</span>。若以 kPa 计，默认值为 100.0。该参数应始终以标准大气压为参照，无需额外标定。其取值应以与模拟中其他参数一致的应力/压力单位输入。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.poisson">
+<span class="cmdkey"><span class="pref">p</span><span class="null">o</span><span class="null">i</span><span class="null">s</span><span class="null">s</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>泊松比 <span class="math">\(\nu\)</span>。默认值为 0.2。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.stress-xx-initial">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">s</span><span class="null">s</span><span class="null">-</span><span class="pref">x</span><span class="pref">x</span><span class="null">-</span><span class="pref">i</span><span class="null">n</span><span class="null">i</span><span class="null">t</span><span class="null">i</span><span class="null">a</span><span class="null">l</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">i</span>)</span><span class="null"> </span></dt>
+<dd><p>有效应力的初始 xx 分量 <span class="math">\(\sigma^0_{xx}\)</span>。该参数不会更新。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.stress-yy-initial">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">s</span><span class="null">s</span><span class="null">-</span><span class="pref">y</span><span class="pref">y</span><span class="null">-</span><span class="pref">i</span><span class="null">n</span><span class="null">i</span><span class="null">t</span><span class="null">i</span><span class="null">a</span><span class="null">l</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">i</span>)</span><span class="null"> </span></dt>
+<dd><p>有效应力的初始 yy 分量 <span class="math">\(\sigma^0_{yy}\)</span>。该参数不会更新。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.stress-zz-initial">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">s</span><span class="null">s</span><span class="null">-</span><span class="pref">z</span><span class="pref">z</span><span class="null">-</span><span class="pref">i</span><span class="null">n</span><span class="null">i</span><span class="null">t</span><span class="null">i</span><span class="null">a</span><span class="null">l</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">i</span>)</span><span class="null"> </span></dt>
+<dd><p>有效应力的初始 zz 分量 <span class="math">\(\sigma^0_{zz}\)</span>。该参数不会更新。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.stress-xy-initial">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">s</span><span class="null">s</span><span class="null">-</span><span class="pref">x</span><span class="pref">y</span><span class="null">-</span><span class="pref">i</span><span class="null">n</span><span class="null">i</span><span class="null">t</span><span class="null">i</span><span class="null">a</span><span class="null">l</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">i</span>)</span><span class="null"> </span></dt>
+<dd><p>有效应力的初始 xy 分量 <span class="math">\(\sigma^0_{xy}\)</span>。该参数不会更新。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.stress-yz-initial">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">s</span><span class="null">s</span><span class="null">-</span><span class="pref">y</span><span class="pref">z</span><span class="null">-</span><span class="pref">i</span><span class="null">n</span><span class="null">i</span><span class="null">t</span><span class="null">i</span><span class="null">a</span><span class="null">l</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">i</span>)</span><span class="null"> </span></dt>
+<dd><p>有效应力的初始 yz 分量 <span class="math">\(\sigma^0_{yz}\)</span>。该参数不会更新。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.stress-xz-initial">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">s</span><span class="null">s</span><span class="null">-</span><span class="pref">x</span><span class="pref">z</span><span class="null">-</span><span class="pref">i</span><span class="null">n</span><span class="null">i</span><span class="null">t</span><span class="null">i</span><span class="null">a</span><span class="null">l</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">i</span>)</span><span class="null"> </span></dt>
+<dd><p>有效应力的初始 xz 分量 <span class="math">\(\sigma^0_{xz}\)</span>。该参数不会更新。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.state-parameter-initial">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">a</span><span class="null">t</span><span class="null">e</span><span class="null">-</span><span class="pref">p</span><span class="null">a</span><span class="null">r</span><span class="null">a</span><span class="null">m</span><span class="null">e</span><span class="null">t</span><span class="null">e</span><span class="null">r</span><span class="null">-</span><span class="pref">i</span><span class="null">n</span><span class="null">i</span><span class="null">t</span><span class="null">i</span><span class="null">a</span><span class="null">l</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">i</span>)</span><span class="null"> </span></dt>
+<dd><p>初始状态参数 <span class="math">\(\psi_0\)</span>。若 <span class="math">\(e_0 \le 0\)</span>，则初始状态由该初始状态参数表示，<span class="math">\(e_0\)</span> 由 <span class="math">\(\psi_0\)</span> 计算。该参数不会更新。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.void-initial">
+<span class="cmdkey"><span class="pref">v</span><span class="null">o</span><span class="null">i</span><span class="null">d</span><span class="null">-</span><span class="pref">i</span><span class="null">n</span><span class="null">i</span><span class="null">t</span><span class="null">i</span><span class="null">a</span><span class="null">l</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">i</span>)</span><span class="null"> </span></dt>
+<dd><p>初始孔隙比 <span class="math">\(e_0\)</span>。若 <span class="math">\(e_0 \ge 0\)</span>，则初始状态由该初始孔隙比（而非初始状态参数）表示，<span class="math">\(\psi_0\)</span> 由 <span class="math">\(e_0\)</span> 计算。该参数不会更新。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.angle-psr">
+<span class="cmdkey"><span class="pref">a</span><span class="null">n</span><span class="null">g</span><span class="null">l</span><span class="null">e</span><span class="null">-</span><span class="pref">p</span><span class="pref">s</span><span class="pref">r</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>最大主应力方向与 z 坐标参考系之间的当前夹角 <span class="math">\(\alpha\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.bulk">
+<span class="cmdkey"><span class="pref">b</span><span class="null">u</span><span class="null">l</span><span class="null">k</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>当前弹性体积模量 <span class="math">\(K\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.shear">
+<span class="cmdkey"><span class="pref">s</span><span class="null">h</span><span class="null">e</span><span class="null">a</span><span class="null">r</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>当前弹性剪切模量 <span class="math">\(G\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.ratio-image">
+<span class="cmdkey"><span class="pref">r</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">-</span><span class="pref">i</span><span class="null">m</span><span class="null">a</span><span class="null">g</span><span class="null">e</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>TC 条件下映象状态的当前应力比 <span class="math">\(M_{i,tc}\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.stress-image">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">s</span><span class="null">s</span><span class="null">-</span><span class="pref">i</span><span class="null">m</span><span class="null">a</span><span class="null">g</span><span class="null">e</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>当前映象应力 <span class="math">\(p_i\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.stress-image-maximum">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">s</span><span class="null">s</span><span class="null">-</span><span class="pref">i</span><span class="null">m</span><span class="null">a</span><span class="null">g</span><span class="null">e</span><span class="null">-</span><span class="pref">m</span><span class="null">a</span><span class="null">x</span><span class="null">i</span><span class="null">m</span><span class="null">u</span><span class="null">m</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>当前允许的最大映象应力 <span class="math">\(p_{i,max}\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.state-parameter">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">a</span><span class="null">t</span><span class="null">e</span><span class="null">-</span><span class="pref">p</span><span class="null">a</span><span class="null">r</span><span class="null">a</span><span class="null">m</span><span class="null">e</span><span class="null">t</span><span class="null">e</span><span class="null">r</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>当前状态参数 <span class="math">\(\psi\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.state-parameter-image">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">a</span><span class="null">t</span><span class="null">e</span><span class="null">-</span><span class="pref">p</span><span class="null">a</span><span class="null">r</span><span class="null">a</span><span class="null">m</span><span class="null">e</span><span class="null">t</span><span class="null">e</span><span class="null">r</span><span class="null">-</span><span class="pref">i</span><span class="null">m</span><span class="null">a</span><span class="null">g</span><span class="null">e</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>用于映象应力的当前状态参数 <span class="math">\(\psi_i\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:norsand.void">
+<span class="cmdkey"><span class="pref">v</span><span class="null">o</span><span class="null">i</span><span class="null">d</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>当前孔隙比 <span class="math">\(e\)</span>。</p>
+</dd></dl>
+<p><strong>图例</strong></p>
+<dl class="docutils">
+<dt>(a) 高级属性。</dt>
+<dd>该属性具有默认值；在较简单的模型应用中，无需专门赋值。</dd>
+<dt>(i) 初始性质。</dt>
+<dd>该性质一旦初始化（首次输入）便不再更新。</dd>
+<dt>(r) 只读属性。</dt>
+<dd>该属性不能由用户设置，但可以列出、绘图显示，或通过 <span class="codename">FISH</span> 访问。</dd>
+</dl>
+</dd></dl>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../docproject/source/manual/program_guide/program_guide.html">程序指南</a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../docproject/source/manual/program_guide/models/models.html">Constitutive Models</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../../../docproject/source/manual/program_guide/models/theory/plasticmodel.html">Plastic Model Group</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../../softsoil/doc/modelsoftsoil.html" title="previous chapter"> Soft-Soil Model*</a> |    
+       <a href="../../../docproject/source/manual/program_guide/models/creep/creep.html" title="next chapter">Creep Constitutive Models in <span class="codename">3DEC</span> and <span class="codename">FLAC3D</span></a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?NorSand Model*" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../_static/icgscripts.js"></script>
+</body>
+</html>

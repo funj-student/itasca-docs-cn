@@ -1,0 +1,695 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>双线性应变软化/硬化遍布节理（SUBI）模型 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../search.html" rel="search" title="Search"/>
+<link href="../../doubley/doc/modeldoubley.html" rel="next" title="Double-Yield Model"/>
+<link href="../../ssoft/doc/modelssoft.html" rel="prev" title="Strain-Softening/Hardening Mohr-Coulomb (SSoft) Model"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="hide sectionname docutils container">
+<span class="codename">FLAC3D</span> Theory and Background • Constitutive Models</div>
+<div class="section" id="bilinear-strain-softening-hardening-ubiquitous-joint-subi-model">
+<span id="modelsubi"></span><h1>双线性应变软化/硬化遍布节理（SUBI）模型</h1>
+<p>双线性应变软化/硬化遍布节理（简称 SUBI）模型是 <a class="reference internal" href="../../ubiquit/doc/modelubiquit.html#modelubiquit"><span class="std std-ref">遍布节理模型</span>（ubiquitous-joint model）</a> 的推广。双线性模型中，基质与节理的破坏包络是两个 <a class="reference internal" href="../../mohr/doc/modelmohr.html#modelmohr"><span class="std std-ref">Mohr-Coulomb 模型</span>（Mohr-Coulomb model）</a> 准则与拉伸截断的复合，可按指定法则硬化或软化。剪切塑性流动采用非关联流动法则，拉伸塑性流动采用关联流动法则。</p>
+<p>基质与节理的软化行为以表格给出，用四个独立硬化参数（基质两个、节理两个）分别度量塑性剪切应变与拉伸应变量。在该数值模型中，先判别该步的整体破坏并施加相应塑性修正，随后分析新应力在软弱面上的破坏并据此更新。若发生塑性流动则递增硬化参数，并用表格调整基质与节理的黏聚力、摩擦、剪胀与抗拉强度。</p>
+<p class="h3 rubric">公式</p>
+<p class="h4 rubric">基质的破坏准则与流动法则</p>
+<p>该模型所用基质破坏准则示意于 <a href="#modelsubi-1">图 1（Figure  1）</a> 的主应力平面 <span class="math">\(({\sigma}_1,{\sigma}_3)\)</span> 中。（注意压应力为负，且按约定 <span class="math">\({\sigma}_1 \leq {\sigma}_2 \leq {\sigma}_3\)</span>。）</p>
+<p>破坏包络由两个 Mohr-Coulomb 破坏准则（线段 <span class="math">\(A-B\)</span> 与 <span class="math">\(B-C\)</span> 上 <span class="math">\(f_2^s\)</span> = 0 与 <span class="math">\(f_1^s\)</span> = 0）以及线段 <span class="math">\(C-D\)</span> 上的拉伸破坏准则 <span class="math">\(f^t\)</span> = 0 定义。</p>
+<p>剪切破坏准则具有一般形式 <span class="math">\(f^s\)</span> = 0。线段 <span class="math">\(A-B\)</span> 上由黏聚力 <span class="math">\(c_2\)</span> 与摩擦角 <span class="math">\(\phi_2\)</span> 表征，线段 <span class="math">\(B-C\)</span> 上由黏聚力 <span class="math">\(c_1\)</span> 与摩擦角 <span class="math">\(\phi_1\)</span> 表征。拉伸破坏准则由抗拉强度 <span class="math">\(\sigma^t\)</span>（正值）指定；于是有</p>
+<div class="math" id="equation-modelsubieqfs">
+<span class="eqno">(1)</span>\[ f^s = {\sigma}_1 - {\sigma}_3 \ N_{\phi} + 2c \sqrt{N_{\phi}}\]</div>
+<div class="math" id="equation-modelsubieqft">
+<span class="eqno">(2)</span>\[ f^t = {\sigma}_3 - {\sigma}^t\]</div>
+<p>其中</p>
+<div class="math" id="equation-modelsubieqnphi">
+<span class="eqno">(3)</span>\[ N_{\phi} = {{1 + \sin(\phi)}\over{1 - \sin(\phi)}}\]</div>
+<p>注意拉伸截断作用于剪切包络的线段 <span class="math">\(B-C\)</span>；对摩擦角 <span class="math">\(\phi_1\)</span> 非零的材料，抗拉强度的最大值为</p>
+<div class="math" id="equation-modelsubieqsmaxt">
+<span class="eqno">(4)</span>\[ {{\sigma}^t}_{max} = {{c_1}\over{\tan \phi_1}}\]</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id1">
+<span id="modelsubi-1"></span><a class="reference internal image-reference" href="../../../../_images/modelsubi-1.png"><img alt="../../../../_images/modelsubi-1.png" src="../../../../_images/modelsubi-1.png" style="width: 500px;"/></a>
+<p class="caption"><span class="caption-text">图 1：<span class="codename">FLAC3D</span> 双线性基质破坏准则。</span></p>
+</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p>模型表述中，先由总应变增量计算该步应力的弹性试探。若相应应力点 <span class="math">\((\sigma_1^I,\sigma_3^I)\)</span> 落在 <a href="#modelsubi-1">图 1（Figure  1）</a> 中破坏面表示之外，则判定塑性屈服。此时必须对弹性试探施加应力修正，其确定方式是允许塑性流动发生，以恢复 <span class="math">\(f_2^s\)</span> = 0、<span class="math">\(f_1^s\)</span> = 0 或 <span class="math">\(f^t\)</span> = 0（视应力点位于 <span class="math">\(A-B\)</span>、<span class="math">\(B-C\)</span> 或 <span class="math">\(C-D\)</span> 之上而定）。（在 <span class="math">\(B\)</span> 与 <span class="math">\(C\)</span> 处用角平分线划分归属于屈服面特定线段的破坏域。）</p>
+<p>按通常假定，总应变增量可分解为弹性与塑性部分。塑性屈服的流动法则形式为</p>
+<div class="math" id="equation-modelsubieqdep">
+<span class="eqno">(5)</span>\[ \Delta \epsilon_i^p = \lambda {{\partial g}\over{\partial {\sigma}_i}}\]</div>
+<p>其中 <span class="math">\(i\)</span> = 1,3。剪切屈服的势函数 <span class="math">\(g\)</span> 为 <span class="math">\(g^s\)</span>。该函数对应非关联法则，</p>
+<div class="math" id="equation-modelsubieqgs">
+<span class="eqno">(6)</span>\[ g^s = {\sigma}_1 - {\sigma}_3 N_{\psi}\]</div>
+<p>其中剪胀角 <span class="math">\(\psi\)</span> 在沿 <span class="math">\(A-B\)</span> 破坏时等于 <span class="math">\(\psi_2\)</span>，沿 <span class="math">\(B-C\)</span> 时等于 <span class="math">\(\psi_1\)</span>，且</p>
+<div class="math" id="equation-modelsubieqnpsi">
+<span class="eqno">(7)</span>\[ N_{\psi} = {{1 + \sin(\psi)}\over{1 - \sin(\psi)}}\]</div>
+<p>拉伸屈服的势函数为 <span class="math">\(g^t\)</span>，对应关联流动法则，</p>
+<div class="math" id="equation-modelsubieqgt">
+<span class="eqno">(8)</span>\[ g^t = {\sigma}_3\]</div>
+<p>剪切破坏的塑性应变增量形式为</p>
+<div class="math" id="equation-modelsubieqdeps">
+<span class="eqno">(9)</span>\[\begin{split} \begin{matrix}
+     \Delta {\epsilon}_{1}^{p_s} = {\lambda}^s \\
+       \\
+     \Delta {\epsilon}_{2}^{p_s} = 0 \\
+       \\
+     \Delta {\epsilon}_{3}^{p_s} = - {\lambda}^s N_{\psi}
+ \end{matrix}\end{split}\]</div>
+<p>剪切破坏的应力修正为</p>
+<div class="math" id="equation-modelsubieqdss">
+<span class="eqno">(10)</span>\[\begin{split} \begin{matrix}
+     \Delta {\sigma}_1 = - {\lambda}^s ({\alpha}_1 - {\alpha}_2 N_{\psi}) \\
+       \\
+     \Delta {\sigma}_2 = - {\lambda}^s {\alpha}_2 (1 - N_{\psi}) \\
+       \\
+     \Delta {\sigma}_3 = - {\lambda}^s (-{\alpha}_1 N_{\psi} + {\alpha}_2)
+ \end{matrix}\end{split}\]</div>
+<p>其中</p>
+<div class="math" id="equation-modelsubieqlambdas">
+<span class="eqno">(11)</span>\[ {\lambda}^s = {{{\sigma}_1^I - {\sigma}_3^I \ N_{\phi} + 2c \sqrt{N_{\phi}}}\over{({\alpha}_1 - {\alpha}_2\ N_{\psi}) - (-{\alpha}_1\ N_{\psi} + {\alpha}_2)\ N_{\phi}}}\]</div>
+<p>并且按定义：</p>
+<div class="math" id="equation-modelsubieqds">
+<span class="eqno">(12)</span>\[\begin{split} \begin{matrix}
+     {\alpha}_1 = K + {{4}\over{3}}\ G \\
+        \\
+     {\alpha}_2 = K - {{2}\over{3}}\ G
+ \end{matrix}\end{split}\]</div>
+<p>反过来，拉伸破坏的塑性应变增量形式为</p>
+<div class="math" id="equation-modelsubieqdept">
+<span class="eqno">(13)</span>\[\begin{split} \begin{matrix}
+     \Delta {\epsilon}_{1}^{p_t} = 0 \\
+       \\
+     \Delta {\epsilon}_{2}^{p_t} = 0 \\
+       \\
+     \Delta {\epsilon}_{3}^{p_t} = {\lambda}^t
+ \end{matrix}\end{split}\]</div>
+<p>拉伸破坏的应力修正为</p>
+<div class="math" id="equation-modelsubieqdspt">
+<span class="eqno">(14)</span>\[\begin{split} \begin{matrix}
+     \Delta {\sigma}_1 = - {\lambda}^t {\alpha}_2 \\
+        \\
+     \Delta {\sigma}_2 = - {\lambda}^t {\alpha}_2 \\
+        \\
+     \Delta {\sigma}_3 = - {\lambda}^t {\alpha}_1
+ \end{matrix}\end{split}\]</div>
+<p>其中</p>
+<div class="math" id="equation-modelsubieqlambdat">
+<span class="eqno">(15)</span>\[ {\lambda}^t = {{{\sigma}_3^I-{\sigma}^t}\over{{\alpha}_1}}\]</div>
+<p class="h4 rubric">软弱面的破坏准则与流动法则</p>
+<p>经基质塑性流动修正后的应力被分解为平行与垂直于软弱面的分量，并检验遍布节理破坏。破坏准则以软弱面上切向牵引分量大小 <span class="math">\(\tau = \sqrt{{{\sigma}_{1'3'}}^2  + {{\sigma}_{2'3'}}^2}\)</span> 与法向牵引分量 <span class="math">\(\sigma_{3'3'}\)</span> 表示。</p>
+<p>破坏准则示于 <a href="#modelsubi-1">图 1（Figure  1）</a>，对应两个 Mohr-Coulomb 破坏准则（线段 <span class="math">\(A-B\)</span> 上 <span class="math">\(f_2^s\)</span> = 0，线段 <span class="math">\(B-C\)</span> 上 <span class="math">\(f_1^s\)</span> = 0）与一个拉伸破坏准则（线段 <span class="math">\(C-D\)</span> 上 <span class="math">\(f^t\)</span> = 0）。各剪切准则具有一般形式 <span class="math">\(f^s\)</span> = 0，并由黏聚力与摩擦角 <span class="math">\(c_j, \phi_j\)</span> 表征：沿线段 <span class="math">\(A-B\)</span> 等于 <span class="math">\(c_{j_2}, \phi_{j_2}\)</span>，沿 <span class="math">\(B-C\)</span> 等于 <span class="math">\(c_{j_1}, \phi_{j_1}\)</span>。拉伸准则由抗拉强度 <span class="math">\(\sigma_j^t\)</span>（正值）指定。于是有</p>
+<div class="math" id="equation-modelsubieqjfs">
+<span class="eqno">(16)</span>\[ f^s = \tau + {\sigma}_{3'3'} \ \tan {\phi}_{j} - c_{j}\]</div>
+<div class="math" id="equation-modelsubieqjft">
+<span class="eqno">(17)</span>\[ f^t = {\sigma}_{3'3'} - {\sigma}_j^t\]</div>
+<p>注意对摩擦角非零的软弱面 <span class="math">\({\phi}_{j_1}\)</span>，抗拉强度的最大值为</p>
+<div class="math" id="equation-modelsubieqjsmaxt">
+<span class="eqno">(18)</span>\[ {{\sigma}_j^t}_{max} = {{c_{j_1}}\over{\tan {\phi}_{j_1}}}\]</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<div class="figure align-center" id="id2">
+<span id="modelsubi-2"></span><a class="reference internal image-reference" href="../../../../_images/modelsubi-2.png"><img alt="../../../../_images/modelsubi-2.png" src="../../../../_images/modelsubi-2.png" style="width: 500px;"/></a>
+<p class="caption"><span class="caption-text">图 2：<span class="codename">FLAC3D</span> 双线性节理破坏准则。</span></p>
+</div>
+<div class="line-block">
+<div class="line"><br/></div>
+</div>
+<p>屈服判别与应力修正采用与基质情形所述相似的技术。</p>
+<p>此处塑性屈服的流动法则形式为</p>
+<div class="math" id="equation-modelsubieqjdeps">
+<span class="eqno">(19)</span>\[\begin{split} \begin{matrix}
+     \Delta {\epsilon}_{3'3'}^{p_s} = {\lambda} {{\partial g}\over{\partial {\sigma}_{3'3'}}} \\
+       \\
+     \Delta {\gamma}^{p_s} = {\lambda} {{\partial g}\over{\partial \tau}}
+ \end{matrix}\end{split}\]</div>
+<p>其中 <span class="math">\(\gamma\)</span> 为与 <span class="math">\(\tau\)</span> 关联的应变变量，且有</p>
+<div class="math" id="equation-modelsubieqjdshear">
+<span class="eqno">(20)</span>\[ \Delta \gamma^{p_s} = \sqrt{{\Delta {\epsilon}_{1'3'}^{p_s}}^2  + {\Delta {\epsilon}_{2'3'}^{p_s}}^2}\]</div>
+<p>软弱面上剪切屈服的势函数 <span class="math">\(g\)</span> 为 <span class="math">\(g^s\)</span>，对应非关联法则，</p>
+<div class="math" id="equation-modelsubieqjgs">
+<span class="eqno">(21)</span>\[ g^s = \tau + {\sigma}_{3'3'} \tan {\psi_j}\]</div>
+<p>其中剪胀角 <span class="math">\(\psi_j\)</span> 在沿 <span class="math">\(A-B\)</span> 破坏时等于 <span class="math">\(\psi_{j_2}\)</span>，沿 <span class="math">\(B-C\)</span> 时等于 <span class="math">\(\psi_{j_1}\)</span>。</p>
+<p>软弱面上拉伸屈服的势函数 <span class="math">\(g\)</span> 为 <span class="math">\(g^t\)</span>，对应关联流动法则，</p>
+<div class="math" id="equation-modelsubieqjgt">
+<span class="eqno">(22)</span>\[ g^t = {\sigma}_{3'3'}\]</div>
+<p>剪切破坏的局部塑性应变增量满足</p>
+<div class="math" id="equation-modelsubieqjdeps33taus">
+<span class="eqno">(23)</span>\[\begin{split}\begin{matrix}
+     \Delta {\epsilon}_{3'3'}^{p_s} = {\lambda}^s \tan {{\psi}_j} \\
+       \\
+     \Delta {\gamma}^{p_s} = {\lambda}^s
+ \end{matrix}\end{split}\]</div>
+<p>剪切破坏的应力修正为</p>
+<div class="math" id="equation-modelsubieqjdsall2233tau">
+<span class="eqno">(24)</span>\[\begin{split}\begin{matrix}
+   \Delta {\sigma}_{1'1'} = - {\lambda}^s {\alpha}_2 \tan {{\psi}_j} \\
+     \\
+   \Delta {\sigma}_{2'2'} = - {\lambda}^s {\alpha}_2 \tan {{\psi}_j} \\
+     \\
+   \Delta {\sigma}_{3'3'} = - {\lambda}^s {\alpha}_1 \tan {{\psi}_j} \\
+     \\
+   \Delta \tau = - {\lambda}^s 2G
+ \end{matrix}\end{split}\]</div>
+<p>其中</p>
+<div class="math" id="equation-modelsubieqjlambdas">
+<span class="eqno">(25)</span>\[ {\lambda}^s = {{{\tau}^O + {\sigma}_{3'3'}^O \ \tan {\phi}_{j} - c_{j}}\over{2G + {\alpha}_1 \tan {\psi}_j \tan {\phi}_j}}\]</div>
+<p>且上标 <span class="math">\(^O\)</span> 表示刚在判别出软弱面破坏之前所得的值。</p>
+<p>软弱面上局部剪应力分量的塑性修正通过缩放导出：</p>
+<div class="math" id="equation-modelsubieqjds1323">
+<span class="eqno">(26)</span>\[\begin{split}\begin{matrix}
+    \Delta {\sigma}_{1'3'} = \Delta \tau {{\sigma_{1'3'}^O}\over{\tau^O}} \\
+       \\
+    \Delta {\sigma}_{2'3'} = \Delta \tau {{\sigma_{2'3'}^O}\over{\tau^O}}
+ \end{matrix}\end{split}\]</div>
+<p>反过来，拉伸破坏的局部塑性应变增量形式为</p>
+<div class="math" id="equation-modelsubieqjdeps33taut">
+<span class="eqno">(27)</span>\[\begin{split}\begin{matrix}
+   \Delta {\epsilon}_{3'3'}^{p_t} = {\lambda}^t \\
+     \\
+   \Delta \gamma^{p_t} = 0
+ \end{matrix}\end{split}\]</div>
+<p>拉伸破坏的应力修正为</p>
+<div class="math" id="equation-modelsubieqjds112233t">
+<span class="eqno">(28)</span>\[\begin{split}\begin{matrix}
+    \Delta {\sigma}_{1'1'} = - {\lambda}^t {\alpha}_2  \\
+       \\
+    \Delta {\sigma}_{2'2'} = - {\lambda}^t {\alpha}_2 \\
+       \\
+    \Delta {\sigma}_{3'3'} = - {\lambda}^t {\alpha}_1
+ \end{matrix}\end{split}\]</div>
+<p>其中</p>
+<div class="math" id="equation-modelsubieqjlambdat">
+<span class="eqno">(29)</span>\[ {\lambda}^t = {{{\sigma}_{3'3'}^O-{\sigma}_j^t}\over{{\alpha}_1}}\]</div>
+<p class="h4 rubric">方位的大应变更新</p>
+<p>大应变下软弱面的方位按网格单元调整，以计入刚体转动与变形引起的转动。<a class="reference internal" href="../../ubiquit/doc/modelubiquit.html#largestrainupdate2orientation"><span class="std std-ref">方位的大应变更新</span>（large-strain update to orientation）</a> 与 <a class="reference internal" href="../../ubiquit/doc/modelubiquit.html#modelubiquit"><span class="std std-ref">遍布节理模型</span>（ubiquitous-joint model）</a> 中所述相同。</p>
+<p class="h4 rubric">硬化参数</p>
+<p>在双线性应变软化/硬化遍布节理模型中，塑性开始后基质与节理的某些或全部网格单元屈服参数（即黏聚力、摩擦、剪胀与抗拉强度）按输入中以硬化参数取值范围规定的分段线性法则自动改变。（见 <a class="reference internal" href="../../ssoft/doc/modelssoft.html#modelssoft"><span class="std std-ref">应变软化/硬化模型</span>（strain-softening/hardening model）</a> 中 <a class="reference internal" href="../../ssoft/doc/modelssoft.html#userdefinedfunctions4tables"><span class="std std-ref">用户定义函数</span>（user-defined functions）</a> 一节。）必须在 <a class="reference internal" href="../../../../flac3d/zone/doc/manual/zone_manual/zone_commands/cmd_zone.property.html#command:zone.property" title="Make a constitutive model(s) property assignment. Properties are name value
+pairs where the name is the keyword given in the command and the value type
+is specific to the property. The assignment will affect *any* zone whose constitutive
+model includes the property named (noting that some properties, such as  bulk ,
+for instance, appear in *many* constitutive models).  Limiting a property assignment
+to zones that have a particular constitutive model assignment is done using
+the...">设置网格单元属性（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">property</span></code>）</a>（<span class="codename">FLAC3D</span>）或 <a class="reference internal" href="../../../../3dec/block/doc/manual/block_manual/block_commands/block.zone/cmd_block.zone.property.html#command:block.zone.property" title="Make a constitutive model(s) property assignment. Properties are name value
+pairs where the name is the keyword given in the command and the value type
+is specific to the property...">设置块体网格单元属性（<code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">zone</span> <span class="pre">property</span></code>）</a>（<span class="codename">3DEC</span>）命令中为每个软化参数指定表格编号。（若未指定表格性质编号，则该参数取为常数。）相应表格数据含参数值与性质值的数值对，其间假定线性变化。对超出表格中所指定最后一个硬化参数值的取值，使用最后一个性质值。</p>
+<p>本模型使用四个独立的硬化参数：</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><span class="math">\({\kappa}^s\)</span> 度量基质塑性剪应变，用于更新基质黏聚力、摩擦与剪胀；</li>
+<li><span class="math">\({\kappa}^t\)</span> 度量基质塑性体积拉应变，用于更新基质抗拉强度；</li>
+<li><span class="math">\({\kappa}_j^s\)</span> 估算节理塑性剪应变，并控制节理黏聚力、摩擦与剪胀的更新；以及</li>
+<li><span class="math">\({\kappa}_j^t\)</span> 计算节理塑性体积拉应变，并控制节理抗拉强度的更新。</li>
+</ol>
+</div></blockquote>
+<p>这些参数定义为网格单元塑性应变增量度量的累积。网格单元硬化增量按网格单元所含全部四面体上硬化增量的体积平均计算。</p>
+<p>四面体的剪切硬化增量是该步塑性剪切应变偏量增量张量第二不变量的平方根。对基质，给出为</p>
+<div class="math" id="equation-modelsubipssincr">
+<span class="eqno">(30)</span>\[ \Delta {\kappa}^s = {{1}\over{\sqrt 2}} \sqrt{(\Delta {\epsilon}_1^{p_s} - \Delta {\epsilon}_m^{p_s})^2 + (\Delta {\epsilon}_m^{p_s})^2 + (\Delta {\epsilon}_3^{p_s} - \Delta {\epsilon}_m^{p_s})^2}\]</div>
+<p>其中 <span class="math">\(\Delta {\epsilon}_m^{p_s}\)</span> 为平均塑性应变增量，</p>
+<div class="math" id="equation-modelsubipvsincr">
+<span class="eqno">(31)</span>\[ \Delta {\epsilon}_m^{p_s} = {{1}\over{3}} (\Delta {\epsilon}_1^{p_s} + \Delta {\epsilon}_3^{p_s})\]</div>
+<p>而塑性应变增量由公式 <a class="reference internal" href="#equation-modelsubieqdeps">(9)</a> 给出，其中 <span class="math">\({\lambda}^s\)</span> 用公式 <a class="reference internal" href="#equation-modelsubieqlambdas">(11)</a>。</p>
+<p>对节理，公式为</p>
+<div class="math" id="equation-modelsubijpssincr">
+<span class="eqno">(32)</span>\[ \Delta {\kappa}_j^s = \sqrt{ {{1}\over{3}} (\Delta {\epsilon}_{3'3'}^{p_s})^2 + (\Delta {\epsilon}_{1'3'}^{p_s})^2 + (\Delta {\epsilon}_{2'3'}^{p_s})^2 }\]</div>
+<p>其中塑性应变增量由公式 <a class="reference internal" href="#equation-modelsubieqjdeps33taus">(23)</a> 给出（见公式 <a class="reference internal" href="#equation-modelsubieqjdshear">(20)</a>），<span class="math">\({\lambda}^s\)</span> 采用形式 <a class="reference internal" href="#equation-modelsubieqjlambdas">(25)</a>。</p>
+<p>四面体拉伸硬化增量为塑性体积拉应变增量。</p>
+<p>对基质，有</p>
+<div class="math" id="equation-modelsubiptsincr">
+<span class="eqno">(33)</span>\[ \Delta {\kappa}^t = \Delta {\epsilon}_3^{p_t}\]</div>
+<p>其中塑性应变增量由公式 <a class="reference internal" href="#equation-modelsubieqdept">(13)</a> 给出，<span class="math">\({\lambda}^t\)</span> 用公式 <a class="reference internal" href="#equation-modelsubieqlambdat">(15)</a>。</p>
+<p>对节理，其表达式为</p>
+<div class="math" id="equation-modelsubijptsincr">
+<span class="eqno">(34)</span>\[ \Delta {\kappa}_j^t = \Delta {\epsilon}_{3'3'}^{p_t}\]</div>
+<p>其中塑性应变增量由公式 <a class="reference internal" href="#equation-modelsubieqjdeps33taut">(27)</a> 给出，<span class="math">\({\lambda}^t\)</span> 用公式 <a class="reference internal" href="#equation-modelsubieqjlambdat">(29)</a>。</p>
+<p class="h3 rubric">实现步骤</p>
+<p><span class="codename">FLAC3D</span> 中双线性模型的实现按上述进行。先由该步应力增量（对总应变增量 <span class="math">\(\Delta {\epsilon}_{ij}\)</span> 应用虎克定律求得）得到弹性试探 <span class="math">\({\sigma}_{ij}^I\)</span>。计算并排序主应力，使 <span class="math">\({\sigma}_1^I \leq {\sigma}_2^I \leq {\sigma}_3^I\)</span>，并用公式 <a class="reference internal" href="#equation-modelsubieqfs">(1)</a> 与 <a class="reference internal" href="#equation-modelsubieqft">(2)</a> 定义的屈服准则检验基质破坏。原则上，若应力点 <span class="math">\((\sigma_1^I,\sigma_3^I)\)</span> 的表示落在 <a href="#modelsubi-1">图 1（Figure  1）</a> 中屈服面之外，则判定为基质破坏。此时对弹性试探的主值施加应力修正，修正量取决于应力点位于 <span class="math">\(A-B\)</span>、<span class="math">\(B-C\)</span> 还是 <span class="math">\(C-D\)</span> 之上。（在 <span class="math">\(B\)</span> 与 <span class="math">\(C\)</span> 处用角平分线划分归属于屈服面特定线段的破坏域。）</p>
+<p>基质剪切破坏的应力修正由公式 <a class="reference internal" href="#equation-modelsubieqdss">(10)</a> 与 <a class="reference internal" href="#equation-modelsubieqlambdas">(11)</a> 给出，其中黏聚力 <span class="math">\(c\)</span>、摩擦 <span class="math">\(\phi\)</span> 与剪胀 <span class="math">\(\psi\)</span> 参数在沿 <span class="math">\(A-B\)</span> 破坏时取 <span class="math">\(c_2, \phi_2, \psi_2\)</span>，在沿 <span class="math">\(B-C\)</span> 破坏时取 <span class="math">\(c_1, \phi_1,\psi_1\)</span>。</p>
+<p>基质拉伸破坏的应力修正由公式 <a class="reference internal" href="#equation-modelsubieqdspt">(14)</a> 与 <a class="reference internal" href="#equation-modelsubieqlambdat">(15)</a> 给出。</p>
+<p>随后假定塑性流动期间主方向不变，由修正后的主值计算参考轴系中的应力张量分量 <span class="math">\({\sigma}_{ij}^O\)</span>。</p>
+<p>软弱面上的局部牵引分量定义为 <span class="math">\({\sigma}_{3'3'}\)</span> 与 <span class="math">\(\tau\)</span>，其中 <span class="math">\({\sigma}_{3'3'}\)</span> 为法向分量，<span class="math">\(\tau = \sqrt{{{\sigma}_{1'3'}}^2 + {{\sigma}_{2'3'}}^2}\)</span> 为切向牵引分量的大小。（局部轴 1 沿倾向，2 沿走向，3 为软弱面法向。）这些应力由 <span class="math">\({\sigma}_{ij}^O\)</span> 分解得到，并用屈服准则（公式 <a class="reference internal" href="#equation-modelsubieqjfs">(16)</a> 与 <a class="reference internal" href="#equation-modelsubieqjft">(17)</a>）检验遍布节理破坏。原则上，若应力点 <span class="math">\((\sigma_{3'3'}^O,\tau^O)\)</span> 的表示落在 <a href="#modelsubi-2">图 2（Figure  2）</a> 中屈服面之外，则判定为遍布节理破坏。此时施加局部应力修正，修正量取决于应力点在 <span class="math">\(A-B\)</span>、<span class="math">\(B-C\)</span> 或 <span class="math">\(C-D\)</span> 附近的位置。（在 <span class="math">\(B\)</span> 与 <span class="math">\(C\)</span> 处用角平分线划分归属于屈服面特定线段的破坏域。）</p>
+<p>节理剪切破坏的应力修正由公式 <a class="reference internal" href="#equation-modelsubieqjdsall2233tau">(24)</a> 到 <a class="reference internal" href="#equation-modelsubieqjds1323">(26)</a> 给出，其中黏聚力 <span class="math">\(c_j\)</span>、摩擦 <span class="math">\(\phi_j\)</span> 与剪胀 <span class="math">\(\psi_j\)</span> 参数在沿 <span class="math">\(A-B\)</span> 破坏时取 <span class="math">\(c_{j_2}, \phi_{j_2}, \psi_{j_2}\)</span>，在沿 <span class="math">\(B-C\)</span> 破坏时取 <span class="math">\(c_{j_1}, \phi_{j_1}, \psi_{j_1}\)</span>。</p>
+<p>节理拉伸破坏的应力修正由公式 <a class="reference internal" href="#equation-modelsubieqjds112233t">(28)</a> 与 <a class="reference internal" href="#equation-modelsubieqjlambdat">(29)</a> 给出。</p>
+<p>最后把局部应力分量转回全局轴。</p>
+<p>大应变模式下，按网格单元调整软弱面的单位法向，以计入物体转动。</p>
+<p>确定该步新应力后，用公式 <a class="reference internal" href="#equation-modelsubipssincr">(30)</a>、<a class="reference internal" href="#equation-modelsubijpssincr">(32)</a>、<a class="reference internal" href="#equation-modelsubiptsincr">(33)</a> 与 <a class="reference internal" href="#equation-modelsubijptsincr">(34)</a> 递增硬化参数。随后用这些参数从可用输入表格确定基质与节理的黏聚力、摩擦、剪胀与抗拉强度新值。</p>
+<p>假定材料抗拉强度永不增大。此外对有摩擦的材料，该值不超过最大值 <span class="math">\({\sigma}_{max}^t\)</span> 或 <span class="math">\({{\sigma}_j^t}_{max}\)</span>（见公式 <a class="reference internal" href="#equation-modelsubieqsmaxt">(4)</a> 与 <a class="reference internal" href="#equation-modelsubieqjsmaxt">(18)</a>）。</p>
+<p>注意默认情况下基质与节理中的屈服模型都是线性的，此时只识别屈服曲线的第 1 段（其中 <span class="math">\(f_1^s\)</span> = 0）与第 3 段（其中 <span class="math">\(f^t\)</span> = 0）（即便为第 2 段（其中 <span class="math">\(f_2^s\)</span> = 0）赋予了性质）。要激活双线性法则，必须把性质 <span class="cmdkey">flag-bilinear</span> 和/或性质 <span class="cmdkey">flag-bilinear-joint</span> 设为 1。</p>
+<p>此外，若第 1 段与第 2 段的摩擦角变得相等，则模型被视为线性，第 2 段将被忽略（视情况针对基质和/或节理）。若第 1 段与第 2 段的交点对应违反拉伸准则的应力点，第 2 段也将被忽略。</p>
+<div class="line-block">
+<div class="line"><br/></div>
+<div class="line"><br/></div>
+</div>
+<p class="h3 rubric" id="softeningubiquitousmodelprops"><span class="cmdkey">softening-ubiquitous</span> 模型性质</p>
+<p>用以下关键字配合 <a class="reference internal" href="../../../../flac3d/zone/doc/manual/zone_manual/zone_commands/cmd_zone.property.html#command:zone.property" title="Make a constitutive model(s) property assignment. Properties are name value
+pairs where the name is the keyword given in the command and the value type
+is specific to the property. The assignment will affect *any* zone whose constitutive
+model includes the property named (noting that some properties, such as  bulk ,
+for instance, appear in *many* constitutive models).  Limiting a property assignment
+to zones that have a particular constitutive model assignment is done using
+the...">设置网格单元属性（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">property</span></code>）</a>（<span class="codename">FLAC3D</span>）或 <a class="reference internal" href="../../../../3dec/block/doc/manual/block_manual/block_commands/block.zone/cmd_block.zone.property.html#command:block.zone.property" title="Make a constitutive model(s) property assignment. Properties are name value
+pairs where the name is the keyword given in the command and the value type
+is specific to the property...">设置块体网格单元属性（<code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">zone</span> <span class="pre">property</span></code>）</a>（<span class="codename">3DEC</span>）命令设置双线性应变软化/硬化遍布节理模型的这些性质。</p>
+<span class="target" id="softeningubiquitousjointprops"></span><dl class="command">
+<dt id="command:softening-ubiquitous">
+<span class="cmdname"><span class="hide">s</span><span class="hide">o</span><span class="hide">f</span><span class="hide">t</span><span class="hide">e</span><span class="hide">n</span><span class="hide">i</span><span class="hide">n</span><span class="hide">g</span><span class="hide">-</span><span class="hide">u</span><span class="hide">b</span><span class="hide">i</span><span class="hide">q</span><span class="hide">u</span><span class="hide">i</span><span class="hide">t</span><span class="hide">o</span><span class="hide">u</span><span class="hide">s</span><span class="hide"> </span></span></dt>
+<dd><dl class="keyword">
+<dt id="kwd:softening-ubiquitous.bulk">
+<span class="cmdkey"><span class="pref">b</span><span class="null">u</span><span class="null">l</span><span class="null">k</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>弹性体积模量，<span class="math">\(K\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.cohesion">
+<span class="cmdkey"><span class="pref">c</span><span class="null">o</span><span class="null">h</span><span class="null">e</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>基质黏聚力 <span class="math">\(c\)</span> = <span class="math">\(c_1\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.cohesion-2">
+<span class="cmdkey"><span class="pref">c</span><span class="null">o</span><span class="null">h</span><span class="null">e</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="pref">2</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>基质黏聚力 <span class="math">\(c_2\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.dilation">
+<span class="cmdkey"><span class="pref">d</span><span class="null">i</span><span class="null">l</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>基质剪胀角 <span class="math">\(\psi\)</span> = <span class="math">\(\psi_1\)</span>。默认为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.0</span></span></a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.dilation-2">
+<span class="cmdkey"><span class="pref">d</span><span class="null">i</span><span class="null">l</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="pref">2</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>基质剪胀角 <span class="math">\(\psi_2\)</span>。默认为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.0</span></span></a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.dip">
+<span class="cmdkey"><span class="pref">d</span><span class="pref">i</span><span class="pref">p</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>弱面的倾角，单位为度</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.dip-direction">
+<span class="cmdkey"><span class="pref">d</span><span class="null">i</span><span class="null">p</span><span class="null">-</span><span class="pref">d</span><span class="null">i</span><span class="null">r</span><span class="null">e</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>弱面的倾向，单位为度</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.friction">
+<span class="cmdkey"><span class="pref">f</span><span class="null">r</span><span class="null">i</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>基质摩擦角 <span class="math">\(\phi\)</span> = <span class="math">\(\phi_1\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.friction-2">
+<span class="cmdkey"><span class="pref">f</span><span class="null">r</span><span class="null">i</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="pref">2</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>基质摩擦角 <span class="math">\(\phi_2\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.poisson">
+<span class="cmdkey"><span class="pref">p</span><span class="null">o</span><span class="null">i</span><span class="null">s</span><span class="null">s</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>泊松比，<span class="math">\(\nu\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.shear">
+<span class="cmdkey"><span class="pref">s</span><span class="null">h</span><span class="null">e</span><span class="null">a</span><span class="null">r</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>弹性剪切模量，<span class="math">\(G\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.tension">
+<span class="cmdkey"><span class="pref">t</span><span class="null">e</span><span class="null">n</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>抗拉强度，<span class="math">\(\sigma^t\)</span>。默认值为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.0</span></span></a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.young">
+<span class="cmdkey"><span class="pref">y</span><span class="null">o</span><span class="null">u</span><span class="null">n</span><span class="null">g</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>杨氏模量，<span class="math">\(E\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.joint-cohesion">
+<span class="cmdkey"><span class="pref">j</span><span class="null">o</span><span class="null">i</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">c</span><span class="null">o</span><span class="null">h</span><span class="null">e</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>节理黏聚力 <span class="math">\(c_j\)</span> = <span class="math">\(c_{j1}\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.joint-cohesion-2">
+<span class="cmdkey"><span class="pref">j</span><span class="null">o</span><span class="null">i</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">c</span><span class="null">o</span><span class="null">h</span><span class="null">e</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="pref">2</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>节理黏聚力 <span class="math">\(c_{j2}\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.joint-dilation">
+<span class="cmdkey"><span class="pref">j</span><span class="null">o</span><span class="null">i</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">d</span><span class="null">i</span><span class="null">l</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>节理剪胀角 <span class="math">\(\psi_j\)</span> = <span class="math">\(\psi_{j1}\)</span>。默认为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.0</span></span></a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.joint-dilation-2">
+<span class="cmdkey"><span class="pref">j</span><span class="null">o</span><span class="null">i</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">d</span><span class="null">i</span><span class="null">l</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="pref">2</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>节理剪胀角 <span class="math">\(\psi_{j2}\)</span>。默认为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.0</span></span></a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.joint-friction">
+<span class="cmdkey"><span class="pref">j</span><span class="null">o</span><span class="null">i</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">f</span><span class="null">r</span><span class="null">i</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>节理摩擦角 <span class="math">\(\phi_j\)</span> = <span class="math">\(\phi_{j1}\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.joint-friction-2">
+<span class="cmdkey"><span class="pref">j</span><span class="null">o</span><span class="null">i</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">f</span><span class="null">r</span><span class="null">i</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="pref">2</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>节理摩擦角 <span class="math">\(\phi_{j2}\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.joint-tension">
+<span class="cmdkey"><span class="pref">j</span><span class="null">o</span><span class="null">i</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">t</span><span class="null">e</span><span class="null">n</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f.</span><span class="null"> </span></span></a></dt>
+<dd><p>节理抗拉强度，<span class="math">\(\sigma^t_j\)</span>。默认值为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.0</span></span></a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.normal">
+<span class="cmdkey"><span class="pref">n</span><span class="null">o</span><span class="null">r</span><span class="null">m</span><span class="null">a</span><span class="null">l</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:vec" title='A vector ( v  or  v2  or  v3 ) expressed as a matrix with one
+row.   v2  and  v3  denote that a 2D or 3D vector, respectively, is
+required.  A plain " v " indicates that a vector of the same dimensionality
+as the code is required, that is, a 3D vector is required if the code is a 3D
+code, and a 2D vector is required if the code is a 2D code. In |flac3d|,  v...'><span class="varvec"><span class="null">v</span><span class="null"> </span></span></a></dt>
+<dd><p>弱面的法向方向（<span class="math">\(n_x\)</span>，<span class="math">\(n_y\)</span>，<span class="math">\(n_z\)</span>）</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.normal-x">
+<span class="cmdkey"><span class="pref">n</span><span class="null">o</span><span class="null">r</span><span class="null">m</span><span class="null">a</span><span class="null">l</span><span class="null">-</span><span class="pref">x</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>弱面法向方向的 <em>x</em> 分量，<span class="math">\(n_x\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.normal-y">
+<span class="cmdkey"><span class="pref">n</span><span class="null">o</span><span class="null">r</span><span class="null">m</span><span class="null">a</span><span class="null">l</span><span class="null">-</span><span class="pref">y</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>弱面法向方向的 <em>y</em> 分量，<span class="math">\(n_y\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.normal-z">
+<span class="cmdkey"><span class="pref">n</span><span class="null">o</span><span class="null">r</span><span class="null">m</span><span class="null">a</span><span class="null">l</span><span class="null">-</span><span class="pref">z</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>弱面法向方向的 <em>z</em> 分量，<span class="math">\(n_z\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.flag-bilinear">
+<span class="cmdkey"><span class="pref">f</span><span class="null">l</span><span class="null">a</span><span class="null">g</span><span class="null">-</span><span class="pref">b</span><span class="null">i</span><span class="null">l</span><span class="null">i</span><span class="null">n</span><span class="null">e</span><span class="null">a</span><span class="null">r</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">i</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>= <a class="reference internal" href="../../../docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">0</span></span></a> (default) for matrix linear model ;</p>
+<p>= <a class="reference internal" href="../../../docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">1</span></span></a>，用于基质双线性模型。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.flag-bilinear-joint">
+<span class="cmdkey"><span class="pref">f</span><span class="null">l</span><span class="null">a</span><span class="null">g</span><span class="null">-</span><span class="pref">b</span><span class="null">i</span><span class="null">l</span><span class="null">i</span><span class="null">n</span><span class="null">e</span><span class="null">a</span><span class="null">r</span><span class="null">-</span><span class="pref">j</span><span class="null">o</span><span class="null">i</span><span class="null">n</span><span class="null">t</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">i</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>= <a class="reference internal" href="../../../docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">0</span></span></a> (default) for joint linear model ;</p>
+<p>= <a class="reference internal" href="../../../docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">1</span></span></a> for joint bilinear model ;</p>
+<p>&lt; <a class="reference internal" href="../../../docproject/utilities/types.html#type:int" title="An integer ( i ), positive or negative. An integer *cannot* contain a
+decimal.  Multiple instances in a command are numbered ( i1   i2 
+ i3  etc.)..."><span class="varint"><span class="null">0</span></span></a> 时节理效应被跳过，模型退化为双线性 Mohr-Coulomb 模型。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.flag-brittle">
+<span class="cmdkey"><span class="pref">f</span><span class="null">l</span><span class="null">a</span><span class="null">g</span><span class="null">-</span><span class="pref">b</span><span class="null">r</span><span class="null">i</span><span class="null">t</span><span class="null">t</span><span class="null">l</span><span class="null">e</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ..."><span class="varbool"><span class="null">b</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>若为真，则在发生拉伸破坏时把拉伸极限设为 0。默认为 <span class="cmdkey">false</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.table-cohesion">
+<span class="cmdkey"><span class="pref">t</span><span class="null">a</span><span class="null">b</span><span class="null">l</span><span class="null">e</span><span class="null">-</span><span class="pref">c</span><span class="null">o</span><span class="null">h</span><span class="null">e</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">s</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>把基质黏聚力 <span class="math">\(c\)</span> = <span class="math">\(c_1\)</span> 与基质塑性剪应变关联的表格名称。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.table-cohesion-2">
+<span class="cmdkey"><span class="pref">t</span><span class="null">a</span><span class="null">b</span><span class="null">l</span><span class="null">e</span><span class="null">-</span><span class="pref">c</span><span class="null">o</span><span class="null">h</span><span class="null">e</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="pref">2</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">s</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>把基质黏聚力 <span class="math">\(c_2\)</span> 与基质塑性剪应变关联的表格名称。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.table-dilation">
+<span class="cmdkey"><span class="pref">t</span><span class="null">a</span><span class="null">b</span><span class="null">l</span><span class="null">e</span><span class="null">-</span><span class="pref">d</span><span class="null">i</span><span class="null">l</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">s</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>把基质剪胀角 <span class="math">\(\psi\)</span> = <span class="math">\(\psi_{1}\)</span> 与基质塑性剪应变关联的表格名称。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.table-dilation-2">
+<span class="cmdkey"><span class="pref">t</span><span class="null">a</span><span class="null">b</span><span class="null">l</span><span class="null">e</span><span class="null">-</span><span class="pref">d</span><span class="null">i</span><span class="null">l</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="pref">2</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">s</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>把基质剪胀 <span class="math">\(\psi_{2}\)</span> 与基质塑性剪应变关联的表格名称。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.table-friction">
+<span class="cmdkey"><span class="pref">t</span><span class="null">a</span><span class="null">b</span><span class="null">l</span><span class="null">e</span><span class="null">-</span><span class="pref">f</span><span class="null">r</span><span class="null">i</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">s</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>把基质摩擦 <span class="math">\(\psi\)</span> = <span class="math">\(\psi_{1}\)</span> 角与基质塑性剪应变关联的表格名称。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.table-friction-2">
+<span class="cmdkey"><span class="pref">t</span><span class="null">a</span><span class="null">b</span><span class="null">l</span><span class="null">e</span><span class="null">-</span><span class="pref">f</span><span class="null">r</span><span class="null">i</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="pref">2</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">s</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>把基质摩擦角 <span class="math">\(\psi_{2}\)</span> 与基质塑性剪应变关联的表格名称。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.table-joint-cohesion">
+<span class="cmdkey"><span class="pref">t</span><span class="null">a</span><span class="null">b</span><span class="null">l</span><span class="null">e</span><span class="null">-</span><span class="pref">j</span><span class="null">o</span><span class="null">i</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">c</span><span class="null">o</span><span class="null">h</span><span class="null">e</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">s</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>把节理黏聚力 <span class="math">\(c_j\)</span> = <span class="math">\(c_{j1}\)</span> 与节理塑性剪应变关联的表格名称。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.table-joint-cohesion-2">
+<span class="cmdkey"><span class="pref">t</span><span class="null">a</span><span class="null">b</span><span class="null">l</span><span class="null">e</span><span class="null">-</span><span class="pref">j</span><span class="null">o</span><span class="null">i</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">c</span><span class="null">o</span><span class="null">h</span><span class="null">e</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="pref">2</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">s</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>把节理黏聚力 <span class="math">\(c_{j2}\)</span> 与节理塑性剪应变关联的表格名称。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.table-joint-dilation">
+<span class="cmdkey"><span class="pref">t</span><span class="null">a</span><span class="null">b</span><span class="null">l</span><span class="null">e</span><span class="null">-</span><span class="pref">j</span><span class="null">o</span><span class="null">i</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">d</span><span class="null">i</span><span class="null">l</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">s</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>把节理剪胀 <span class="math">\(\psi_j\)</span> = <span class="math">\(\psi_{j1}\)</span> 与节理塑性剪应变关联的表格名称。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.table-joint-dilation-2">
+<span class="cmdkey"><span class="pref">t</span><span class="null">a</span><span class="null">b</span><span class="null">l</span><span class="null">e</span><span class="null">-</span><span class="pref">j</span><span class="null">o</span><span class="null">i</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">d</span><span class="null">i</span><span class="null">l</span><span class="null">a</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="pref">2</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">s</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>把节理剪胀 <span class="math">\(\psi_{j2}\)</span> 与节理塑性剪应变关联的表格名称。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.table-joint-friction">
+<span class="cmdkey"><span class="pref">t</span><span class="null">a</span><span class="null">b</span><span class="null">l</span><span class="null">e</span><span class="null">-</span><span class="pref">j</span><span class="null">o</span><span class="null">i</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">f</span><span class="null">r</span><span class="null">i</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">s</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>把节理摩擦角 <span class="math">\(\phi_j\)</span> = <span class="math">\(\phi_{j1}\)</span> 与节理塑性剪应变关联的表格名称。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.table-joint-friction-2">
+<span class="cmdkey"><span class="pref">t</span><span class="null">a</span><span class="null">b</span><span class="null">l</span><span class="null">e</span><span class="null">-</span><span class="pref">j</span><span class="null">o</span><span class="null">i</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">f</span><span class="null">r</span><span class="null">i</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null">-</span><span class="pref">2</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">s</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>把节理摩擦角 <span class="math">\(\phi_{j2}\)</span> 与节理塑性剪应变关联的表格名称。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.table-joint-tension">
+<span class="cmdkey"><span class="pref">t</span><span class="null">a</span><span class="null">b</span><span class="null">l</span><span class="null">e</span><span class="null">-</span><span class="pref">j</span><span class="null">o</span><span class="null">i</span><span class="null">n</span><span class="null">t</span><span class="null">-</span><span class="pref">t</span><span class="null">e</span><span class="null">n</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">s</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>把节理拉伸极限 <span class="math">\(\sigma^t_j\)</span> 与节理塑性拉应变关联的表格名称。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.strain-shear-plastic">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">r</span><span class="null">a</span><span class="null">i</span><span class="null">n</span><span class="null">-</span><span class="pref">s</span><span class="null">h</span><span class="null">e</span><span class="null">a</span><span class="null">r</span><span class="null">-</span><span class="pref">p</span><span class="null">l</span><span class="null">a</span><span class="null">s</span><span class="null">t</span><span class="null">i</span><span class="null">c</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>累计塑性剪应变</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.strain-shear-plastic-joint">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">r</span><span class="null">a</span><span class="null">i</span><span class="null">n</span><span class="null">-</span><span class="pref">s</span><span class="null">h</span><span class="null">e</span><span class="null">a</span><span class="null">r</span><span class="null">-</span><span class="pref">p</span><span class="null">l</span><span class="null">a</span><span class="null">s</span><span class="null">t</span><span class="null">i</span><span class="null">c</span><span class="null">-</span><span class="pref">j</span><span class="null">o</span><span class="null">i</span><span class="null">n</span><span class="null">t</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>累积节理塑性剪应变</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.strain-tensile-plastic">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">r</span><span class="null">a</span><span class="null">i</span><span class="null">n</span><span class="null">-</span><span class="pref">t</span><span class="null">e</span><span class="null">n</span><span class="null">s</span><span class="null">i</span><span class="null">l</span><span class="null">e</span><span class="null">-</span><span class="pref">p</span><span class="null">l</span><span class="null">a</span><span class="null">s</span><span class="null">t</span><span class="null">i</span><span class="null">c</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>累计塑性拉应变</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:softening-ubiquitous.strain-tensile-plastic-joint">
+<span class="cmdkey"><span class="pref">s</span><span class="null">t</span><span class="null">r</span><span class="null">a</span><span class="null">i</span><span class="null">n</span><span class="null">-</span><span class="pref">t</span><span class="null">e</span><span class="null">n</span><span class="null">s</span><span class="null">i</span><span class="null">l</span><span class="null">e</span><span class="null">-</span><span class="pref">p</span><span class="null">l</span><span class="null">a</span><span class="null">s</span><span class="null">t</span><span class="null">i</span><span class="null">c</span><span class="null">-</span><span class="pref">j</span><span class="null">o</span><span class="null">i</span><span class="null">n</span><span class="null">t</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>累积节理塑性拉应变</p>
+</dd></dl>
+<p><strong>图例</strong></p>
+<dl class="docutils">
+<dt>(a) 高级属性。</dt>
+<dd>该属性具有默认值；在较简单的模型应用中，无需专门赋值。</dd>
+<dt>(r) 只读属性。</dt>
+<dd>该属性不能由用户设置，但可以列出、绘图显示，或通过 <span class="codename">FISH</span> 访问。</dd>
+</dl>
+<p><strong>注意事项</strong></p>
+<ul class="simple">
+<li>定义弹性只需两种选项之一：体积模量 <span class="math">\(K\)</span> 与剪切模量 <span class="math">\(G\)</span>，或杨氏模量 <span class="math">\(E\)</span> 与泊松比 <span class="math">\(\nu\)</span>。选择后者时，必须先赋予杨氏模量 <span class="math">\(E\)</span> 再赋予泊松比 <span class="math">\(\nu\)</span>。</li>
+<li>定义软弱面方位只需三种选项之一：倾角与倾向；法向向量（<span class="math">\(n_x, n_y, n_z\)</span>）；或三个法向分量 <span class="math">\(n_x\)</span>、<span class="math">\(n_y\)</span> 与 <span class="math">\(n_z\)</span>。</li>
+<li>抗拉截断为 <span class="math">\({\sigma}^t = min({\sigma}^t, c/\tan \phi)\)</span>。</li>
+<li>模型采用的节理抗拉强度为输入的 <span class="math">\(\sigma^t\)</span> 与 <span class="math">\({c_j}/{\tan \phi_j}\)</span> 中的较小值。</li>
+<li>拉伸表与 <span class="cmdkey">flag-brittle</span> 不应同时处于活动状态。</li>
+</ul>
+</dd></dl>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../docproject/source/manual/program_guide/program_guide.html">程序指南</a> »</li>
+<li class="nav-item nav-item-2"><a href="../../../docproject/source/manual/program_guide/models/models.html">Constitutive Models</a> »</li>
+<li class="nav-item nav-item-3"><a accesskey="U" href="../../../docproject/source/manual/program_guide/models/theory/plasticmodel.html">Plastic Model Group</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../../ssoft/doc/modelssoft.html" title="previous chapter"> Strain-Softening/Hardening Mohr-Coulomb (SSoft) Model</a> |    
+       <a href="../../doubley/doc/modeldoubley.html" title="next chapter">Double-Yield Model</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Bilinear Strain-Softening/Hardening Ubiquitous-Joint (SUBI) Model" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../_static/icgscripts.js"></script>
+</body>
+</html>

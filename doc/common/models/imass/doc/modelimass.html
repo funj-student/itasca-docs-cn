@@ -1,0 +1,960 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>IMASS 模型 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../search.html" rel="search" title="Search"/>
+<link href="../../../docproject/utilities/tokens.html" rel="next" title="Tokens"/>
+<link href="../../../../pfc/docproject/source/manual/optional_features/thermal_option/contacts/udm.html" rel="prev" title="User Defined Contact Models"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="hide sectionname docutils container">
+<span class="codename">FLAC3D</span> Theory and Background • Constitutive Models</div>
+<div class="section" id="imass-model">
+<span id="modelimass"></span><h1>IMASS 模型</h1>
+<p>IMASS（Itasca 高级应变软化模型）本构模型是为表示岩体对应力变化的响应（即岩体屈服、模量软化、密度调整、剪胀、剪胀关闭、性质按网格单元尺寸缩放、黏聚力弱化、拉伸弱化与摩擦强化）而开发的。该本构模型基于应变软化材料模型建立，其应变相关性质经调整以反映诱发应力变化所引起的剪胀与扩容影响。</p>
+<p class="h3 rubric">崩落力学</p>
+<p>崩落可由两种因素引起：重力与应力。崩落机制取决于诱发应力、岩体强度与岩体不连续面的性质（方位/延展性）及强度之间的关系（Brown，2003）。</p>
+<p>当崩落拱顶中的应力超过岩体强度时发生应力崩落。重力崩落的特征是原位应力与开采诱发应力都较低，可用简单运动学及节理强度参数（黏聚力、拉伸与摩擦）的知识预测。可预期重力诱发的散落会在崩落侧壁以滑动机制发生，而在高度破裂的崩落拱顶（顶板）以拉伸破坏机制发生。</p>
+<p>当崩落拱顶中形成稳定拱时可停止崩落。此时诱发应力不超过完整岩桥的强度，或无法使节理活动。</p>
+<p>Sainsbury（2010）此前研究了原位强度与应力条件对崩落传播的影响，其中对一个概念性崩落矿山的生产进行了模拟。与强度和应力有关的部分结果汇总于 <a href="#modelimass-rockmassstrength">图 1（Figure  1）</a>。</p>
+<div class="figure align-center" id="id1">
+<span id="modelimass-rockmassstrength"></span><a class="reference internal image-reference" href="../../../../_images/imass_rockmassstrength.png"><img alt="../../../../_images/imass_rockmassstrength.png" src="../../../../_images/imass_rockmassstrength.png" style="width: 500px;"/></a>
+<p class="caption"><span class="caption-text">图 1：岩体强度与原位应力对崩落传播高度影响的模拟结果。</span></p>
+</div>
+<p>这些结果表明崩落传播受强度与应力强烈影响：岩体强度越低、应力越大，传播高度越大。基于这些结果以及 Board 与 Pierce（2009）概述的概念性崩落机制，可以明确：崩落穿过原位岩体的速率与形态将受开采情景（位置与速率）以及现场岩土条件（岩体行为与原位应力）影响。</p>
+<p>Pierce（2010）此前定义了影响岩体可崩落性的六个关键因素。它们示意于 <a href="#modelimass-criticalfactor">图 2（Figure  2）</a>，包括以下内容。</p>
+<div class="figure align-center" id="id2">
+<span id="modelimass-criticalfactor"></span><a class="reference internal image-reference" href="../../../../_images/imass_criticalfactor.png"><img alt="../../../../_images/imass_criticalfactor.png" src="../../../../_images/imass_criticalfactor.png" style="width: 500px;"/></a>
+<p class="caption"><span class="caption-text">图 2：Pierce（2010）所定义影响可崩落性的六个关键因素的示意图。</span></p>
+</div>
+<p><strong>黏聚力与拉伸弱化</strong>：崩落过程中岩体强度从原位峰值降低到能代表崩落岩体状态的更低残余值。这一总体响应常称为“应变软化”过程，是应变相关材料性质的结果。</p>
+<p><strong>峰值后脆性</strong>：强度由峰值降至残余的速率称为脆性。随持续加载仍保持峰值强度的岩石称为理想塑性（延性）岩石。超过峰值强度后强度瞬时降至残余性质的岩体称为理想脆性岩体。一般而言，脆性岩体比延性岩体更易崩落。</p>
+<p><strong>模量软化</strong>：崩落过程中，随着完整岩块破裂、分离并在屈服与活动过程中旋转，岩体体积增大。伴随这种扩容，模量预期会下降。表示刚度的降低对于评估崩落周边不断演化的应力状态至关重要，因为随着岩体剪胀/扩容，其承载应力的潜力下降。</p>
+<p><strong>剪胀性状</strong>：剪胀是岩石在剪切畸变时发生的体积变化。准确评估与表示崩落过程中节理岩体的剪胀性状，对于准确预测塑性变形期间正确的体积增大至关重要。这将影响质量平衡计算以及崩落穿过各围压水平的传播。</p>
+<p><strong>岩体结构（断层、节理）</strong>：地质结构对沉降与崩落的影响被公认很重要。陡倾断层的存在可使崩落角在其正常值之前终止。若缓倾断层与正在崩落的岩柱相交，则地表沉降的横向范围可向外扩展至断层与地表相交处。Brown 与 Trollope（1970）用试验数据表明：即便岩体结构与岩土力学性质都利于滑移，高的水平原位应力也可能抑制岩体破坏，从而阻止自然崩落的起始与发展。</p>
+<p><strong>放矿计划</strong>：Laubscher（1990，1994）此前指出放矿速率与开采底面形状会影响岩体的可崩落性。</p>
+<p class="h3 rubric">本构表述</p>
+<p>IMASS 中峰值 Hoek-Brown 包络的形状（<a href="#modelimass-2">图 3（Figure  3）</a>）由以下方程定义（Hoek 等，2002）：</p>
+<div class="math" id="equation-modelimasshb1">
+<span class="eqno">(1)</span>\[ \sigma_1 = \sigma_3 + \sigma_{ci} \left( m_b \frac{\sigma_3}{\sigma_{ci}} + s \right)^a\]</div>
+<p>其中 <span class="math">\(\sigma_1\)</span> 与 <span class="math">\(\sigma_3\)</span> 分别为最大与最小主应力（本模型表述中压缩为正）；<span class="math">\(\sigma_{ci}\)</span> 为完整岩石的无侧限抗压强度；<span class="math">\(m_b\)</span>、<span class="math">\(s\)</span>、<span class="math">\(a\)</span> 为岩体材料常数，它们是 <span class="math">\(m_i\)</span>（完整岩石的材料常数）与 <span class="math">\(GSI\)</span>（地质强度指标）的函数：</p>
+<div class="math" id="equation-modelimasshbm">
+<span class="eqno">(2)</span>\[ m_b = m_i \exp \left( \frac{GSI-100}{28} \right)\]</div>
+<div class="math" id="equation-modelimasshbs">
+<span class="eqno">(3)</span>\[ s = \exp \left( \frac{GSI-100}{9} \right)\]</div>
+<div class="math" id="equation-modelimasshba">
+<span class="eqno">(4)</span>\[ a = \frac{1}{2} + \frac{1}{6} \left[ \exp{\left(\frac{-GSI}{15}\right)} - \exp{\left(\frac{-20}{3}\right)}\right]\]</div>
+<p>岩体整体强度可估算（Hoek 等 2002）为</p>
+<div class="math" id="equation-modelimasshbglobal">
+<span class="eqno">(5)</span>\[ \sigma_{rm} = \sigma_{ci} \frac{(m_b+4s-a(m_b-8s))(m_b/4+s)^{(a-1)}}{2(1+a)(2+a)}\]</div>
+<p>残余 Hoek-Brown 包络的形状与公式 <a class="reference internal" href="#equation-modelimasshb1">(1)</a> 相同，但 <span class="math">\(m_b\)</span>、<span class="math">\(s\)</span>、<span class="math">\(a\)</span> 取相应的残余值（<a href="#modelimass-2">图 3（Figure  3）</a>）。</p>
+<div class="figure align-center" id="id3">
+<span id="modelimass-2"></span><a class="reference internal image-reference" href="../../../../_images/imass2.png"><img alt="../../../../_images/imass2.png" src="../../../../_images/imass2.png" style="width: 550px;"/></a>
+<p class="caption"><span class="caption-text">图 3：IMASS 本构模型强度包络。</span></p>
+</div>
+<p>完整岩石杨氏模量（<span class="math">\(E_i\)</span>）用于计算岩体杨氏模量（<span class="math">\(E_{rm}\)</span>），采用 Hoek 与 Diederichs（2006）控制岩体弹性行为的公式：</p>
+<div class="math" id="equation-modelimasshberm">
+<span class="eqno">(6)</span>\[ E_{rm} = E_i \left[ 0.02 + \dfrac{1}{1+\exp{\left(\frac{60-GSI}{11}\right)}} \right]\]</div>
+<p>泊松比定义为 GSI 的函数，即：</p>
+<div class="math" id="equation-modelimasshbv">
+<span class="eqno">(7)</span>\[ \nu = 0.32 - 0.0015 \times GSI\]</div>
+<p>岩体的体积模量与剪切模量按下式计算：</p>
+<div class="math" id="equation-modelimasshbbulk">
+<span class="eqno">(8)</span>\[ K = \frac{E_{rm}}{3(1-2\nu)}\]</div>
+<div class="math" id="equation-modelimasshbshear">
+<span class="eqno">(9)</span>\[ G = \frac{E_{rm}}{2(1+v)}\]</div>
+<p>扩容因子或体积应变增量（VSI）定义为：</p>
+<div class="math" id="equation-modelimassvsi">
+<span class="eqno">(10)</span>\[ VSI = \frac{\Delta V}{V_i} = \frac{n}{1-n}\]</div>
+<p>其中 <span class="math">\(\Delta V\)</span> 为体积变化（正为膨胀），<span class="math">\(V_i\)</span> 为初始体积，<span class="math">\(n\)</span> 为孔隙率。对未扰动、未扩容的岩体，初始扩容因子通常设为零。当扩容因子达到用户定义的最大值时剪胀关闭，以反映岩体不能无限扩容。</p>
+<p>对于遍布节理，抗拉强度、黏聚力与摩擦角控制屈服包络的形状。倾角与倾向设为与该结构面或节理相同，以表示真实倾角与倾向。</p>
+<p class="h3 rubric">黏聚力弱化</p>
+<p>IMASS 本构模型中的强度弱化由三个 Hoek-Brown 强度包络定义，如 <a href="#modelimass-2">图 3（Figure  3）</a> 所示。峰值强度包络（绿色曲线）的参数 <span class="math">\(m_b\)</span>、<span class="math">\(s\)</span> 与 <span class="math">\(a\)</span>（IMASS 中为 calc_stren_mb、calc_stren_s 与 calc_stren_a）由基于 GSI（in_stren_gsi）与上述完整岩石参数 <span class="math">\(\sigma_{ci}\)</span> 与 <span class="math">\(m_i\)</span>（in_stren_ucsi 与 in_stren_mi）的经典 Hoek-Brown 方程计算，见公式 <a class="reference internal" href="#equation-modelimasshb1">(1)</a> 至 <a class="reference internal" href="#equation-modelimasshba">(4)</a>。残余强度包络（红色与蓝色曲线）的 Hoek-Brown 参数按近似堆石材料 Barton 抗剪强度计算。Barton（2008）的堆石抗剪强度估算由下式给出：</p>
+<div class="math" id="equation-modelimassbarton">
+<span class="eqno">(11)</span>\[ \tau = \sigma_n \tan{ \left( R\log{( s / \sigma_n )} + \phi_b \right)}\]</div>
+<p>其中 <span class="math">\(\tau\)</span> 为抗剪强度，<span class="math">\(\sigma_n\)</span> 为法向应力，<span class="math">\(R\)</span> 为等效粗糙度（<a href="#modelimass-roughness">图 4（Figure  4）</a>），<span class="math">\(s\)</span> 为岩块强度，<span class="math">\(\phi_b\)</span>（in_weak_phib）为岩块的基本摩擦角。</p>
+<div class="figure align-center" id="id4">
+<span id="modelimass-roughness"></span><a class="reference internal image-reference" href="../../../../_images/imass_roughness.png"><img alt="../../../../_images/imass_roughness.png" src="../../../../_images/imass_roughness.png" style="width: 500px;"/></a>
+<p class="caption"><span class="caption-text">图 4：基于孔隙率与碎块圆度/光滑度的岩块集合体等效粗糙度（Barton 2008）。</span></p>
+</div>
+<p>第一条残余强度包络（红色曲线——本文档中称为残余 1 包络）表示发挥的后峰值强度。此时假定岩体已经历破裂，但所生成的岩块仍完全咬合，因此孔隙率视为零。</p>
+<p>第二条残余强度包络（蓝色曲线——本文档中称为残余 2 包络）表示真正的岩体残余强度。此时岩块咬合程度最低、孔隙率最大（假定最大孔隙率 40%）。理想情况下，第一与第二残余包络描述的是咬合程度不同的无黏聚力理想摩擦材料的行为。</p>
+<p>IMASS 中实现的公式 <a class="reference internal" href="#equation-modelimasshb1">(1)</a> 的 Hoek-Brown 近似假定碎块圆度在扩容过程中从极尖锐棱角过渡到部分棱角，对应 <a href="#modelimass-roughness">图 4（Figure  4）</a> 中 Barton（2008）诺模图上的孔隙率 15% 到 45%。</p>
+<p>由基于孔隙率与圆度的诺模图计算 <span class="math">\(R\)</span> 的过程可用以下公式近似：</p>
+<div class="math" id="equation-modelimassr">
+<span class="eqno">(12)</span>\[ R = 15 - (35 - 15 R_i) n\]</div>
+<p>其中 <span class="math">\(n\)</span> 为孔隙率，<span class="math">\(R_i\)</span> 为圆度指标，<span class="math">\(R_i=0\)</span> 对应部分圆滑/光滑块体；<span class="math">\(R_i=1\)</span> 对应棱角/粗糙块体；<span class="math">\(R_i=2\)</span> 对应极尖锐棱角/极粗糙块体。</p>
+<p>Barton 公式给出的强度可用 Hoek-Brown 包络按以下公式近似：</p>
+<div class="math" id="equation-modelimassbartons">
+<span class="eqno">(13)</span>\[ s_r = 0\]</div>
+<div class="math" id="equation-modelimassbartona">
+<span class="eqno">(14)</span>\[ a_r = 0.6 + \frac{n}{n_{max}} [(1 - 0.075 R_i)-0.6]\]</div>
+<div class="math" id="equation-modelimassbartonmb">
+<span class="eqno">(15)</span>\[ m_{br} = 0.1614 \times e^{(0.0836\phi_b)}\]</div>
+<p>其中 <span class="math">\(\phi_b\)</span> 以度计，默认值 30 度；<span class="math">\(n_{max}\)</span> 为 Barton 诺模图中所考虑的最大孔隙率，45%。对残余 1（红色曲线），假定孔隙率为 0，给出 <span class="math">\(a_{r,1}\)</span> = 0.6。对残余 2（蓝色曲线），假定孔隙率为 45% 且 <span class="math">\(R_i\)</span> = 2，给出 <span class="math">\(a_{r,2}\)</span> = 0.85。</p>
+<p>发生屈服时，黏聚力随累积塑性剪应变（偏塑性应变张量的第二不变量）自峰值面向残余 1 线性弱化。临界剪应变定义为使岩体黏聚力自峰值降至零所需的总塑性剪应变。此时岩体处于残余 1 强度。临界塑性应变越小，岩体越脆。遗憾的是，对达到残余强度所需的临界塑性剪应变人们知之甚少，尤其是在岩体尺度上，可供建模取值选用的准则极少。</p>
+<p>关于这些效应可作一些概括。例如质量较高的岩体（GSI 较高）、参与破坏过程的完整岩石体积较大，往往表现得更为脆性，从而临界应变值较低。相反，质量较低的岩体（GSI 较低）、裂隙频率较高，往往表现得更为延性，从而临界应变值较大。临界应变与 GSI 之间关系的估计值来自 MMT 项目中对洞穴及其他洞室岩体破坏的反分析（Lorig 与 Pierce 2000）。该估计为描述崩落模拟中所用应变软化程度提供了起点：</p>
+<div class="math" id="equation-modelimasscriticalstrain">
+<span class="eqno">(16)</span>\[ \gamma_{crit} = M \gamma_c = M \frac{12.5 - 0.125 GSI} {100 Z}\]</div>
+<p>其中 <span class="math">\(Z\)</span> 为网格单元尺寸，通常用网格单元体积的立方根表示；<span class="math">\(M\)</span> 为乘子，默认值 1.0，用户可赋予不同值。</p>
+<p>该关系中出现网格单元尺寸，反映了在剪切往往被分辨为约一个网格单元厚的带的连续体模型中，临界应变参数与网格单元尺寸相关。</p>
+<p>把 Hoek-Brown 曲线拟合到 Barton 抗剪强度准则，可能导致在主应力空间中相对较高围压下强度包络相互交叉。发生这种情况时，IMASS 规定残余 2 包络以残余 1 包络为上界，残余 1 包络以峰值包络为上界。</p>
+<p class="h3 rubric">拉伸弱化</p>
+<p>拉伸弱化可通过两种不同机制发生。剪切屈服期间新裂隙的发展预期会导致拉伸弱化；因此每个网格单元的拉伸强度取以下两者的较小值：i) 峰值拉伸强度；ii) 由当前局部网格单元应力处破坏包络切线在 <span class="math">\(\sigma_3\)</span> 上的截距算得的拉伸强度。不过，一旦某网格单元达到其峰值拉伸强度，即认为它以理想脆性方式永久弱化至零拉伸强度（即不再依据强度包络切线的投影检查）。</p>
+<p class="h3 rubric">模量软化</p>
+<p>拉伸弱化可通过两种不同机制发生。剪切屈服期间新裂隙的发展预期会导致拉伸弱化；因此每个网格单元的拉伸强度取以下两者的较小值：i) 峰值拉伸强度；ii) 由当前局部网格单元应力处破坏包络切线在 <span class="math">\(\sigma_3\)</span> 上的截距算得的拉伸强度。不过，一旦某网格单元达到其峰值拉伸强度，即认为它以理想脆性方式永久弱化至零拉伸强度（即不再依据强度包络切线的投影检查）。</p>
+<p>岩体因剪切或拉伸而扩容时，预期其模量会下降。为计入应力自扩容区向周围岩体转移，必须表示这种下降。此外还须允许扩容区承受转回的应力时发生模量硬化（引起再压密）。</p>
+<p>Pappas 与 Mark（1993）的室内试验结果（<a href="#modelimass-bulkfactor">图 5（Figure  5）</a>）表明，岩石模量随扩容增大而非线性下降，且模量变化速率是碎块形状与完整强度的函数。基于这些试验结果，他们建立了一系列公式，可用于把模量估算为扩容因子（BF）、完整岩块的单轴抗压强度（UCS，单位为 psi）与碎块长宽比的函数（<a href="#modelimass-modulussoftening-table">表 1（Table  1）</a>）。注意 Pappas 与 Mark 对扩容因子（BF）的定义与崩落中通常所用不同：BF = 1 + 破碎岩石扩容因子（此处记为 B）。<a href="#modelimass-fragment">图 6（Figure  6）</a> 所示图表可用于估算厚宽（长宽）比（IMASS 中取为 0.6）。</p>
+<div class="figure align-center" id="id5">
+<span id="modelimass-bulkfactor"></span><a class="reference internal image-reference" href="../../../../_images/imass_bulkingfactor.png"><img alt="../../../../_images/imass_bulkingfactor.png" src="../../../../_images/imass_bulkingfactor.png" style="width: 500px;"/></a>
+<p class="caption"><span class="caption-text">图 5：Pappas 与 Mark（1993）所试验全部岩型的最佳拟合切线模量（psi）对孔隙比。本图中 y 轴（模量）上限 50000 psi 等于 345 MPa；x 轴（孔隙比）下限 0.9 相当于孔隙率 47%。</span></p>
+</div>
+<span id="modelimass-modulussoftening-table"></span><table border="1" class="colwidths-given icg1 docutils" id="id6">
+<caption><span class="caption-text">表 1：各扩容因子（BF）下的切线模量（<span class="math">\(E_t\)</span>）（Pappas 与 Mark，1993）</span></caption>
+<colgroup>
+<col width="29%"/>
+<col width="71%"/>
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>BF = 1.25</td>
+<td><span class="math">\(E_t = 2.49 X_1 + 41200 X_2 - 24800\)</span></td>
+</tr>
+<tr class="row-even"><td>BF = 1.30</td>
+<td><span class="math">\(E_t = 1.76 X_1 + 23800 X_2 - 15700\)</span></td>
+</tr>
+<tr class="row-odd"><td>BF = 1.25</td>
+<td><span class="math">\(E_t = 1.32 X_1 + 16300 X_2 - 11400\)</span></td>
+</tr>
+<tr class="row-even"><td>BF = 1.40</td>
+<td><span class="math">\(E_t = 0.933 X_1 + 11300 X_2 - 7900\)</span></td>
+</tr>
+<tr class="row-odd"><td>BF = 1.50</td>
+<td><span class="math">\(E_t = 0.568 X_1 + 6900 X_2 - 500\)</span></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="first admonition-title">注意</p>
+<p class="last">这基于对不同扩容因子（BF）、完整强度与碎块形状材料的室内固结仪试验。<span class="math">\(X_1\)</span> 为完整岩块的单轴抗压强度（UCS，单位 psi）；<span class="math">\(X_2\)</span> 为碎块的厚宽（长宽）比。</p>
+</div>
+<div class="figure align-center" id="id7">
+<span id="modelimass-fragment"></span><a class="reference internal image-reference" href="../../../../_images/imass_fragment.png"><img alt="../../../../_images/imass_fragment.png" src="../../../../_images/imass_fragment.png" style="width: 500px;"/></a>
+<p class="caption"><span class="caption-text">图 6：Pappas 与 Mark（1993）关于碎块厚宽比估算的图表。</span></p>
+</div>
+<p>模拟过程中，各网格单元内破碎岩石扩容因子由其体积应变给出。若破碎岩石扩容因子大于 0.25，则按用户定义的 UCS、形状因子（IMASS 中为 0.6）与 BF（崩落岩石扩容因子 + 1）用 Pappas 与 Mark 方程建立该网格单元的新切线模量。对小于 0.25 的破碎岩石扩容因子，切线模量通过在原位岩体模量与对应扩容因子 0.25 的 Pappas 与 Mark 模量之间插值计算。##图 9## 至 ##图 11## 以图形形式示出这些关系随初始模量、UCS 与形状因子的变化。由于模量通过基于网格单元的体积应变持续更新，因此既可实现模量软化（扩容期间）也可实现模量硬化（例如崩落采空或未放矿部分再压密期间）。</p>
+<p class="h3 rubric">Bulking</p>
+<p>在崩落等开采作业中，岩体因剪切剪胀或拉伸体积膨胀而体积增大（扩容）。因此在崩落数值模型中指定剪胀角很重要，因为它控制剪切过程中的扩容速率，而扩容是推进或差异放矿（崩落中）的自然结果。<a href="#modelimass-nonuniform-bulking">图 7（Figure  7）</a> 示出模型中两种扩容机制同时作用时活动区内非均匀扩容的情况。</p>
+<div class="figure align-center" id="id8">
+<span id="modelimass-nonuniform-bulking"></span><a class="reference internal image-reference" href="../../../../_images/imass_nonuniform-bulking.png"><img alt="../../../../_images/imass_nonuniform-bulking.png" src="../../../../_images/imass_nonuniform-bulking.png" style="width: 500px;"/></a>
+<p class="caption"><span class="caption-text">图 7：活动区内的非均匀扩容（Sainsbury 2010）。</span></p>
+</div>
+<p class="h3 rubric">Dilation</p>
+<p>IMASS 中剪胀有两个选项。</p>
+<p>第一种选择是输入正的常剪胀角作为标准材料性质（<em>in_bulking_dil</em> &gt; 0）。默认赋值采用第一种选择，依据 Hoek 与 Brown（1997）的建议取 <em>in_bulking_dil</em> = 10（度）。第二种选择（输入负的 <em>in_bulking_dil</em>）是采用随当前孔隙率与当前围压（具体为 <span class="math">\(\sigma_{ci}/\sigma_3\)</span> 的当前比值）而变的演化剪胀角。如 <a href="#modelimass-dilation">图 8（Figure  8）</a> 所示，在该分段剪胀选项中，零孔隙率处的剪胀角取自粘结块体模型（BBM）分析（Garza-Cruz 等 2019）。孔隙率 15% 到 45% 之间的线性段反映 Barton 对堆石摩擦角近似的剪胀部分。最后，一条随孔隙率衰减的函数连接孔隙率 0 到 15% 之间的两段，确保模型两段（<span class="math">\(n\)</span> &lt; 15% 与 <span class="math">\(n\)</span> &gt; 15%）在其相接处的斜率匹配。</p>
+<p>无论采用哪种剪胀选项，当达到用户定义的最大扩容因子（<span class="math">\(VSI_{max}\)</span>）时剪胀角设为零。这可防止网格单元在剪切过程中膨胀到不现实的水平。</p>
+<div class="figure align-center" id="id9">
+<span id="modelimass-dilation"></span><a class="reference internal image-reference" href="../../../../_images/imass-dilation.png"><img alt="../../../../_images/imass-dilation.png" src="../../../../_images/imass-dilation.png" style="width: 500px;"/></a>
+<p class="caption"><span class="caption-text">图 8：IMASS 中剪胀角随围压与孔隙率的变化。</span></p>
+</div>
+<p class="h3 rubric">密度调整</p>
+<p>由于崩落涉及大位移，在大应变模式下运行崩落模拟（即节点坐标依据计算应变更新）会导致网格极端变形。虽然可采用动力重划分技术来适应，但已有研究表明，只要保持质量平衡，崩落可在小应变模式下模拟。小应变模式下节点坐标不更新，网格单元密度按以下关系持续调整，以反映扩容伴随的体积变化：</p>
+<div class="math" id="equation-modelimassrhod">
+<span class="eqno">(17)</span>\[ \rho_d = \frac{\rho_s}{1 + B}\]</div>
+<p>where <span class="math">\(\rho_d\)</span> = dry density of caved rock;
+<span class="math">\(\rho_s\)</span> = solid density of in-situ rock;
+<span class="math">\(B = n/(1-n)\)</span> = bulking factor;
+<span class="math">\(1+B\)</span> = swell factor; and
+<span class="math">\(n\)</span> = porosity.</p>
+<p>默认情况下 IMASS 不进行密度调整。可用 <em>flag_bulking_denadj</em> = <a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 改变该行为，此时 IMASS 将依据 VSI 的当前值调整网格单元密度。</p>
+<p class="h3 rubric">遍布节理</p>
+<p>IMASS 模型中的遍布节理逻辑与 <a class="reference internal" href="../../ubiquit/doc/modelubiquit.html#modelubiquit"><span class="std std-ref">遍布节理模型</span>（Ubiquitous-Joint model）</a> 相同。</p>
+<p class="h3 rubric">单位制</p>
+<p>IMASS 采用 <a href="#modelimass-unit-table">表 2（Table  2）</a> 所列的单一一套 <strong>SI 单位</strong>。<strong>本模型中不得使用任何其他单位制</strong>。</p>
+<span id="modelimass-unit-table"></span><table border="1" class="colwidths-given icg1 docutils" id="id10">
+<caption><span class="caption-text">表 2：IMASS 中的单位制</span></caption>
+<colgroup>
+<col width="67%"/>
+<col width="33%"/>
+</colgroup>
+<tbody valign="top">
+<tr class="row-odd"><td>长度</td>
+<td><span class="math">\(m\)</span></td>
+</tr>
+<tr class="row-even"><td>密度</td>
+<td><span class="math">\(kg/m^3\)</span></td>
+</tr>
+<tr class="row-odd"><td>力</td>
+<td><span class="math">\(N\)</span></td>
+</tr>
+<tr class="row-even"><td>应力/压力/模量</td>
+<td><span class="math">\(Pa\)</span></td>
+</tr>
+<tr class="row-odd"><td>重力加速度</td>
+<td><span class="math">\(m/s^2\)</span></td>
+</tr>
+</tbody>
+</table>
+<p class="h3 rubric">参考文献</p>
+<p>Barton, N. “Shear strength of rockfill, interfaces and rock joints, and their points of contact in rock dump design,” in <span class="bi">Proceedings of the First International Seminar on the Management of Rock Dumps, Stockpiles and Heap Leach Pads</span>, Australian Centre for Geomechanics, Perth. 3-17  (1998).</p>
+<p>Board, Mark, and Pierce M. E. “A review of Rrecent experience in modeling of caving,” in <span class="bi">Proceedings of the international workshop on numerical modeling for underground mine excavation design</span>, vol. 9512, 19-28. NIOSH Information Circular. (2009).</p>
+<p>Brown ET. “Block caving geomechanics,” Minerals Research Centre. Brisbane: Julius Kruttschnitt. (2003).</p>
+<p>Brown, E.T., and Trollope D. H. “Strength of a model of jointed rock,” <em>Journal of Soil Mechanics &amp; Foundations</em>, Div. 1970. (1970).</p>
+<p>Hoek, E. and Brown, E. T. “Practical estimates of rock mass strength,” <em>International Journal of Rock Mechanics and Mineral Sciences</em>. 34(8), 1165-1186 (1997).</p>
+<p>Hoek, E. Carranza-Torres, C. and Corkum, B. “Hoek-Brown failure critierion - 2002 edition,” in <span class="bi">Proceedings of the fifth North American rock mechanics symposium</span>. Toronto, Canada. (2002).</p>
+<p>Hoek, E. and Diederichs, M.S. “Emperical estimation of rock mass modulus,” <em>International Journal of Rock Mechanics and Mining Sciences</em>, 43(2), 203-215 (2000).</p>
+<p>Laubscher, D. H.  “A geomechanics classification system for the rating of rock mass in mine design,” <em>Journal of the Southern African Institute of Mining and Metallurgy</em>. 90(10), 257-273. (1990).</p>
+<p>Laubscher, D. H.  “Cave mining-the state of the art,” <em>Journal of The Southern African Institute of Mining and Metallurgy</em>. 94(10), 279-293. (1994).</p>
+<p>Lorig, L., and Pierce M. “Methodology and Guidelines for Numerical Modelling of Undercut and Extraction Level Behaviour in Caving Mines.” Itasca Consulting Group Inc, Report to International Caving Study. (2000).</p>
+<p>Pappas, D., and Mark C. “Behavior of Simulated Longwall Gob Material,” in <span class="bi">Report of Investigations, 9458</span>. (1993).</p>
+<p>Pierce, M. E. “A model for gravity flow of fragmented rock in block caving mines,” University of Queensland. (2010).</p>
+<p>Sainsbury, B. “Sensitivities in the numerical assessment of cave propagation,” in <span class="bi">Proceedings of The Second International Symposium on Block and Sub-level Caving</span>, Australian Centre for Geomechanics, Perth, 523-535. (2010).</p>
+<p>Garza-Cruz, T., Bouzeran L., Pierce M., Jalbout A., and Ruest M. “Evaluation of ground support design at Eleonore Mine via Bonded Block Modelling.” in <span class="bi">Proceedings of the Ninth International Symposium on Ground Support in Mining and Underground Construction</span>. Australian Centre for Geomechanics. 341-356. (2019).</p>
+<p class="h3 rubric" id="imassmodelprops"><span class="cmdkey">imass</span> 模型性质</p>
+<p>用以下关键字配合 <a class="reference internal" href="../../../../flac3d/zone/doc/manual/zone_manual/zone_commands/cmd_zone.property.html#command:zone.property" title="Make a constitutive model(s) property assignment. Properties are name value
+pairs where the name is the keyword given in the command and the value type
+is specific to the property. The assignment will affect *any* zone whose constitutive
+model includes the property named (noting that some properties, such as  bulk ,
+for instance, appear in *many* constitutive models).  Limiting a property assignment
+to zones that have a particular constitutive model assignment is done using
+the...">设置网格单元属性（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">property</span></code>）</a>（<span class="codename">FLAC3D</span>）或 <a class="reference internal" href="../../../../3dec/block/doc/manual/block_manual/block_commands/block.zone/cmd_block.zone.property.html#command:block.zone.property" title="Make a constitutive model(s) property assignment. Properties are name value
+pairs where the name is the keyword given in the command and the value type
+is specific to the property...">设置块体网格单元属性（<code class="xref fish fish-cmd docutils literal"><span class="pre">block</span> <span class="pre">zone</span> <span class="pre">property</span></code>）</a>（<span class="codename">3DEC</span>）命令设置 IMASS 模型的这些性质。</p>
+<p id="imassprops">IMASS 性质的命名独特，与其他内建模型不同。IMASS 性质按 <a href="#modelimass-prop-table">表 3（Table  3）</a> 所示逻辑分组。性质名由三部分组成，前两部分对应 <a href="#modelimass-prop-table">表 3（Table  3）</a> 中的组。性质名的第一部分为 <em>in_</em>（或 <em>flag_</em>）、<em>calc_</em>、<em>emer_</em> 之一，分别区分输入（或标志）、计算值与涌现值。这些类别即 <a href="#modelimass-prop-table">表 3（Table  3）</a> 的列。行类别按峰值强度、模量、强度弱化、剪胀、扩容与模量软化、破坏时应力以及遍布节理对性质分组。这些分组构成性质名的第二部分（分别为 <em>stren_</em>、<em>mod_</em>、<em>weak_</em>、<em>bulking_</em>、<em>sfail_</em>、<em>_uj</em>）。性质名的其余部分为具体描述性名称，如 <em>GSI</em> 或 <em>youngintact</em>。</p>
+<span id="modelimass-prop-table"></span><table border="1" class="colwidths-given icg1 docutils" id="id11">
+<caption><span class="caption-text">表 3：IMASS 材料性质名称</span></caption>
+<colgroup>
+<col width="16%"/>
+<col width="28%"/>
+<col width="28%"/>
+<col width="28%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head"> </th>
+<th class="head"><strong>Flags/Inputs</strong></th>
+<th class="head"><strong>Calculated</strong></th>
+<th class="head"><strong>Emergent</strong></th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><strong>Peak</strong></td>
+<td>flag_stren_mod</td>
+<td>calc_stren_global</td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td><strong>strength</strong></td>
+<td>in_stren_gsi</td>
+<td>calc_stren_tension</td>
+<td> </td>
+</tr>
+<tr class="row-even"><td> </td>
+<td>in_stren_mi</td>
+<td>calc_stren_ucsrm</td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td>in_stren_ucsi</td>
+<td>calc_stren_mb</td>
+<td> </td>
+</tr>
+<tr class="row-even"><td> </td>
+<td> </td>
+<td>calc_stren_s</td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td> </td>
+<td>calc_stren_a</td>
+<td> </td>
+</tr>
+<tr class="row-even"><td><strong>Modulus</strong></td>
+<td>in_mod_youngintact</td>
+<td>calc_mod_youngrm</td>
+<td>emer_mod_young</td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td> </td>
+<td>calc_mod_poisson</td>
+<td> </td>
+</tr>
+<tr class="row-even"><td><strong>Strength</strong></td>
+<td>flag_weak_barton</td>
+<td>calc_weak_ecrit</td>
+<td>emer_weak_sloss</td>
+</tr>
+<tr class="row-odd"><td><strong>weakening</strong></td>
+<td>flag_weak_tencut</td>
+<td>calc_weak_zsize</td>
+<td>emer_weak_esplastic</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td>in_weak_multecrit</td>
+<td> </td>
+<td>emer_weak_istenweak</td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td>in_weak_chmbr</td>
+<td> </td>
+<td>emer_stren_mcfric</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td>in_weak_char</td>
+<td> </td>
+<td>emer_stren _mccoh</td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td>in_weak_phib</td>
+<td> </td>
+<td>emer_stren _mcten</td>
+</tr>
+<tr class="row-even"><td><strong>Dilation</strong>/</td>
+<td>flag_bulking_denadj</td>
+<td> </td>
+<td>emer_bulking_mcdil</td>
+</tr>
+<tr class="row-odd"><td><strong>bulking</strong> &amp;</td>
+<td>flag_bulking_modsoft</td>
+<td> </td>
+<td>emer_bulking_den</td>
+</tr>
+<tr class="row-even"><td><strong>modulus</strong></td>
+<td>in_bulking_den</td>
+<td> </td>
+<td>emer_bulking_totvsi</td>
+</tr>
+<tr class="row-odd"><td><strong>softening</strong></td>
+<td>in_bulking_dil</td>
+<td> </td>
+<td> </td>
+</tr>
+<tr class="row-even"><td> </td>
+<td>in_bulking_targetvsi</td>
+<td> </td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td>in_bulking_maxtotvsi</td>
+<td> </td>
+<td> </td>
+</tr>
+<tr class="row-even"><td><strong>应力于</strong></td>
+<td>flag_sfail_failtrack</td>
+<td> </td>
+<td>emer_sfail_pmax</td>
+</tr>
+<tr class="row-odd"><td><strong>failure</strong></td>
+<td> </td>
+<td> </td>
+<td>emer_sfail_plungepmax</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td> </td>
+<td> </td>
+<td>emer_sfail_trendpmax</td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td> </td>
+<td> </td>
+<td>emer_sfail_pmid</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td> </td>
+<td> </td>
+<td>emer_sfail_plungepmid</td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td> </td>
+<td> </td>
+<td>emer_sfail_trendpmid</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td> </td>
+<td> </td>
+<td>emer_sfail_pmin</td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td> </td>
+<td> </td>
+<td>emer_sfail_plungepmin</td>
+</tr>
+<tr class="row-even"><td> </td>
+<td> </td>
+<td> </td>
+<td>emer_sfail_trendpmin</td>
+</tr>
+<tr class="row-odd"><td><strong>Ubiquitous</strong></td>
+<td>flag_uj_usejoints</td>
+<td> </td>
+<td>emer_uj_esplastic</td>
+</tr>
+<tr class="row-even"><td><strong>joint</strong></td>
+<td>in_uj_jcoh</td>
+<td> </td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td>in_uj_jdil</td>
+<td> </td>
+<td> </td>
+</tr>
+<tr class="row-even"><td> </td>
+<td>in_uj_jfric</td>
+<td> </td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td>in_uj_jten</td>
+<td> </td>
+<td> </td>
+</tr>
+<tr class="row-even"><td> </td>
+<td>in_uj_jdip</td>
+<td> </td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td>in_uj_jddirection</td>
+<td> </td>
+<td> </td>
+</tr>
+<tr class="row-even"><td> </td>
+<td>in_uj_jnx</td>
+<td> </td>
+<td> </td>
+</tr>
+<tr class="row-odd"><td> </td>
+<td>in_uj_jny</td>
+<td> </td>
+<td> </td>
+</tr>
+<tr class="row-even"><td> </td>
+<td>in_uj_jnz</td>
+<td> </td>
+<td> </td>
+</tr>
+</tbody>
+</table>
+<dl class="command">
+<dt id="command:imass">
+<span class="cmdname"><span class="hide">i</span><span class="hide">m</span><span class="hide">a</span><span class="hide">s</span><span class="hide">s</span><span class="hide"> </span></span></dt>
+<dd><p><strong>峰值强度</strong></p>
+<dl class="keyword">
+<dt id="kwd:imass.flag_stren_mod">
+<span class="cmdkey"><span class="null">f</span><span class="null">l</span><span class="null">a</span><span class="null">g</span><span class="null">_</span><span class="null">s</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">_</span><span class="null">m</span><span class="null">o</span><span class="null">d</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ..."><span class="varbool"><span class="null">b</span><span class="null"> </span></span></a></dt>
+<dd><p>标志，默认为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>。若希望手动定义峰值 Hoek-Brown 参数 <em>calc_stren_mb</em>、<em>calc_stren_s</em> 与 <em>calc_stren_a</em>，请把它设为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.in_stren_gsi">
+<span class="cmdkey"><span class="null">i</span><span class="null">n</span><span class="null">_</span><span class="null">s</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">_</span><span class="null">g</span><span class="null">s</span><span class="null">i</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>地质强度指标 GSI。这是主要性质之一，允许输入值介于 0 与 100 之间。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.in_stren_mi">
+<span class="cmdkey"><span class="null">i</span><span class="null">n</span><span class="null">_</span><span class="null">s</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">_</span><span class="null">m</span><span class="null">i</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>完整岩石的 Hoek-Brown 参数 <span class="math">\(m_i\)</span>。这是主要性质之一，必须输入正值。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.in_stren_ucsi">
+<span class="cmdkey"><span class="null">i</span><span class="null">n</span><span class="null">_</span><span class="null">s</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">_</span><span class="null">u</span><span class="null">c</span><span class="null">s</span><span class="null">i</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>完整岩石的单轴抗压强度（UCS）[Pa]，<span class="math">\(\sigma_{ci}\)</span>。这是主要性质之一，必须输入正值。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.calc_stren_global">
+<span class="cmdkey"><span class="null">c</span><span class="null">a</span><span class="null">l</span><span class="null">c</span><span class="null">_</span><span class="null">s</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">_</span><span class="null">g</span><span class="null">l</span><span class="null">o</span><span class="null">b</span><span class="null">a</span><span class="null">l</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>整体岩体强度 [Pa]。见公式 <a class="reference internal" href="#equation-modelimasshbglobal">(5)</a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.calc_stren_tension">
+<span class="cmdkey"><span class="null">c</span><span class="null">a</span><span class="null">l</span><span class="null">c</span><span class="null">_</span><span class="null">s</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">_</span><span class="null">t</span><span class="null">e</span><span class="null">n</span><span class="null">s</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>抗拉强度 [Pa]。该值等于 <span class="math">\(s \sigma_{ci}/m_b\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.calc_stren_ucsrm">
+<span class="cmdkey"><span class="null">c</span><span class="null">a</span><span class="null">l</span><span class="null">c</span><span class="null">_</span><span class="null">s</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">_</span><span class="null">u</span><span class="null">c</span><span class="null">s</span><span class="null">r</span><span class="null">m</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>单轴抗压强度 [Pa]。该值等于 <span class="math">\(s^a\sigma_{ci}\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.calc_stren_mb">
+<span class="cmdkey"><span class="null">c</span><span class="null">a</span><span class="null">l</span><span class="null">c</span><span class="null">_</span><span class="null">s</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">_</span><span class="null">m</span><span class="null">b</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>Hoek-Brown 参数 <span class="math">\(m_b\)</span> 的初值。见公式 <a class="reference internal" href="#equation-modelimasshbm">(2)</a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.calc_stren_s">
+<span class="cmdkey"><span class="null">c</span><span class="null">a</span><span class="null">l</span><span class="null">c</span><span class="null">_</span><span class="null">s</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">_</span><span class="null">s</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>Hoek-Brown 参数 <span class="math">\(s\)</span> 的初值。见公式 <a class="reference internal" href="#equation-modelimasshbs">(3)</a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.calc_stren_a">
+<span class="cmdkey"><span class="null">c</span><span class="null">a</span><span class="null">l</span><span class="null">c</span><span class="null">_</span><span class="null">s</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">_</span><span class="null">a</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>Hoek-Brown 参数 <span class="math">\(a\)</span> 的初值。见公式 <a class="reference internal" href="#equation-modelimasshba">(4)</a>。</p>
+</dd></dl>
+<p><strong>Modulus</strong></p>
+<dl class="keyword">
+<dt id="kwd:imass.in_mod_youngintact">
+<span class="cmdkey"><span class="null">i</span><span class="null">n</span><span class="null">_</span><span class="null">m</span><span class="null">o</span><span class="null">d</span><span class="null">_</span><span class="null">y</span><span class="null">o</span><span class="null">u</span><span class="null">n</span><span class="null">g</span><span class="null">i</span><span class="null">n</span><span class="null">t</span><span class="null">a</span><span class="null">c</span><span class="null">t</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>完整岩石杨氏模量 [Pa]，<span class="math">\(E_i\)</span>。这是主要性质之一，必须输入正值。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.calc_mod_youngrm">
+<span class="cmdkey"><span class="null">c</span><span class="null">a</span><span class="null">l</span><span class="null">c</span><span class="null">_</span><span class="null">m</span><span class="null">o</span><span class="null">d</span><span class="null">_</span><span class="null">y</span><span class="null">o</span><span class="null">u</span><span class="null">n</span><span class="null">g</span><span class="null">r</span><span class="null">m</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>岩体杨氏模量的初值 [Pa]。见公式 <a class="reference internal" href="#equation-modelimasshberm">(6)</a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.calc_mod_poisson">
+<span class="cmdkey"><span class="null">c</span><span class="null">a</span><span class="null">l</span><span class="null">c</span><span class="null">_</span><span class="null">m</span><span class="null">o</span><span class="null">d</span><span class="null">_</span><span class="null">p</span><span class="null">o</span><span class="null">i</span><span class="null">s</span><span class="null">s</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>为岩体估算的泊松比。见公式 <a class="reference internal" href="#equation-modelimasshbv">(7)</a>。默认情况下通常由 GSI 自动计算，但若用户不希望采用默认方式，也可赋予有效值。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.emer_mod_young">
+<span class="cmdkey"><span class="null">e</span><span class="null">m</span><span class="null">e</span><span class="null">r</span><span class="null">_</span><span class="null">m</span><span class="null">o</span><span class="null">d</span><span class="null">_</span><span class="null">y</span><span class="null">o</span><span class="null">u</span><span class="null">n</span><span class="null">g</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>岩体的当前杨氏模量 [Pa]。</p>
+</dd></dl>
+<p><strong>强度弱化</strong></p>
+<dl class="keyword">
+<dt id="kwd:imass.flag_weak_barton">
+<span class="cmdkey"><span class="null">f</span><span class="null">l</span><span class="null">a</span><span class="null">g</span><span class="null">_</span><span class="null">w</span><span class="null">e</span><span class="null">a</span><span class="null">k</span><span class="null">_</span><span class="null">b</span><span class="null">a</span><span class="null">r</span><span class="null">t</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ..."><span class="varbool"><span class="null">b</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>标志，默认为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>。把它设为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a> 可禁用 Barton 抗剪强度准则用于后峰值行为，改为使用一条残余强度包络。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.flag_weak_tencut">
+<span class="cmdkey"><span class="null">f</span><span class="null">l</span><span class="null">a</span><span class="null">g</span><span class="null">_</span><span class="null">w</span><span class="null">e</span><span class="null">a</span><span class="null">k</span><span class="null">_</span><span class="null">t</span><span class="null">e</span><span class="null">n</span><span class="null">c</span><span class="null">u</span><span class="null">t</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ..."><span class="varbool"><span class="null">b</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>标志，默认为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>。把它设为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a> 可禁用拉伸截断选项。若材料在网格单元至少一个四面体 overlay 中曾超过其抗拉强度，则认为该材料已被拉伸弱化。若某材料已被拉伸弱化（性质 <em>emer_weak_istenweak</em> 由 IMASS 按拉伸破坏四面体 overlay 总体积与网格单元总体积之比计算），且 <em>flag_weak_tencut</em> = <a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>，则材料抗拉强度将设为零。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.in_weak_multecrit">
+<span class="cmdkey"><span class="null">i</span><span class="null">n</span><span class="null">_</span><span class="null">w</span><span class="null">e</span><span class="null">a</span><span class="null">k</span><span class="null">_</span><span class="null">m</span><span class="null">u</span><span class="null">l</span><span class="null">t</span><span class="null">e</span><span class="null">c</span><span class="null">r</span><span class="null">i</span><span class="null">t</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>乘子 <span class="math">\(M\)</span>。该值乘以基质材料的经验特征应变（<span class="math">\(\gamma_{c}\)</span>）以计算临界应变（<span class="math">\(\gamma_{crit}\)</span>），见公式 <a class="reference internal" href="#equation-modelimasscriticalstrain">(16)</a>。默认为 1.0。把 <span class="math">\(M\)</span> 设为小于 1.0（且大于 0.0）的值可使材料响应更脆，把 <span class="math">\(M\)</span> 设为大于 1.0 的值可使其更延性。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.in_weak_chmbr">
+<span class="cmdkey"><span class="null">i</span><span class="null">n</span><span class="null">_</span><span class="null">w</span><span class="null">e</span><span class="null">a</span><span class="null">k</span><span class="null">_</span><span class="null">c</span><span class="null">h</span><span class="null">m</span><span class="null">b</span><span class="null">r</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>仅使用一条残余强度曲线时（<em>flag_weak_barton</em> = <a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>），Hoek-Brown 参数 <span class="math">\(m_{br}\)</span> 的残余值。默认为 4.33。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.in_weak_char">
+<span class="cmdkey"><span class="null">i</span><span class="null">n</span><span class="null">_</span><span class="null">w</span><span class="null">e</span><span class="null">a</span><span class="null">k</span><span class="null">_</span><span class="null">c</span><span class="null">h</span><span class="null">a</span><span class="null">r</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>仅使用一条残余强度曲线时（<em>flag_weak_barton</em> = <a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>），Hoek-Brown 参数 <span class="math">\(a_r\)</span> 的残余值。默认为 1.0。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.in_weak_phib">
+<span class="cmdkey"><span class="null">i</span><span class="null">n</span><span class="null">_</span><span class="null">w</span><span class="null">e</span><span class="null">a</span><span class="null">k</span><span class="null">_</span><span class="null">p</span><span class="null">h</span><span class="null">i</span><span class="null">b</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>Barton 抗剪强度准则中岩块的基本摩擦角 [度]，<span class="math">\(\phi_b\)</span>，见公式 <a class="reference internal" href="#equation-modelimassbarton">(11)</a>。默认为 30.0。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.calc_weak_ecrit">
+<span class="cmdkey"><span class="null">c</span><span class="null">a</span><span class="null">l</span><span class="null">c</span><span class="null">_</span><span class="null">w</span><span class="null">e</span><span class="null">a</span><span class="null">k</span><span class="null">_</span><span class="null">e</span><span class="null">c</span><span class="null">r</span><span class="null">i</span><span class="null">t</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>用于材料软化计算的基质材料临界应变。它由 <span class="math">\(\gamma_{crit} = M \gamma_{c}\)</span> 计算，见公式 <a class="reference internal" href="#equation-modelimasscriticalstrain">(16)</a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.calc_weak_zsize">
+<span class="cmdkey"><span class="null">c</span><span class="null">a</span><span class="null">l</span><span class="null">c</span><span class="null">_</span><span class="null">w</span><span class="null">e</span><span class="null">a</span><span class="null">k</span><span class="null">_</span><span class="null">z</span><span class="null">s</span><span class="null">i</span><span class="null">z</span><span class="null">e</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>以网格单元体积的立方根表示的网格单元尺寸 [m]，<span class="math">\(Z\)</span>。用于计算临界应变，见公式 <a class="reference internal" href="#equation-modelimasscriticalstrain">(16)</a>。注意这是只读变量。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.emer_weak_esplastic">
+<span class="cmdkey"><span class="null">e</span><span class="null">m</span><span class="null">e</span><span class="null">r</span><span class="null">_</span><span class="null">w</span><span class="null">e</span><span class="null">a</span><span class="null">k</span><span class="null">_</span><span class="null">e</span><span class="null">s</span><span class="null">p</span><span class="null">l</span><span class="null">a</span><span class="null">s</span><span class="null">t</span><span class="null">i</span><span class="null">c</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>当前累积塑性剪应变 <span class="math">\(\gamma^p\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.emer_weak_istenweak">
+<span class="cmdkey"><span class="null">e</span><span class="null">m</span><span class="null">e</span><span class="null">r</span><span class="null">_</span><span class="null">w</span><span class="null">e</span><span class="null">a</span><span class="null">k</span><span class="null">_</span><span class="null">i</span><span class="null">s</span><span class="null">t</span><span class="null">e</span><span class="null">n</span><span class="null">w</span><span class="null">e</span><span class="null">a</span><span class="null">k</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p><em>emer_weak_istenweak</em> 初始为 0，随材料发生拉伸屈服而变为最大值 1.0。其计算方式为：网格单元中发生拉伸屈服的四面体 overlay 总体积与该网格单元总体积之比。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.emer_weak_sloss">
+<span class="cmdkey"><span class="null">e</span><span class="null">m</span><span class="null">e</span><span class="null">r</span><span class="null">_</span><span class="null">w</span><span class="null">e</span><span class="null">a</span><span class="null">k</span><span class="null">_</span><span class="null">s</span><span class="null">l</span><span class="null">o</span><span class="null">s</span><span class="null">s</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>强度损失指标（<span class="math">\(S_L\)</span>），在 +1 与 -1 之间变化（<span class="math">\(-1 \le S_L \le 1\)</span>）。未屈服的材料有 <span class="math">\(S_L = 1\)</span>。该值按 <span class="math">\(\gamma^p\)</span> 的函数线性降至 0。当 <span class="math">\(\gamma^p = \gamma_{crit}\)</span> 时 <span class="math">\(S_L = 0\)</span>。<span class="math">\(S_L\)</span> 按 <span class="math">\(VSI_c\)</span> 的函数在 0 与 -1 之间线性变化。当 <span class="math">\(VSI_c = 2/3\)</span> 时 <span class="math">\(S_L = -1\)</span>，因此若指定 <span class="math">\(VSI_{max} &lt; 2/3\)</span>，<span class="math">\(S_L\)</span> 只能降至等于 <span class="math">\(-1.5 VSI_c\)</span> 的值，而不能到 -1。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.emer_stren_mcfric">
+<span class="cmdkey"><span class="null">e</span><span class="null">m</span><span class="null">e</span><span class="null">r</span><span class="null">_</span><span class="null">s</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">_</span><span class="null">m</span><span class="null">c</span><span class="null">f</span><span class="null">r</span><span class="null">i</span><span class="null">c</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>摩擦的当前值 [度]。所报告的该值为该网格单元各四面体 overlay 的平均值。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.emer_stren_mccoh">
+<span class="cmdkey"><span class="null">e</span><span class="null">m</span><span class="null">e</span><span class="null">r</span><span class="null">_</span><span class="null">s</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">_</span><span class="null">m</span><span class="null">c</span><span class="null">c</span><span class="null">o</span><span class="null">h</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>黏聚力当前值 [Pa]。所报告的该值为该网格单元各四面体 overlay 的平均值。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.emer_stren_mcten">
+<span class="cmdkey"><span class="null">e</span><span class="null">m</span><span class="null">e</span><span class="null">r</span><span class="null">_</span><span class="null">s</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">_</span><span class="null">m</span><span class="null">c</span><span class="null">t</span><span class="null">e</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>拉伸截断的当前值 [Pa]。所报告的该值为该网格单元各四面体 overlay 的平均值。</p>
+</dd></dl>
+<p><strong>剪胀、扩容与模量软化</strong></p>
+<dl class="keyword">
+<dt id="kwd:imass.flag_bulking_denadj">
+<span class="cmdkey"><span class="null">f</span><span class="null">l</span><span class="null">a</span><span class="null">g</span><span class="null">_</span><span class="null">b</span><span class="null">u</span><span class="null">l</span><span class="null">k</span><span class="null">i</span><span class="null">n</span><span class="null">g</span><span class="null">_</span><span class="null">d</span><span class="null">e</span><span class="null">n</span><span class="null">a</span><span class="null">d</span><span class="null">j</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>标志，默认为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>。当该标志为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a> 时，IMASS 将依据 VSI（即 <span class="math">\(VSI_c\)</span>）的当前值调整网格单元密度。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.flag_bulking_modsoft">
+<span class="cmdkey"><span class="null">f</span><span class="null">l</span><span class="null">a</span><span class="null">g</span><span class="null">_</span><span class="null">b</span><span class="null">u</span><span class="null">l</span><span class="null">k</span><span class="null">i</span><span class="null">n</span><span class="null">g</span><span class="null">_</span><span class="null">m</span><span class="null">o</span><span class="null">d</span><span class="null">s</span><span class="null">o</span><span class="null">f</span><span class="null">t</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>标志，默认为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>。把它设为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a> 可禁用模量软化。用于模量软化计算的碎块长宽比设为 0.6。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.in_bulking_den">
+<span class="cmdkey"><span class="null">i</span><span class="null">n</span><span class="null">_</span><span class="null">b</span><span class="null">u</span><span class="null">l</span><span class="null">k</span><span class="null">i</span><span class="null">n</span><span class="null">g</span><span class="null">_</span><span class="null">d</span><span class="null">e</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>初始材料密度 [<span class="math">\(kg/m^3\)</span>]。可由网格单元密度内部获得，后者可用 <a class="reference internal" href="../../../../flac3d/zone/doc/manual/zone_manual/zone_commands/cmd_zone.initialize.html#kwd:zone.initialize.density" title="mass density of zone...">初始化单元密度命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">initialize</span> <span class="pre">density</span></code>）</a> 命令设置。网格单元密度可能被 IMASS 改变（若 <em>flag_bulking_denadj</em> = <a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>）。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.in_bulking_dil">
+<span class="cmdkey"><span class="null">i</span><span class="null">n</span><span class="null">_</span><span class="null">b</span><span class="null">u</span><span class="null">l</span><span class="null">k</span><span class="null">i</span><span class="null">n</span><span class="null">g</span><span class="null">_</span><span class="null">d</span><span class="null">i</span><span class="null">l</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>初始剪胀角 [度]，默认为 10。若输入正值（选项 1），则使用该正值的常数剪胀角。若输入负值（选项 2），则使用内建的演化剪胀角（示于 <a href="#modelimass-dilation">图 8（Figure  8）</a>）。无论采用哪种剪胀选项，当达到用户定义的最大扩容因子（<span class="math">\(VSI_{max}\)</span>）时剪胀角设为零。这可防止网格单元在剪切过程中膨胀到不现实的水平。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.in_bulking_targetvsi">
+<span class="cmdkey"><span class="null">i</span><span class="null">n</span><span class="null">_</span><span class="null">b</span><span class="null">u</span><span class="null">l</span><span class="null">k</span><span class="null">i</span><span class="null">n</span><span class="null">g</span><span class="null">_</span><span class="null">t</span><span class="null">a</span><span class="null">r</span><span class="null">g</span><span class="null">e</span><span class="null">t</span><span class="null">v</span><span class="null">s</span><span class="null">i</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>目标扩容因子或 VSI（体积应变增量）<span class="math">\(VSI_{tgt}\)</span>。当为某网格单元把它初始化为正值时，该网格单元的当前塑性剪应变（<span class="math">\(\gamma^p\)</span>）被设为 <em>calc_weak_ecrit</em>（<span class="math">\(\gamma_{crit}\)</span>），并置于第一条残余包络之后。假定 VSI 在第一条残余包络上为零、在第二条残余包络上等于 2/3，因此网格单元在两条残余包络之间的相对位置由所指定的 <span class="math">\(VSI_{tgt}\)</span> 确定。指定 <span class="math">\(VSI_{tgt} &gt; 0\)</span> 时，其作用是强制材料从循环开始时 <span class="math">\(VSI_c = VSI_{tgt}\)</span> 的状态起步。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.in_bulking_maxtotvsi">
+<span class="cmdkey"><span class="null">i</span><span class="null">n</span><span class="null">_</span><span class="null">b</span><span class="null">u</span><span class="null">l</span><span class="null">k</span><span class="null">i</span><span class="null">n</span><span class="null">g</span><span class="null">_</span><span class="null">m</span><span class="null">a</span><span class="null">x</span><span class="null">t</span><span class="null">o</span><span class="null">t</span><span class="null">v</span><span class="null">s</span><span class="null">i</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>最大扩容因子或最大 VSI，<span class="math">\(VSI_{max}\)</span>。默认为 2/3。网格单元 VSI 达到该限值后，剪胀关闭且密度调整终止。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.emer_stren_mcdil">
+<span class="cmdkey"><span class="null">e</span><span class="null">m</span><span class="null">e</span><span class="null">r</span><span class="null">_</span><span class="null">s</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">_</span><span class="null">m</span><span class="null">c</span><span class="null">d</span><span class="null">i</span><span class="null">l</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>剪胀角当前值 [度]，在 overlay 中按各四面体单独计算，所报告的该值为该网格单元各四面体 overlay 的平均值。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.emer_bulking_den">
+<span class="cmdkey"><span class="null">e</span><span class="null">m</span><span class="null">e</span><span class="null">r</span><span class="null">_</span><span class="null">b</span><span class="null">u</span><span class="null">l</span><span class="null">k</span><span class="null">i</span><span class="null">n</span><span class="null">g</span><span class="null">_</span><span class="null">d</span><span class="null">e</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>网格单元当前密度 [<span class="math">\(kg/m^3\)</span>]。网格单元密度可能被 IMASS 改变。更多信息见 <em>in_bulking_den</em> 性质。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.emer_bulking_totvsi">
+<span class="cmdkey"><span class="null">e</span><span class="null">m</span><span class="null">e</span><span class="null">r</span><span class="null">_</span><span class="null">b</span><span class="null">u</span><span class="null">l</span><span class="null">k</span><span class="null">i</span><span class="null">n</span><span class="null">g</span><span class="null">_</span><span class="null">t</span><span class="null">o</span><span class="null">t</span><span class="null">v</span><span class="null">s</span><span class="null">i</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>用于模量计算的当前总 VSI 值 <span class="math">\(VSI_c\)</span>。</p>
+</dd></dl>
+<p><strong>破坏时的应力</strong></p>
+<dl class="keyword">
+<dt id="kwd:imass.flag_sfail_failtrack">
+<span class="cmdkey"><span class="null">f</span><span class="null">l</span><span class="null">a</span><span class="null">g</span><span class="null">_</span><span class="null">s</span><span class="null">f</span><span class="null">a</span><span class="null">i</span><span class="null">l</span><span class="null">_</span><span class="null">f</span><span class="null">a</span><span class="null">i</span><span class="null">l</span><span class="null">t</span><span class="null">r</span><span class="null">a</span><span class="null">c</span><span class="null">k</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>标志，默认为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>。把它设为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a> 可禁用破坏应力跟踪。IMASS 记录主应力方向的方位角（trend）与倾伏角（plunge）。Trend = 自北向东顺时针量测的角度（度）。Plunge = 自水平面向下量测为正的角度（度），水平为 0 度。在 FLAC3D 与 3DEC 模型空间中，正 y 轴指向北、正 x 轴指向东、正 z 轴向上。注意 FLAC3D 与 3DEC 采用压应力为负、拉应力为正的约定。IMASS 对任一给定网格单元中首先达到指定屈服限值的子网格单元（四面体）记录并报告以下各值。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.emer_sfail_pmax">
+<span class="cmdkey"><span class="null">e</span><span class="null">m</span><span class="null">e</span><span class="null">r</span><span class="null">_</span><span class="null">s</span><span class="null">f</span><span class="null">a</span><span class="null">i</span><span class="null">l</span><span class="null">_</span><span class="null">p</span><span class="null">m</span><span class="null">a</span><span class="null">x</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>最大（最正）主应力 [Pa]。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.emer_sfail_plungepmax">
+<span class="cmdkey"><span class="null">e</span><span class="null">m</span><span class="null">e</span><span class="null">r</span><span class="null">_</span><span class="null">s</span><span class="null">f</span><span class="null">a</span><span class="null">i</span><span class="null">l</span><span class="null">_</span><span class="null">p</span><span class="null">l</span><span class="null">u</span><span class="null">n</span><span class="null">g</span><span class="null">e</span><span class="null">p</span><span class="null">m</span><span class="null">a</span><span class="null">x</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>最大主应力的倾伏角 [度]。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.emer_sfail_trendpmax">
+<span class="cmdkey"><span class="null">e</span><span class="null">m</span><span class="null">e</span><span class="null">r</span><span class="null">_</span><span class="null">s</span><span class="null">f</span><span class="null">a</span><span class="null">i</span><span class="null">l</span><span class="null">_</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">d</span><span class="null">p</span><span class="null">m</span><span class="null">a</span><span class="null">x</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>最大主应力的方位角 [度]。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.emer_sfail_pmid">
+<span class="cmdkey"><span class="null">e</span><span class="null">m</span><span class="null">e</span><span class="null">r</span><span class="null">_</span><span class="null">s</span><span class="null">f</span><span class="null">a</span><span class="null">i</span><span class="null">l</span><span class="null">_</span><span class="null">p</span><span class="null">m</span><span class="null">i</span><span class="null">d</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>中间主应力 [Pa]。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.emer_sfail_plungepmid">
+<span class="cmdkey"><span class="null">e</span><span class="null">m</span><span class="null">e</span><span class="null">r</span><span class="null">_</span><span class="null">s</span><span class="null">f</span><span class="null">a</span><span class="null">i</span><span class="null">l</span><span class="null">_</span><span class="null">p</span><span class="null">l</span><span class="null">u</span><span class="null">n</span><span class="null">g</span><span class="null">e</span><span class="null">p</span><span class="null">m</span><span class="null">i</span><span class="null">d</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>中主应力的倾伏角 [度]。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.emer_sfail_trendpmid">
+<span class="cmdkey"><span class="null">e</span><span class="null">m</span><span class="null">e</span><span class="null">r</span><span class="null">_</span><span class="null">s</span><span class="null">f</span><span class="null">a</span><span class="null">i</span><span class="null">l</span><span class="null">_</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">d</span><span class="null">p</span><span class="null">m</span><span class="null">i</span><span class="null">d</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>中主应力的方位角 [度]。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.emer_sfail_pmin">
+<span class="cmdkey"><span class="null">e</span><span class="null">m</span><span class="null">e</span><span class="null">r</span><span class="null">_</span><span class="null">s</span><span class="null">f</span><span class="null">a</span><span class="null">i</span><span class="null">l</span><span class="null">_</span><span class="null">p</span><span class="null">m</span><span class="null">i</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>最小（最负）主应力 [Pa]。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.emer_sfail_plungepmin">
+<span class="cmdkey"><span class="null">e</span><span class="null">m</span><span class="null">e</span><span class="null">r</span><span class="null">_</span><span class="null">s</span><span class="null">f</span><span class="null">a</span><span class="null">i</span><span class="null">l</span><span class="null">_</span><span class="null">p</span><span class="null">l</span><span class="null">u</span><span class="null">n</span><span class="null">g</span><span class="null">e</span><span class="null">p</span><span class="null">m</span><span class="null">i</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>最小主应力的倾伏角 [度]。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.emer_sfail_trendpmin">
+<span class="cmdkey"><span class="null">e</span><span class="null">m</span><span class="null">e</span><span class="null">r</span><span class="null">_</span><span class="null">s</span><span class="null">f</span><span class="null">a</span><span class="null">i</span><span class="null">l</span><span class="null">_</span><span class="null">t</span><span class="null">r</span><span class="null">e</span><span class="null">n</span><span class="null">d</span><span class="null">p</span><span class="null">m</span><span class="null">i</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>最小主应力的方位角 [度]。</p>
+</dd></dl>
+<p><strong>遍布节理</strong></p>
+<dl class="keyword">
+<dt id="kwd:imass.flag_uj_usejoints">
+<span class="cmdkey"><span class="null">f</span><span class="null">l</span><span class="null">a</span><span class="null">g</span><span class="null">_</span><span class="null">u</span><span class="null">j</span><span class="null">_</span><span class="null">u</span><span class="null">s</span><span class="null">e</span><span class="null">j</span><span class="null">o</span><span class="null">i</span><span class="null">n</span><span class="null">t</span><span class="null">s</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">a</span>)</span><span class="null"> </span></dt>
+<dd><p>标志，默认为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">关闭（<span class="varbool"><span class="null">off</span></span>）</a>。若要设置遍布节理，则把它设为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:bool" title="A Boolean value ( b ), with six valid expressions:  on off true
+false yes no ...">开启（<span class="varbool"><span class="null">on</span></span>）</a>（此时还必须设置遍布节理性质）。注意所有节理性质初始为零。对软弱面方位，请指定性质 <em>in_uj_jdip, in_uj_jddirection</em> 或性质 <em>in_uj_jnx, in_uj_jny, in_uj_jnz</em>（软弱面法向的这些分量不要求是单位向量，IMASS 会在内部归一化）。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.in_uj_jcoh">
+<span class="cmdkey"><span class="null">i</span><span class="null">n</span><span class="null">_</span><span class="null">u</span><span class="null">j</span><span class="null">_</span><span class="null">j</span><span class="null">c</span><span class="null">o</span><span class="null">h</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>节理黏聚力 [Pa]，<span class="math">\(c_j\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.in_uj_jdil">
+<span class="cmdkey"><span class="null">i</span><span class="null">n</span><span class="null">_</span><span class="null">u</span><span class="null">j</span><span class="null">_</span><span class="null">j</span><span class="null">d</span><span class="null">i</span><span class="null">l</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>节理剪胀角 <span class="math">\({\psi}_j\)</span>。默认为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.0</span></span></a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.in_uj_jfric">
+<span class="cmdkey"><span class="null">i</span><span class="null">n</span><span class="null">_</span><span class="null">u</span><span class="null">j</span><span class="null">_</span><span class="null">j</span><span class="null">f</span><span class="null">r</span><span class="null">i</span><span class="null">c</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>节理摩擦角 <span class="math">\({\phi}_j\)</span></p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.in_uj_jten">
+<span class="cmdkey"><span class="null">i</span><span class="null">n</span><span class="null">_</span><span class="null">u</span><span class="null">j</span><span class="null">_</span><span class="null">j</span><span class="null">t</span><span class="null">e</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>节理拉伸极限 [Pa]，<span class="math">\({\sigma}^t_j\)</span>。默认为 <a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">0.0</span></span></a>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.in_uj_jdip">
+<span class="cmdkey"><span class="null">i</span><span class="null">n</span><span class="null">_</span><span class="null">u</span><span class="null">j</span><span class="null">_</span><span class="null">j</span><span class="null">d</span><span class="null">i</span><span class="null">p</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>Something.</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.in_uj_jddirection">
+<span class="cmdkey"><span class="null">i</span><span class="null">n</span><span class="null">_</span><span class="null">u</span><span class="null">j</span><span class="null">_</span><span class="null">j</span><span class="null">d</span><span class="null">d</span><span class="null">i</span><span class="null">r</span><span class="null">e</span><span class="null">c</span><span class="null">t</span><span class="null">i</span><span class="null">o</span><span class="null">n</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>软弱面的倾角、倾向 [度]。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.in_uj_jnx">
+<span class="cmdkey"><span class="null">i</span><span class="null">n</span><span class="null">_</span><span class="null">u</span><span class="null">j</span><span class="null">_</span><span class="null">j</span><span class="null">n</span><span class="null">x</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>Something.</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.in_uj_jny">
+<span class="cmdkey"><span class="null">i</span><span class="null">n</span><span class="null">_</span><span class="null">u</span><span class="null">j</span><span class="null">_</span><span class="null">j</span><span class="null">n</span><span class="null">y</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>Something. Something.</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.in_uj_jnz">
+<span class="cmdkey"><span class="null">i</span><span class="null">n</span><span class="null">_</span><span class="null">u</span><span class="null">j</span><span class="null">_</span><span class="null">j</span><span class="null">n</span><span class="null">z</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a></dt>
+<dd><p>软弱面法向方向的 <em>x</em>、<em>y</em>、<em>z</em> 分量 <span class="math">\(n_x\)</span>、<span class="math">\(n_y\)</span> 与 <span class="math">\(n_z\)</span>。</p>
+</dd></dl>
+<dl class="keyword">
+<dt id="kwd:imass.emer_uj_esplastic">
+<span class="cmdkey"><span class="null">e</span><span class="null">m</span><span class="null">e</span><span class="null">r</span><span class="null">_</span><span class="null">u</span><span class="null">j</span><span class="null">_</span><span class="null">e</span><span class="null">s</span><span class="null">p</span><span class="null">l</span><span class="null">a</span><span class="null">s</span><span class="null">t</span><span class="null">i</span><span class="null">c</span><span class="null"> </span></span><a class="reference internal" href="../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">f</span><span class="null"> </span></span></a><span class="cmdextra">(<span class="cmdextraparam">r</span>)</span><span class="null"> </span></dt>
+<dd><p>节理中的累积塑性剪应变。</p>
+</dd></dl>
+<p><strong>图例</strong></p>
+<dl class="docutils">
+<dt>(a) 高级属性。</dt>
+<dd>该属性具有默认值；在较简单的模型应用中，无需专门赋值。</dd>
+<dt>(r) 只读属性。</dt>
+<dd>该属性不能由用户设置，但可以列出、绘图显示，或通过 <span class="codename">FISH</span> 访问。</dd>
+</dl>
+</dd></dl>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a accesskey="U" href="../../../docproject/utilities/toctree_temp.html">Temp Toctree Material</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../../../../pfc/docproject/source/manual/optional_features/thermal_option/contacts/udm.html" title="previous chapter"> User Defined Contact Models</a> |    
+       <a href="../../../docproject/utilities/tokens.html" title="next chapter">Tokens</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?IMASS Model" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../_static/icgscripts.js"></script>
+</body>
+</html>

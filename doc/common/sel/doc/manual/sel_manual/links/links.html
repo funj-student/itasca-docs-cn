@@ -1,0 +1,186 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html lang="zh-CN" xml:lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/>
+<title>结构单元连接 — FLAC3D 7.0 中文手册</title>
+<link href="../../../../../../_static/itasca.css" rel="stylesheet" type="text/css"/>
+<link href="../../../../../../_static/pygments.css" rel="stylesheet" type="text/css"/>
+<!-- icg: hide sidebar on load as needed -->
+<script type="text/javascript">
+    (function () {
+    if (window.innerWidth <= 720){
+       document.write('<link rel="stylesheet" href="../../../../../../_static/icg_shutsidebar.css" type="text/css" />')
+       }
+    }());
+    </script>
+<script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../../../../../',
+        VERSION:     '7.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  false,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+<script src="../../../../../../_static/jquery.js" type="text/javascript"></script>
+<script src="../../../../../../_static/underscore.js" type="text/javascript"></script>
+<script src="../../../../../../_static/doctools.js" type="text/javascript"></script>
+<script src="../../../../../../_static/MathJax/MathJax.js?config=TeX-AMS_SVG" type="text/javascript"></script>
+<link href="../../../../../../_static/flac3d.ico" rel="shortcut icon"/>
+<link href="../../../../../../genindex.html" rel="index" title="Index"/>
+<link href="../../../../../../search.html" rel="search" title="Search"/>
+<link href="commands/link_commands.html" rel="next" title="Commands"/>
+<link href="../nodes/fish/sel.node_intrinsics/fish_sel.node.vel.local.html" rel="prev" title="struct.node.vel.local"/>
+<!--<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:normal,bold,bolditalic,italic" rel="stylesheet">-->
+<link href="https://fonts.googleapis.com/css?family=Lato:normal,bold,bolditalic,italic" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css?family=Roboto+Slab:normal,bold" rel="stylesheet"/>
+</head>
+<body>
+<div id="main">
+<div id="maintop">
+<a href="../../../../../../contents.html" id="cornerlink"><img alt="Logo" id="cornerlogo" src="../../../../../../_static/logo_blank.png"/>  <span class="codename" id="cornercodename"></span></a>
+<div id="searchbox" role="search">
+<form action="../../../../../../search.html" class="search" method="get">
+<div><input id="sb" name="q" type="text"/></div>
+<!--<div><input type="submit" value="Go" /></div>-->
+<input name="check_keywords" type="hidden" value="yes"/>
+<input name="area" type="hidden" value="default"/>
+</form>
+</div>
+</div>
+<div id="maincontent">
+<div id="mainbody" role="main">
+<div class="section" id="structural-element-links">
+<span id="id1"></span><h1>结构单元连接</h1>
+<div class="section" id="introduction">
+<h2>引言</h2>
+<p>连接是把源节点与目标相连的对象。目前目标可以是另一个结构节点或一个网格单元，将来可能增加更多目标类型。每个连接使用其源节点的局部系，所有连接性质都相对于该局部系指定。连接实现不同单元类型与网格之间发生的相互作用。多数情况下无需创建或修改连接，因为使用它们的单元会自动创建连接并设置其性质。</p>
+<p>不过若希望引入具有完全转动自由的塑性铰（使铰点两侧可发展出两个不同转角），则必须在该点创建两个独立节点，在二者之间创建节点-节点连接，在相应转动自由度中指定法向屈服弹簧，并把该弹簧的刚度与屈服强度设为该塑性铰的相应值。针对这类以及其他更复杂的情形，我们提供以下与连接逻辑的接口。</p>
+<p>每个连接对六个自由度（三个平动、三个转动）各有六种可能的附着条件。可能条件为自由（不传递力）、刚性（与目标位置刚性连接）与可变形（依据相对运动由一维力-位移法则产生力）。可变形条件的行为由连接模型控制，目前有四种选项：<a class="reference internal" href="../../../../../docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">linear</span></span></a>、<a class="reference internal" href="../../../../../docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">shear-yield</span></span></a>、<a class="reference internal" href="../../../../../docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">normal-yield</span></span></a> 与 <a class="reference internal" href="../../../../../docproject/utilities/types.html#type:str" title="A string ( s ) of alphanumeric characters. Multiple instances in a command
+are numbered ( s1   s2   s3  etc.).  See  fish_stringdesc 
+for more information..."><span class="varstring"><span class="null">pile-yield</span></span></a>。注意一个连接对每个自由度只能有一种条件或模型。刚性连接的递归链式连接<em>是</em>允许的。</p>
+<p>对嵌入式衬砌的特殊情形，每个节点可能有两个连接。此时所有连接中每个自由度只允许有一个刚性连接。</p>
+<p>注意连接模型性质默认依据与宿主节点相连单元的性质自动赋值。除非相互作用类型不兼容，否则这将覆盖通过命令行或 <span class="codename">FISH</span> 手动设置的性质。这在程序执行“几何更新”时发生，即循环开始时，以及大应变模式下循环期间每个更新间隔开始时。因此自定义连接性质最简单的方法是在与宿主节点相连的单元中设置性质。否则用户必须确保在每次更新之后用时机恰当的 <span class="codename">FISH</span> 回调覆盖默认值（见 <a class="reference internal" href="../../../../../kernel/doc/manual/fish/commands/cmd_fish.callback.html#command:fish.callback" title="Add/remove functions to be executed in response to callback events...">设置FISH回调命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fish</span> <span class="pre">callback</span></code>）</a> 命令）。</p>
+<p>用 <span class="cmdkey">group</span> 范围元素选择时，默认情况下只要连接本身、其所连节点或该节点所连任何单元属于该组，就认为该连接是该组成员。可用 <span class="cmdkey">by</span> 关键字把该范围限定到特定对象类型。</p>
+<p>每当连接尝试与目标网格单元建立连接时，它会搜索非空网格单元，使源节点位于该网格单元边界距离 <span class="math">\(d\)</span> 以内。<span class="math">\(d\)</span> 的取值由网格单元容差的全局值（见 <a class="reference internal" href="commands/cmd_structure.link.tolerance-contact.html#command:structure.link.tolerance-contact" title="Set the tolerance used when establishing node-to-zone links. A node is considered
+to be in a zone if it is within a distance `d` of the zone boundary, where δ
+equals  f  times zone size (taken as the maximum `x`\ -, `y`\ -, or `z`\
+-dimension of the zone bounding box). Nodes that are used by elements with their
+sliding flag on will utilize  structure.link.tolerance-slide  instead of
+ f  when attempting to update the zone interpolation..."><code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">link</span> <span class="pre">tolerance-contact</span></code></a> 命令）乘以网格单元尺寸得到，网格单元尺寸取网格单元包围盒的最大 <span class="math">\(x\)</span>、<span class="math">\(y\)</span> 或 <span class="math">\(z\)</span> 尺寸。但请注意，仅当源节点不在任何非空网格单元内部或边界上时才使用这样一个邻近网格单元。若源节点位于某网格单元的 <em>d</em> 边界内，则用于把信息从连接传递到网格单元的加权函数将对应网格单元表面上距节点位置最近的位置。</p>
+</div>
+<div class="section" id="link-model-properties">
+<span id="sel-link-properties"></span><h2>连接模型性质</h2>
+<p>结构连接可变形模型默认在创建连接时自动建立。各自由度所用默认类型取决于单元类型（见 <a class="reference internal" href="../formulation/formulation.html#sel-attachment-conditions"><span class="std std-ref">各单元类型的默认连接附着条件</span>（Default link attachment conditions for element types）</a>）。可变形模型的性质默认也在初始化时依据与其相连单元的性质设置。不过可以同时通过改变模型与改变现有模型的性质来覆盖这些默认值——见 <a class="reference internal" href="commands/cmd_structure.link.attach.html#command:structure.link.attach" title="Set attachment conditions for the specified link directions. The current attachment
+condition will be replaced by the condition specified here. Conditions are specified
+in keyword pairs, the first ( keyword ) being the degree-of-freedom and
+the second ([linkattachblock]) being the type of condition to use.  The following
+keywords are available to specify the degree-of-freedom:..."><code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">link</span> <span class="pre">attach</span></code></a> 与 <a class="reference internal" href="commands/cmd_structure.link.property.html#command:structure.link.property" title="List a property of a deformable force-displacement model in the link at the
+degree-of-freedom specified in  keyword .  A list of properties available
+to each link constitituve model is found in  Structural Element Link Properties
+&lt;sel-link-properties&gt; ..."><code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">link</span> <span class="pre">property</span></code></a> 命令。当前可用的各可变形连接模型都提供以下性质。</p>
+<table border="1" class="colwidths-given icg1 docutils" id="id2">
+<caption><span class="caption-text">表 1：各可变形连接模型可用的性质</span></caption>
+<colgroup>
+<col width="25%"/>
+<col width="75%"/>
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">名称</th>
+<th class="head">参数</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>线性</td>
+<td>area, stiffness</td>
+</tr>
+<tr class="row-odd"><td>法向屈服</td>
+<td>area, gap, stiffness, yield-compression, yield-tension</td>
+</tr>
+<tr class="row-even"><td>桩屈服</td>
+<td>area, cohesion, friction, gap, stiffness</td>
+</tr>
+<tr class="row-odd"><td>剪切屈服</td>
+<td>area, cohesion, cohesion-table, confinement-table, friction, friction-table, incremental-confinement-flag, perimeter, stiffness</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="compression-vs-tension-direction">
+<h2>压缩与拉伸方向</h2>
+<p>法向屈服模型的有关性质可能有些令人困惑。在 <em>连接模型</em> 的语境中，拉伸极限指连接力的正限值，压缩极限指连接力的负限值。正的连接力由正的相对增量位移产生，后者定义为目标增量位移与源增量位移之差（目标减源）。这一区分发生在节点局部坐标系中。结果是，视局部系与模型配置而定，“压缩”极限可能并不指从单元视角直觉认为的压缩。</p>
+<p>例如一般情况下衬砌单元赋予的节点系使 <span class="math">\(z\)</span> 方向背离网格单元。这意味着衬砌的 <a class="reference internal" href="../liners/commands/cmd_structure.liner.property.html#kwd:structure.liner.property.coupling-yield-normal" title="normal coupling spring tensile strength (stress units)...">设置衬砌单元法向屈服耦合属性命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">liner</span> <span class="pre">property</span> <span class="pre">coupling-yield-normal</span></code>）</a> 性质将映射到法向屈服可变形模型的 <code class="xref fish fish-cmd docutils literal"><span class="pre">structure</span> <span class="pre">link</span> <span class="pre">property</span> <span class="pre">yield-compression</span></code> 性质。<a href="#sel-link-tension-compression">图 1（Figure  1）</a> 示出该体系。</p>
+<div class="figure align-center" id="id3">
+<span id="sel-link-tension-compression"></span><a class="reference internal image-reference" href="../../../../../../_images/link-tension-compression.png"><img alt="../../../../../../_images/link-tension-compression.png" src="../../../../../../_images/link-tension-compression.png" style="width: 75%;"/></a>
+<p class="caption"><span class="caption-text">图 1：衬砌 coupling-yield-normal 性质与连接模型 yield-compression 性质的映射。</span></p>
+</div>
+</div>
+<div class="section" id="manually-setting-link-properties">
+<h2>手动设置连接性质</h2>
+<p>如上所述，可变形连接模型的性质由程序在几何更新时自动设置；几何更新发生在所走第一个循环的校验阶段，若为大应变模式则每个更新间隔发生一次。此时可能覆盖手动设置的性质。目前无法阻止该行为。不过可在每次全局更新之后用 <span class="codename">FISH</span> 恢复所期望的手动性质。</p>
+<p>可用 <a class="reference internal" href="../../../../../kernel/doc/manual/fish/commands/cmd_fish.callback.html#command:fish.callback" title="Add/remove functions to be executed in response to callback events...">设置FISH回调命令（<code class="xref fish fish-cmd docutils literal"><span class="pre">fish</span> <span class="pre">callback</span></code>）</a> 命令在每个循环中插入一次 <span class="codename">FISH</span> 调用，此时回调应位于时间索引 <a class="reference internal" href="../../../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">-2</span></span></a> 之后、<a class="reference internal" href="../../../../../docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
+e notation. Multiple instances in a command are numbered ( f1   f2 
+ f3  etc.)..."><span class="varfloat"><span class="null">-1</span></span></a> 之前（完整列表见 <a class="reference internal" href="../../../../../kernel/doc/manual/program/commands/cmd_program.list.html#kwd:program.list.cycle-sequence" title="List the doubles indicating the cycle point and names of the cycle entries in
+the cycle sequence...">列出循环序列（<code class="xref fish fish-cmd docutils literal"><span class="pre">program</span> <span class="pre">list</span> <span class="pre">cycle-sequence</span></code>）</a>）。可用 <a class="reference internal" href="../sel_fish/sel_intrinsics/fish_sel.was.updated.html#function:struct.was.updated" title="Returns TRUE if the last validation check actually performed a geometry update.
+ Normally this update is performed at the start of cycling, and in large-strain
+mode at the geometry update interval.  This value will be true after the validation
+update is performed until the next validation step when a full geometry update
+is not performed...">结构单元几何更新状态（<code class="xref fish fish-func docutils literal"><span class="pre">struct.was.updated</span></code>）</a> <span class="codename">FISH</span> 内建函数判断该循环开始时是否实际发生了完整几何更新。</p>
+</div>
+<div class="section" id="commands-fish">
+<h2>Commands &amp; FISH</h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="commands/link_commands.html">命令（Commands）</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fish/link_fish.html"><span class="codename">FISH</span> 函数（FISH Functions）</a></li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div id="navbutton">⇄</div>
+<!-- <div id="navbutton">&#9776;</div>
+        <div id="totopbutton">&#8657;</div> -->
+<div id="mainbottom1">
+<span class="prevnext">
+<ul>
+<li class="nav-item nav-item-0"><a href="../../../../../../contents.html">FLAC3D 7.0 文档</a> »</li>
+<li class="nav-item nav-item-1"><a href="../../../../../docproject/source/manual/program_guide/program_guide.html">程序指南</a> »</li>
+<li class="nav-item nav-item-2"><a accesskey="U" href="../../sels.html">Structural Elements</a> »</li>
+</ul>
+</span>
+<br/><br/>
+<span class="prevnext">
+       ⇐<a href="../nodes/fish/sel.node_intrinsics/fish_sel.node.vel.local.html" title="previous chapter"> <code class="docutils literal"><span class="pre">struct.node.vel.local</span></code></a> |    
+       <a href="commands/link_commands.html" title="next chapter">Commands</a> ⇒
+       </span>
+</div>
+<div id="mainbottom2">
+<table class="blank" style="width: 100%; text-align: center; margin-top: -0.5em;"><tr>
+<td><a class="internal reference" href="http://www.itascacg.com/docs/helpfeedback/feedback2.php?FLAC3D 7.0?Structural Element Links" id="wth" target="_blank"> 这些内容对您有帮助吗？…</a></td>
+<td><a href="https://www.itascacg.com/software/flac3d" id="codeid">FLAC3D</a>
+<a href="../../../../../docproject/utilities/icgsphinxhelp/icgsphinxhelp.html" id="docdoor">©</a>  2019, 
+      <a href="https://www.itascacg.com">Itasca</a></td>
+<td>
+         原文更新于 2020 年 10 月 8 日
+      </td>
+</tr>
+</table>
+</div>
+</div>
+</div>
+<div class="sidenav" id="mySidenav">
+<iframe frameborder="0" id="toctobj2" src="../../../../../../navtree.html"></iframe>
+</div>
+<script src="../../../../../../_static/icgscripts.js"></script>
+</body>
+</html>
