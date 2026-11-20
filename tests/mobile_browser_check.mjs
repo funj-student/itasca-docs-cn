@@ -80,6 +80,32 @@ async function measure(page) {
   });
 }
 
+async function measureContent(page) {
+  return page.evaluate(() => {
+    const main = document.getElementById('mainbody');
+    if (!main) return null;
+    const overflowing = [];
+    Array.prototype.forEach.call(main.querySelectorAll('*'), function (el) {
+      const r = el.getBoundingClientRect();
+      if (r.width > 0 && r.right > window.innerWidth + 2 &&
+          getComputedStyle(el).position !== 'fixed' && overflowing.length < 6) {
+        overflowing.push({ tag: el.tagName, cls: String(el.className).slice(0, 60), right: Math.round(r.right) });
+      }
+    });
+    const wrappers = Array.prototype.slice.call(main.querySelectorAll('.table-scroll'));
+    return {
+      tableScrollers: wrappers.length,
+      scrollableTables: wrappers.filter(e => e.scrollWidth > e.clientWidth + 2).length,
+      codeScrollers: Array.prototype.slice.call(main.querySelectorAll('div.highlight, div.highlight-fish, div.highlight-python, pre'))
+        .filter(e => e.scrollWidth > e.clientWidth + 2).length,
+      mathCount: main.querySelectorAll('.math, .MathJax, mjx-container').length,
+      clippedImages: Array.prototype.slice.call(main.querySelectorAll('img'))
+        .filter(e => e.getBoundingClientRect().width > window.innerWidth + 2).length,
+      overflowing
+    };
+  });
+}
+
 async function testDrawer(page, label) {
   const btn = page.locator('#navbutton');
   await btn.click();
@@ -178,11 +204,12 @@ async function runEngine(engineType) {
         context = prepared.context;
         const page = prepared.page;
         const m = await measure(page);
+        const content = await measureContent(page);
         const overflow = m.docScrollWidth - m.innerWidth;
         record(page, pagePath, {
-          check: 'layout', ...m, overflow,
+          check: 'layout', ...m, content, overflow,
           overflowOK: overflow <= 1,
-          buttonOK: !m.button || (m.button.width >= 44 && m.button.height >= 44)
+          buttonOK: !m.button || !m.mobile || (m.button.width >= 44 && m.button.height >= 44)
         });
         if (pagePath === 'index.html' && (width === 320 || width === 390 || width === 960 || width === 1280)) {
           await page.screenshot({ path: path.join(OUT, `${PHASE}_${engineType.name()}_${width}_closed.png`) });

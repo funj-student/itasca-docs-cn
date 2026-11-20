@@ -309,6 +309,65 @@
     });
   });
 
+  /* ------------------------------------------------------------------ *
+   * 正文适配：为技术表格提供独立的横向滚动容器和提示；
+   * 仅对确实过长、不可断行的单个标记启用局部滚动。
+   * ------------------------------------------------------------------ */
+  function enhanceContentTables() {
+    var main = byId('mainbody');
+    if (!main) return;
+    var tables = main.querySelectorAll('table:not(.blank):not(.footnote):not(.citation)');
+    Array.prototype.forEach.call(tables, function (table) {
+      if (table.parentElement && table.parentElement.classList.contains('table-scroll')) return;
+      var wrap = document.createElement('div');
+      wrap.className = 'table-scroll';
+      wrap.tabIndex = 0;
+      wrap.setAttribute('role', 'region');
+      wrap.setAttribute('aria-label', '表格区域，可左右滑动查看完整内容');
+      table.parentNode.insertBefore(wrap, table);
+      wrap.appendChild(table);
+    });
+    // 布局稳定后再判断是否需要滑动提示
+    requestAnimationFrame(function () {
+      Array.prototype.forEach.call(main.querySelectorAll('.table-scroll'), function (wrap) {
+        if (wrap.querySelector('.table-scroll-hint')) return;
+        if (wrap.scrollWidth > wrap.clientWidth + 2) {
+          var hint = document.createElement('span');
+          hint.className = 'table-scroll-hint';
+          hint.textContent = '← 左右滑动查看完整表格 →';
+          wrap.insertAdjacentElement('afterend', hint);
+        }
+      });
+    });
+  }
+
+  function enhanceLongTokens() {
+    var main = byId('mainbody');
+    if (!main) return;
+    var selector = 'code, span.pre, span.cmdname, span.cmdopt, span.cmdkey, span.fishname, span.fishcmd, span.varstring, a';
+    Array.prototype.forEach.call(main.querySelectorAll(selector), function (el) {
+      if (el.dataset.wbTokenChecked || el.children.length) return;
+      el.dataset.wbTokenChecked = '1';
+      var text = (el.textContent || '').trim();
+      if (!text || /\s/.test(text) || text.length < 24) return;
+      var r = el.getBoundingClientRect();
+      var parent = el.parentElement;
+      if (!parent || r.width <= parent.getBoundingClientRect().width - 4) return;
+      el.classList.add('wb-long-token');
+    });
+  }
+
+  function initContentEnhancements() {
+    enhanceContentTables();
+    enhanceLongTokens();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initContentEnhancements);
+  } else {
+    initContentEnhancements();
+  }
+
   // 公开少量状态，便于自动化测试与后续维护
   window.ItascaNav = {
     isMobile: isMobileNav,
