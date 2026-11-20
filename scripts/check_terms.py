@@ -93,6 +93,22 @@ if ref.exists():
     if bad:
         errors.append(f'警示块与官网不一致的页面 {len(bad)} 个，示例：{bad[:5]}')
 
+
+# 5. module glossary size and HTML sync
+gloss_md = ROOT / '术语词库.md'
+gloss_html = ROOT / 'glossary.html'
+if gloss_md.exists() and gloss_html.exists():
+    gm = gloss_md.read_text(encoding='utf-8')
+    sections = [l for l in gm.splitlines() if l.startswith('## ')]
+    grows = [l for l in gm.splitlines() if l.startswith('| ') and not l.startswith('| ---') and not l.startswith('| English')]
+    gh = gloss_html.read_text(encoding='utf-8')
+    ghtml_rows = len(re.findall(r'<tr><td><code class="docutils literal">', gh))
+    if len(sections) != 5:
+        errors.append(f'模块术语词库应有 5 个分区，实际 {len(sections)}')
+    if len(grows) < 200:
+        errors.append(f'模块术语词库不足 200 条：{len(grows)}')
+    if ghtml_rows != len(grows):
+        errors.append(f'glossary.html 行数 {ghtml_rows} 与术语词库 {len(grows)} 不一致')
 print(f'terms={len(rows)} html_rows={html_rows}')
 if errors:
     for e in errors:
