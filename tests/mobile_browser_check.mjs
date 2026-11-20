@@ -313,10 +313,19 @@ async function testGestureScroll(page, frame, engine) {
   return { start, atBottom, backAtTop, anchorClicks, parentBefore, parentAfter };
 }
 
+async function openDrawer(page) {
+  await page.locator('#navbutton').click();
+  // 抽屉有 0.2s CSS 宽度过渡；CI 较慢环境下固定等待可能读到中间帧。
+  await page.waitForFunction(function () {
+    var side = document.getElementById('mySidenav');
+    return side && side.getBoundingClientRect().width > 40;
+  }, null, { timeout: 10000 });
+  await sleep(120);
+}
+
 async function testDrawer(page, label) {
   const btn = page.locator('#navbutton');
-  await btn.click();
-  await page.waitForTimeout(350);
+  await openDrawer(page);
   const opened = await measure(page);
   check('目录可以打开', opened.navOpen && opened.drawerWidth > 40,
     { navOpen: opened.navOpen, drawerWidth: opened.drawerWidth });
@@ -382,16 +391,14 @@ async function testDrawer(page, label) {
   // 阅读位置恢复
   await page.evaluate(() => window.scrollTo(0, 600));
   const beforeY = await page.evaluate(() => window.scrollY);
-  await btn.click();
-  await page.waitForTimeout(250);
+  await openDrawer(page);
   await page.keyboard.press('Escape');
   await page.waitForTimeout(350);
   const afterY = await page.evaluate(() => window.scrollY);
   check('关闭目录后恢复阅读位置', Math.abs(beforeY - afterY) <= 3, { before: beforeY, after: afterY });
 
   // 遮罩关闭
-  await btn.click();
-  await page.waitForTimeout(250);
+  await openDrawer(page);
   await page.mouse.click(page.viewportSize().width - 16, 120);
   await page.waitForTimeout(350);
   const closed = await measure(page);
@@ -401,8 +408,7 @@ async function testDrawer(page, label) {
     { installs: closed.listenerInstalls });
 
   // 链接导航放在最后
-  await btn.click();
-  await page.waitForTimeout(250);
+  await openDrawer(page);
   const before = page.url();
   try {
     await frame.locator('.jstree-anchor').nth(1).click({ timeout: 6000 });

@@ -103,6 +103,8 @@
 
 以上为**实际断言运行结果**，不是“生成测试记录即视为通过”。
 
+CI 首轮 `browser-smoke` 曾失败：WebKit 390px 在较慢 runner 上读取到抽屉 0.2s 宽度过渡的中间帧（`drawerWidth=22`），断言“目录可以打开”失败。已将打开操作改为等待 `getBoundingClientRect().width > 40` 后再断言，本地同矩阵复跑通过；修复后的 CI 结果见 PR checks。
+
 ### Python 与静态检查
 
 - `python -B -m unittest discover -s tests -v`：52 项通过
