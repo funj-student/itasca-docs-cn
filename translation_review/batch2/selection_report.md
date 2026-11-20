@@ -4,10 +4,10 @@
 
 ## 依赖状态
 
-- GitHub PR #2 当前仍为 open、未合并；其最新 CI run 44733077827 最后查询为 in_progress。
-- 本轮从包含第一批修订的本地分支 `review/translation-batch1` 派生准备分支 `review/translation-batch2-prep`。
-- 在 PR #2 合并前，准备分支只做清单、资料、程序与报告准备，不修改站点正文，不覆盖第一批成果。
-正式正文修订将在 PR #2 合并后基于最新 `main` 开始，或在用户明确授权后基于 PR #2 分支继续。
+- GitHub PR #2 已合并，合并提交为 `cebd6187a2051a7c06fd632cb5e645204a535ba4`。
+- 其 CI run `44733077827` 已完成，结论为 success。
+- 清单最初在准备分支 `review/translation-batch2-prep` 上生成；正式正文修订已基于最新 `main` 的 `review/translation-batch2-sub1` 分支开展。
+- 准备成果只迁移第二批新增文件，未重复提交第一批正文修改。
 
 ## 类别统计
 

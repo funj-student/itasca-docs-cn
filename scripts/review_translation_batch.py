@@ -68,15 +68,18 @@ class ContextBlockParser(HTMLParser):
         if tag in ('script', 'style') and self.skip:
             self.skip -= 1
         if self.cur is not None and tag == self.cur['tag']:
+            # Save the text before clearing self.cur. Heading tags are also
+            # blocks, so their text must be available for context update.
             text = re.sub(r'\s+', ' ', ''.join(self.cur['parts'])).strip()
             if text:
                 self.cur['text'] = text
                 self.blocks.append(self.cur)
+            if tag in HEADING_TAGS:
+                level = int(tag[1])
+                self.headings[level] = text
+                for deeper in range(level + 1, 5):
+                    self.headings.pop(deeper, None)
             self.cur = None
-        if tag in HEADING_TAGS and self.cur is not None and self.cur['tag'] == tag:
-            self.headings[int(tag[1])] = re.sub(r'\s+', ' ', ''.join(self.cur['parts'])).strip()
-            for deeper in range(int(tag[1]) + 1, 5):
-                self.headings.pop(deeper, None)
         # pop matching open tag
         for idx in range(len(self.open) - 1, -1, -1):
             if self.open[idx][0] == tag:
