@@ -51,8 +51,10 @@ class TranslationBatch2Sub34Checks(unittest.TestCase):
         self.assertIn('z 方向周期性', t)
         self.assertIn('y 方向比值系数', t)
         m = visible('pfc/pfcmodule/doc/manual/measure_manual/command_reference/cmd_measure/cmd_measure.create.html')
-        self.assertIn('浮点值上限（fh）', m)
+        self.assertIn('分箱上边界值（fh）', m)
+        self.assertIn('分箱下边界值（fl）', m)
         self.assertNotIn('高度系数（fh）', m)
+        self.assertNotIn('浮点值上限（fh）', m)
 
     def test_escaping_the_box(self):
         t = visible('pfc/docproject/source/manual/examples/tutorials/generating_a_bonded_assembly/generating_a_bonded_assembly.html')
@@ -63,7 +65,34 @@ class TranslationBatch2Sub34Checks(unittest.TestCase):
         t = (ROOT / 'doc/_static/zh-search-data.js').read_text(encoding='utf-8')
         self.assertIn('fish automatic-create', t)
         self.assertIn('也不逸出盒子（容器）', t)
-        self.assertIn('浮点值上限（fh）', t)
+        self.assertIn('分箱上边界值（fh）', t)
+
+
+    def test_coverage_claims_are_not_semantic_confirmations(self):
+        import json
+        for sub in ('sub3', 'sub4'):
+            rows = [json.loads(l) for l in (ROOT / f'translation_review/batch2/{sub}_coverage.jsonl').read_text(encoding='utf-8').splitlines()]
+            self.assertEqual(len(rows), 25)
+            for r in rows:
+                self.assertNotIn('main_body_checked_by_ai_reported', r)
+                self.assertTrue(r['ai_report_claim'])
+                self.assertIn('count_unit_comparison', r)
+                self.assertIn(r['semantic_confirmation_status'], {'evidence_backed', 'report_only_not_verified'})
+                if r['semantic_confirmation_status'] == 'evidence_backed':
+                    self.assertTrue(r['verified_evidence'])
+                    for ev in r['verified_evidence']:
+                        for key in ('id', 'source_url', 'english_text', 'before_text', 'after_text', 'locator', 'reason'):
+                            self.assertTrue(ev.get(key), (r['path'], key))
+                else:
+                    self.assertEqual(r['verified_evidence'], [])
+
+    def test_large_ai_paragraph_claim_has_count_basis(self):
+        import json
+        rows = [json.loads(l) for l in (ROOT / 'translation_review/batch2/sub4_coverage.jsonl').read_text(encoding='utf-8').splitlines()]
+        r = next(x for x in rows if x['path'].endswith('cmd_ball.generate.html'))
+        self.assertEqual(r['count_unit_comparison']['alignment_en_blocks'], 44)
+        self.assertEqual(r['count_unit_comparison']['ai_reported_paragraphs'], 176)
+        self.assertIn('pre_lines', r['count_unit_comparison']['raw_html_elements'])
 
 if __name__ == '__main__':
     unittest.main()

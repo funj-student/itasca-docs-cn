@@ -34,7 +34,13 @@
 - **B2-P15** `pfc/docproject/source/manual/examples/tutorials/using_cmat/using_cmat.html`：hz_shear 译作“剪切滞回”，英文为 shear modulus property hz_shear，术语待统一。
 - **B2-P16** `3dec/block/doc/manual/block_manual/block_commands/block/cmd_block.mechanical.html`：中文多出“在动力分析中不应使用全局缩放”，英文相应段为 Global Damping，需独立确认是否旧版残留。
 
-## 3. 逐页覆盖
+## 3. 覆盖记录口径
+
+`ai_reviewed_paragraphs_reported` 是 AI 审校员报告中的细粒度段落计数，可能与关键字说明、公式行或代码行计数混合；它与 alignment 的“文本块”不是同一计数单位。例如 `cmd_ball.generate.html` 的 alignment 英文文本块为 44，而审校员报告核查段落 176，原因是后者包含代码块逐行与关键字条目级计数。逐页记录已加入 `raw_html_elements` 作为可复核的结构参照，但这些数字本身仍只是报告性声明，不等于逐块语义确认。
+
+只有 `semantic_confirmation_status: evidence_backed` 的页面才保存了英文片段、中文原文、修订文本、来源 URL、定位与理由；其余页面的 AI 核查状态为 `report_only_not_verified`，继续保留待复核，不要求归零。
+
+## 4. 逐页覆盖
 
 | # | 页面 | 英/中块 | 强/语义 | AI报告核查段落 | AI报告未核实 |
 | ---: | --- | ---: | ---: | ---: | ---: |
