@@ -18,7 +18,7 @@ import sys
 import difflib
 
 ROOT = Path(__file__).resolve().parents[1]
-BLOCK_TAGS = {'p', 'li', 'h1', 'h2', 'h3', 'h4', 'dt', 'dd'}
+BLOCK_TAGS = {'p', 'li', 'h1', 'h2', 'h3', 'h4', 'dt', 'dd', 'td', 'th', 'pre'}
 HEADING_TAGS = {'h1', 'h2', 'h3', 'h4'}
 
 CONCEPT_MAP = {
@@ -60,7 +60,8 @@ class ContextBlockParser(HTMLParser):
         self.open.append((tag, attrs))
         if tag in ('script', 'style'):
             self.skip += 1
-        if tag in BLOCK_TAGS and self.cur is None:
+        is_math_div = tag == 'div' and 'math' in attrs.get('class', '').split()
+        if (tag in BLOCK_TAGS or is_math_div) and self.cur is None:
             ctx = self._ctx()
             self.cur = {'tag': tag, 'parts': [], **ctx}
 

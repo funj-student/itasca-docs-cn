@@ -78,5 +78,18 @@ class ReviewAlignmentChecks(unittest.TestCase):
         self.assertEqual(paras[1]['section'], 'sec-b')
         self.assertEqual(module.semantic_align([paras[0]], [paras[1]], []), [])
 
+    def test_real_html_tables_code_and_formula_blocks(self):
+        blocks = self.parse_html('''
+        <html><body><div id="s1"><h2>Parameters</h2>
+          <table><tr><th>Parameter</th><td>The density value is required.</td></tr></table>
+          <pre><span>zone</span> create range position-x 0 1</pre>
+          <div class="math">\\(x = 1 + 2\\)</div>
+        </div></body></html>
+        ''')
+        texts = [b['text'] for b in blocks]
+        self.assertIn('The density value is required.', texts)
+        self.assertIn('zone create range position-x 0 1', texts)
+        self.assertIn('\\(x = 1 + 2\\)', texts)
+
 if __name__ == '__main__':
     unittest.main()
