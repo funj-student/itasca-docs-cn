@@ -24,5 +24,16 @@ class ReviewAlignmentChecks(unittest.TestCase):
         self.assertEqual(en_sig, ((), ()))
         self.assertEqual(zh_sig, ((), ()))
 
+    def test_semantic_alignment_uses_section_and_concepts(self):
+        en = [{'text': 'The stress and strain state is shown.', 'section': 's1', 'headings': ('', 'State', '', '')}]
+        zh = [{'text': '图中显示应力和应变状态。', 'section': 's1', 'headings': ('', '状态', '', '')}]
+        pairs = module.semantic_align(en, zh, [])
+        self.assertEqual([(e, z) for e, z, _ in pairs], [(0, 0)])
+
+    def test_semantic_alignment_rejects_different_sections(self):
+        en = [{'text': 'The stress and strain state is shown.', 'section': 's1', 'headings': ('', 'State', '', '')}]
+        zh = [{'text': '图中显示应力和应变状态。', 'section': 's2', 'headings': ('', 'State', '', '')}]
+        self.assertEqual(module.semantic_align(en, zh, []), [])
+
 if __name__ == '__main__':
     unittest.main()
