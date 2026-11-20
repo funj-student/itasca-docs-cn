@@ -109,6 +109,35 @@ if gloss_md.exists() and gloss_html.exists():
         errors.append(f'模块术语词库不足 200 条：{len(grows)}')
     if ghtml_rows != len(grows):
         errors.append(f'glossary.html 行数 {ghtml_rows} 与术语词库 {len(grows)} 不一致')
+
+# 6. all core and official glossary terms must appear in module glossary
+if gloss_md.exists():
+    module_terms = set()
+    for l in gm.splitlines():
+        m = re.match(r'^\|\s*([^|]+?)\s*\|', l)
+        if m and m.group(1).lower() not in ('english', '---'):
+            module_terms.add(m.group(1).strip().lower())
+    def parse_terms(text):
+        out = set()
+        for l in text.splitlines():
+            m = re.match(r'^\|\s*([^|]+?)\s*\|', l)
+            if m and m.group(1).lower() not in ('english', '---'):
+                out.add(m.group(1).strip().lower())
+        return out
+    missing_core = parse_terms(MD.read_text(encoding='utf-8')) - module_terms
+    if missing_core:
+        errors.append(f'模块词库缺少核心术语 {len(missing_core)} 条：{sorted(missing_core)[:5]}')
+    gpath = ROOT / 'doc/common/docproject/source/manual/glossaryofterms.html'
+    if gpath.exists():
+        gtext = gpath.read_text(encoding='utf-8', errors='ignore')
+        official_terms = set()
+        for m in re.finditer(r'<dt id="term-[^"]+"><strong>(.*?)</strong></dt>', gtext, re.S):
+            s = re.sub(r'<[^>]+>', '', m.group(1)).strip()
+            mm = re.match(r'^(.*?)（(.+?)）$', s)
+            if mm: official_terms.add(mm.group(2).strip().lower())
+        missing_official = official_terms - module_terms
+        if missing_official:
+            errors.append(f'模块词库缺少官方术语 {len(missing_official)} 条：{sorted(missing_official)[:5]}')
 print(f'terms={len(rows)} html_rows={html_rows}')
 if errors:
     for e in errors:
