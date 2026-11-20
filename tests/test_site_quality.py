@@ -30,10 +30,31 @@ class SiteQualityChecks(unittest.TestCase):
         self.assertIn('rel="canonical"', contents)
         self.assertIn('name="description"', contents)
 
-    def test_high_frequency_queries_return_nonempty_results(self):
-        for q in self.report['query_checks']:
-            self.assertTrue(q['top'], q['query'])
-        self.assertGreaterEqual(self.report['query_pass_count'], 6)
+    def test_actual_zh_search_queries_are_relevant(self):
+        checks = [q for q in self.report['query_checks'] if q['engine'] == 'zh-search.js actual']
+        self.assertEqual(len(checks), 10)
+        for q in checks:
+            self.assertTrue(q['results_relevant'], q['query'])
+        self.assertEqual(self.report['summary']['zero_match_correct'], 1)
+        zero = next(q for q in checks if q['kind'] == 'zero_match')
+        self.assertEqual(zero['count'], 0)
+        exclusion = next(q for q in checks if q['kind'] == 'exclusion')
+        self.assertTrue(exclusion['negative'])
+        self.assertIn('expected_in_top5', self.report['summary'])
+
+    def test_english_queries_are_marked_unverified(self):
+        english = [q for q in self.report['query_checks'] if q['kind'] == 'english']
+        self.assertEqual(len(english), 3)
+        for q in english:
+            self.assertIsNone(q['has_results'])
+            self.assertIn('未验证', q['limitation'])
+
+    def test_unindexed_stub_pages_have_assessment(self):
+        notes = self.report['unindexed_page_assessment']
+        for path in notes:
+            self.assertTrue(notes[path])
+        self.assertIn('dynamic_calculations.html', ' '.join(notes.keys()))
+        self.assertIn('class_variant_1_1_user_type_base.html', ' '.join(notes.keys()))
 
 if __name__ == '__main__':
     unittest.main()

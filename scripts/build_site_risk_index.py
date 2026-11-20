@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Build a reproducible whole-site review index with coarse risk classes."""
+"""Build a reproducible whole-site review index with heuristic priorities.
+
+review_priority_candidate is P0/P1/P2/P3 only for work ordering. It is NOT an
+actually confirmed error severity; severity_confirmed stays null without evidence.
+"""
 from pathlib import Path
 import json
 from collections import Counter
@@ -49,13 +53,16 @@ def main():
         rows.append({
             'path': rel,
             'source_url': 'https://docs.itascacg.com/flac3d700/' + rel,
-            'product': product, 'type': kind, 'risk': risk,
+            'product': product, 'type': kind,
+            'review_priority_candidate': risk,
+            'risk_basis': 'heuristic_path_keywords',
+            'severity_confirmed': None,
             'review_status': status,
             'semantic_status': 'unknown' if status.startswith('not_reviewed') else 'see_batch_records',
             'generated_at': datetime.now(timezone.utc).isoformat(),
         })
     OUT.write_text('\n'.join(json.dumps(r, ensure_ascii=False) for r in rows) + '\n', encoding='utf-8')
-    c = Counter((r['risk'], r['review_status']) for r in rows)
+    c = Counter((r['review_priority_candidate'], r['review_status']) for r in rows)
     print('rows', len(rows), 'reviewed', len(reviewed), 'queued', len(queued))
     for k, v in sorted(c.items()):
         print(k, v)

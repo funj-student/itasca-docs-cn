@@ -27,7 +27,13 @@ def read_jsonl(path):
 
 
 def classify(path):
-    p = path.as_posix()
+    # Accept a doc-relative path (preferred) or a repo-relative/absolute path.
+    p = Path(path).as_posix()
+    if p.startswith('doc/'):
+        p = p[4:]
+    elif p.startswith('/') or re.match(r'^[A-Za-z]:/', p):
+        if '/doc/' in p:
+            p = p.split('/doc/', 1)[1]
     low = p.lower()
     parts = p.split('/')
     product = parts[0] if parts else 'other'
@@ -58,8 +64,8 @@ def main():
     html_rel = [p.relative_to(DOC).as_posix() for p in html]
     product_counts = Counter()
     kind_counts = Counter()
-    for p in html:
-        product, kind = classify(p)
+    for rel_path in html_rel:
+        product, kind = classify(rel_path)
         product_counts[product] += 1
         kind_counts[kind] += 1
 
@@ -122,11 +128,17 @@ def main():
             'pr4_reason': '准备分支基于过期基线；正文修订已由 #2/#3/#5 合入 main，相对 main 的删除项不能合并。',
             'other_active_branches': ['fix/pages-quality-checks'],
         },
+        'merge_dependency': {
+            'pr7_must_merge_first': True,
+            'reason': '本总账生成于 PR #7 技术修订合并前；PR #7 合并后必须从最新 main 重新生成，才能把第51—100篇新状态和10项修订纳入统计。',
+            'current_queue_status': 'PR #7 合入前仍显示50篇待处理队列，不代表合并后的真实状态。',
+        },
         'known_issues': [
-            {'id': 'AUDIT-001', 'issue': 'README 声明 6,576 个 HTML，实际扫描为 %d 个' % len(html), 'status': '待修复'},
-            {'id': 'AUDIT-002', 'issue': '搜索索引 %d 页，HTML %d 页，缺失 %d，陈旧 %d' % (len(search_paths), len(html), len(missing_from_search), len(stale_search)), 'status': '待修复'},
+            {'id': 'AUDIT-001', 'issue': 'README 页面数已由6,576修正为实际扫描值 %d' % len(html), 'status': '已修复'},
+            {'id': 'AUDIT-002', 'issue': '搜索索引 %d 页，HTML %d 页，原始缺失 %d、陈旧 %d；缺失项需区分导航/工具页与疑似正文' % (len(search_paths), len(html), len(missing_from_search), len(stale_search)), 'status': '已分类'},
             {'id': 'AUDIT-003', 'issue': '第一批完整30篇页面清单缺少结构化记录，无法逐页机器复核', 'status': '证据缺口'},
             {'id': 'AUDIT-004', 'issue': '子批次2仍有英文482块、中文636块 pending', 'status': '待复核'},
+            {'id': 'AUDIT-005', 'issue': '风险索引中的P0为路径关键词启发式审校优先级；29篇未审校P0表示自动判定为高风险、尚待复核，不代表已确认错误严重程度', 'status': '表述已修正'},
         ],
         'next_queue': batch2_queue,
         'queue_size': len(batch2_queue),
@@ -183,7 +195,13 @@ def main():
         '- PR #4 为过期准备分支，已关闭并记录原因；无独有有效修改需要迁移。',
         '- `fix/pages-quality-checks` 为另一活跃分支，当前未纳入本轮，避免覆盖其独立工作。',
         '',
-        '## 7. 下一步队列',
+        '## 7. 合并依赖',
+        '',
+        '- 建议先合并 PR #7（技术修订），再合并 PR #6（质量总账与审计）。',
+        '- 本总账生成于 PR #7 合并前，因此仍显示第51—100篇为待处理队列。',
+        '- PR #7 合并后，必须从最新 main 重新运行 `scripts/project_audit.py`，纳入50篇新状态和10项修订；不得提前虚构合并状态。',
+        '',
+        '## 8. 下一步队列',
         '',
         f'自动队列共 {len(batch2_queue)} 篇，详见 `project_master_status.json` 的 `next_queue`。',
         '',
