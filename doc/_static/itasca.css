@@ -166,6 +166,20 @@ div#totopbutton {
   top: 71%;
 }
 
+/* Mobile drawer shell. Elements are injected by icgscripts.js so the shared
+   files stay authoritative for 6000+ pages. Desktop keeps the original look. */
+#nav-backdrop {
+  display: none;
+  position: fixed;
+  top: 0; right: 0; bottom: 0; left: 0;
+  background: rgba(15, 33, 67, 0.45);
+  z-index: 250;
+  -webkit-tap-highlight-color: transparent;
+}
+div#navbutton .wb-nav-icon { font-size: 1.1em; line-height: 1; margin-right: .35em; }
+div#navbutton .wb-nav-label { font-size: .72em; vertical-align: .08em; letter-spacing: .05em; }
+#nav-close { display: none; }
+
 
 /* -- text styles----------------------------------------------------------- */
 h1, h2, h3 {
@@ -848,73 +862,77 @@ div.pagebreak {display: none;}
 }
 
 
-/* -- mobile screen adjustments ------------------------------------------ */
-@media screen and (max-width: 720px) {
+/* -- mobile / tablet layout ---------------------------------------------
+   Breakpoint matches MOBILE_QUERY in icgscripts.js (959px).
+   The iframe document viewport is the ONLY scroll container for the TOC;
+   the drawer itself never scrolls and no transform/touch emulation is used. */
+@media screen and (max-width: 959px) {
   html, body {
     margin: 0;
     padding: 0;
-    overflow-x: hidden;
     background: #ffffff;
   }
-  #main { margin-left: 0 !important; }
+  #main { margin-left: 0 !important; width: 100%; }
   .sidenav {
+    display: flex;
+    flex-direction: column;
+    top: 0;
+    bottom: 0;
+    left: 0;
     width: 0;
-    max-width: 320px;
-    bottom: auto;
-    height: 80vh;
-    max-height: 95vh;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
-    padding-top: 1em;
-    padding-bottom: 1em;
-    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.25);
-  }
-  .sidenav a {
-    font-size: 16px;
-    padding: 10px 16px;
+    height: 100%;
+    max-height: none;
+    padding: 0;
+    overflow: hidden;
+    /* 必须高于遮罩层，否则目录条目无法点击/展开 */
+    z-index: 400;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.28);
+    transition: width .2s ease;
   }
   body:not(.nav-open) .sidenav { width: 0 !important; }
   body.nav-open .sidenav {
-    width: 85vw !important;
-    max-width: 320px;
-    max-height: 95vh;
+    width: min(85vw, 340px) !important;
+    max-width: 340px;
   }
+  #nav-close {
+    display: flex;
+    flex: 0 0 48px;
+    align-items: center;
+    justify-content: flex-end;
+    gap: .6em;
+    min-height: 48px;
+    padding: 0 14px;
+    border: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, .18);
+    background: #0f2143;
+    color: #f1f1f1;
+    font: 14px/1 "Lato", sans-serif;
+    cursor: pointer;
+  }
+  .sidenav a { font-size: 15px; padding: 10px 14px; }
   .sidenav iframe, iframe#toctobj2 {
+    display: block;
+    /* flex-basis 0 + height 0 让 iframe 获得确定高度，成为唯一滚动容器；
+       若用 height:auto，iframe 会随内容长高并被抽屉裁切。 */
+    flex: 1 1 0;
     width: 100% !important;
     max-width: 100%;
-    height: auto;
+    height: 0 !important;
+    min-height: 0;
+    border: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
-  #navbutton {
-    position: fixed;
-    top: auto !important;
-    bottom: 1em !important;
-    left: auto !important;
-    right: 1em !important;
-    z-index: 300;
-    margin-left: 0 !important;
-    padding: .35em .6em;
-    border-radius: 6px;
-    font-size: 1.2em;
-    background: #e6ebe9;
-  }
-  #maintop {
-    padding: .6em .8em;
-  }
+  body.nav-open #nav-backdrop { display: block; }
+  #maintop { padding: .6em .8em; }
   #cornerlink {
     display: inline-flex;
     align-items: center;
     max-width: 100%;
     font-size: .95em;
   }
-  #cornerlogo {
-    max-width: 28px;
-    height: auto;
-  }
-  #searchbox {
-    float: none;
-    display: block;
-    margin-top: .6em;
-  }
+  #cornerlogo { max-width: 28px; height: auto; }
+  #searchbox { float: none; display: block; margin-top: .6em; }
   input#sb {
     width: 100%;
     box-sizing: border-box;
@@ -923,7 +941,7 @@ div.pagebreak {display: none;}
     background-image: none;
   }
   #mainbody {
-    padding: 1em 1em 3em;
+    padding: 1em 1em 4.5em;
     min-width: 0;
     max-width: none;
     font-size: 16px;
@@ -932,17 +950,34 @@ div.pagebreak {display: none;}
   #mainbody h1 { font-size: 1.6em; line-height: 1.3; }
   #mainbody h2, #mainbody p.h2 { font-size: 1.3em; }
   div[id^="mainbottom"] {
-    padding: .8em .6em;
+    padding: .8em .6em calc(4.5em + env(safe-area-inset-bottom, 0px));
     font-size: .8em;
     overflow-wrap: anywhere;
   }
-  table {
-    display: block;
-    width: 100%;
-    max-width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+  div#navbutton {
+    position: fixed;
+    top: auto !important;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+    left: auto !important;
+    right: calc(12px + env(safe-area-inset-right, 0px)) !important;
+    z-index: 500;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 48px;
+    min-height: 48px;
+    width: auto;
+    margin: 0 !important;
+    padding: 0 12px;
+    border-radius: 8px;
+    font-size: 1.2em;
+    line-height: 1;
+    background: #e6ebe9;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, .22);
+    -webkit-tap-highlight-color: transparent;
   }
+  table { max-width: 100%; }
   table caption { width: 100%; }
   table.blank td { display: block; width: 100% !important; }
   div.highlight, div.highlight pre {
@@ -958,28 +993,15 @@ div.pagebreak {display: none;}
 }
 
 
-/* -- landscape phones ---------------------------------------------------- */
-@media screen and (orientation: landscape) and (max-height: 500px) {
-  #main { margin-left: 0 !important; width: 100%; }
-  .sidenav {
-    top: 0 !important;
-    bottom: 0 !important;
-    height: 100vh !important;
-    max-height: none !important;
-    overflow-y: auto !important;
-    padding-top: .5em !important;
-    padding-bottom: .5em !important;
-  }
-  body:not(.nav-open) .sidenav { width: 0 !important; }
-  body.nav-open .sidenav { width: 85vw !important; }
-  .sidenav iframe, iframe#toctobj2 { height: auto !important; }
+/* -- landscape phones (still inside the unified mobile breakpoint) ------ */
+@media screen and (max-width: 959px) and (orientation: landscape) and (max-height: 500px) {
+  .sidenav { height: 100%; }
   #maintop { padding: .4em .8em; }
-  #mainbody {
-    max-width: none;
-    padding: .8em 1.2em 2em;
-    font-size: 15px;
-  }
+  #mainbody { padding-top: .8em; font-size: 15px; }
   #searchbox { float: right; margin-top: 0; }
   input#sb { width: 14em; }
-  #navbutton { bottom: .6em !important; right: .6em !important; }
+  div#navbutton {
+    bottom: calc(6px + env(safe-area-inset-bottom, 0px)) !important;
+    right: calc(6px + env(safe-area-inset-right, 0px)) !important;
+  }
 }

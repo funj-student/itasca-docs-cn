@@ -1,298 +1,320 @@
-function isMobileNav() {
-   // UA/touch detection is stable across address-bar show/hide while scrolling
-   var ua = navigator.userAgent || '';
-   return window.innerWidth <= 720 ||
-          navigator.maxTouchPoints > 0 ||
-          /Android|iPhone|iPad|iPod|Mobile/i.test(ua);
-}
+/* Itasca 7.0 中文手册 — 共享导航脚本
+ *
+ * 移动端目录只有一个滚动容器：目录 iframe 自身的文档视口（浏览器原生滚动）。
+ * 父级抽屉不再滚动，也不再使用 translateY / touchmove / preventDefault 模拟滚动。
+ * 断点必须与 itasca.css 中的 @media (max-width: 959px) 保持一致。
+ */
+(function () {
+  'use strict';
 
-window.onload = function(){
-   if (isMobileNav()) {
-      closeNav();
-   } else {
-      openNav();
-      $('#navbutton').css({opacity: 0}).animate({opacity: 1}, 2800);
-   }
-}
+  var MOBILE_BREAKPOINT = 959;
+  var MOBILE_QUERY = '(max-width: ' + MOBILE_BREAKPOINT + 'px)';
+  var mobileMQ = window.matchMedia ? window.matchMedia(MOBILE_QUERY) : null;
 
-window.onresize = function(){
+  function isMobileNav() {
+    return mobileMQ ? mobileMQ.matches : window.innerWidth <= MOBILE_BREAKPOINT;
+  }
+
+  function byId(id) { return document.getElementById(id); }
+
+  var navOpen = false;
+  var bodyLocked = false;
+  var savedScrollY = 0;
+  var suppressNavClick = false;
+
+  /* ------------------------------------------------------------------ *
+   * 目录抽屉的语义化外壳（由共用脚本注入，避免改动六千多篇 HTML）
+   * ------------------------------------------------------------------ */
+  function updateNavButton() {
+    var btn = byId('navbutton');
+    if (!btn) return;
+    var label = btn.querySelector('.wb-nav-label');
+    var aria = isMobileNav()
+      ? (navOpen ? '关闭目录' : '打开目录')
+      : (navOpen ? '收起目录' : '展开目录');
+    btn.setAttribute('aria-label', aria);
+    btn.setAttribute('aria-expanded', navOpen ? 'true' : 'false');
+    if (label) label.textContent = isMobileNav() ? (navOpen ? '关闭' : '目录') : '目录';
+  }
+
+  function ensureNavUI() {
+    var btn = byId('navbutton');
+    var side = byId('mySidenav');
+
+    if (btn && btn.getAttribute('role') !== 'button') {
+      btn.setAttribute('role', 'button');
+      btn.setAttribute('tabindex', '0');
+      btn.setAttribute('aria-controls', 'mySidenav');
+      btn.setAttribute('aria-expanded', 'false');
+      btn.innerHTML = '<span class="wb-nav-icon" aria-hidden="true">☰</span><span class="wb-nav-label">目录</span>';
+    }
+    if (!byId('nav-backdrop')) {
+      var backdrop = document.createElement('div');
+      backdrop.id = 'nav-backdrop';
+      backdrop.setAttribute('aria-hidden', 'true');
+      document.body.appendChild(backdrop);
+      backdrop.addEventListener('click', function () {
+        if (navOpen && isMobileNav()) closeNav();
+      });
+    }
+    if (side && !byId('nav-close')) {
+      var closeBtn = document.createElement('button');
+      closeBtn.type = 'button';
+      closeBtn.id = 'nav-close';
+      closeBtn.setAttribute('aria-label', '关闭目录');
+      closeBtn.innerHTML = '<span aria-hidden="true">✕</span><span>关闭</span>';
+      closeBtn.addEventListener('click', function () { closeNav(); });
+      side.insertBefore(closeBtn, side.firstChild);
+    }
+    updateNavButton();
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 目录 iframe：只修正内部宽度与原生滚动，不接管滚动
+   * ------------------------------------------------------------------ */
+  function prepareTocFrame() {
+    var frame = byId('toctobj2');
+    if (!frame) return;
+    function inject() {
+      try {
+        var d = frame.contentDocument || (frame.contentWindow && frame.contentWindow.document);
+        if (!d || !d.head || d.getElementById('wb-toc-native-scroll')) return;
+        var st = d.createElement('style');
+        st.id = 'wb-toc-native-scroll';
+        st.textContent = [
+          'html{width:100%!important;overflow-x:hidden!important;margin:0!important;padding:0!important;-webkit-overflow-scrolling:touch;}',
+          'body{width:100%!important;min-width:0!important;margin:0!important;padding-top:.5rem!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch;}',
+          '#jstree,#jstree li,#jstree ul{width:auto!important;max-width:100%!important;}',
+          '.jstree-anchor{white-space:normal!important;overflow-wrap:anywhere!important;}'
+        ].join('');
+        d.head.appendChild(st);
+      } catch (e) { /* 跨域 iframe 不适用，保持原有行为 */ }
+    }
+    inject();
+    frame.addEventListener('load', inject);
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 打开/关闭：移动端锁定背景滚动并保留阅读位置；桌面端保持侧栏行为
+   * ------------------------------------------------------------------ */
+  function lockPageScroll() {
+    if (bodyLocked) return;
+    savedScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+    document.body.style.position = 'fixed';
+    document.body.style.top = (-savedScrollY) + 'px';
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+    bodyLocked = true;
+  }
+
+  function unlockPageScroll() {
+    if (!bodyLocked) return;
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    bodyLocked = false;
+    window.scrollTo(0, savedScrollY);
+  }
+
+  function openNav() {
+    ensureNavUI();
+    var side = byId('mySidenav');
+    var main = byId('main');
+    var btn = byId('navbutton');
+    if (!side || !main) return;
+
+    document.body.classList.add('nav-open');
+    if (isMobileNav()) {
+      lockPageScroll();
+      side.style.width = '';
+      side.style.height = '';
+      main.style.marginLeft = '0';
+      if (btn) btn.style.marginLeft = '0';
+    } else {
+      unlockPageScroll();
+      side.style.width = '350px';
+      main.style.marginLeft = '350px';
+      if (btn) btn.style.marginLeft = '350px';
+    }
+    navOpen = true;
+    updateNavButton();
+    prepareTocFrame();
+  }
+
+  function closeNav() {
+    var side = byId('mySidenav');
+    var main = byId('main');
+    var btn = byId('navbutton');
+
+    document.body.classList.remove('nav-open');
+    unlockPageScroll();
+    if (side) { side.style.width = '0px'; side.style.height = ''; }
+    if (main) main.style.marginLeft = '0px';
+    if (btn) btn.style.marginLeft = '0px';
+    navOpen = false;
+    updateNavButton();
+  }
+
+  function doNav() {
+    if (navOpen) closeNav(); else openNav();
+  }
+
+  function toTop() {
+    jQuery('html, body').animate({ scrollTop: 0 }, 'fast');
+  }
+
+  /* 只在布局模式真正切换时重置目录；地址栏/键盘导致的 resize 不关闭目录 */
+  function applyLayoutMode() {
+    closeNav();
+    if (!isMobileNav()) openNav();
+    prepareTocFrame();
+  }
+
+  function initNavEvents() {
+    ensureNavUI();
+    var btn = byId('navbutton');
+    if (btn) {
+      btn.addEventListener('click', function (e) {
+        if (suppressNavClick) { suppressNavClick = false; e.preventDefault(); return; }
+        doNav();
+      });
+      btn.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); doNav(); }
+      });
+      var startX = 0, startY = 0;
+      btn.addEventListener('touchstart', function (e) {
+        if (e.touches && e.touches.length) {
+          startX = e.touches[0].clientX;
+          startY = e.touches[0].clientY;
+          suppressNavClick = false;
+        }
+      }, { passive: true });
+      btn.addEventListener('touchmove', function (e) {
+        if (e.touches && e.touches.length &&
+            (Math.abs(e.touches[0].clientX - startX) > 10 || Math.abs(e.touches[0].clientY - startY) > 10)) {
+          suppressNavClick = true;
+        }
+      }, { passive: true });
+      btn.addEventListener('touchend', function () {
+        setTimeout(function () { suppressNavClick = false; }, 350);
+      }, { passive: true });
+    }
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && navOpen && isMobileNav()) closeNav();
+    });
+  }
+
+  initNavEvents();
+  prepareTocFrame();
+
+  if (mobileMQ) {
+    if (mobileMQ.addEventListener) mobileMQ.addEventListener('change', applyLayoutMode);
+    else if (mobileMQ.addListener) mobileMQ.addListener(applyLayoutMode);
+  }
+
+  function applyInitialLayout() {
     if (isMobileNav()) {
       closeNav();
-      sizeMobileNav();
-    }
-}
-window.addEventListener('orientationchange', function () {
-  closeNav();
-  setTimeout(sizeMobileNav, 300);
-});
-
-function toTop() {
-   $('html, body').animate({ scrollTop: 0 }, 'fast');
-}
-
-function doNav() {
-  if (isMobileNav()) {
-    if (document.body.classList.contains('nav-open')) {
-      closeNav();
     } else {
       openNav();
+      var btn = byId('navbutton');
+      if (btn && window.jQuery) jQuery(btn).css({ opacity: 0 }).animate({ opacity: 1 }, 2800);
     }
-  } else {
-    if (document.getElementById("mySidenav").style.width === "350px") {
-      closeNav();
+  }
+  if (document.readyState === 'complete') applyInitialLayout();
+  else window.addEventListener('load', applyInitialLayout);
+
+  /* ------------------------------------------------------------------ *
+   * 以下为原有页面增强逻辑，未做技术内容改动
+   * ------------------------------------------------------------------ */
+
+  // 目录链接指向当前章节
+  var toc = byId('toctobj2');
+  if (toc) {
+    var href = window.location.href;
+    if (href.lastIndexOf('flac3d/') > 1) { href = href.substring(href.lastIndexOf('flac3d/')); }
+    if (href.lastIndexOf('common/') > 1) { href = href.substring(href.lastIndexOf('common/')); }
+    if (href.lastIndexOf('pfc/') > 1) { href = href.substring(href.lastIndexOf('pfc/')); }
+    if (href.lastIndexOf('udec/') > 1) { href = href.substring(href.lastIndexOf('udec/')); }
+    if (href.lastIndexOf('3dec/') > 1) { href = href.substring(href.lastIndexOf('3dec/')); }
+    toc.src = toc.src + '?' + href;
+  }
+
+  // 动态切换 logo / 名称，并设置代码页的返回首页链接
+  var f = byId('cornerlogo');
+  var t = window.location.href;
+  if (f) {
+    if (t.lastIndexOf('/html/flac3d/') > 0 || t.lastIndexOf('/doc/flac3d/') > 0 || t.lastIndexOf('/flac3d/docproject/') > 0) {
+      f.src = f.src.substring(0, f.src.lastIndexOf('/')) + '/flac3d32.png';
+      byId('cornercodename').innerHTML = 'FLAC3D';
+      byId('cornerlink').href = t.substring(0, t.lastIndexOf('/flac3d/')) + '/flac3d/docproject/source/flac3dhome.html';
+    }
+    if (t.lastIndexOf('/html/pfc/') > 0 || t.lastIndexOf('/doc/pfc/') > 0) {
+      f.src = f.src.substring(0, f.src.lastIndexOf('/')) + '/pfc3d32.png';
+      byId('cornercodename').innerHTML = 'PFC';
+      byId('cornerlink').href = t.substring(0, t.lastIndexOf('/pfc/')) + '/pfc/docproject/source/manual/pfchome.html';
+    }
+    if (t.lastIndexOf('/html/3dec/') > 0 || t.lastIndexOf('/doc/3dec/') > 0) {
+      f.src = f.src.substring(0, f.src.lastIndexOf('/')) + '/3dec32.png';
+      byId('cornercodename').innerHTML = '3DEC';
+      byId('cornerlink').href = t.substring(0, t.lastIndexOf('/3dec/')) + '/3dec/docproject/source/3dechome.html';
+    }
+  }
+
+  // 按产品显示对应的内容块
+  if (jQuery('#pagecodeid').length > 0) {
+    var codeis;
+    if (jQuery('#pagecodeid').html() === 'common') {
+      codeis = jQuery('#codeid')[0].innerHTML;
     } else {
-      openNav();
+      codeis = jQuery('#pagecodeid').html();
     }
+    jQuery('span.codeis').text(codeis);
+    var codeclass = codeis !== '3DEC' ? '.' + codeis.toLowerCase() : '.dec';
+    jQuery('div' + codeclass).css('display', 'block');
+    jQuery('span' + codeclass).css('display', 'inline');
   }
-}
 
-function openNav() {
-  if (isMobileNav()) {
-    document.body.classList.add('nav-open');
-    var side = document.getElementById("mySidenav");
-    side.style.width = "";
-    side.scrollTop = 0;
-    var toc = document.getElementById('toctobj2');
-    navTranslate = 0;
-    if (toc) {
-      try {
-        var d = toc.contentDocument || toc.contentWindow.document;
-        if (d && d.documentElement) {
-          d.documentElement.scrollTop = 0;
-          d.documentElement.style.transform = '';
-        }
-        if (d && d.body) { d.body.scrollTop = 0; }
-      } catch (e) {}
-    }
-    document.getElementById("main").style.marginLeft = "0";
-    document.getElementById("navbutton").style.marginLeft = "0";
-  } else {
-    document.body.classList.remove('nav-open');
-    document.getElementById("mySidenav").style.width = "350px";
-    document.getElementById("main").style.marginLeft = "350px";
-    document.getElementById("navbutton").style.marginLeft = "350px";
-  }
-}
-
-function closeNav() {
-  document.body.classList.remove('nav-open');
-  document.getElementById("mySidenav").style.width = "0";
-  document.getElementById("main").style.marginLeft = "0";
-  document.getElementById("navbutton").style.marginLeft = "0";
-}
-
-function sizeMobileNav() {
-  if (!isMobileNav()) { return; }
-  var tocFrame = document.getElementById('toctobj2');
-  if (!tocFrame) { return; }
-  try {
-    var doc = tocFrame.contentDocument || tocFrame.contentWindow.document;
-    // Let the iframe grow to its content; the sidebar itself scrolls.
-    try {
-      if (doc.body && !doc.body.dataset.mobileScrollFixed) {
-        var st = doc.createElement('style');
-        st.textContent = 'html,body{overflow:hidden!important;margin:0;}body{padding-bottom:3em!important;}';
-        doc.head.appendChild(st);
-        doc.body.dataset.mobileScrollFixed = '1';
-      }
-    } catch (e) {}
-    var minHeight = window.innerHeight <= 500
-      ? window.innerHeight
-      : Math.round(window.innerHeight * 0.8);
-    tocFrame.style.setProperty('height', minHeight + 'px', 'important');
-    var side = document.getElementById('mySidenav');
-    if (side) { side.style.height = ''; }
-  } catch (e) {}
-}
-
-var tocFrame = document.getElementById('toctobj2');
-if (tocFrame) {
-  tocFrame.addEventListener('load', function () {
-    sizeMobileNav();
-    setTimeout(sizeMobileNav, 300);
-    setTimeout(sizeMobileNav, 900);
-  });
-  setTimeout(sizeMobileNav, 100);
-}
-
-function enableTouchScroll(el, getScroller) {
-  if (!el) { return; }
-  var startY = 0, startTop = 0;
-  el.addEventListener('touchstart', function (e) {
-    if (e.touches && e.touches.length) {
-      startY = e.touches[0].clientY;
-      var sc = getScroller();
-      startTop = sc ? sc.scrollTop : 0;
-    }
-  }, {passive: true});
-  el.addEventListener('touchmove', function (e) {
-    if (!e.touches || !e.touches.length) { return; }
-    var sc = getScroller();
-    if (!sc) { return; }
-    var dy = e.touches[0].clientY - startY;
-    var max = Math.max(0, sc.scrollHeight - sc.clientHeight);
-    if (max > 0) {
-      sc.scrollTop = Math.max(0, Math.min(max, startTop - dy));
-      e.preventDefault();
-    }
-  }, {passive: false});
-}
-
-var sideEl = document.getElementById('mySidenav');
-enableTouchScroll(sideEl, function () { return sideEl; });
-var navTranslate = 0;
-function attachIframeTouch() {
-  if (!tocFrame) { return; }
-  try {
-    var d = tocFrame.contentDocument || tocFrame.contentWindow.document;
-    if (!d || d.dataset.touchAttached) { return; }
-    d.dataset.touchAttached = '1';
-    var sy = 0, start = 0;
-    d.addEventListener('touchstart', function (e) {
-      if (e.touches && e.touches.length) {
-        sy = e.touches[0].clientY;
-        start = navTranslate;
-      }
-    }, {passive: true});
-    d.addEventListener('touchmove', function (e) {
-      if (!e.touches || !e.touches.length) { return; }
-      var dy = e.touches[0].clientY - sy;
-      var max = Math.max(0, d.body.scrollHeight - tocFrame.clientHeight);
-      navTranslate = Math.max(0, Math.min(max, start - dy));
-      if (d.documentElement) {
-        d.documentElement.style.transform = 'translateY(' + (-navTranslate) + 'px)';
-      }
-      e.preventDefault();
-    }, {passive: false});
-  } catch (e) {}
-}
-if (tocFrame) {
-  attachIframeTouch();
-  tocFrame.addEventListener('load', attachIframeTouch);
-  setTimeout(attachIframeTouch, 300);
-  setTimeout(attachIframeTouch, 900);
-}
-
-var f = document.getElementById('toctobj2');
-var t = window.location.href;
-// have to check against all first-level folders 
-if (t.lastIndexOf('flac3d/') > 1){t = t.substring(t.lastIndexOf('flac3d/'))};
-if (t.lastIndexOf('common/') > 1){t = t.substring(t.lastIndexOf('common/'))};
-if (t.lastIndexOf('pfc/') > 1){t = t.substring(t.lastIndexOf('pfc/'))};
-if (t.lastIndexOf('udec/') > 1){t = t.substring(t.lastIndexOf('udec/'))};
-if (t.lastIndexOf('3dec/') > 1){t = t.substring(t.lastIndexOf('3dec/'))};
-f.src = f.src + '?' + t;
-
-//dynamic swap of swap of logo + name when in code section + set logo-link to 'home' page for code + set "alpha/prerelease" watermark as needed
-f = document.getElementById('cornerlogo');
-t = window.location.href;
-if (t.lastIndexOf('/html/flac3d/') > 0 || t.lastIndexOf('/doc/flac3d/') > 0 || t.lastIndexOf('/flac3d/docproject/') > 0) {
-  f.src = f.src.substring(0,f.src.lastIndexOf('/')) + '/flac3d32.png';
-  document.getElementById('cornercodename').innerHTML = 'FLAC3D';
-  document.getElementById('cornerlink').href = t.substring(0,t.lastIndexOf('/flac3d/')) + '/flac3d/docproject/source/flac3dhome.html';
-}
-//if (t.lastIndexOf('/html/pfc/') > 0 || t.lastIndexOf('/doc/pfc/') > 0 || t.lastIndexOf('/pfc/docproject/') > 0) {
-if (t.lastIndexOf('/html/pfc/') > 0 || t.lastIndexOf('/doc/pfc/') > 0 > 0) {   
-  f.src = f.src.substring(0,f.src.lastIndexOf('/')) + '/pfc3d32.png';
-  document.getElementById('cornercodename').innerHTML = 'PFC';
-  document.getElementById('cornerlink').href = t.substring(0,t.lastIndexOf('/pfc/')) + '/pfc/docproject/source/manual/pfchome.html';
-  //special little hack for pfc home page to put alpha tag below splash image - remove when not in alpha
-}
-//if (t.lastIndexOf('/html/3dec/') > 0 || t.lastIndexOf('/doc/3dec/') > 0 || t.lastIndexOf('/3dec/docproject/') > 0) {    // suspended until third term is understood
-if (t.lastIndexOf('/html/3dec/') > 0 || t.lastIndexOf('/doc/3dec/') > 0) {
-  f.src = f.src.substring(0,f.src.lastIndexOf('/')) + '/3dec32.png';
-  document.getElementById('cornercodename').innerHTML = '3DEC';
-  document.getElementById('cornerlink').href = t.substring(0,t.lastIndexOf('/3dec/')) + '/3dec/docproject/source/3dechome.html';
-  // var p = document.getElementById('cornerlink').href = t.substring(0,t.lastIndexOf('/3dec/')) + '/_static/prerel.png';   //delete when not in alpha/prerelease
-  // document.getElementById('mainbody').innerHTML = '<img src="'+p+'" style="position: absolute; margin-left: 27em; margin-top: 2em;" id="alphatag">' + document.getElementById('mainbody').innerHTML; //delete when not in alpha
-}
-
-
-var navTouchX = 0, navTouchY = 0, navTouchMoved = false;
-document.addEventListener('touchstart', function (e) {
-  if (e.touches && e.touches.length) {
-    navTouchX = e.touches[0].clientX;
-    navTouchY = e.touches[0].clientY;
-    navTouchMoved = false;
-  }
-}, {passive: true});
-document.addEventListener('touchmove', function (e) {
-  if (e.touches && e.touches.length) {
-    var dx = e.touches[0].clientX - navTouchX;
-    var dy = e.touches[0].clientY - navTouchY;
-    if (Math.abs(dx) > 10 || Math.abs(dy) > 10) { navTouchMoved = true; }
-  }
-}, {passive: true});
-
-document.getElementById("navbutton").onclick = function (e) {
-  if (navTouchMoved) { e.preventDefault(); return; }
-  doNav();
-}
-
-//document.getElementById("totopbutton").onclick = function() { toTop(); }
-
-//the iffyness
-if ($('#pagecodeid').length > 0){
-   if ($('#pagecodeid').html() == "common") {
-      codeis = $('#codeid')[0].innerHTML; //common pages derive code from build
-   } else {
-      codeis = $('#pagecodeid').html();   //non-common pages derive code from tag
-   }
-   console.log(codeis);
-   //codeis = $('#pagecodeid').html();
-   
-   //swap codename into span tags as needed
-   $('span.codeis').text(codeis);
-   //cleanup classname as needed
-   if (codeis != '3DEC') {codeclass = '.' + codeis.toLowerCase();} //all but 3dec
-   if (codeis == '3DEC') {codeclass = '.dec';}  //can't start a class name with a digit
-   //show divs
-   $('div'+codeclass).css('display', 'block');
-   //show spans
-   $('span'+codeclass).css('display', 'inline');
-   }
-
-
-//show ids of and around clicked object
-$('h1,h2,h3,h4,.h1,.h2,.h3,.h4,table,p').dblclick(function() {
-   // 0- only run if on local machine
-   if(window.location.href.indexOf("/wad700/") == -1) {
-      return;
-      }
-   // 1- check if uilib is loaded, load ONCE if not
-   var head_tag = document.getElementsByTagName("head")[0];
-   if (head_tag.innerHTML.indexOf("jquery-ui.js") == -1) {
-      $(this).prop('title', 'That was the first double-click');
+  // 双击标题/表格显示元素 id（仅本地调试环境）
+  jQuery('h1,h2,h3,h4,.h1,.h2,.h3,.h4,table,p').dblclick(function () {
+    if (window.location.href.indexOf('/wad700/') === -1) return;
+    var head_tag = document.getElementsByTagName('head')[0];
+    if (head_tag.innerHTML.indexOf('jquery-ui.js') === -1) {
+      jQuery(this).prop('title', 'That was the first double-click');
       var script_tag = document.createElement('script');
-      script_tag.setAttribute("src", "https://code.jquery.com/ui/1.12.1/jquery-ui.js");
+      script_tag.setAttribute('src', 'https://code.jquery.com/ui/1.12.1/jquery-ui.js');
       head_tag.appendChild(script_tag);
       var link_tag = document.createElement('link');
-      link_tag.setAttribute("rel", "stylesheet");
-      link_tag.setAttribute("href", "https://code.jquery.com/ui/1.12.1/themes/smoothness/jquery-ui.css");
+      link_tag.setAttribute('rel', 'stylesheet');
+      link_tag.setAttribute('href', 'https://code.jquery.com/ui/1.12.1/themes/smoothness/jquery-ui.css');
       head_tag.appendChild(link_tag);
-      $("<style type='text/css'> .superlocal{ font-size:1em; font-family: unset;} </style>").appendTo("head");
+      jQuery("<style type='text/css'> .superlocal{ font-size:1em; font-family: unset;} </style>").appendTo('head');
       return;
-      } else {
-      $(this).prop('title', ' ');
-      };
-   // 2- get info and put in dialog
-   var par = (this.parentElement) ? [this.parentElement.tagName, this.parentElement.id] : ['none', '(n/a)'] ;
-   var pre = (this.previousElementSibling) ? [this.previousElementSibling.tagName, this.previousElementSibling.id] : ['none', '(n/a)'] ;
-   var nex = (this.nextElementSibling) ? [this.nextElementSibling.tagName, this.nextElementSibling.id] : ['none', '(n/a)'];
-   var chi = (this.firstElementChild) ? [this.firstElementChild.tagName, this.firstElementChild.id] : ['none', '(n/a)'];
-   
-   var f = '\xa0\u2196\xa0\xa0' + par[0] + ": " + par[1] +  '<br>' + 
-           '\xa0\u2191\xa0\xa0' + pre[0] + ": " + pre[1] + '<br>' +
-           '\u2192 '+ this.tagName + ': ' + this.id + '<br>' + 
-           '\xa0\u2193\xa0\xa0' + nex[0] + ": " + nex[1] + '<br>' +
-           '\xa0\u2198\xa0\xa0' + chi[0] + ": " + chi[1] ;
-   $( "<div>" + f + "</div>" ).dialog({
-     title: "Local IDs",
-     width: 400,
-     dialogClass: 'superlocal'
-     });
+    }
+    jQuery(this).prop('title', ' ');
+    var par = this.parentElement ? [this.parentElement.tagName, this.parentElement.id] : ['none', '(n/a)'];
+    var pre = this.previousElementSibling ? [this.previousElementSibling.tagName, this.previousElementSibling.id] : ['none', '(n/a)'];
+    var nex = this.nextElementSibling ? [this.nextElementSibling.tagName, this.nextElementSibling.id] : ['none', '(n/a)'];
+    var chi = this.firstElementChild ? [this.firstElementChild.tagName, this.firstElementChild.id] : ['none', '(n/a)'];
+    var msg = '\xa0\u2196\xa0\xa0' + par[0] + ': ' + par[1] + '<br>' +
+              '\xa0\u2191\xa0\xa0' + pre[0] + ': ' + pre[1] + '<br>' +
+              '\u2192 ' + this.tagName + ': ' + this.id + '<br>' +
+              '\xa0\u2193\xa0\xa0' + nex[0] + ': ' + nex[1] + '<br>' +
+              '\xa0\u2198\xa0\xa0' + chi[0] + ': ' + chi[1];
+    jQuery('<div>' + msg + '</div>').dialog({
+      title: 'Local IDs', width: 400, dialogClass: 'superlocal'
+    });
   });
-  
-//change target of wth if page is in code to prevent attempt to open new tab
-//if(window.location.href.indexOf("/doc/") == -1){alert('fred')}
 
+  // 公开少量状态，便于自动化测试与后续维护
+  window.ItascaNav = {
+    isMobile: isMobileNav,
+    open: openNav,
+    close: closeNav,
+    toggle: doNav,
+    isOpen: function () { return navOpen; }
+  };
+})();
