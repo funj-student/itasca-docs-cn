@@ -67,6 +67,40 @@ EN_CMP = re.compile(r'\b(greater than|less than|at least|at most|minimum|maximum
 ZH_CMP = re.compile(r'大于|小于|至少|至多|最小|最大|低于|高于|超过')
 
 
+def signature_tokens(text):
+    """Return numeric/identifier features used for strong alignment."""
+    nums = tuple(sorted(set(NUM.findall(text))))
+    ids = tuple(sorted({x.lower() for x in IDENT.findall(text)}))
+    return nums, ids
+
+
+def align_pairs(en_sigs, zh_sigs):
+    """Align only paragraphs with non-empty matching features.
+
+    Paragraphs without numbers or command identifiers are deliberately not
+    paired: identical empty signatures are not evidence of alignment.
+    """
+    def strong(sig):
+        nums, ids = sig
+        return bool(nums or ids)
+
+    en_strong = [strong(s) for s in en_sigs]
+    zh_strong = [strong(s) for s in zh_sigs]
+    sm = difflib.SequenceMatcher(
+        None,
+        [s if e else object() for s, e in zip(en_sigs, en_strong)],
+        [s if e else object() for s, e in zip(zh_sigs, zh_strong)],
+        autojunk=False,
+    )
+    pairs = []
+    for block in sm.get_matching_blocks():
+        for k in range(block.size):
+            ei, zi = block.a + k, block.b + k
+            if en_strong[ei] and zh_strong[zi] and en_sigs[ei] == zh_sigs[zi]:
+                pairs.append((ei, zi))
+    return pairs
+
+
 def flags(en, zh):
     out = []
     en_neg, zh_neg = bool(EN_NEG.search(en)), bool(ZH_NEG.search(zh))
@@ -100,30 +134,24 @@ def main():
         en_path = en_dir / rel.replace('/', '_')
         zh = blocks(zh_path)
         en = blocks(en_path)
-        def signature(text):
-            nums = sorted(set(NUM.findall(text)))
-            ids = sorted({x.lower() for x in IDENT.findall(text)})
-            return '|'.join(['N:' + ','.join(nums), 'I:' + ','.join(ids)])
-
-        en_sig = [signature(x) for x in en]
-        zh_sig = [signature(x) for x in zh]
-        sm = difflib.SequenceMatcher(None, en_sig, zh_sig, autojunk=False)
-        pairs = []
-        for block in sm.get_matching_blocks():
-            for k in range(block.size):
-                pairs.append((block.a + k, block.b + k))
+        en_sig = [signature_tokens(x) for x in en]
+        zh_sig = [signature_tokens(x) for x in zh]
+        pairs = align_pairs(en_sig, zh_sig)
         cand = []
         for ei, zi in pairs:
             f = flags(en[ei], zh[zi])
             if f:
                 cand.append({'en_index': ei, 'zh_index': zi, 'flags': f,
                              'en': en[ei][:800], 'zh': zh[zi][:800]})
+        weak_en = sum(1 for s in en_sig if not s[0] and not s[1])
+        weak_zh = sum(1 for s in zh_sig if not s[0] and not s[1])
         records.append({'path': rel, 'en_blocks': len(en), 'zh_blocks': len(zh),
-                        'aligned': len(pairs), 'candidates': cand})
-        stats.append((rel, len(en), len(zh), len(pairs), len(cand)))
+                        'aligned': len(pairs), 'weak_en_blocks': weak_en,
+                        'weak_zh_blocks': weak_zh, 'candidates': cand})
+        stats.append((rel, len(en), len(zh), len(pairs), weak_en, weak_zh, len(cand)))
     out_file.write_text('\n'.join(json.dumps(r, ensure_ascii=False) for r in records) + '\n', encoding='utf-8')
-    for rel, ne, nz, na, nc in stats:
-        print(f'{rel}\ten={ne}\tzh={nz}\taligned={na}\tcand={nc}')
+    for rel, ne, nz, na, we, wz, nc in stats:
+        print(f'{rel}\ten={ne}\tzh={nz}\tstrong_aligned={na}\tweak={we}/{wz}\tcand={nc}')
 
 if __name__ == '__main__':
     main()

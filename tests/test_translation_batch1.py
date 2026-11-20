@@ -51,8 +51,8 @@ class TranslationBatch1Checks(unittest.TestCase):
     def test_input_fixes(self):
         t = text('doc/flac3d/docproject/source/theory/fluid-mechanical/input/input.html')
         self.assertIn('用平均的基于网格点的孔隙压力自动初始化', t)
-        self.assertIn('单元平均流量（<code class="xref fish fish-func docutils literal"><span class="pre">zone.flux</span></code>）', t)
-        self.assertNotIn('单元平均热通量（<code class="xref fish fish-func docutils literal"><span class="pre">zone.flux</span></code>）', t)
+        self.assertIn('单元平均热通量（<code class="xref fish fish-func docutils literal"><span class="pre">zone.flux</span></code>）', t)
+        self.assertNotIn('单元平均流量（<code class="xref fish fish-func docutils literal"><span class="pre">zone.flux</span></code>）', t)
 
     def test_initial_conditions_formula(self):
         t = text('doc/flac3d/docproject/source/modeling/problemsolving/initial_conditions.html')
