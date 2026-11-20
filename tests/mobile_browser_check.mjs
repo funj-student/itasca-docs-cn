@@ -255,8 +255,8 @@ async function runEngine(engineType) {
   await browser.close();
 }
 
-const engines = [chromium];
-if (process.env.WITH_WEBKIT === '1') engines.push(webkit);
+const engines = process.env.ONLY_WEBKIT === '1' ? [] : [chromium];
+if (process.env.WITH_WEBKIT === '1' || process.env.ONLY_WEBKIT === '1') engines.push(webkit);
 for (const engine of engines) {
   try { await runEngine(engine); }
   catch (e) { errors.push({ engine: engine.name(), type: 'launch', message: String(e) }); }
