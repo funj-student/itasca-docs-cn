@@ -21,7 +21,7 @@ const PHASE = process.env.PHASE || 'all';
 const WIDTHS = (process.env.WIDTHS || '320,375,390,430,768,960,1280,1920').split(',').map(Number);
 const PAGES = (process.env.PAGES || [
   'index.html',
-  'search.html',
+  'doc/search.html',
   'glossary.html',
   'terms.html',
   'doc/flac3d/zone/doc/manual/zone_manual/zone_commands/cmd_zone.dynamic.html',
@@ -221,7 +221,7 @@ async function runEngine(engineType) {
           }
           if (m.mobile) await testDrawer(page, pagePath);
         }
-        if (pagePath === 'search.html' && (width === 320 || width === 390 || width === 1280)) {
+        if (pagePath === 'doc/search.html' && (width === 320 || width === 390 || width === 1280)) {
           await page.fill('#mainbody input[name="q"]', 'zone');
           await page.locator('#mainbody input[type="submit"]').click();
           try {
