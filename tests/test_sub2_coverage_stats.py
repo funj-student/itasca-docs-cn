@@ -27,8 +27,12 @@ def norm(text):
     return re.sub(r'\s+', ' ', text).strip()
 
 
-def sha256(path):
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+def normalized_sha256_bytes(data):
+    return hashlib.sha256(re.sub(rb'\r\n?', b'\n', data)).hexdigest()
+
+
+def normalized_sha256(path):
+    return normalized_sha256_bytes(path.read_bytes())
 
 
 class Sub2CoverageStatsChecks(unittest.TestCase):
@@ -52,7 +56,7 @@ class Sub2CoverageStatsChecks(unittest.TestCase):
             self.assertIn(b['status'], ALLOWED)
             self.assertNotIn('verified', b['status'])
             self.assertTrue(b['evidence'])
-            self.assertEqual(b['git_head'], self.manifest['git_head'])
+            self.assertEqual(b['source_commit'], self.manifest['source_commit'])
 
     def test_summary_closes_per_page(self):
         for row in self.summary:
@@ -122,14 +126,41 @@ class Sub2CoverageStatsChecks(unittest.TestCase):
         self.assertEqual(sum(1 for b in self.blocks if 'strength-stress-ratio' in b['text']) > 0, True)
 
     def test_record_hashes_match_current_input_files(self):
+        self.assertIn('normalize_newlines', self.manifest['hash_method'])
         for path, hashes in self.manifest['files'].items():
-            self.assertEqual(sha256(ROOT / 'doc' / path), hashes['zh_sha256'], path)
+            self.assertEqual(normalized_sha256(ROOT / 'doc' / path), hashes['zh_sha256'], path)
         en_dir = Path(self.manifest['en_dir'])
         if en_dir.exists():
             for path, hashes in self.manifest['files'].items():
                 en_path = en_dir / path.replace('/', '_')
                 if en_path.exists():
-                    self.assertEqual(sha256(en_path), hashes['en_sha256'], path)
+                    self.assertEqual(normalized_sha256(en_path), hashes['en_sha256'], path)
+
+    def test_english_snapshot_metadata_is_explicit_when_ci_cannot_verify(self):
+        self.assertFalse(self.manifest['en_snapshot_available_in_ci'])
+        self.assertEqual(len(self.manifest['en_sources']), 25)
+        for path, src in self.manifest['en_sources'].items():
+            self.assertTrue(src['source_url'].startswith('https://docs.itascacg.com/'))
+            self.assertTrue(src['collected_at'])
+            self.assertRegex(src['sha256_normalized'], r'^[0-9a-f]{64}$')
+            self.assertFalse(src['available_in_ci'])
+        en_dir = Path(self.manifest['en_dir'])
+        if not en_dir.exists():
+            # CI cannot access the Windows worktree snapshot. Do not claim
+            # English content was verified; only metadata is checked above.
+            self.assertTrue(self.manifest['en_snapshot_available_in_ci'] is False)
+
+    def test_source_commit_is_verifiable_and_not_self_referential(self):
+        self.assertEqual(self.manifest['source_commit'],
+                         '235af521d76b774618c0edfcfaa8ce8230a0b24a')
+        self.assertIn('parent PR head', self.manifest['source_commit_note'])
+        self.assertNotIn('git_head', self.manifest)
+
+    def test_normalized_hash_ignores_line_endings_but_detects_content_changes(self):
+        self.assertEqual(normalized_sha256_bytes(b'a\r\nb\r\n'),
+                         normalized_sha256_bytes(b'a\nb\n'))
+        self.assertNotEqual(normalized_sha256_bytes(b'a\nb\n'),
+                            normalized_sha256_bytes(b'a\nc\n'))
 
     def test_recorded_text_exists_in_current_html(self):
         for path, blocks in self.by_path.items():

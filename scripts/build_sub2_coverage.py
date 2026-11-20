@@ -7,6 +7,10 @@ Important semantics:
   * ai_confirmed is used ONLY when an explicit verified-pair evidence record
     with English text, Chinese text and a review reason exists.
   * pending means not verified. It is never silently relabelled as confirmed.
+
+Input hashes are computed after newline normalization (CRLF/CR -> LF) so that
+Windows worktrees and Linux CI checkouts produce the same value. This ignores
+line-ending-only differences but still detects actual content changes.
 """
 from pathlib import Path
 import hashlib
@@ -33,8 +37,12 @@ def norm(text):
     return re.sub(r'\s+', ' ', text).strip().lower()
 
 
-def sha256(path):
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+def normalize_newlines(data):
+    return re.sub(rb'\r\n?', b'\n', data)
+
+
+def normalized_sha256(path):
+    return hashlib.sha256(normalize_newlines(path.read_bytes())).hexdigest()
 
 
 def sig_overlap(a, b):
@@ -108,6 +116,9 @@ def apply_verified_evidence(rel, en, zh, status, pair, evidence):
 
 def main():
     pages_file, en_dir, page_list, out_blocks, out_summary, out_manifest = map(Path, sys.argv[1:7])
+    source_commit = sys.argv[7] if len(sys.argv) > 7 else ''
+    if not re.fullmatch(r'[0-9a-f]{40}', source_commit):
+        raise SystemExit('source_commit must be a 40-hex verifiable commit SHA')
     en_dir = en_dir.resolve()
     rels = [l.strip() for l in pages_file.read_text(encoding='utf-8').splitlines() if l.strip()]
     page_map = {r['path']: r for r in map(json.loads, page_list.read_text(encoding='utf-8').splitlines())}
@@ -116,8 +127,9 @@ def main():
     for r in map(json.loads, records_path.read_text(encoding='utf-8').splitlines()):
         issue_map[r['path']].append(r['id'])
 
-    all_blocks, summaries, manifest_files = [], [], {}
-    head = subprocess.run(['git', 'rev-parse', 'HEAD'], capture_output=True, text=True, check=True).stdout.strip()
+    all_blocks, summaries, manifest_files, en_sources = [], [], {}, {}
+    # Do not record the generated file's own final commit: that would be a
+    # circular dependency. Caller supplies the verifiable parent PR head.
     for rel in rels:
         en_path = en_dir / rel.replace('/', '_')
         zh_path = Path('doc') / rel
@@ -125,8 +137,15 @@ def main():
         zh = M.blocks_with_context(zh_path)
         for b in en: b['_lang'] = 'en'
         for b in zh: b['_lang'] = 'zh'
-        zh_hash, en_hash = sha256(zh_path), sha256(en_path)
+        zh_hash, en_hash = normalized_sha256(zh_path), normalized_sha256(en_path)
         manifest_files[rel] = {'zh_sha256': zh_hash, 'en_sha256': en_hash}
+        en_sources[rel] = {
+            'source_url': page_map[rel]['source_url'],
+            'collected_at': datetime.fromtimestamp(en_path.stat().st_mtime, timezone.utc).isoformat(),
+            'sha256_normalized': en_hash,
+            'collection_method': 'curl -fLsS from official Itasca 7.0 URL in page_list.jsonl',
+            'available_in_ci': False,
+        }
 
         status, pair, evidence = {}, {}, {}
         used_e, used_z = apply_verified_evidence(rel, en, zh, status, pair, evidence)
@@ -203,7 +222,7 @@ def main():
                     'text': b['text'], 'status': status.get((lang, i), 'pending'),
                     'matched_index': pair.get((lang, i)), 'evidence': evidence.get((lang, i), {}),
                     'input_sha256': zh_hash if lang == 'zh' else en_hash,
-                    'git_head': head,
+                    'source_commit': source_commit,
                 })
 
         def c(lang, st):
@@ -225,10 +244,15 @@ def main():
     out_summary.write_text('\n'.join(json.dumps(r, ensure_ascii=False) for r in summaries) + '\n', encoding='utf-8')
     out_manifest.write_text(json.dumps({
         'generated_at': datetime.now(timezone.utc).isoformat(),
-        'git_head': head, 'en_dir': str(en_dir),
+        'source_commit': source_commit,
+        'source_commit_note': 'Verifiable parent PR head; intentionally not the generated file\'s own final commit.',
+        'hash_method': 'sha256(normalize_newlines(bytes)); CRLF and CR are normalized to LF',
+        'en_dir': str(en_dir),
+        'en_snapshot_available_in_ci': False,
+        'en_sources': en_sources,
         'files': manifest_files,
     }, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
-    print('blocks', len(all_blocks), 'pages', len(summaries), 'head', head[:8])
+    print('blocks', len(all_blocks), 'pages', len(summaries), 'source_commit', source_commit[:8])
 
 if __name__ == '__main__':
     main()

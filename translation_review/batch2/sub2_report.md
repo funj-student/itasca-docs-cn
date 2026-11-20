@@ -11,7 +11,7 @@
 
 ## 2. 覆盖统计：程序候选与 AI 实际核查分离
 
-覆盖数据由 `scripts/build_sub2_coverage.py` 从当前 HTML 重新生成，可复算。逐块明细见 `sub2_block_coverage.jsonl`，逐页汇总见 `sub2_coverage.jsonl`，输入文件哈希与 Git head 见 `sub2_coverage_manifest.json`。
+覆盖数据由 `scripts/build_sub2_coverage.py` 从当前 HTML 重新生成，可复算。逐块明细见 `sub2_block_coverage.jsonl`，逐页汇总见 `sub2_coverage.jsonl`，输入文件的换行符规范化哈希、英文来源 URL/采集时间/哈希与可验证来源提交见 `sub2_coverage_manifest.json`。
 
 | 状态 | 含义 | 英文块 | 中文块 |
 | --- | --- | ---: | ---: |
@@ -114,15 +114,32 @@
 - `translation_review/batch2/sub2_verified_pairs.jsonl`（唯一允许 AI 确认的证据清单）
 - `translation_review/batch2/sub2_coverage.jsonl`（重建为诚实状态汇总）
 - `translation_review/batch2/sub2_block_coverage.jsonl`（逐块证据）
-- `translation_review/batch2/sub2_coverage_manifest.json`（输入哈希与 Git head）
+- `translation_review/batch2/sub2_coverage_manifest.json`（规范化哈希、英文来源元数据与可验证父提交）
 - `translation_review/batch2/sub2_report.md`
 
 ## 8. 测试
 
-- `python -B -m unittest discover -s tests`：49 项通过。
+- `python -B -m unittest discover -s tests`：52 项通过。
 - `python scripts/check_terms.py`：通过。
 - `python scripts/check_links.py --known-missing scripts/known-missing-images.json`：pages=6584，missing_files=2，missing_anchors=0，known_missing_files=2；仅既有白名单缺图。
 
 ## 9. 限制
 
 本批结论来自 AI 对照官方英文原文的逐页审校，不是人工专业终审。当前仍有英文 482 块、中文 636 块处于 `pending`，没有为了闭合统计而强制配对。`ai_confirmed` 只有 10 对，全部来自有证据的 8 项已修订问题。代码、表格、公式、标题、图注、警告和关键字标题只是 `structure_candidate`，不代表语义完整性已核实；纯数据表格未逐格校验数值。逐块记录可独立复核每个块的分类依据，但不能替代人工专业终审。
+
+## 10. CI 哈希失败排查与修复
+
+- 失败 run：https://github.com/funj-student/itasca-docs-cn/actions/runs/44752274326
+- 失败测试：`test_record_hashes_match_current_input_files`
+- 失败样例：`fish_zone.field.prop.html`
+  - Windows 工作树原始字节 SHA-256：`a027f797...`
+  - Linux CI/Git blob SHA-256：`ec8f1291...`
+  - Windows 工作树换行符规范化后 SHA-256：`ec8f1291...`
+
+排查结果显示该文件在工作树中有 131 处 CRLF，`core.autocrlf=true`；Git 入库和 Linux checkout 使用 LF。旧清单记录的是 Windows 原始字节哈希，CI 计算的是 LF 内容哈希，二者不一致并非文件内容被改动。
+
+修复方法：生成器和测试统一使用 `sha256(normalize_newlines(bytes))`，把 CRLF/CR 规范化为 LF。这样忽略纯换行符差异，但仍能发现任何实际文本内容变化；测试中也新增了“换行符变化同哈希、文本内容变化不同哈希”的断言，未删除或跳过失败测试。
+
+`sub2_coverage_manifest.json` 不再记录生成文件自身的最终提交，改为记录可验证的父提交 `235af521d76b774618c0edfcfaa8ce8230a0b24a`；原 `9fe6ffa6` 是本地 API 写入前的提交，GitHub 上不可查询，已从清单中移除。
+
+英文原文快照保存在仓库外的 Windows 工作目录，CI 无法访问。清单已逐篇记录英文来源 URL、采集时间和规范化内容哈希；CI 无法验证英文快照的本地内容哈希或逐块文本存在性。测试明确声明这一限制，不把它表述为“双语哈希检查全部通过”。
