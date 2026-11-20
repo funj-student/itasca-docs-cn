@@ -58,7 +58,7 @@ cd itasca-docs-cn
 | 路径 | 用途 |
 | --- | --- |
 | `index.html` | 站点首页：分册导航与搜索入口 |
-| `doc/` | 完整手册（6,576 个 HTML 页面及配套图片、脚本、索引） |
+| `doc/` | 完整手册（6,577 个 HTML 页面及配套图片、脚本、索引） |
 | `doc/contents.html` | 完整目录 |
 | `doc/search.html` | 全文检索页；中文索引为 `doc/_static/zh-search-data.js`，按需加载 |
 | `terms.html` | 核心术语对照（125 条） |
