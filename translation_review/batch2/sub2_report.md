@@ -9,22 +9,32 @@
 - 前15篇：FLAC3D 命令参考；后10篇：FLAC3D 建模与求解教程。
 - 本批为 AI 逐页审校与官方英文原文对照，不是人工专业终审。
 
-## 2. 自动对齐与逐页覆盖
+## 2. 自动对齐与逐块覆盖
 
-| 指标 | 数量 |
-| --- | ---: |
-| 审校页面 | 25 |
-| AI 逐页审校 | 25篇 |
-| 英文文本块 | 1683 |
-| 中文文本块 | 1402 |
-| 自动强对齐 | 317 |
-| 自动语义对齐 | 276 |
-| AI 进一步核对并确认对应的未对齐块 | 511 |
-| 因结构差异无法直接对应但已核实内容 | 511 |
-| 仍未核实（主要正文口径） | 0 |
-| 完成主要正文核查 | 25/25（AI） |
+覆盖数据由 `scripts/build_sub2_coverage.py` 从当前 HTML 与对齐程序重新生成，可复算。逐块明细见 `sub2_block_coverage.jsonl`，逐页汇总见 `sub2_coverage.jsonl`。
 
-逐页数据见 `sub2_coverage.jsonl`。自动对齐口径包含代码块逐行、表格单元格、列表项和导航/结构块；AI 按 HTML 段落结构重新核对后，未对齐正文段落均已找到对应内容。纯数据表格未逐格校验，见限制。
+| 指标 | 英文块 | 中文块 |
+| --- | ---: | ---: |
+| 总文本块 | 1683 | 1402 |
+| 自动强对齐 | 320 | 320 |
+| 自动语义对齐 | 276 | 276 |
+| AI 逐段确认的未自动对齐块 | 703 | 591 |
+| 代码/表格/公式块已核实 | 172 | 82 |
+| 标题/图注等结构非正文 | 82 | 20 |
+| 页脚/导航等非正文 | 86 | 86 |
+| 重复内容 | 44 | 27 |
+| 仍未核实 | 0 | 0 |
+
+两侧合计均可复算：
+
+- 英文：320 + 276 + 703 + 172 + 82 + 86 + 44 + 0 = 1683
+- 中文：320 + 276 + 591 + 82 + 20 + 86 + 27 + 0 = 1402
+
+自动强对齐从上一版报告的 317 调整为 320，原因是上一版 `alignment.jsonl` 生成早于表格/代码/公式块提取的最终版脚本；本轮已用当前脚本重新生成对齐基线。
+
+独立审查指出的“AI 进一步核对 511”和“结构差异已核实 511”确实是同一组数据的重复表述，现已取消。新版只使用一个互斥状态字段：`auto_strong`、`auto_semantic`、`ai_confirmed_unmatched`、`code_table_formula_verified`、`structure_non_body`、`non_body`、`duplicate`、`unresolved`。`unresolved` 为 0 是逐块分类求和结果，不再人工填写。
+
+每个逐块记录包含：页面、侧别、块索引、标签、section、标题层级、文本、状态、匹配对象索引与证据。残余 10 个英文块已单独核查，其中 7 个为标题/图注，3 个为表格单元格，均有中文对应内容，不归入未核实正文。
 
 ## 3. 问题统计
 
@@ -96,15 +106,20 @@
 - 6 个 HTML 正文文件（history/list/dynamic/relax/material_properties/identifyingregions）
 - `doc/_static/zh-search-data.js`
 - `scripts/review_translation_batch.py`（表格/代码/公式块提取）
+- `scripts/build_sub2_coverage.py`（逐块覆盖记录生成器）
 - `tests/test_review_alignment.py`（新增1项真实HTML提取测试）
 - `tests/test_translation_batch2_sub2.py`（新增6项本批回归测试）
+- `tests/test_sub2_coverage_stats.py`（新增5项统计闭合测试）
+- `translation_review/batch2/sub2_coverage.jsonl`（重建为互斥状态汇总）
+- `translation_review/batch2/sub2_block_coverage.jsonl`（逐块证据）
+- `translation_review/batch2/sub2_report.md`
 
 ## 8. 测试
 
-- `python -B -m unittest discover -s tests`：39 项通过。
+- `python -B -m unittest discover -s tests`：44 项通过。
 - `python scripts/check_terms.py`：通过。
 - `python scripts/check_links.py --known-missing scripts/known-missing-images.json`：pages=6584，missing_files=2，missing_anchors=0，known_missing_files=2；仅既有白名单缺图。
 
 ## 9. 限制
 
-本批结论来自 AI 对照官方英文原文的逐页审校，不是人工专业终审。纯数据表格未逐格校验；自动对齐未覆盖的正文已由 AI 按 HTML 段落结构复核，但不能等同于人工逐段终审。
+本批结论来自 AI 对照官方英文原文的逐页审校，不是人工专业终审。`unresolved = 0` 是逐块状态分类求和的结果，不是人工填写的覆盖率声明。表格/公式/代码块只做了对应存在性与结构核查；纯数据表格未逐格校验数值。逐块记录可独立复核每个块的分类依据，但不能替代人工专业终审。
