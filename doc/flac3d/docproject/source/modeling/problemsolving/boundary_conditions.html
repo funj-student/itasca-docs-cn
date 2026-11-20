@@ -170,7 +170,7 @@ conditions applied to the specified faces are removed..."><code class="xref fish
  To apply conditions to zones rather than at faces, see the  zone.apply 
 command.  To apply conditions at individual gridpoints, see the  zone.gridpoint.fix 
 command...">施加网格单元面条件（<code class="xref fish fish-cmd docutils literal"><span class="pre">zone</span> <span class="pre">face</span> <span class="pre">apply</span></code>）</a> 命令提供多种选项，使逐渐施加（或移除）边界条件更加简单直接。例如，要在保持准平衡的同时逐步增大施加应力，可使用 <span class="cmdkey">servo</span> 关键字的 <span class="cmdkey">ramp</span> 选项：</p>
-<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'West'</span>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">zone face apply</span><span class="n"> stress</span><span class="o">-</span><span class="n">xx </span><span class="o">-</span><span class="m m-Double">1e5</span><span class="n"> servo ramp range group </span><span class="s">'East'</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">2</span>
 </pre></div>
 </div>
 <p><strong>使用</strong> <span class="codename">FISH</span> <strong>函数施加变化的应力边界</strong></p>
@@ -179,17 +179,17 @@ e notation. Multiple instances in a command are numbered ( f1   f2
  f3  etc.)..."><span class="varfloat"><span class="null">1.0</span></span></a> 不会产生影响，而返回 <a class="reference internal" href="../../../../../common/docproject/utilities/types.html#type:flt" title="A real number ( f ), positive or negative. It may be written in scientific
 e notation. Multiple instances in a command are numbered ( f1   f2 
  f3  etc.)..."><span class="varfloat"><span class="null">0.0</span></span></a> 则会有效移除边界（对于应力边界）。以下简单示例使用一个简短的 <span class="codename">FISH</span> 函数，使施加应力按正弦规律变化。</p>
-<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">zone property</span><span class="n"> bulk </span><span class="m m-Double">1e8</span><span class="n"> shear </span><span class="m m-Double">7e7</span><span class="n"> density </span><span class="m m-Double">1000</span>
-<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'West'</span>
-<span class="nb">fish define</span><span class="ni"> apply</span>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">fish define</span><span class="ni"> apply</span>
 <span class="ni">    apply </span><span class="p">=</span><span class="ni"> </span><span class="k">math.sin</span><span class="p">(</span><span class="ni">dynamic</span><span class="p">.</span><span class="k">time.total</span><span class="o">*</span><span class="m m-Double">10</span><span class="p">)</span>
+<span class="nb">end</span>
+<span class="nb">zone face apply</span><span class="n"> stress</span><span class="o">-</span><span class="n">xx </span><span class="o">-</span><span class="m m-Double">1e5</span><span class="n"> fish apply range group </span><span class="s">'East'</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">2</span>
 </pre></div>
 </div>
 <p><strong>使用表格数据施加变化的应力边界</strong></p>
 <p>以下示例创建一个简单表格，用于将应力边界从零逐渐增加。请注意，对于<a class="reference internal" href="../../../../../common/kernel/doc/manual/table_manual/table.html#table-manual"><span class="std std-ref">表格</span>（table）</a>乘数，必须指定用作 <span class="math">\(x\)</span> 查询值的时间值。本例指定动力时间。默认情况下，表格乘数使用当前累计步数作为 <span class="math">\(x\)</span> 查询值。</p>
-<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">zone cmodel</span><span class="n"> assign elastic</span>
-<span class="nb">zone property</span><span class="n"> bulk </span><span class="m m-Double">1e8</span><span class="n"> shear </span><span class="m m-Double">7e7</span><span class="n"> density </span><span class="m m-Double">1000</span>
-<span class="nb">zone face apply</span><span class="n"> velocity</span><span class="o">-</span><span class="n">normal </span><span class="m m-Double">0</span><span class="n"> range group </span><span class="s">'West'</span>
+<div class="highlight-fish"><div class="highlight"><pre><span></span><span class="nb">table</span><span class="n"> </span><span class="s">'ramp'</span><span class="n"> add </span><span class="p">(</span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">0</span><span class="p">)</span><span class="n"> </span><span class="p">(</span><span class="m m-Double">1</span><span class="p">,</span><span class="m m-Double">1</span><span class="p">)</span>
+<span class="nb">zone face apply</span><span class="n"> stress</span><span class="o">-</span><span class="n">xx </span><span class="o">-</span><span class="m m-Double">1e5</span><span class="n"> table </span><span class="s">'ramp'</span><span class="n"> time dynamic </span><span class="sx">...</span>
+<span class="n">                range group </span><span class="s">'East'</span><span class="n"> position</span><span class="o">-</span><span class="n">z </span><span class="m m-Double">0</span><span class="p">,</span><span class="m m-Double">2</span>
 </pre></div>
 </div>
 <p id="gradual-excavation-example1"><strong>圆形隧道的逐步开挖</strong></p>
@@ -233,8 +233,8 @@ solution process from causing unrealistic damage to the region around the excava
 <span class="nb">model save</span><span class="n"> </span><span class="s">'relax'</span>
 </pre></div>
 </div>
-<p>请注意，采用卸荷时，达到平衡所需的总步数实际上略少。这种情况并不少见。</p>
-<p>检查开挖周围网格单元的状态标志可见，逐渐卸荷的模型不仅损伤较少，而且完全没有拉伸破坏标志。</p>
+<p>请注意，采用松弛开挖时，达到平衡所需的总步数实际上略少。这种情况并不少见。</p>
+<p>检查开挖周围网格单元的状态标志可见，松弛开挖的模型不仅损伤较少，而且完全没有拉伸破坏标志。</p>
 <div class="figure align-center" id="id5">
 <a class="reference internal image-reference" href="../../../../../_images/StateInstant.png"><img alt="click to enlarge image in a new window" src="../../../../../_images/StateInstant.png" style="width: 85%;"/></a>
 <p class="caption"><span class="caption-text">图 3：隧道瞬时开挖的塑性状态。</span></p>
