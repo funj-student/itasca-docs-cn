@@ -69,6 +69,7 @@ cd itasca-docs-cn
 | `术语词库.md` | 模块词库数据源；修改后运行 `python scripts/generate_glossary.py` 重新生成 |
 | `核心术语对照.md` | 核心术语数据源，全站术语一致性的基准 |
 | `scripts/check_terms.py` | 术语与警示层级自动校验脚本 |
+| `scripts/check_links.py` | 校验已发布页面的本地链接、页内与跨页锚点，以及 HTML 和 CSS 引用的静态资源 |
 
 ## 检索用法
 
@@ -84,6 +85,17 @@ cd itasca-docs-cn
 
 ## 质量保障
 
+在仓库根目录使用 Python 3.11 可运行与 CI 相同的检查。回归测试会在临时目录重新生成模块词库，并核对提交的页面。
+
+```sh
+python -m pip install -r scripts/requirements-checks.txt
+python -B -m unittest discover -s tests -v
+python scripts/check_terms.py
+python scripts/check_links.py --known-missing scripts/known-missing-images.json
+```
+
+PFC 7.0 的两个 Python 示例使用了缺少源图的通配符路径。CI 会逐条报告这两处已知缺图，并按页面、原始 URL 和出现次数精确匹配。新增缺失、坏锚点或已过期的例外都会使检查失败。运行 `python scripts/check_links.py` 可查看严格检查结果。
+
 - 全量扫描 93,911 个正文及标题单元，记录 1,572 个修订条目，重新渲染 432 页。
 - 6,573 个 HTML 页面通过结构、公式、锚点及引用身份核验，错误数 0。
 - 术语 CI 检查：核心术语 125 条与官方术语表全部覆盖、禁用译字变体、警示块与官网逐页一致。
@@ -94,7 +106,7 @@ cd itasca-docs-cn
 
 仓库根目录包含 `.nojekyll`，确保以下划线开头的 `_static`、`_images` 目录能够正常发布。
 
-站点当前采用 **GitHub Actions** 部署：推送到 `main` 分支后，`.github/workflows/deploy-pages.yml` 会自动构建并发布。
+提交到 `main` 的 Pull Request 会运行质量检查。推送到 `main` 或手动触发 Pages 工作流时，只有同一提交通过全部检查，才会上传仓库根目录并发布到现有站点。
 
 如需改为分支部署，在仓库 Settings → Pages → Build and deployment 中，将 Source 选为 **Deploy from a branch**，分支选 `main`、目录选 `/ (root)`。
 
