@@ -1,96 +1,126 @@
-# Itasca 7.0 中文手册移动端适配测试报告
+# Itasca 7.0 中文手册移动端适配测试报告（PR #8 第二轮修订）
 
 分支：`fix/mobile-responsive-v2`　基线：`origin/main` @ `fe97a02b`（已含合并的 PR #5）
 
-## 一、根因分析
+本轮复核确认移动端导航重构方向正确，重点修正**验收真实性**：让 Playwright 具备失败判定能力，补充真实手势、iframe 键盘焦点与重复监听器回归，并接入可复现的 CI 冒烟测试。
 
-1. **目录多套滚动机制互相冲突**：`icgscripts.js` 同时在侧栏绑定 `touchmove`/`preventDefault` 模拟滚动（`enableTouchScroll`）、在 iframe 内用 `translateY()` 位移目录（`attachIframeTouch`）、`sizeMobileNav()` 又向 iframe 注入 `overflow:hidden` 并强制固定高度，叠加侧栏 `overflow-y:auto` 与 iframe 自身滚动。四套机制争抢同一手势，导致卡顿、跳变和滚不到底。
-2. **断点与设备判断不一致**：CSS 用 `max-width:720px`，JS 用 `innerWidth<=720 || maxTouchPoints>0 || UA`；触屏笔记本/平板会让脚本进入移动模式而布局仍是桌面端。`window.onresize` 在移动模式下无条件 `closeNav()`，地址栏收放或键盘弹出就会关闭目录。
-3. **遮罩层级错误**（浏览器测试发现）：新增遮罩 `z-index:250` 高于抽屉 `z-index:200`，遮罩覆盖整个抽屉，导致目录条目无法点击/展开。
-4. **iframe 高度未确定**（浏览器测试发现）：移动端 `height:auto` 使 iframe 随内容长高并被 `overflow:hidden` 的抽屉裁切，物理上无法滚到底部。
-5. **正文表格截断**：`table.comfishtable` 固定 `550px`、单元格 `white-space:nowrap; overflow:hidden; width:50%`，手机上直接切断命令名；`table{display:block}` 也破坏了表格默认布局语义。
-6. **搜索页固定宽度**：搜索框 `18em`、标题筛选 `25em`、弹窗 `38em`，在窄屏溢出或挤压。
+## 一、本轮新增根因与修复
 
-## 二、实际修改文件
-
-| 文件 | 修改内容 |
+| 问题 | 修复 |
 | --- | --- |
-| `doc/_static/icgscripts.js` | 重写导航：统一断点、移除冲突滚动逻辑、注入语义化按钮/遮罩/关闭按钮、背景滚动锁定与位置恢复；新增表格滚动容器包裹与超长标记处理 |
-| `doc/_static/itasca.css` | 统一 `959px` 断点；抽屉/iframe 单一滚动容器；表格分类适配、代码/公式/图片/警告框自适应；窄桌面过渡修正 |
-| `doc/_static/icg_shutsidebar.css` | 保留原样（内容已由共用 CSS 接管，不再依赖该文件的 720px 判断） |
-| `doc/search.html` | 搜索表单、筛选控件、弹窗和结果列表的自适应样式与语义标签 |
-| `doc/_static/zh-search.js` | 移除 `25em` 内联宽度；移动端首批结果 50 条（桌面 100 条）；筛选框语义属性；检索算法未改 |
-| `tests/mobile_browser_check.mjs` | 新增 Playwright 多宽度、多页面、双引擎验收脚本 |
+| 测试脚本只记录结果，从不设置非零退出码；异常被捕获后继续运行 | 引入带 `severity` 的断言系统；`fail` 断言失败或异常统一计入失败数，脚本末尾设置 `process.exitCode = 1`；负向验证（错误 BASE_URL）确认退出码为 1 |
+| 目录滚动仅用 `window.scrollTo()`，不能证明手势可用 | 新增 Chromium CDP 真实 `touchStart/touchMove/touchEnd` 手势与 WebKit 滚轮交互；程序化滚动保留但明确标注为“非手势基线” |
+| Escape 监听只在父页面，焦点进入 iframe 后事件不冒泡 | 在同源 iframe 内注入一次性 keydown 监听，调用 `parent.ItascaNav.closeFromIframe()`；关闭时先 blur iframe 内焦点并延迟恢复焦点到目录按钮 |
+| 打开目录后焦点未进入抽屉；关闭后内部元素仍可被 Tab 聚焦 | 打开时聚焦关闭按钮；关闭时设置 `inert`/`aria-hidden`/`tabindex=-1`，焦点恢复至目录按钮 |
+| `prepareTocFrame()` 在初始化、打开、布局切换时重复注册 iframe `load` 监听 | 以 `tocBoundFrame` 记录已绑定元素，只安装一次；`ItascaNav.tocListenerInstalls()` 暴露计数，并在 959↔960 反复切换后断言仍为 1 |
+| 测试未覆盖 959/960 分界、完整目录页、复杂公式、长代码、多列数据表格 | 默认页面清单扩至 14 个，宽度含 959/960；增加正文裁切/遮挡检测 |
+| CI 只跑 Python 检查 | 新增 `.github/workflows/mobile-browser-check.yml`，Playwright 版本由 `package-lock.json` 固定，Chromium+WebKit，5 个视口、3 类页面，失败使 CI 失败 |
 
-### 删除的冲突逻辑
+## 二、断言分类规则（非阻塞告警 vs 真正失败）
 
-- `enableTouchScroll()` / `attachIframeTouch()` / `navTranslate` / `translateY()` 手动位移
-- 侧栏与 iframe 内的 `touchmove` + `preventDefault()` 模拟滚动
-- `sizeMobileNav()` 对 iframe 文档的 `overflow:hidden` 注入与 80vh 高度计算
-- `window.onresize` / `orientationchange` 无条件 `closeNav()`
-- 基于 `maxTouchPoints` 与 UA 的移动判断
-- `table{display:block}` 与 `div.comfishtable{overflow-x:auto}`（对真正的 `table.comfishtable` 无效）
+**失败（severity=fail，`process.exitCode=1`）：**
+- 页面 HTTP >=400、页面加载/关键交互抛异常、浏览器启动失败
+- 非预期整页横向溢出（`documentElement.scrollWidth - innerWidth > 1`）
+- 移动端目录按钮 <44×44 或缺少 `role/aria-expanded/aria-label`
+- 目录打不开/关不上（遮罩、Escape、关闭按钮任一失效）、遮罩不可见
+- 目录节点展开数 <3、目录链接无法导航
+- 目录手势/滚轮无法滚到底或无法回到顶部；滑动误触条目；背景滚动位置变化；滑动中抽屉关闭
+- iframe 内 Escape 不能关闭目录或焦点未恢复；抽屉关闭后仍可聚焦
+- 阅读位置恢复失败
+- 搜索索引加载失败、无结果、标题筛选框溢出、搜索页整页溢出
+- 移动端正文被 CSS 裁切、图片超出视口
+- `load` 监听器重复安装
 
-## 三、新的移动端导航实现
+**非阻塞告警（severity=warn）：**
+- WebKit 已知 `Cannot load blob: ... due to access control checks`（MathJax，功能检查仍通过）
+- favicon / `.ico` 404
+- 截图因字体加载超时（截图仅为证据，不参与功能判定）
+- **桌面端** `table.comfishtable` 单元格 `nowrap/overflow:hidden` 造成的裁切（既有桌面设计，本轮不改动桌面排版；移动端同类情况为硬失败）
 
-- 断点：`matchMedia('(max-width: 959px)')`，CSS 同为 `@media (max-width: 959px)`。
-- 唯一滚动容器：目录 iframe 的文档视口；抽屉 `overflow:hidden`、iframe `flex:1 1 0; height:0` 获得确定高度，使用浏览器原生滚动。
-- 打开：≥48×48 CSS px 的「☰ 目录」按钮，含 `role="button"`、`tabindex`、`aria-controls`、`aria-label`、`aria-expanded`；抽屉内另有「✕ 关闭」按钮；遮罩 `z-index:250`、抽屉 `400`、按钮 `500`。
-- 关闭：按钮/关闭按钮/遮罩点击/Escape；锁定正文滚动（`position:fixed; top:-scrollY`）并在关闭后恢复阅读位置。
-- 仅在 `matchMedia` 触发布局模式切换时重置目录；地址栏、键盘、轻微 resize 不再关闭目录。
-- 安全区：`bottom/right: calc(... + env(safe-area-inset-*))`。
-- 共享脚本注入 UI，不逐页修改六千多篇 HTML。
+## 三、真实触摸/滚轮测试说明
 
-## 四、正文与搜索适配效果
+- **Chromium**：通过 CDP `Input.dispatchTouchEvent` 在 iframe 区域派发 `touchStart → 10×touchMove → touchEnd`，手指上滑到底、下滑回顶；断言滚动位置达到 `scrollHeight-innerHeight`、回顶 `scrollY<=2`、抽屉保持打开、父页面 `window.scrollY` 不变、iframe 内 `.jstree-anchor` click 计数为 0。
+- **WebKit**：移动端 WebKit 的 `isMobile:true` 会禁用 `mouse.wheel`，因此测试上下文仅设置 `hasTouch`，由视口宽度触发同一套 `matchMedia` 移动布局；用 `mouse.wheel` 完成相同的双向滚动断言。
+- 程序化 `window.scrollTo()` 结果**不再**被描述为真实手势通过，报告中单列为能力基线。
 
-- 命令/FISH 索引表改为自动列宽 + 完整文字；所有技术表格包在 `.table-scroll` 内局部横向滚动并给出「左右滑动」提示；术语表保持三列对应关系。
-- 代码块保留缩进与原换行并独立横向滚动；MathJax 公式使用局部滚动容器，不缩小字体、不改公式内容；图片 `max-width:100%`。
-- 命令关键字与 FISH 名称 `white-space:nowrap` 且 `max-width:100%; overflow-x:auto`，不会被拆字符也不会截断。
-- 搜索框/按钮/筛选/弹窗在 959px 以下自适应；中英文混合检索、来源、类型、标题筛选与排除词逻辑未改；移动端首批只渲染 50 条结果以减少 DOM。
+## 四、修改文件
 
-## 五、浏览器测试结果
+- `doc/_static/icgscripts.js`：iframe Escape / 焦点 / inert / 监听器去重
+- `tests/mobile_browser_check.mjs`：断言系统、真实手势、焦点与监听器回归、扩展页面与裁切检测
+- `.github/workflows/mobile-browser-check.yml`：Playwright CI 冒烟矩阵
+- `package.json` / `package-lock.json`：固定 Playwright 1.65.1，浏览器版本可复现
+- `tests/mobile_responsive_report.md`：本报告
 
-环境：Playwright 1.65.1，Chromium 1255（移动视口 + `hasTouch`）、WebKit 27.2；本地 HTTP 服务。
-宽度：320 / 375 / 390 / 430 / 768 / 960 / 1280 / 1920；测试含手机横屏（`max-height:500px`）。
-页面：首页、搜索页、完整目录、FLAC3D 命令页、FISH 函数页、公式页、长代码页、技术数据表格页、3DEC 页、PFC 页、术语表页。
+前一轮已完成且本轮未重新设计的共用样式/搜索适配文件：`doc/_static/itasca.css`、`doc/search.html`、`doc/_static/zh-search.js`。
+
+## 五、测试结果
+
+浏览器：Playwright 1.65.1；Chromium **159.0.8154.6**（Playwright build 1255）、WebKit **27.2**（Playwright build 2388）。
+本地测试使用仓库外安装的 Playwright 模块；CI 使用 `npm ci` + `npx playwright install --with-deps chromium webkit`，不依赖私人路径。
+
+### CI 冒烟矩阵（MODE=smoke，本地等价运行）
+
+| 项目 | 数值 |
+| --- | --- |
+| 引擎 | Chromium、WebKit |
+| 视口 | 375、390、959、960、1280 |
+| 页面 | 首页、搜索页、典型 FLAC3D 命令页 |
+| 断言数 | 342 |
+| 通过 / 失败 / 告警 | 340 / 0 / 2 |
+
+### 全量本地验收（MODE=full）
+
+视口：320、375、390、430、768、959、960、1280、1920（含 959/960 分界与手机横屏）。
+页面（13 个）：`index.html`、`doc/search.html`、`doc/contents.html`、`glossary.html`、`terms.html`、
+`doc/flac3d/zone/doc/manual/zone_manual/zone_commands/cmd_zone.dynamic.html`、
+`doc/flac3d/docproject/source/modeling/problemsolving/material_properties.html`、
+`doc/flac3d/body/doc/manual/buildingblocks_manual/building-blocks_commands/cmd_building-blocks.block.transform.html`、
+`doc/3dec/block/doc/manual/block_manual/block_fish/block/fish_block.area.html`、
+`doc/3dec/block/doc/manual/block_manual/block_commands/block/cmd_block.analyze-stability.html`、
+`doc/3dec/block/test3d/Theory_and_Background/Factor_of_Safety/MC_Slope/mcslope.html`、
+`doc/pfc/ccfd/doc/ball_cfd_manual/ball_cfd_commands/cmd_ball.cfd.attribute.html`、
+`doc/common/docproject/source/manual/coupling/couplingpfcandflac3d.html`。
+`doc/navtree.html` 是 iframe 目录片段（固定 30em 宽），不作为独立阅读页测试；它通过首页抽屉的展开/滚动/导航断言覆盖。
+
+结果（`report_final6.json`）：**1831 条断言，1822 通过，0 失败，9 条非阻塞告警，脚本退出码 0**。
+告警构成：4 条桌面 1280/1920 首页 `comfishtable` 既有裁切（按规则降级为 warn）、5 条 WebKit MathJax blob 访问告警。
+
+真实手势结果（Chromium 触摸 / WebKit 滚轮）：各视口均从 `scrollY=0` 滚到底部（320:1664、390:1054/995、959:1118/1059），再回到 0；误触条目数 0；背景滚动位置不变；抽屉未关闭；每次成功展开 8 个节点并完成链接导航。
+
+### 最终验收结果
 
 | 项目 | 结果 |
 | --- | --- |
-| 整页横向溢出（Chromium） | 通过 |
-| 整页横向溢出（WebKit） | 通过（曾发现命令 token 溢出，已修复） |
-| 目录打开/关闭、遮罩、Escape | 通过（双引擎） |
-| 目录连续滚动到底部 | 通过：展开 8 个节点后 `scrollY` 达到 `scrollHeight-innerHeight` |
-| 多级目录展开与链接跳转 | 通过：每次连续展开 8 个节点，点击条目完成导航 |
-| 关闭后阅读位置恢复 | 通过：滚动 600px 后开关目录，`scrollY` 仍为 600 |
-| 移动端目录按钮尺寸 | 79×48 CSS px（≥44） |
-| 搜索与筛选 | 通过：中文词「固结」得到结果，移动端 50 条 / 桌面 100 条，标题筛选框宽度 226–233px（320/390px 视口内） |
-| 桌面 1280 / 1920 | 无溢出，左侧目录、正文宽度与排版保持 |
-| Python 回归 | 52 项 unittest 通过；`check_terms.py` 通过；`check_links.py` 通过（2 个已知缺失文件） |
+| 浏览器 | Chromium 159.0.8154.6 / WebKit 27.2（Playwright 1.65.1） |
+| CI 冒烟视口 | 375 / 390 / 959 / 960 / 1280 |
+| CI 冒烟页面 | 首页、搜索页、典型 FLAC3D 命令页 |
+| CI 冒烟断言 | 342 条：340 通过，0 失败，2 告警，退出码 0 |
+| 全量视口 | 320 / 375 / 390 / 430 / 768 / 959 / 960 / 1280 / 1920 |
+| 全量页面 | 13 个（含完整目录、术语表、公式页、长代码页、多列表格页、3DEC/PFC 页） |
+| 全量断言 | 1831 条：1822 通过，0 失败，9 告警，退出码 0 |
+| 负向验证 | 错误 BASE_URL 时断言失败，脚本退出码 1 |
+| Python 回归 | 52 项 unittest 通过；术语检查通过；链接检查通过（2 个已知缺失文件） |
 
-### 性能实测（localhost，390px）
+以上为**实际断言运行结果**，不是“生成测试记录即视为通过”。
 
-| 指标 | 数值 |
-| --- | --- |
-| 首页 DOMContentLoaded | ~0.96 s（HTML 325 KB + 目录 iframe 1.34 MB） |
-| 目录首次打开 | ~0.75 s |
-| 搜索页 DOMContentLoaded | ~0.05 s |
-| 首次中文搜索「固结」 | ~1.12 s（含 14.66 MB 中文索引，localhost） |
+### Python 与静态检查
 
-中文索引已是按需加载（仅在首次中文查询时请求 `zh-search-data.js`）；目录 iframe 因六千多篇静态 HTML 内联结构仍会随页面加载，无法仅靠共用文件改为按需加载。移动端首批结果由 100 条降至 50 条。
+- `python -B -m unittest discover -s tests -v`：52 项通过
+- `python scripts/check_terms.py`：通过（terms=125, html_rows=125）
+- `python scripts/check_links.py --known-missing scripts/known-missing-images.json`：通过（6584 页，2 个已知缺失文件，0 个缺失锚点）
 
-## 六、截图
+## 六、与 PR #6 的兼容性
 
-截图保存在测试产物目录（未加入发布目录）：
+- PR #6（`project/quality-automation`）在 `doc/search.html` 的 `<title>` 后新增一行：`<meta name="robots" content="noindex,follow"/>`。
+- PR #8 对同一文件的修改集中在 `<style>` 块、搜索表单与结果控件，**不触及 `<head>` 顶部 title/meta 区域**；两处改动文本上无重叠，SEO 设置与移动端样式可共存。
+- 合并依赖：PR #6 与 PR #8 均基于 `fe97a02b`，互不依赖；若先合并 PR #6，PR #8 只需常规三方合并，无需人工改写。`doc/contents.html` 的 canonical/description 同样不在本分支修改范围内。
+- 本轮**未**把 `noindex,follow` 复制到 PR #8，也**未**合并任何 PR；仅记录上述依赖关系。
 
-- `final2_chromium_320_closed.png` / `final2_chromium_390_open.png`：手机竖屏与目录打开
-- `final2_chromium_1280_closed.png`：桌面端对照
-- `3_chromium_320_search.png`：手机搜索页
-- `2_chromium_320_closed.png`：阶段二修复后的命令索引表
+## 七、限制与风险
 
-## 七、尚未解决的问题与风险
-
-1. **真机覆盖不足**：已完成 Chromium 移动视口与 WebKit 桌面版模拟；Android 真机、iOS 真机、微信内置浏览器未实测，不能等同通过。
-2. **WebKit blob 访问告警**：部分含 MathJax 的技术页在 WebKit 中出现 `Cannot load blob: ... due to access control checks`，功能检查仍通过；属于测试环境/WebKit 字体加载告警，待真机确认。
-3. **目录 iframe 仍随页面加载**（1.34 MB）：要真正按需加载需改动全部静态 HTML 或引入 Service Worker，超出本次共用文件修复范围。
-4. **15 MB 中文索引**：首次中文搜索在慢速移动网络上的等待时间仍可能较长；已保留「正在载入搜索索引…」反馈，未重写搜索引擎。
-5. **浮动目录按钮**：固定在右下角，翻页与底部链接处已留 4.5em 安全间距；滚动过程中仍会覆盖其下方文字，这是悬浮按钮的固有取舍。
+1. Android 真机、iOS 真机、微信内置浏览器未实测；Chromium 移动视口与 WebKit 模拟通过**不等同于**真机通过。尤其 iOS Safari 原生触摸惯性未在真机验证。
+2. WebKit 的 `mouse.wheel` 是在非 `isMobile` 模拟模式下运行的（仍为 375/390/959px 移动布局，`hasTouch` 开启）；真正的移动端 WebKit 触摸滚动仍需真机确认。
+3. WebKit 个别页面存在 MathJax blob 访问告警，已归类为非阻塞告警，功能断言仍通过。
+4. 目录 iframe（约 1.34 MB）仍随页面加载：六千多篇静态 HTML 内联 iframe，无法仅靠共用文件改为按需加载。
+5. 15 MB 中文索引首次搜索仍需下载（已按需加载）；慢速移动网络体验待真机评估。
+6. 桌面 1280px 首页 `comfishtable` 单元格存在既有裁切，本轮按“不重新设计桌面端”原则仅记录为告警，未修改。

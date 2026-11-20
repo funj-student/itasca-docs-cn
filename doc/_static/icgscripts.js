@@ -21,6 +21,8 @@
   var bodyLocked = false;
   var savedScrollY = 0;
   var suppressNavClick = false;
+  var tocBoundFrame = null;
+  var tocListenerInstalls = 0;
 
   /* ------------------------------------------------------------------ *
    * 目录抽屉的语义化外壳（由共用脚本注入，避免改动六千多篇 HTML）
@@ -67,6 +69,30 @@
       side.insertBefore(closeBtn, side.firstChild);
     }
     updateNavButton();
+    updateDrawerInert();
+  }
+
+  /* 目录关闭后，移动端抽屉内的元素不应仍可被 Tab 聚焦。
+     inert 覆盖新版浏览器；tabindex/aria-hidden 作为旧浏览器兜底。 */
+  function updateDrawerInert() {
+    var side = byId('mySidenav');
+    if (!side) return;
+    var inert = isMobileNav() && !navOpen;
+    if (inert !== side.inert) side.inert = inert;
+    if (inert) side.setAttribute('aria-hidden', 'true');
+    else side.removeAttribute('aria-hidden');
+    Array.prototype.forEach.call(side.querySelectorAll('a, button, iframe'), function (el) {
+      if (el.id === 'nav-close') return;
+      if (inert) el.setAttribute('tabindex', '-1');
+      else if (el.getAttribute('tabindex') === '-1') el.removeAttribute('tabindex');
+    });
+  }
+
+  function focusInsideDrawer() {
+    var side = byId('mySidenav');
+    if (!side) return false;
+    var active = document.activeElement;
+    return !!active && (active === side || side.contains(active));
   }
 
   /* ------------------------------------------------------------------ *
@@ -78,20 +104,42 @@
     function inject() {
       try {
         var d = frame.contentDocument || (frame.contentWindow && frame.contentWindow.document);
-        if (!d || !d.head || d.getElementById('wb-toc-native-scroll')) return;
-        var st = d.createElement('style');
-        st.id = 'wb-toc-native-scroll';
-        st.textContent = [
-          'html{width:100%!important;overflow-x:hidden!important;margin:0!important;padding:0!important;-webkit-overflow-scrolling:touch;}',
-          'body{width:100%!important;min-width:0!important;margin:0!important;padding-top:.5rem!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch;}',
-          '#jstree,#jstree li,#jstree ul{width:auto!important;max-width:100%!important;}',
-          '.jstree-anchor{white-space:normal!important;overflow-wrap:anywhere!important;}'
-        ].join('');
-        d.head.appendChild(st);
+        if (!d || !d.head) return;
+        if (!d.getElementById('wb-toc-native-scroll')) {
+          var st = d.createElement('style');
+          st.id = 'wb-toc-native-scroll';
+          st.textContent = [
+            'html{width:100%!important;overflow-x:hidden!important;margin:0!important;padding:0!important;-webkit-overflow-scrolling:touch;}',
+            'body{width:100%!important;min-width:0!important;margin:0!important;padding-top:.5rem!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch;}',
+            '#jstree,#jstree li,#jstree ul{width:auto!important;max-width:100%!important;}',
+            '.jstree-anchor{white-space:normal!important;overflow-wrap:anywhere!important;}'
+          ].join('');
+          d.head.appendChild(st);
+        }
+        // 焦点进入 iframe 后，键盘事件不会冒泡到父页面；在同源 iframe 内补一个 Escape 监听。
+        var root = d.documentElement || d.body;
+        if (root && !root.getAttribute('data-wb-escape-ready')) {
+          root.setAttribute('data-wb-escape-ready', '1');
+          d.addEventListener('keydown', function (e) {
+            if (e.key !== 'Escape' && e.key !== 'Esc') return;
+            var parentNav = window.parent && window.parent.ItascaNav;
+            if (parentNav && parentNav.isOpen && parentNav.isOpen()) {
+              e.preventDefault();
+              // 先让 iframe 内的焦点元素失焦，避免事件结束后浏览器把焦点又还给 iframe。
+              if (d.activeElement && d.activeElement.blur) d.activeElement.blur();
+              parentNav.closeFromIframe();
+            }
+          }, true);
+        }
       } catch (e) { /* 跨域 iframe 不适用，保持原有行为 */ }
     }
+    // 只在 iframe 元素首次出现或更换时安装一次 load 监听，避免重复注册。
+    if (tocBoundFrame !== frame) {
+      frame.addEventListener('load', inject);
+      tocBoundFrame = frame;
+      tocListenerInstalls++;
+    }
     inject();
-    frame.addEventListener('load', inject);
   }
 
   /* ------------------------------------------------------------------ *
@@ -141,13 +189,21 @@
     }
     navOpen = true;
     updateNavButton();
+    updateDrawerInert();
     prepareTocFrame();
+    if (isMobileNav()) {
+      var closeBtn = byId('nav-close');
+      if (closeBtn) {
+        try { closeBtn.focus({ preventScroll: true }); } catch (e) { closeBtn.focus(); }
+      }
+    }
   }
 
   function closeNav() {
     var side = byId('mySidenav');
     var main = byId('main');
     var btn = byId('navbutton');
+    var restoreFocus = navOpen && isMobileNav() && focusInsideDrawer();
 
     document.body.classList.remove('nav-open');
     unlockPageScroll();
@@ -156,6 +212,17 @@
     if (btn) btn.style.marginLeft = '0px';
     navOpen = false;
     updateNavButton();
+    updateDrawerInert();
+    if (restoreFocus && btn) {
+      function restore() {
+        if (navOpen || !isMobileNav()) return;
+        try { btn.focus({ preventScroll: true }); } catch (e) { btn.focus(); }
+      }
+      restore();
+      // iframe 内的键盘事件结束后浏览器可能重新设置焦点，延时再恢复一次。
+      setTimeout(restore, 0);
+      setTimeout(restore, 60);
+    }
   }
 
   function doNav() {
@@ -373,7 +440,14 @@
     isMobile: isMobileNav,
     open: openNav,
     close: closeNav,
+    closeFromIframe: closeNav,
     toggle: doNav,
-    isOpen: function () { return navOpen; }
+    isOpen: function () { return navOpen; },
+    // 供回归测试确认 load 监听器只安装一次
+    tocListenerInstalls: function () { return tocListenerInstalls; },
+    isDrawerInert: function () {
+      var side = byId('mySidenav');
+      return !!side && !!side.inert;
+    }
   };
 })();
