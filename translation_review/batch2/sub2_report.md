@@ -9,32 +9,33 @@
 - 前15篇：FLAC3D 命令参考；后10篇：FLAC3D 建模与求解教程。
 - 本批为 AI 逐页审校与官方英文原文对照，不是人工专业终审。
 
-## 2. 自动对齐与逐块覆盖
+## 2. 覆盖统计：程序候选与 AI 实际核查分离
 
-覆盖数据由 `scripts/build_sub2_coverage.py` 从当前 HTML 与对齐程序重新生成，可复算。逐块明细见 `sub2_block_coverage.jsonl`，逐页汇总见 `sub2_coverage.jsonl`。
+覆盖数据由 `scripts/build_sub2_coverage.py` 从当前 HTML 重新生成，可复算。逐块明细见 `sub2_block_coverage.jsonl`，逐页汇总见 `sub2_coverage.jsonl`，输入文件哈希与 Git head 见 `sub2_coverage_manifest.json`。
 
-| 指标 | 英文块 | 中文块 |
-| --- | ---: | ---: |
-| 总文本块 | 1683 | 1402 |
-| 自动强对齐 | 320 | 320 |
-| 自动语义对齐 | 276 | 276 |
-| AI 逐段确认的未自动对齐块 | 703 | 591 |
-| 代码/表格/公式块已核实 | 172 | 82 |
-| 标题/图注等结构非正文 | 82 | 20 |
-| 页脚/导航等非正文 | 86 | 86 |
-| 重复内容 | 44 | 27 |
-| 仍未核实 | 0 | 0 |
+| 状态 | 含义 | 英文块 | 中文块 |
+| --- | --- | ---: | ---: |
+| `auto_strong` | 程序按数字/命令标识符找到的强匹配，不是 AI 确认 | 316 | 316 |
+| `auto_semantic` | 程序按 section/heading/概念找到的候选语义匹配，不是 AI 确认 | 271 | 271 |
+| `ai_confirmed` | 有 `sub2_verified_pairs.jsonl` 证据的实际语义核查 | 10 | 10 |
+| `candidate_match` | 程序候选对应，未做语义确认 | 188 | 32 |
+| `structure_candidate` | 代码/表格/公式/标题/图注/警告/关键字标题的结构候选 | 286 | 24 |
+| `non_body` | 明确为导航/页脚/版本信息等非正文 | 86 | 86 |
+| `duplicate` | 同页重复内容 | 44 | 27 |
+| `pending` | 未能可靠确认，保留为待核实 | 482 | 636 |
 
 两侧合计均可复算：
 
-- 英文：320 + 276 + 703 + 172 + 82 + 86 + 44 + 0 = 1683
-- 中文：320 + 276 + 591 + 82 + 20 + 86 + 27 + 0 = 1402
+- 英文：316 + 271 + 10 + 188 + 286 + 86 + 44 + 482 = 1683
+- 中文：316 + 271 + 10 + 32 + 24 + 86 + 27 + 636 = 1402
 
-自动强对齐从上一版报告的 317 调整为 320，原因是上一版 `alignment.jsonl` 生成早于表格/代码/公式块提取的最终版脚本；本轮已用当前脚本重新生成对齐基线。
+`ai_confirmed` 只在证据文件保存英文片段、中文片段、理由和来源记录后才使用。10 对确认块对应此前 8 项已修订问题（部分问题涉及多个块）。没有证据的 section 相同、索引相近或得分阈值结果，只能进入 `candidate_match` 或 `structure_candidate`，不能标成 AI 确认。
 
-独立审查指出的“AI 进一步核对 511”和“结构差异已核实 511”确实是同一组数据的重复表述，现已取消。新版只使用一个互斥状态字段：`auto_strong`、`auto_semantic`、`ai_confirmed_unmatched`、`code_table_formula_verified`、`structure_non_body`、`non_body`、`duplicate`、`unresolved`。`unresolved` 为 0 是逐块分类求和结果，不再人工填写。
+独立审查发现的错误配对 `If specified, only tetrahedral zones will be generated.` ↔ `zone generate 命令` 现在为 `pending`，且没有匹配对象。程序不得再让多个不同英文正文块无依据地指向同一个中文标题块；相关性测试会检查已确认/候选匹配目标不重复使用。
 
-每个逐块记录包含：页面、侧别、块索引、标签、section、标题层级、文本、状态、匹配对象索引与证据。残余 10 个英文块已单独核查，其中 7 个为标题/图注，3 个为表格单元格，均有中文对应内容，不归入未核实正文。
+另外，独立审查指出的旧版本残留是真实问题：此前 HTML 中关键字的可见文本由逐字符 `<span>` 拼成，仍显示 `stress-strength-ratio`，虽然 id/href 已改成 `strength-stress-ratio`。本轮已修正可见文本，并重新从当前 HTML 生成逐块记录；记录中不再出现旧词序。每块记录都带有输入文件 SHA-256 与 Git head，测试会核对记录文本确实存在于当前 HTML。
+
+结构候选不等于语义核实。代码、表格、公式、标题、图注、警告和关键字标题均只记录为结构候选，不标记为 verified；没有实际核对的数据表格仍保持待核实。
 
 ## 3. 问题统计
 
@@ -109,17 +110,19 @@
 - `scripts/build_sub2_coverage.py`（逐块覆盖记录生成器）
 - `tests/test_review_alignment.py`（新增1项真实HTML提取测试）
 - `tests/test_translation_batch2_sub2.py`（新增6项本批回归测试）
-- `tests/test_sub2_coverage_stats.py`（新增5项统计闭合测试）
-- `translation_review/batch2/sub2_coverage.jsonl`（重建为互斥状态汇总）
+- `tests/test_sub2_coverage_stats.py`（10项统计真实性测试）
+- `translation_review/batch2/sub2_verified_pairs.jsonl`（唯一允许 AI 确认的证据清单）
+- `translation_review/batch2/sub2_coverage.jsonl`（重建为诚实状态汇总）
 - `translation_review/batch2/sub2_block_coverage.jsonl`（逐块证据）
+- `translation_review/batch2/sub2_coverage_manifest.json`（输入哈希与 Git head）
 - `translation_review/batch2/sub2_report.md`
 
 ## 8. 测试
 
-- `python -B -m unittest discover -s tests`：44 项通过。
+- `python -B -m unittest discover -s tests`：49 项通过。
 - `python scripts/check_terms.py`：通过。
 - `python scripts/check_links.py --known-missing scripts/known-missing-images.json`：pages=6584，missing_files=2，missing_anchors=0，known_missing_files=2；仅既有白名单缺图。
 
 ## 9. 限制
 
-本批结论来自 AI 对照官方英文原文的逐页审校，不是人工专业终审。`unresolved = 0` 是逐块状态分类求和的结果，不是人工填写的覆盖率声明。表格/公式/代码块只做了对应存在性与结构核查；纯数据表格未逐格校验数值。逐块记录可独立复核每个块的分类依据，但不能替代人工专业终审。
+本批结论来自 AI 对照官方英文原文的逐页审校，不是人工专业终审。当前仍有英文 482 块、中文 636 块处于 `pending`，没有为了闭合统计而强制配对。`ai_confirmed` 只有 10 对，全部来自有证据的 8 项已修订问题。代码、表格、公式、标题、图注、警告和关键字标题只是 `structure_candidate`，不代表语义完整性已核实；纯数据表格未逐格校验数值。逐块记录可独立复核每个块的分类依据，但不能替代人工专业终审。
