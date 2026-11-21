@@ -142,6 +142,17 @@
         var legacyDesktopStyle = d.getElementById('wb-toc-desktop-style');
         if (legacyDesktopStyle) legacyDesktopStyle.parentNode.removeChild(legacyDesktopStyle);
 
+        // 兼容性保护：jsTree 对深层节点调用 scrollIntoView 时，WebKit 可能把
+        // 目录文档横向滚动约 80px。这里只把水平偏移复位，不改变官方 480px
+        // 文档宽度与任何可见布局；移动端文档宽度为 100%，该监听为空操作。
+        var win = frame.contentWindow;
+        if (win && !win.__wbScrollXGuard) {
+          win.__wbScrollXGuard = true;
+          win.addEventListener('scroll', function () {
+            if (win.scrollX !== 0) win.scrollTo(0, win.scrollY);
+          }, { passive: true });
+        }
+
         // 焦点进入 iframe 后，键盘事件不会冒泡到父页面；在同源 iframe 内补一个 Escape 监听。
         var root = d.documentElement || d.body;
         if (root && !root.getAttribute('data-wb-escape-ready')) {

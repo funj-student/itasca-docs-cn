@@ -36,7 +36,7 @@
 - `icgscripts.js`：`wb-toc-desktop-style` 的创建与注入；桌面端不再注入 `wb-toc-native-scroll`（该样式仅在 `isMobileNav()` 为真时创建，切回桌面会移除）。
 - 桌面按钮不再写入 `☰ 目录` DOM；桌面固定渲染官方 `⇄`，移动端保留图标 + 文字，跨断点切换时由 `renderNavButtonContent()` 更新。
 
-仅保留两处明确标注的兼容修复：1）`960–1100px` 窄桌面下，官方固定 550px 命令表、长 token、嵌套 toctree 与 MathJax 会超出 610px 阅读列，允许局部换行/滚动；2）`navtree.html` 把 `overflow-x:hidden` 改为 `overflow-x:clip`，保持官方 480px 文档宽度与可见布局，但阻止深层节点自动定位时把整棵树水平滚动 80px。1280px 及以上其余布局完全按官方。
+仅保留两处明确标注的兼容修复：1）`960–1100px` 窄桌面下，官方固定 550px 命令表、长 token、嵌套 toctree 与 MathJax 会超出 610px 阅读列，允许局部换行/滚动；2）`navtree.html` 把 `overflow-x:hidden` 改为 `overflow-x:clip`，并在同源 iframe 内增加水平偏移复位监听，保持官方 480px 文档宽度与可见布局，同时阻止深层节点自动定位时把整棵树水平滚动约 80px（WebKit 需要该运行时保护）。1280px 及以上其余布局完全按官方。
 
 ## 4. 修改文件
 
@@ -86,6 +86,6 @@ GitHub Actions 链接与 PR 地址见 PR 页面（`Desktop browser smoke check` 
 
 1. 中文文本通常比英文长，目录与正文换行更多；未要求逐像素一致。
 2. 中文页底部版权/反馈文字与官方英文不同，占位页文档高 921 vs 官方 918（3px）。
-3. 两处明确标注的兼容处理：960–1100px 局部换行；navtree `overflow-x:clip` 防止深层节点自动定位产生水平滚动（不改变官方 480px 文档宽度与可见排版）。
+3. 两处明确标注的兼容处理：960–1100px 局部换行；navtree `overflow-x:clip` + iframe 内水平偏移复位，防止深层节点自动定位产生水平滚动（不改变官方 480px 文档宽度与可见排版）。
 4. 未做 Android/iOS/微信真机；移动端结论基于 Chromium 模拟与像素对比。
 5. 官方 WebKit 960px 采集时出现一次 SSL 连接错误，其余 4 个宽度已成功对照；Chromium 5 个宽度全部成功。
