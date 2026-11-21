@@ -310,8 +310,13 @@ def main(argv: list[str] | None = None) -> int:
 
     source = Path(args.source).resolve()
     output = Path(args.output).resolve()
-    if output == source or source in output.parents or output in source.parents:
-        print("错误：输出目录不能与源目录重叠。", file=sys.stderr)
+    # 输出目录位于源目录内是正常用法（如仓库根的 .site-build/），收集文件时会排除它；
+    # 但输出目录等于源目录、或输出目录包含源目录，会清空源码或造成自我复制。
+    if output == source or output in source.parents:
+        print("错误：输出目录不能等于源目录，也不能包含源目录。", file=sys.stderr)
+        return 2
+    if output.exists() and (output / ".git").exists():
+        print(f"错误：输出目录 {output} 看起来是一个 Git 仓库，拒绝清空。", file=sys.stderr)
         return 2
 
     print(f"[1/5] 复制站点文件 {source} -> {output}")

@@ -305,6 +305,36 @@ class BuildCacheBusting(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn('zh-search-data.js 加载锚点', result.stderr)
 
+    # 输出目录边界：仓库内的默认输出可用；等于/包含源目录必须拒绝 ---------------
+    def test_output_inside_source_allowed_and_repeatable(self):
+        out = self.fx.src / '.site-build'
+        first = build(self.fx.src, out)
+        self.assertEqual(first.returncode, 0, first.stderr)
+        self.assertRegex((out / 'index.html').read_text(), r'itasca\.css\?v=[0-9a-f]{10}')
+        # 输出已存在时重复构建：应清空重建，不得把输出目录自身再复制进去。
+        second = build(self.fx.src, out)
+        self.assertEqual(second.returncode, 0, second.stderr)
+        self.assertFalse((out / '.site-build').exists())
+        self.assertRegex((out / 'index.html').read_text(), r'itasca\.css\?v=[0-9a-f]{10}')
+
+    def test_output_equal_or_containing_source_rejected(self):
+        same = build(self.fx.src, self.fx.src)
+        self.assertNotEqual(same.returncode, 0)
+        self.assertIn('不能等于源目录', same.stderr)
+        # 源目录位于输出目录内也必须拒绝（否则会清空源码）。
+        outer = self.fx.base
+        contained = build(self.fx.src, outer)
+        self.assertNotEqual(contained.returncode, 0)
+
+    def test_git_directory_output_rejected(self):
+        out = self.fx.base / 'checkout'
+        (out / '.git').mkdir(parents=True)
+        (out / 'index.html').write_text('x', encoding='utf-8')
+        result = build(self.fx.src, out)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('Git 仓库', result.stderr)
+        self.assertTrue((out / 'index.html').exists())  # 内容未被删除
+
 
 if __name__ == '__main__':
     unittest.main()
