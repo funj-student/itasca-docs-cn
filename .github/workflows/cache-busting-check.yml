@@ -1,0 +1,95 @@
+name: Cache busting build check
+
+# 只在与构建脚本/部署流程/测试相关文件变化时运行，避免每次 PR 都增加浏览器开销。
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/build_site.py'
+      - '.github/workflows/deploy-pages.yml'
+      - '.github/workflows/cache-busting-check.yml'
+      - 'tests/test_build_cache_busting.py'
+      - 'tests/cache_busting_browser_check.mjs'
+      - 'tests/pages_server.py'
+      - 'doc/_static/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cache-busting-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-browser-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run cache-busting build unit tests
+        run: python -B -m unittest tests.test_build_cache_busting -v
+
+      - name: Build deployment artifact (deployment 1)
+        run: python scripts/build_site.py --source . --output .site-build --manifest cache-manifest.json
+
+      - name: Build deployment artifact 2 (only itasca.css changed)
+        run: |
+          set -e
+          rsync -a --exclude=.git --exclude=.site-build --exclude=.github --exclude=.site-build2 ./ /tmp/src2/
+          printf '\n/* cache-busting CI probe */\nhtml { --cache-bust-probe: deploy2; }\n' >> /tmp/src2/doc/_static/itasca.css
+          python scripts/build_site.py --source /tmp/src2 --output .site-build2 --manifest cache-manifest2.json
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install pinned Playwright
+        run: npm ci --no-audit --no-fund
+
+      - name: Install pinned Chromium
+        run: npx playwright install --with-deps chromium
+        timeout-minutes: 15
+
+      - name: Start static server for deployment 1
+        run: |
+          python tests/pages_server.py .site-build 8774 > "$RUNNER_TEMP/cache-http.log" 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -sf "http://127.0.0.1:8774/itasca-docs-cn/index.html" > /dev/null; then break; fi
+            sleep 1
+          done
+          curl -sf "http://127.0.0.1:8774/itasca-docs-cn/index.html" > /dev/null
+
+      - name: Browser regression on built artifact
+        run: node tests/cache_busting_browser_check.mjs
+        env:
+          MODE: regression
+          BASE_URL: http://127.0.0.1:8774/itasca-docs-cn
+          OUT: ${{ runner.temp }}/cache-artifacts
+          ENGINES: chromium
+
+      - name: Two consecutive deployments simulation
+        run: node tests/cache_busting_browser_check.mjs
+        env:
+          MODE: two-deploy
+          DEPLOY1: .site-build
+          DEPLOY2: .site-build2
+          OUT: ${{ runner.temp }}/cache-artifacts
+          ENGINES: chromium
+
+      - name: Upload reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cache-busting-reports
+          path: ${{ runner.temp }}/cache-artifacts
+          if-no-files-found: ignore

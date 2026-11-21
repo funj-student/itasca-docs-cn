@@ -26,12 +26,40 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      # 在部署产物中为本地 CSS/JS 追加内容哈希版本号（?v=<sha256 前 10 位>）。
+      # 只改写 .site-build/，仓库内 6,000 多个源 HTML 保持零改动。
+      - name: Build deployment artifact with cache busting
+        run: python scripts/build_site.py --source . --output .site-build --manifest cache-manifest.json
+      - name: Verify build output
+        run: |
+          set -e
+          test -f .site-build/index.html
+          test -f .site-build/.nojekyll
+          test -f .site-build/.site-build-marker
+          test -f .site-build/doc/search.html
+          test ! -e .site-build/.git
+          test ! -e .site-build/.github
+          test ! -e .site-build/tests
+          test ! -e .site-build/scripts
+          grep -qE 'itasca\.css\?v=[0-9a-f]{10}' .site-build/index.html
+          grep -qE 'Search\.loadIndex\("searchindex\.js\?v=[0-9a-f]{10}"\)' .site-build/doc/search.html
+          grep -qE "zh-search-data\.js\?v=[0-9a-f]{10}" .site-build/doc/_static/zh-search.js
+          echo "build artifact OK: $(find .site-build -type f | wc -l) files"
+      - name: Upload build manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: cache-manifest
+          path: cache-manifest.json
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: .site-build
 
   deploy:
     environment:
