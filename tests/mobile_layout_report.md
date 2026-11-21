@@ -1,0 +1,60 @@
+# 移动端内容布局检查报告
+
+生成时间：2026-11-21T03:07:19.569029+00:00
+
+本报告区分静态风险候选、浏览器确认问题和已修复回归；静态候选不等于确认缺陷。
+
+## 1. 可复算统计
+
+| 指标 | 数量 |
+| --- | ---: |
+| 扫描 HTML 页面 | 6583 |
+| 静态风险候选页面 | 1376 |
+| P1 候选 | 338 |
+| P2 候选 | 1038 |
+| 浏览器检查高风险页面 | 338 |
+| 浏览器高风险检查次数 | 676 |
+| 高风险最终确认异常 | 0 |
+| 代表页面全宽度回归检查 | 154 |
+| 代表页面最终确认异常 | 0 |
+
+## 2. 静态结构分组
+
+| 分组 | 页面 |
+| --- | ---: |
+| FISH函数参考表 | 11 |
+| FISH语句双列表 | 1 |
+| 双列技术对照表 | 388 |
+| 复杂数学公式 | 494 |
+| 多层目录列表 | 15 |
+| 宽数据表格 | 266 |
+| 普通正文 | 5434 |
+| 长代码/长标识符 | 174 |
+
+## 3. 修复前基线（本轮 Playwright 实测）
+
+- 高风险候选浏览器检查：338 页 × 2 个移动宽度 = 676 次。
+- 修复前确认异常：217 页 / 261 次检查。
+- 修复前异常信号（按元素/检查计数，不是页面数）：整页横向溢出 233、越界元素 5,130、表格布局问题 1,200、nowrap 无滚动 30、文字裁切 36。
+- 静态风险候选不等于上述确认异常；最终回归以浏览器证据为准。
+
+## 4. 已确认根因与修复
+
+- FISH 语句表：320/360px 下说明列落到可视区域外，只剩语句名和大面积空白；小屏改为上下排列，PC 保留双列表。
+- 首页/命令索引 `comfishtable`：单元格旧规则 `nowrap + hidden` 截断长命令名；改为允许换行。
+- Doxygen API 页：使用 `div.contents` 且加载独立 CSS，成员表、摘要链接、类索引和图片互相挤压；在 doxygen.css 中增加移动端换行、100% 宽度与图片限宽。
+- footnote/blank 表：未被滚动包装覆盖；所有正文表格统一获得局部滚动容器。
+- 数学公式：MathJax 内层表达式按完整宽度参与外层 `.math` 局部滚动，不缩小到不可辨认。
+
+## 5. 截图证据
+
+- `/` @ 1280px：tests\mobile_layout_screenshots\root_after_1280.png
+- `/doc/contents.html` @ 360px：tests\mobile_layout_screenshots\doc_contents_html_after_360.png
+- `/doc/common/docproject/source/manual/scripting/fish_scripting/fish_statements.html` @ 320px：tests\mobile_layout_screenshots\doc_common_docproject_source_manual_scripting_fish_scripting_fish_statements_html_after_320.png
+- `/doc/common/docproject/source/manual/scripting/fish_scripting/fish_statements.html` @ 360px：tests\mobile_layout_screenshots\doc_common_docproject_source_manual_scripting_fish_scripting_fish_statements_html_after_360.png
+- `/doc/flac3d/zone/doc/manual/zone_manual/zone_commands/cmd_zone.create.html` @ 360px：tests\mobile_layout_screenshots\doc_flac3d_zone_doc_manual_zone_manual_zone_commands_cmd_zone_create_html_after_360.png
+- `/doc/doxygen/html/3dec_2block_2interface_2igpdata_8h.html` @ 360px：tests\mobile_layout_screenshots\doc_doxygen_html_3dec_2block_2interface_2igpdata_8h_html_after_360.png
+
+## 6. 错误与告警
+
+- 无。

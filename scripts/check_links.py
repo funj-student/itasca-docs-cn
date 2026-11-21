@@ -111,7 +111,7 @@ class Page(HTMLParser):
 def site_files(root):
     files = set()
     for directory, children, names in os.walk(root):
-        children[:] = [d for d in children if d != '.git']
+        children[:] = [d for d in children if d not in {'.git', 'node_modules'}]
         parent = Path(directory).relative_to(root)
         files.update((parent / name).as_posix() for name in names)
     return files
