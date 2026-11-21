@@ -37,6 +37,7 @@ GitHub Pages 的限制（见「静态资源缓存失效说明.md」）：HTML �
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import hashlib
 import json
 import re
@@ -65,6 +66,8 @@ EXCLUDED_FILE_NAMES = {
     "package-lock.json",
 }
 EXCLUDED_FILE_SUFFIXES = {".pyc"}
+# 构建清单属于 CI 工件，不应进入部署产物。
+EXCLUDED_FILE_GLOBS = ("cache-manifest*.json",)
 
 # HTML 中 (href|src)="...css/js" 引用。扩展名仅匹配小写（全站已核实无大写、
 # 无 %编码、无单引号、无绝对路径引用；含 scheme 的 URL 因路径段不允许 ':' 而
@@ -114,6 +117,8 @@ def collect_site_files(source: Path, output: Path) -> list[Path]:
             continue
         name = rel.parts[-1]
         if name in EXCLUDED_FILE_NAMES or path.suffix in EXCLUDED_FILE_SUFFIXES:
+            continue
+        if any(fnmatch.fnmatch(name, pattern) for pattern in EXCLUDED_FILE_GLOBS):
             continue
         files.append(path)
     return files

@@ -288,8 +288,11 @@ class BuildCacheBusting(unittest.TestCase):
     def test_deploy_exclusions_and_inclusions(self):
         # worktree 中 .git 是文件，必须排除（普通 clone 中是目录，同样排除）。
         self.fx.write('.git', 'gitdir: ../.git/worktrees/demo\n')
+        # 构建清单属于 CI 工件，不得进入部署产物。
+        self.fx.write('cache-manifest.json', '{}')
         build_dir = self.run_build()
         self.assertFalse((build_dir / '.git').exists())
+        self.assertFalse((build_dir / 'cache-manifest.json').exists())
         self.assertFalse((build_dir / 'package.json').exists())
         self.assertFalse((build_dir / 'scripts').exists())
         self.assertFalse((build_dir / 'tests').exists())
