@@ -116,6 +116,29 @@
           ].join('');
           d.head.appendChild(st);
         }
+
+        /* 桌面专用：iframe 内 jsTree 的左缘缩进与文字/选中项对比度。
+           iframe 的媒体查询使用 iframe 自身宽度（约 350px），无法用父页面的
+           min-width:960px 判断；因此按 !isMobileNav() 注入/移除，移动端样式不变。 */
+        var desktopStyle = d.getElementById('wb-toc-desktop-style');
+        if (!isMobileNav()) {
+          if (!desktopStyle) {
+            desktopStyle = d.createElement('style');
+            desktopStyle.id = 'wb-toc-desktop-style';
+            desktopStyle.textContent = [
+              '#jstree{padding-left:12px!important;padding-right:12px!important;}',
+              '.jstree-node{min-height:24px!important;}',
+              '.jstree-anchor{color:#c9d4de!important;padding-left:2px!important;text-shadow:none!important;}',
+              '.jstree-anchor:hover{color:#ffffff!important;}',
+              '.jstree-clicked,.jstree-wholerow-clicked{color:#0b1b33!important;background:#b9d4c7!important;}',
+              '.jstree-ocl{color:#c9d4de!important;}'
+            ].join('');
+            d.head.appendChild(desktopStyle);
+          }
+        } else if (desktopStyle) {
+          desktopStyle.parentNode.removeChild(desktopStyle);
+        }
+
         // 焦点进入 iframe 后，键盘事件不会冒泡到父页面；在同源 iframe 内补一个 Escape 监听。
         var root = d.documentElement || d.body;
         if (root && !root.getAttribute('data-wb-escape-ready')) {
