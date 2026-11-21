@@ -88,8 +88,6 @@
     let pagesPromise = null, request = 0;
     const indexWaiters=[];
     const englishTitles=new Map();
-    // 与 itasca.css / icgscripts.js 保持同一断点；仅影响分页大小，不影响检索逻辑
-    const mobileLayout = () => root.matchMedia ? root.matchMedia('(max-width: 959px)').matches : root.innerWidth <= 959;
     function rememberEnglishTitles(index) {
       if(Array.isArray(index.docnames) && Array.isArray(index.titles))
         index.docnames.forEach((name,i)=>englishTitles.set(name+'.html',plainIndexText(index.titles[i])));
@@ -165,16 +163,12 @@
         if (all.length>15) choices('类型',[['command','命令'],['fish','FISH'],['python','Python'],['other','其他']],'types');
         const titleLine = node('p',undefined,controls);
         const titleLabel = node('label','筛选标题：',titleLine);
-        titleLabel.className = 'zh-title-filter-label';
         const titleInput = node('input',undefined,titleLabel);
-        titleInput.type='text';titleInput.id='zh-title-filter';
-        titleInput.setAttribute('aria-label','按标题筛选搜索结果');
-        titleInput.placeholder='输入标题关键词进行筛选';
+        titleInput.type='text';titleInput.id='zh-title-filter';titleInput.style.width='25em';
         titleInput.addEventListener('input',refresh);
         const list = node('ul',undefined,out);list.className='search';list.id='zh-search-list';
-        const pageSize = mobileLayout() ? 50 : 100;
-        const more = node('button','再显示 '+pageSize+' 条',out);more.type='button';more.id='zh-search-more';
-        let matching=[],limit=pageSize;
+        const more = node('button','再显示 100 条',out);more.type='button';more.id='zh-search-more';
+        let matching=[],limit=100;
         function paint() {
           list.replaceChildren();
           for (const result of matching.slice(0,limit)) {
@@ -195,9 +189,9 @@
           });
           matching=all.filter(row=>(!filters.sources||filters.sources.includes(row.source)) &&
             (!filters.types||filters.types.includes(row.type)) && normalize(row.title).includes(normalize(filters.title)));
-          limit=pageSize;paint();
+          limit=100;paint();
         }
-        more.addEventListener('click',()=>{limit+=pageSize;paint();});
+        more.addEventListener('click',()=>{limit+=100;paint();});
         refresh();
         heading.textContent = chinese?'中文与中英混合搜索结果':'英文命令与正文搜索结果';
         document.getElementById('search-progress').textContent='搜索完成';
