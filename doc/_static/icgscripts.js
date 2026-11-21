@@ -381,9 +381,11 @@
    * 仅对确实过长、不可断行的单个标记启用局部滚动。
    * ------------------------------------------------------------------ */
   function enhanceContentTables() {
-    var main = byId('mainbody');
+    /* Doxygen API 页使用 div.contents 而非 #mainbody；两类正文都需要表格滚动容器。 */
+    var main = byId('mainbody') || document.querySelector('div.contents');
     if (!main) return;
-    var tables = main.querySelectorAll('table:not(.blank):not(.footnote):not(.citation)');
+    /* 脚注表、blank 布局表也可能包含长技术名称，必须同样获得局部滚动容器。 */
+    var tables = main.querySelectorAll('table');
     Array.prototype.forEach.call(tables, function (table) {
       if (table.parentElement && table.parentElement.classList.contains('table-scroll')) return;
       var wrap = document.createElement('div');
