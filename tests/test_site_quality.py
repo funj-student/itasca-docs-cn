@@ -30,11 +30,11 @@ class SiteQualityChecks(unittest.TestCase):
         self.assertIn('rel="canonical"', contents)
         self.assertIn('name="description"', contents)
 
-    def test_actual_zh_search_queries_are_relevant(self):
+    def test_actual_zh_search_term_matching_is_valid(self):
         checks = [q for q in self.report['query_checks'] if q['engine'] == 'zh-search.js actual']
         self.assertEqual(len(checks), 10)
         for q in checks:
-            self.assertTrue(q['results_relevant'], q['query'])
+            self.assertTrue(q['term_match_valid'], q['query'])
         self.assertEqual(self.report['summary']['zero_match_correct'], 1)
         zero = next(q for q in checks if q['kind'] == 'zero_match')
         self.assertEqual(zero['count'], 0)

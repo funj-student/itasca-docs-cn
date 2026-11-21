@@ -1,0 +1,63 @@
+name: Mobile browser smoke check
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-browser-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install pinned Playwright
+        run: npm ci --no-audit --no-fund
+
+      - name: Install pinned Chromium and WebKit builds
+        # WebKit 需要系统库（libgtk-4-1 等），必须用 --with-deps。
+        # apt 镜像偶发慢速，给足超时；失败时 CI 任务仍会正确失败。
+        run: npx playwright install --with-deps chromium webkit
+        timeout-minutes: 20
+
+      - name: Run browser smoke assertions
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > "$RUNNER_TEMP/mobile-http.log" 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:8765/index.html > /dev/null; then break; fi
+            sleep 1
+          done
+          curl -sf http://127.0.0.1:8765/index.html > /dev/null
+          node tests/mobile_browser_check.mjs
+        env:
+          MODE: smoke
+          PHASE: ci
+          BASE_URL: http://127.0.0.1:8765
+          SHOT_DIR: ${{ runner.temp }}/mobile-browser-artifacts
+          ENGINES: chromium,webkit
+
+      - name: Upload browser report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-browser-report
+          path: ${{ runner.temp }}/mobile-browser-artifacts
+          if-no-files-found: ignore

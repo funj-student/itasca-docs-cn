@@ -166,6 +166,20 @@ div#totopbutton {
   top: 71%;
 }
 
+/* Mobile drawer shell. Elements are injected by icgscripts.js so the shared
+   files stay authoritative for 6000+ pages. Desktop keeps the original look. */
+#nav-backdrop {
+  display: none;
+  position: fixed;
+  top: 0; right: 0; bottom: 0; left: 0;
+  background: rgba(15, 33, 67, 0.45);
+  z-index: 250;
+  -webkit-tap-highlight-color: transparent;
+}
+div#navbutton .wb-nav-icon { font-size: 1.1em; line-height: 1; margin-right: .35em; }
+div#navbutton .wb-nav-label { font-size: .72em; vertical-align: .08em; letter-spacing: .05em; }
+#nav-close { display: none; }
+
 
 /* -- text styles----------------------------------------------------------- */
 h1, h2, h3 {
@@ -848,73 +862,77 @@ div.pagebreak {display: none;}
 }
 
 
-/* -- mobile screen adjustments ------------------------------------------ */
-@media screen and (max-width: 720px) {
+/* -- mobile / tablet layout ---------------------------------------------
+   Breakpoint matches MOBILE_QUERY in icgscripts.js (959px).
+   The iframe document viewport is the ONLY scroll container for the TOC;
+   the drawer itself never scrolls and no transform/touch emulation is used. */
+@media screen and (max-width: 959px) {
   html, body {
     margin: 0;
     padding: 0;
-    overflow-x: hidden;
     background: #ffffff;
   }
-  #main { margin-left: 0 !important; }
+  #main { margin-left: 0 !important; width: 100%; }
   .sidenav {
+    display: flex;
+    flex-direction: column;
+    top: 0;
+    bottom: 0;
+    left: 0;
     width: 0;
-    max-width: 320px;
-    bottom: auto;
-    height: 80vh;
-    max-height: 95vh;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
-    padding-top: 1em;
-    padding-bottom: 1em;
-    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.25);
-  }
-  .sidenav a {
-    font-size: 16px;
-    padding: 10px 16px;
+    height: 100%;
+    max-height: none;
+    padding: 0;
+    overflow: hidden;
+    /* 必须高于遮罩层，否则目录条目无法点击/展开 */
+    z-index: 400;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.28);
+    transition: width .2s ease;
   }
   body:not(.nav-open) .sidenav { width: 0 !important; }
   body.nav-open .sidenav {
-    width: 85vw !important;
-    max-width: 320px;
-    max-height: 95vh;
+    width: min(85vw, 340px) !important;
+    max-width: 340px;
   }
+  #nav-close {
+    display: flex;
+    flex: 0 0 48px;
+    align-items: center;
+    justify-content: flex-end;
+    gap: .6em;
+    min-height: 48px;
+    padding: 0 14px;
+    border: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, .18);
+    background: #0f2143;
+    color: #f1f1f1;
+    font: 14px/1 "Lato", sans-serif;
+    cursor: pointer;
+  }
+  .sidenav a { font-size: 15px; padding: 10px 14px; }
   .sidenav iframe, iframe#toctobj2 {
+    display: block;
+    /* flex-basis 0 + height 0 让 iframe 获得确定高度，成为唯一滚动容器；
+       若用 height:auto，iframe 会随内容长高并被抽屉裁切。 */
+    flex: 1 1 0;
     width: 100% !important;
     max-width: 100%;
-    height: auto;
+    height: 0 !important;
+    min-height: 0;
+    border: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
-  #navbutton {
-    position: fixed;
-    top: auto !important;
-    bottom: 1em !important;
-    left: auto !important;
-    right: 1em !important;
-    z-index: 300;
-    margin-left: 0 !important;
-    padding: .35em .6em;
-    border-radius: 6px;
-    font-size: 1.2em;
-    background: #e6ebe9;
-  }
-  #maintop {
-    padding: .6em .8em;
-  }
+  body.nav-open #nav-backdrop { display: block; }
+  #maintop { padding: .6em .8em; }
   #cornerlink {
     display: inline-flex;
     align-items: center;
     max-width: 100%;
     font-size: .95em;
   }
-  #cornerlogo {
-    max-width: 28px;
-    height: auto;
-  }
-  #searchbox {
-    float: none;
-    display: block;
-    margin-top: .6em;
-  }
+  #cornerlogo { max-width: 28px; height: auto; }
+  #searchbox { float: none; display: block; margin-top: .6em; }
   input#sb {
     width: 100%;
     box-sizing: border-box;
@@ -923,7 +941,7 @@ div.pagebreak {display: none;}
     background-image: none;
   }
   #mainbody {
-    padding: 1em 1em 3em;
+    padding: 1em 1em 4.5em;
     min-width: 0;
     max-width: none;
     font-size: 16px;
@@ -932,54 +950,217 @@ div.pagebreak {display: none;}
   #mainbody h1 { font-size: 1.6em; line-height: 1.3; }
   #mainbody h2, #mainbody p.h2 { font-size: 1.3em; }
   div[id^="mainbottom"] {
-    padding: .8em .6em;
+    padding: .8em .6em calc(4.5em + env(safe-area-inset-bottom, 0px));
     font-size: .8em;
     overflow-wrap: anywhere;
   }
-  table {
-    display: block;
+  div#navbutton {
+    position: fixed;
+    top: auto !important;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+    left: auto !important;
+    right: calc(12px + env(safe-area-inset-right, 0px)) !important;
+    z-index: 500;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 48px;
+    min-height: 48px;
+    width: auto;
+    margin: 0 !important;
+    padding: 0 12px;
+    border-radius: 8px;
+    font-size: 1.2em;
+    line-height: 1;
+    background: #e6ebe9;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, .22);
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* -- 正文：逐类收敛宽度，不用 overflow-x:hidden 掩盖问题 -------------- */
+  #mainbody, #mainbody p, #mainbody li, #mainbody dd, #mainbody dt,
+  #mainbody h1, #mainbody h2, #mainbody h3, #mainbody h4,
+  div[id^="mainbottom"] { max-width: 100%; box-sizing: border-box; }
+  #mainbody p, #mainbody li, #mainbody dd, #mainbody td, #mainbody th,
+  div[id^="mainbottom"] { overflow-wrap: break-word; word-break: break-word; }
+  /* 完整目录页存在 8 层嵌套 toctree；默认每层 40px 缩进会把正文挤出屏幕。 */
+  #mainbody ul ul, #mainbody ol ol, #mainbody ul ol, #mainbody ol ul {
+    padding-left: 1em !important;
+  }
+  #mainbody a, div[id^="mainbottom"] a {
+    overflow-wrap: break-word;
+    word-break: normal;
+  }
+  /* 命令关键字、FISH 名称保持完整，不拆字符；过长时局部滚动 */
+  #mainbody span.pre, #mainbody span.std-ref,
+  #mainbody span.cmdname, #mainbody span.cmdopt, #mainbody span.cmdkey,
+  #mainbody span.fishname, #mainbody span.fishcmd, #mainbody span.varstring,
+  #mainbody span.varvec, #mainbody span.varvec2, #mainbody span.varint,
+  #mainbody span.varfloat, #mainbody span.varany, #mainbody span.varbool {
+    display: inline-block;
+    white-space: nowrap;
+    overflow-wrap: normal;
+    word-break: keep-all;
+    max-width: 100%;
+    overflow-x: auto;
+    vertical-align: bottom;
+    -webkit-overflow-scrolling: touch;
+  }
+  /* code 内可能包含多个 span.pre 命令词；code 本身必须允许在词间换行，
+     否则 WebKit 会把整串命令排成一行并溢出视口。 */
+  #mainbody code {
+    white-space: normal;
+    overflow-wrap: normal;
+    max-width: 100%;
+  }
+  .wb-long-token {
+    display: inline-block;
+    max-width: 100%;
+    overflow-x: auto;
+    vertical-align: bottom;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* -- 表格：保留行列对应关系，局部横向滚动 ---------------------------- */
+  #mainbody table:not(.blank):not(.footnote):not(.citation) {
+    display: table;
     width: 100%;
+    max-width: none;
+    min-width: 0;
+    table-layout: auto;
+    border-collapse: collapse;
+    margin: 0;
+  }
+  .table-scroll {
+    display: block;
     max-width: 100%;
     overflow-x: auto;
+    overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
+    margin: 1.5em 0 1em;
+    overscroll-behavior-x: contain;
   }
+  .table-scroll:focus-visible { outline: 2px solid #89a098; outline-offset: 2px; }
+  .table-scroll-hint {
+    display: block;
+    margin: -.6em 0 .9em;
+    font-size: .75em;
+    color: #6b7f79;
+    text-align: right;
+  }
+  /* 命令 / FISH 索引表：移动端改为自动列宽并允许换行，不截断内容 */
+  table.comfishtable {
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: auto !important;
+  }
+  table.comfishtable td {
+    white-space: normal !important;
+    overflow: visible !important;
+    width: auto !important;
+    overflow-wrap: anywhere;
+    vertical-align: top;
+  }
+  table.comfishtable td + td { padding-left: .8em; }
+  /* 术语对照表保持三列，长文本在单元格内换行 */
+  table.glossary-table, table#term-table { min-width: 30em; }
+  table.glossary-table td, table#term-table td { overflow-wrap: anywhere; }
   table caption { width: 100%; }
+  table.blank, table.footnote, table.citation { width: 100% !important; }
   table.blank td { display: block; width: 100% !important; }
-  div.highlight, div.highlight pre {
+
+  /* -- 代码、公式、图片 -------------------------------------------------- */
+  div.highlight, div.highlight-fish, div.highlight-python,
+  div.highlight-text, div.includedc {
     max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+  div.highlight pre, div.highlight-fish pre, div.highlight-python pre,
+  div.highlight-text pre, div.includedc div.highlight pre {
+    white-space: pre;
+    overflow-x: visible;
+    width: auto;
+    max-width: none;
+    margin: 0;
+  }
+  pre, pre.rstexample {
+    max-width: 100%;
+    box-sizing: border-box;
+    white-space: pre;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
-  pre { white-space: pre; overflow-x: auto; }
-  img { max-width: 100%; height: auto; }
-  div.comfishtable { overflow-x: auto; }
+  pre.rstexample { white-space: pre-wrap; }
+  div.math, .MathJax, mjx-container {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  span.math { display: inline-block; max-width: 100%; overflow-x: auto; vertical-align: middle; }
+  div.math svg, .MathJax svg, mjx-container svg { max-width: none; }
+  img, img.button, img.pi-attribute {
+    max-width: 100%;
+    height: auto;
+    float: none;
+  }
+  img.watermark { position: static; left: auto; top: auto; }
+  div.figure, p.caption { max-width: 100%; width: auto; }
+  div.admonition, div.aside {
+    float: none;
+    width: auto;
+    max-width: 100%;
+    margin: 1.2em 0;
+    box-sizing: border-box;
+  }
+  div.admonition p.first { width: auto; }
   div.cols2, div.cols3, div.cols4, div.cols5 { columns: 1; }
   span.prevnext ul { padding-left: 0; }
 }
 
 
-/* -- landscape phones ---------------------------------------------------- */
-@media screen and (orientation: landscape) and (max-height: 500px) {
-  #main { margin-left: 0 !important; width: 100%; }
-  .sidenav {
-    top: 0 !important;
-    bottom: 0 !important;
-    height: 100vh !important;
-    max-height: none !important;
-    overflow-y: auto !important;
-    padding-top: .5em !important;
-    padding-bottom: .5em !important;
+/* -- narrow desktop transition (960-1100px) -----------------------------
+   左侧目录仍为 350px，正文空间有限；仅让索引表自动收缩，避免 4px 溢出。 */
+@media screen and (min-width: 960px) and (max-width: 1100px) {
+  table.comfishtable { width: 100% !important; table-layout: auto !important; }
+  table.comfishtable td { white-space: normal; overflow: visible; width: auto; }
+  /* 窄桌面仍保留 350px 侧栏，长命令与代码块同样需要局部收敛 */
+  #mainbody ul ul, #mainbody ol ol, #mainbody ul ol, #mainbody ol ul { padding-left: 1em !important; }
+  #mainbody span.pre, #mainbody span.std-ref, #mainbody span.cmdname,
+  #mainbody span.cmdopt, #mainbody span.cmdkey, #mainbody span.fishname,
+  #mainbody span.fishcmd, #mainbody span.varstring, #mainbody span.varvec,
+  #mainbody span.varvec2, #mainbody span.varint, #mainbody span.varfloat,
+  #mainbody span.varany, #mainbody span.varbool, #mainbody .wb-long-token {
+    display: inline-block;
+    white-space: nowrap;
+    max-width: 100%;
+    overflow-x: auto;
+    vertical-align: bottom;
   }
-  body:not(.nav-open) .sidenav { width: 0 !important; }
-  body.nav-open .sidenav { width: 85vw !important; }
-  .sidenav iframe, iframe#toctobj2 { height: auto !important; }
+  #mainbody code { white-space: normal; max-width: 100%; }
+  div.highlight-fish, div.highlight-python, div.highlight-text {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+
+/* -- landscape phones (still inside the unified mobile breakpoint) ------ */
+@media screen and (max-width: 959px) and (orientation: landscape) and (max-height: 500px) {
+  .sidenav { height: 100%; }
   #maintop { padding: .4em .8em; }
-  #mainbody {
-    max-width: none;
-    padding: .8em 1.2em 2em;
-    font-size: 15px;
-  }
+  #mainbody { padding-top: .8em; font-size: 15px; }
   #searchbox { float: right; margin-top: 0; }
   input#sb { width: 14em; }
-  #navbutton { bottom: .6em !important; right: .6em !important; }
+  div#navbutton {
+    bottom: calc(6px + env(safe-area-inset-bottom, 0px)) !important;
+    right: calc(6px + env(safe-area-inset-right, 0px)) !important;
+  }
 }

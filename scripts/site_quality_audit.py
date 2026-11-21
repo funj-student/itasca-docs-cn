@@ -98,7 +98,7 @@ def main():
             'expected': q['expected'], 'expect_zero': expect_zero,
             'has_results': raw['count'] > 0,
             'zero_match_correct': (raw['count'] == 0) if expect_zero else None,
-            'results_relevant': (True if expect_zero and raw['count'] == 0 else
+            'term_match_valid': (True if expect_zero and raw['count'] == 0 else
                                  (all(relevant_top) if relevant_top else raw['count'] > 0)),
             'expected_in_top5': (any(q['expected'] in p for p in top_paths) if q['expected'] else None),
             'count': raw['count'], 'positive': positive, 'negative': negative,
@@ -110,7 +110,7 @@ def main():
             'engine': 'English Sphinx index not available in audit environment',
             'expected': q['expected'], 'expect_zero': False,
             'has_results': None, 'zero_match_correct': None,
-            'results_relevant': None, 'expected_in_top5': None,
+            'term_match_valid': None, 'expected_in_top5': None,
             'count': None, 'positive': [], 'negative': [], 'top': [],
             'limitation': '英文查询未验证：浏览器端英文索引依赖 searchlib/Sphinx 运行时，未在 Node 测试环境中复现。',
         })
@@ -130,7 +130,7 @@ def main():
         'summary': {
             'actual_zh_queries': len(zh_checks),
             'with_results': sum(1 for c in zh_checks if c['has_results']),
-            'relevant': sum(1 for c in zh_checks if c['results_relevant']),
+            'term_match_valid': sum(1 for c in zh_checks if c['term_match_valid']),
             'expected_in_top5': sum(1 for c in zh_checks if c['expected_in_top5'] is True),
             'expected_not_in_top5': sum(1 for c in zh_checks if c['expected_in_top5'] is False),
             'zero_match_correct': sum(1 for c in zh_checks if c['zero_match_correct'] is True),
@@ -138,7 +138,7 @@ def main():
         },
         'notes': [
             '使用实际 zh-search.js 的 search/parseQuery/hasChinese 函数，没有重写排序。',
-            '“有结果”只代表返回非空；“结果相关”检查前五名是否命中全部正向词且不含排除词；“预期目标页前五”是单独指标。',
+            '“有结果”只代表返回非空；“检索词匹配有效性”只检查前五名是否命中全部正向词且不含排除词，不是人工或语义相关性验证；“预期目标页前五”是单独指标。',
             '英文查询未在测试环境中复现实际英文索引逻辑，全部标为未验证。',
         ],
     }
@@ -151,24 +151,24 @@ def main():
         '| 指标 | 数量 |', '| --- | ---: |',
         f"| 实际 zh-search.js 查询 | {len(zh_checks)} |",
         f"| 有结果 | {report['summary']['with_results']} |",
-        f"| 前五名结果相关 | {report['summary']['relevant']} |",
+        f"| 前五名检索词匹配有效性 | {report['summary']['term_match_valid']} |",
         f"| 预期目标页进入前五 | {report['summary']['expected_in_top5']} |",
         f"| 预期目标页未进前五 | {report['summary']['expected_not_in_top5']} |",
         f"| 零匹配测试正确 | {report['summary']['zero_match_correct']} |",
         f"| 英文查询未验证 | {len(ENGLISH_QUERIES)} |", '',
         '英文查询依赖浏览器端 Sphinx 搜索索引，本审计环境无法复现，因此不把英文查询计为通过。',
-        '', '## 2. 查询明细', '', '| ID | 查询 | 引擎 | 有结果 | 相关 | 目标前五 |', '| --- | --- | --- | --- | --- | --- |',
+        '', '## 2. 查询明细', '', '| ID | 查询 | 引擎 | 有结果 | 检索词匹配有效性 | 目标前五 |', '| --- | --- | --- | --- | --- | --- |',
     ]
     for c in checks:
         def mark(v):
             return '未验证' if v is None else ('是' if v else '否')
-        md.append(f"| {c['id']} | {c['query']} | {c['engine']} | {mark(c['has_results'])} | {mark(c['results_relevant'])} | {mark(c['expected_in_top5'])} |")
+        md.append(f"| {c['id']} | {c['query']} | {c['engine']} | {mark(c['has_results'])} | {mark(c['term_match_valid'])} | {mark(c['expected_in_top5'])} |")
     md += ['', '## 3. 未索引页面判断', '']
     for p, note in report['unindexed_page_assessment'].items():
         md.append(f"- `{p}`：{note}")
     md += ['', '## 4. SEO', '', f"- HTML {len(html)}，搜索索引 {len(pages)}，sitemap {len(locs)} 条，失效 doc 条目 {len(stale_sitemap)}。", '- 搜索页保持 `noindex,follow`，已从 sitemap 移除；目录页有 canonical 与 description。']
     (ROOT / 'translation_review/site_quality_report.md').write_text('\n'.join(md) + '\n', encoding='utf-8')
-    print('zh checks', len(zh_checks), 'relevant', report['summary']['relevant'],
+    print('zh checks', len(zh_checks), 'term_match_valid', report['summary']['term_match_valid'],
           'expected_top5', report['summary']['expected_in_top5'], 'english_unverified', len(ENGLISH_QUERIES))
 
 if __name__ == '__main__':
