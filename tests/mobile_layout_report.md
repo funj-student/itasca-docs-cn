@@ -1,6 +1,6 @@
 # 移动端内容布局检查报告
 
-生成时间：2026-11-21T03:07:19.569029+00:00
+生成时间：2026-11-21T03:19:59.214236+00:00
 
 本报告区分静态风险候选、浏览器确认问题和已修复回归；静态候选不等于确认缺陷。
 
@@ -48,12 +48,7 @@
 
 ## 5. 截图证据
 
-- `/` @ 1280px：tests\mobile_layout_screenshots\root_after_1280.png
-- `/doc/contents.html` @ 360px：tests\mobile_layout_screenshots\doc_contents_html_after_360.png
-- `/doc/common/docproject/source/manual/scripting/fish_scripting/fish_statements.html` @ 320px：tests\mobile_layout_screenshots\doc_common_docproject_source_manual_scripting_fish_scripting_fish_statements_html_after_320.png
-- `/doc/common/docproject/source/manual/scripting/fish_scripting/fish_statements.html` @ 360px：tests\mobile_layout_screenshots\doc_common_docproject_source_manual_scripting_fish_scripting_fish_statements_html_after_360.png
-- `/doc/flac3d/zone/doc/manual/zone_manual/zone_commands/cmd_zone.create.html` @ 360px：tests\mobile_layout_screenshots\doc_flac3d_zone_doc_manual_zone_manual_zone_commands_cmd_zone_create_html_after_360.png
-- `/doc/doxygen/html/3dec_2block_2interface_2igpdata_8h.html` @ 360px：tests\mobile_layout_screenshots\doc_doxygen_html_3dec_2block_2interface_2igpdata_8h_html_after_360.png
+- 当前报告中没有异常截图；修复后代表页面截图以 `_after_` 命名保存在 `tests/mobile_layout_screenshots/`。
 
 ## 6. 错误与告警
 
