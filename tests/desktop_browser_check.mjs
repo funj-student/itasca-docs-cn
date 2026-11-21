@@ -97,7 +97,13 @@ async function measure(page) {
       main: rect('#main'),
       mainbody: rect('#mainbody'),
       mainbodyPadding: cs ? { left: cs.paddingLeft, right: cs.paddingRight } : null,
-      navbutton: rect('#navbutton'),
+      mainbodyMinHeight: cs ? cs.minHeight : null,
+      navbutton: (function () {
+        var el = document.getElementById('navbutton');
+        if (!el) return null;
+        var r = el.getBoundingClientRect();
+        return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height), text: el.textContent.trim() };
+      })(),
       h1: rect('#mainbody h1'),
       stylesheetLoaded,
       bodyBackground: getComputedStyle(document.body).backgroundColor,
@@ -127,6 +133,29 @@ async function testToc(page, label, width) {
   }, sideWidth);
   check('目录条目未在侧栏右缘被截断', clippedAnchors === 0, { clippedAnchors, sideWidth });
 
+  const officialNav = await frame.evaluate(() => {
+    const a = document.querySelector('.jstree-anchor');
+    const o = document.querySelector('.jstree-ocl');
+    const c = document.querySelector('.jstree-clicked');
+    const R = e => { const r = e.getBoundingClientRect(); return { x: Math.round(r.x), w: Math.round(r.width) }; };
+    return {
+      docWidth: document.documentElement.scrollWidth,
+      bodyColor: getComputedStyle(document.body).color,
+      anchor: a ? R(a) : null,
+      ocl: o ? R(o) : null,
+      clickedBg: c ? getComputedStyle(c).backgroundColor : null,
+      hasDesktopStyle: !!document.getElementById('wb-toc-desktop-style'),
+      hasMobileStyle: !!document.getElementById('wb-toc-native-scroll')
+    };
+  });
+  check('桌面目录文档宽度保持官方 480px', officialNav.docWidth === 480, officialNav);
+  check('桌面目录文字颜色符合官方 #9da3a8', officialNav.bodyColor === 'rgb(157, 163, 168)', officialNav);
+  check('桌面目录一级缩进符合官方 32px', !!officialNav.anchor && officialNav.anchor.x === 32, officialNav);
+  check('桌面目录箭头位置符合官方 8px', !!officialNav.ocl && officialNav.ocl.x === 8, officialNav);
+  check('桌面目录未注入自定义桌面样式', !officialNav.hasDesktopStyle, officialNav);
+  check('桌面目录未误用移动端注入样式', !officialNav.hasMobileStyle, officialNav);
+  if (officialNav.clickedBg) check('选中项背景符合官方 #37435c', officialNav.clickedBg === 'rgb(55, 67, 92)', officialNav);
+
   let expanded = 0;
   for (let i = 0; i < 8; i++) {
     const closed = frame.locator('.jstree-closed > .jstree-ocl');
@@ -141,11 +170,11 @@ async function testToc(page, label, width) {
   check('展开后目录可独立滚动', state.max > 0, state);
   const box = await page.locator('#toctobj2').boundingBox();
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 6; i++) {
     const current = await frame.evaluate(() => ({ y: Math.round(scrollY), max: Math.round(document.body.scrollHeight - innerHeight) }));
     if (current.y >= current.max - 2) break;
     await page.mouse.wheel(0, 3000);
-    await sleep(250);
+    await sleep(260);
   }
   const atBottom = await frame.evaluate(() => ({ y: Math.round(scrollY), max: Math.round(document.body.scrollHeight - innerHeight) }));
   check('目录可滚动到底部', atBottom.y >= atBottom.max - 2, atBottom);
@@ -240,10 +269,21 @@ for (const engineName of ENGINES) {
         check('整页无横向溢出', m.docScrollWidth - m.innerWidth <= 1, { sw: m.docScrollWidth, iw: m.innerWidth });
         check('样式表由 Pages 子路径正确加载', m.stylesheetLoaded, { loaded: m.stylesheetLoaded });
         check('正文可见', !!m.mainbody && m.mainbody.w > 200, { mainbody: m.mainbody });
-        check('正文没有被 overflow:hidden 裁切', m.clipped.length === 0, { clipped: m.clipped });
+        // 官方 comfishtable 使用固定 550px + nowrap/overflow:hidden，宽桌面上会裁切
+        // 自定义索引表的单元格；这是官方原版行为，记录为告警而非失败。
+        check('正文没有被 overflow:hidden 裁切', m.clipped.length === 0, { clipped: m.clipped },
+          m.clipped.length && m.clipped.every(c => c.tag === 'TD') ? 'warn' : 'fail');
         if (m.sidenav && m.iframe) {
-          check('目录 iframe 实际宽度与侧栏一致', Math.abs(m.sidenav.w - m.iframe.w) <= 2,
-            { sidenav: m.sidenav.w, iframe: m.iframe.w, css: m.iframeCssWidth });
+          check('侧栏宽度符合官方 350px', m.sidenav.w === 350, { width: m.sidenav.w });
+          check('目录 iframe 宽度符合官方 390px', m.iframe.w === 390, { width: m.iframe.w, css: m.iframeCssWidth });
+        }
+        if (m.navbutton) {
+          check('桌面目录按钮可见内容为官方 ⇄', m.navbutton.text === '⇄', { text: m.navbutton.text });
+          check('桌面目录按钮尺寸符合官方 43x40', Math.abs(m.navbutton.w - 43) <= 2 && Math.abs(m.navbutton.h - 40) <= 2,
+            { w: m.navbutton.w, h: m.navbutton.h });
+        }
+        if (m.mainbodyMinHeight) {
+          check('占位页最小高度符合官方 640px', m.mainbodyMinHeight === '640px', { minHeight: m.mainbodyMinHeight });
         }
         if (m.mainbody && m.h1) {
           check('目录按钮不遮挡正文标题', overlap(m.navbutton, m.h1) === 0,
@@ -251,13 +291,11 @@ for (const engineName of ENGINES) {
         }
         if (m.mainbodyPadding) {
           const pl = parseFloat(m.mainbodyPadding.left), pr = parseFloat(m.mainbodyPadding.right);
-          check('正文左右内边距对称', Math.abs(pl - pr) <= 2, m.mainbodyPadding);
+          check('正文内边距符合官方 64px/32px', pl === 64 && pr === 32, m.mainbodyPadding);
         }
-        if (width >= 1440 && m.mainbody) {
-          check('大屏阅读区宽度合理', m.mainbody.w >= 720 && m.mainbody.w <= 1100, { width: m.mainbody.w });
-        }
-        if (width >= 960 && width <= 1100 && m.mainbody) {
-          check('窄桌面正文可用宽度充足', m.mainbody.w >= 600, { width: m.mainbody.w });
+        if (m.mainbody) {
+          const expected = width >= 1280 ? 656 : 610;
+          check('正文宽度符合官方基准', Math.abs(m.mainbody.w - expected) <= 2, { width: m.mainbody.w, expected });
         }
 
         let toc = null, toggle = null, search = null;
