@@ -27,6 +27,12 @@ BUILDER = ROOT / 'scripts' / 'build_site.py'
 REF_RE = re.compile(r'((?:href|src)\s*=\s*")([^"*?#:]*?)(\.(?:css|js))(\?[^"]*)?(")')
 
 
+def read_exact(path):
+    """按 UTF-8 读取且不转换换行符（兼容 Python < 3.13 的 Path.read_text）。"""
+    with open(path, 'r', encoding='utf-8', newline='') as fh:
+        return fh.read()
+
+
 def build(source: Path, output: Path, manifest: Path | None = None):
     cmd = [sys.executable, str(BUILDER), '--source', str(source), '--output', str(output)]
     if manifest:
@@ -131,7 +137,7 @@ class Fixture:
         self.write('doc/doxygen/html/search/variables_0.js', 'v;\n')
 
     def built(self, rel: str) -> str:
-        return (self.base / 'build' / rel).read_text(encoding='utf-8', newline='')
+        return read_exact(self.base / 'build' / rel)
 
 
 class BuildCacheBusting(unittest.TestCase):
@@ -165,7 +171,7 @@ class BuildCacheBusting(unittest.TestCase):
         build_dir = self.run_build()
         checked = 0
         for html in build_dir.rglob('*.html'):
-            text = html.read_text(encoding='utf-8', newline='')
+            text = read_exact(html)
             for match in REF_RE.finditer(text):
                 url, query = match.group(2) + match.group(3), match.group(4) or ''
                 if '://' in url or url.startswith('//'):
@@ -244,7 +250,7 @@ class BuildCacheBusting(unittest.TestCase):
     def test_references_stay_relative(self):
         build_dir = self.run_build()
         for html in build_dir.rglob('*.html'):
-            for match in REF_RE.finditer(html.read_text(encoding='utf-8', newline='')):
+            for match in REF_RE.finditer(read_exact(html)):
                 url = match.group(2) + match.group(3)
                 if '://' in url or url.startswith('//'):
                     continue
