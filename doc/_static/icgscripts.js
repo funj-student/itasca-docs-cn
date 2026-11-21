@@ -27,16 +27,30 @@
   /* ------------------------------------------------------------------ *
    * 目录抽屉的语义化外壳（由共用脚本注入，避免改动六千多篇 HTML）
    * ------------------------------------------------------------------ */
+  /* 桌面显示官方原版单字符 ⇄；移动端保留现有图标 + 文字按钮。 */
+  function renderNavButtonContent() {
+    var btn = byId('navbutton');
+    if (!btn) return;
+    if (isMobileNav()) {
+      if (!btn.querySelector('.wb-nav-icon') || !btn.querySelector('.wb-nav-label')) {
+        btn.innerHTML = '<span class="wb-nav-icon" aria-hidden="true">☰</span><span class="wb-nav-label">目录</span>';
+      }
+      var label = btn.querySelector('.wb-nav-label');
+      if (label) label.textContent = navOpen ? '关闭' : '目录';
+    } else if (btn.textContent.trim() !== '⇄' || btn.children.length) {
+      btn.textContent = '⇄';
+    }
+  }
+
   function updateNavButton() {
     var btn = byId('navbutton');
     if (!btn) return;
-    var label = btn.querySelector('.wb-nav-label');
     var aria = isMobileNav()
       ? (navOpen ? '关闭目录' : '打开目录')
       : (navOpen ? '收起目录' : '展开目录');
     btn.setAttribute('aria-label', aria);
     btn.setAttribute('aria-expanded', navOpen ? 'true' : 'false');
-    if (label) label.textContent = isMobileNav() ? (navOpen ? '关闭' : '目录') : '目录';
+    renderNavButtonContent();
   }
 
   function ensureNavUI() {
@@ -48,8 +62,9 @@
       btn.setAttribute('tabindex', '0');
       btn.setAttribute('aria-controls', 'mySidenav');
       btn.setAttribute('aria-expanded', 'false');
-      btn.innerHTML = '<span class="wb-nav-icon" aria-hidden="true">☰</span><span class="wb-nav-label">目录</span>';
     }
+    // 按当前断点渲染可见内容；桌面为官方 ⇄，移动端为图标 + 文字。
+    renderNavButtonContent();
     if (!byId('nav-backdrop')) {
       var backdrop = document.createElement('div');
       backdrop.id = 'nav-backdrop';
@@ -105,38 +120,37 @@
       try {
         var d = frame.contentDocument || (frame.contentWindow && frame.contentWindow.document);
         if (!d || !d.head) return;
-        if (!d.getElementById('wb-toc-native-scroll')) {
-          var st = d.createElement('style');
-          st.id = 'wb-toc-native-scroll';
-          st.textContent = [
-            'html{width:100%!important;overflow-x:hidden!important;margin:0!important;padding:0!important;-webkit-overflow-scrolling:touch;}',
-            'body{width:100%!important;min-width:0!important;margin:0!important;padding-top:.5rem!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch;}',
-            '#jstree,#jstree li,#jstree ul{width:auto!important;max-width:100%!important;}',
-            '.jstree-anchor{white-space:normal!important;overflow-wrap:anywhere!important;}'
-          ].join('');
-          d.head.appendChild(st);
-        }
-
-        /* 桌面专用：iframe 内 jsTree 的左缘缩进与文字/选中项对比度。
-           iframe 的媒体查询使用 iframe 自身宽度（约 350px），无法用父页面的
-           min-width:960px 判断；因此按 !isMobileNav() 注入/移除，移动端样式不变。 */
-        var desktopStyle = d.getElementById('wb-toc-desktop-style');
-        if (!isMobileNav()) {
-          if (!desktopStyle) {
-            desktopStyle = d.createElement('style');
-            desktopStyle.id = 'wb-toc-desktop-style';
-            desktopStyle.textContent = [
-              '#jstree{padding-left:12px!important;padding-right:12px!important;}',
-              '.jstree-node{min-height:24px!important;}',
-              '.jstree-anchor{color:#c9d4de!important;padding-left:2px!important;text-shadow:none!important;}',
-              '.jstree-anchor:hover{color:#ffffff!important;}',
-              '.jstree-clicked,.jstree-wholerow-clicked{color:#0b1b33!important;background:#b9d4c7!important;}',
-              '.jstree-ocl{color:#c9d4de!important;}'
+        /* 移动端才注入原生滚动/换行样式；桌面端保持官方 navtree 原样。
+           桌面端不注入任何自定义配色或缩进，也不再保留旧版 wb-toc-desktop-style。 */
+        var mobileStyle = d.getElementById('wb-toc-native-scroll');
+        if (isMobileNav()) {
+          if (!mobileStyle) {
+            var st = d.createElement('style');
+            st.id = 'wb-toc-native-scroll';
+            st.textContent = [
+              'html{width:100%!important;overflow-x:hidden!important;margin:0!important;padding:0!important;-webkit-overflow-scrolling:touch;}',
+              'body{width:100%!important;min-width:0!important;margin:0!important;padding-top:.5rem!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch;color:#777788!important;}',
+              '#jstree,#jstree li,#jstree ul{width:auto!important;max-width:100%!important;}',
+              '.jstree-anchor{white-space:normal!important;overflow-wrap:anywhere!important;}',
+              '.jstree-default .jstree-clicked{background:#89a098!important;}'
             ].join('');
-            d.head.appendChild(desktopStyle);
+            d.head.appendChild(st);
           }
-        } else if (desktopStyle) {
-          desktopStyle.parentNode.removeChild(desktopStyle);
+        } else if (mobileStyle) {
+          mobileStyle.parentNode.removeChild(mobileStyle);
+        }
+        var legacyDesktopStyle = d.getElementById('wb-toc-desktop-style');
+        if (legacyDesktopStyle) legacyDesktopStyle.parentNode.removeChild(legacyDesktopStyle);
+
+        // 兼容性保护：jsTree 对深层节点调用 scrollIntoView 时，WebKit 可能把
+        // 目录文档横向滚动约 80px。这里只把水平偏移复位，不改变官方 480px
+        // 文档宽度与任何可见布局；移动端文档宽度为 100%，该监听为空操作。
+        var win = frame.contentWindow;
+        if (win && !win.__wbScrollXGuard) {
+          win.__wbScrollXGuard = true;
+          win.addEventListener('scroll', function () {
+            if (win.scrollX !== 0) win.scrollTo(0, win.scrollY);
+          }, { passive: true });
         }
 
         // 焦点进入 iframe 后，键盘事件不会冒泡到父页面；在同源 iframe 内补一个 Escape 监听。

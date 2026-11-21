@@ -1,8 +1,6 @@
 /**
- * Desktop visual-defect assertions for the TOC iframe, toggle button and
- * title-only placeholder pages. Failures set process.exitCode = 1.
- *
- * BASE_URL must include the GitHub Pages subpath /itasca-docs-cn/.
+ * 官方桌面基线验收：侧栏/iframe 尺寸、⇄ 按钮、目录配色与缩进、占位页高度。
+ * 失败时 process.exitCode = 1。BASE_URL 必须包含 /itasca-docs-cn/。
  */
 import { createRequire } from 'node:module';
 import fs from 'node:fs';
@@ -11,10 +9,10 @@ import path from 'node:path';
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 
-const BASE = process.env.BASE_URL || 'http://127.0.0.1:8771/itasca-docs-cn';
-const OUT = process.env.OUT || path.resolve('_toc_artifacts');
-const PHASE = process.env.PHASE || 'visual';
-const WIDTHS = (process.env.WIDTHS || '1280,1440,1664,1920').split(',').map(Number).filter(Boolean);
+const BASE = process.env.BASE_URL || 'http://127.0.0.1:8772/itasca-docs-cn';
+const OUT = process.env.OUT || path.resolve('_official_artifacts');
+const PHASE = process.env.PHASE || 'official';
+const WIDTHS = (process.env.WIDTHS || '960,1280,1440,1664,1920').split(',').map(Number).filter(Boolean);
 const PAGES = (process.env.PAGES || [
   'doc/common/docproject/source/manual/coupling/projects/tutorials/tutorials.html',
   'index.html'
@@ -35,27 +33,12 @@ function check(name, ok, detail, severity = 'fail') {
 }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-function luminance(rgb) {
-  const parts = String(rgb).match(/[\d.]+/g);
-  if (!parts || parts.length < 3) return null;
-  const c = parts.slice(0, 3).map(Number).map(v => {
-    v /= 255;
-    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-  });
-  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
-}
-function contrast(a, b) {
-  const la = luminance(a), lb = luminance(b);
-  if (la === null || lb === null) return null;
-  return Math.round(((Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05)) * 100) / 100;
-}
-
-async function open(browser, engineName, width, pagePath) {
+async function openPage(browser, engineName, width, pagePath) {
   const context = await browser.newContext({ viewport: { width, height: 900 }, deviceScaleFactor: 1 });
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', e => errors.push(String(e)));
-  const response = await page.goto(`${BASE}/${pagePath}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  const response = await page.goto(`${BASE}/${pagePath}`, { waitUntil: 'load', timeout: 60000 });
   if (!response || response.status() >= 400) throw new Error('HTTP ' + (response && response.status()));
   await page.waitForFunction(() => !!window.ItascaNav, null, { timeout: 20000 });
   await sleep(1400);
@@ -63,119 +46,133 @@ async function open(browser, engineName, width, pagePath) {
 }
 
 async function shot(page, suffix) {
-  const label = current.page.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 55);
+  const label = current.page.replace(/[^a-zA-Z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 50);
   const file = path.join(OUT, `${PHASE}_${current.engine}_${current.width}_${label}_${suffix}.png`);
   try { await page.screenshot({ path: file, timeout: 60000, animations: 'disabled' }); }
   catch (e) { check('screenshot evidence captured', false, { file, error: String(e) }, 'warn'); }
   return file;
 }
 
-async function inspectIframe(page) {
-  const frame = page.frames().find(f => f.url().includes('navtree.html'));
-  check('目录 iframe 已加载', !!frame, {});
-  if (!frame) return null;
-  await frame.waitForSelector('.jstree-anchor', { timeout: 15000 });
-  const sidebarBg = await page.evaluate(() => getComputedStyle(document.getElementById('mySidenav')).backgroundColor);
-  const info = await frame.evaluate(sidebarBackground => {
-    const q = s => document.querySelector(s);
-    const rect = e => { const r = e.getBoundingClientRect(); return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), right: Math.round(r.right) }; };
-    const ocl = q('.jstree-ocl');
-    const anchor = q('.jstree-anchor');
-    const clicked = q('.jstree-clicked');
-    const anchors = [...document.querySelectorAll('.jstree-anchor')];
-    return {
-      innerWidth, scrollX: Math.round(window.scrollX),
-      docScrollWidth: document.documentElement.scrollWidth,
-      ocl: ocl ? { ...rect(ocl), color: getComputedStyle(ocl).color } : null,
-      anchor: anchor ? { ...rect(anchor), color: getComputedStyle(anchor).color, bg: getComputedStyle(anchor).backgroundColor } : null,
-      clicked: clicked ? { ...rect(clicked), color: getComputedStyle(clicked).color, bg: getComputedStyle(clicked).backgroundColor, text: clicked.textContent.trim().slice(0, 50) } : null,
-      sidebarBackground,
-      clippedLeft: anchors.filter(a => a.getBoundingClientRect().x < 6).length,
-      clippedRight: anchors.filter(a => a.getBoundingClientRect().right > innerWidth + 2).length
-    };
-  }, sidebarBg);
-
-  check('一级目录图标未从 iframe 左侧被裁切', !!info.ocl && info.ocl.x >= 6, { ocl: info.ocl });
-  check('一级目录文字未从 iframe 左侧被裁切', !!info.anchor && info.anchor.x >= 20, { anchor: info.anchor });
-  check('目录条目未从 iframe 右侧被裁切', info.clippedRight === 0 && info.docScrollWidth <= info.innerWidth + 2,
-    { clippedRight: info.clippedRight, docScrollWidth: info.docScrollWidth, innerWidth: info.innerWidth });
-  check('目录文字与侧栏背景对比度充足', contrast(info.anchor && info.anchor.color, sidebarBg) >= 4.5,
-    { color: info.anchor && info.anchor.color, bg: sidebarBg, ratio: contrast(info.anchor && info.anchor.color, sidebarBg) });
-  // 只有当前页在目录树中有对应节点时才存在选中项；首页没有选中节点属正常。
-  check('选中项文字与背景对比度充足', !info.clicked || contrast(info.clicked.color, info.clicked.bg) >= 4.5,
-    { clicked: info.clicked, ratio: info.clicked && contrast(info.clicked.color, info.clicked.bg) });
-
-  // 展开多级节点后再次检查边界与水平滚动
-  for (let i = 0; i < 6; i++) {
-    const closed = frame.locator('.jstree-closed > .jstree-ocl');
-    if (!await closed.count()) break;
-    try { await closed.first().click({ timeout: 2500 }); await sleep(90); } catch (e) { /* 断言判定 */ }
-  }
-  const after = await frame.evaluate(() => {
-    const anchors = [...document.querySelectorAll('.jstree-anchor')];
-    const visible = anchors.filter(a => { const r = a.getBoundingClientRect(); return r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < window.innerHeight; });
-    return {
-      scrollX: Math.round(window.scrollX),
-      docScrollWidth: document.documentElement.scrollWidth,
-      innerWidth,
-      firstX: visible.length ? Math.round(visible[0].getBoundingClientRect().x) : null,
-      clippedLeft: visible.filter(a => a.getBoundingClientRect().x < 6).length,
-      clippedRight: visible.filter(a => a.getBoundingClientRect().right > window.innerWidth + 2).length,
-      nodeCount: anchors.length
-    };
-  });
-  check('展开后图标与文字仍完整可见', after.clippedLeft === 0 && after.clippedRight === 0, after);
-  check('展开与选中不产生水平滚动', after.scrollX === 0 && after.docScrollWidth <= after.innerWidth + 2, after);
-  return { before: info, after };
-}
-
-async function inspectButton(page) {
+async function inspectParent(page) {
   const data = await page.evaluate(() => {
+    const R = e => { const r = e.getBoundingClientRect(); return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) }; };
     const btn = document.getElementById('navbutton');
-    const r = btn.getBoundingClientRect();
-    const cs = getComputedStyle(btn);
-    const kids = [...btn.children].map(c => {
-      const kr = c.getBoundingClientRect();
-      return { text: c.textContent.trim(), cls: c.className, x: Math.round(kr.x), y: Math.round(kr.y), w: Math.round(kr.width), h: Math.round(kr.height) };
-    });
+    const mb = document.getElementById('mainbody');
+    const cs = getComputedStyle(mb);
     const h1 = document.querySelector('#mainbody h1');
-    const hr = h1 ? h1.getBoundingClientRect() : null;
     return {
-      rect: { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) },
-      whiteSpace: cs.whiteSpace, display: cs.display, kids,
-      h1: hr ? { x: Math.round(hr.x), y: Math.round(hr.y), w: Math.round(hr.width), h: Math.round(hr.height) } : null
+      side: R(document.getElementById('mySidenav')),
+      iframe: R(document.getElementById('toctobj2')),
+      mainbody: { ...R(mb), padding: `${cs.paddingLeft}/${cs.paddingRight}`, minHeight: cs.minHeight, maxWidth: cs.maxWidth },
+      button: { ...R(btn), text: btn.textContent.trim(), childCount: btn.children.length, aria: btn.getAttribute('aria-label') },
+      h1: h1 ? R(h1) : null,
+      navOpen: document.body.classList.contains('nav-open'),
+      bottom: R(document.getElementById('mainbottom1')),
+      docHeight: document.documentElement.scrollHeight,
+      docWidth: document.documentElement.scrollWidth
     };
   });
-  const icon = data.kids.find(k => k.cls.includes('wb-nav-icon'));
-  const label = data.kids.find(k => k.cls.includes('wb-nav-label'));
-  check('目录按钮图标与文字为横向排列', !!icon && !!label && icon.x < label.x && Math.abs(icon.y - label.y) <= 12, data);
-  check('目录按钮文字未折成多行', !!label && label.h <= 26 && data.whiteSpace === 'nowrap', { label, whiteSpace: data.whiteSpace });
-  check('目录按钮宽度自适应内容', data.rect.w >= (icon ? icon.w : 0) + (label ? label.w : 0), { rect: data.rect, kids: data.kids });
-  check('目录按钮与侧栏边界保持间距', data.rect.x >= 355, { x: data.rect.x });
+  check('侧栏宽度为官方 350px', data.side.w === 350, data.side);
+  check('目录 iframe 宽度为官方 390px', data.iframe.w === 390, data.iframe);
+  check('正文宽度符合官方值', data.mainbody.w === (current.width >= 1280 ? 656 : 610), data.mainbody);
+  check('正文内边距为官方 64px/32px', data.mainbody.padding === '64px/32px', data.mainbody);
+  check('占位页最小高度为官方 640px', data.mainbody.minHeight === '640px', data.mainbody);
+  check('桌面目录按钮显示官方 ⇄', data.button.text === '⇄' && data.button.childCount === 0, data.button);
+  check('桌面目录按钮尺寸为官方 43x40', Math.abs(data.button.w - 43) <= 2 && Math.abs(data.button.h - 40) <= 2, data.button);
+  check('目录展开时按钮位于官方 353px', Math.abs(data.button.x - 353) <= 2, data.button);
+  check('目录展开时按钮可访问名称为“收起目录”', data.button.aria === '收起目录', data.button);
+  if (/tutorials\.html$/.test(current.page)) {
+    check('占位页底部导航位置符合官方 y≈784', Math.abs(data.bottom.y - 784) <= 3, data.bottom);
+    check('占位页文档高度符合官方 y≈918', Math.abs(data.docHeight - 918) <= 30, { docHeight: data.docHeight });
+  }
+  check('页面无横向溢出', data.docWidth === current.width, { docWidth: data.docWidth });
   if (data.h1) {
-    const overlap = Math.max(0, Math.min(data.rect.x + data.rect.w, data.h1.x + data.h1.w) - Math.max(data.rect.x, data.h1.x)) *
-      Math.max(0, Math.min(data.rect.y + data.rect.h, data.h1.y + data.h1.h) - Math.max(data.rect.y, data.h1.y));
-    check('目录按钮不遮挡正文标题', overlap === 0, { overlap, button: data.rect, h1: data.h1 });
+    const overlap = Math.max(0, Math.min(data.button.x + data.button.w, data.h1.x + data.h1.w) - Math.max(data.button.x, data.h1.x)) *
+      Math.max(0, Math.min(data.button.y + data.button.h, data.h1.y + data.h1.h) - Math.max(data.button.y, data.h1.y));
+    check('目录按钮不遮挡标题', overlap === 0, { button: data.button, h1: data.h1 });
   }
   return data;
 }
 
-async function inspectPlaceholder(page) {
-  const data = await page.evaluate(() => {
-    const mb = document.getElementById('mainbody');
-    const bottom = document.getElementById('mainbottom1');
+async function inspectFrame(page) {
+  const frame = page.frames().find(f => f.url().includes('navtree.html'));
+  check('目录 iframe 已加载', !!frame, {});
+  if (!frame) return null;
+  await frame.waitForSelector('.jstree-anchor', { timeout: 15000 });
+  const info = await frame.evaluate(() => {
+    const R = e => { const r = e.getBoundingClientRect(); return { x: Math.round(r.x), w: Math.round(r.width), right: Math.round(r.right) }; };
+    const a = document.querySelector('.jstree-anchor');
+    const o = document.querySelector('.jstree-ocl');
+    const c = document.querySelector('.jstree-clicked');
     return {
-      mainbodyHeight: Math.round(mb.getBoundingClientRect().height),
-      minHeight: getComputedStyle(mb).minHeight,
-      bottomY: Math.round(bottom.getBoundingClientRect().y),
-      docHeight: document.documentElement.scrollHeight,
-      viewportHeight: window.innerHeight,
-      bottomLinks: bottom.querySelectorAll('a').length
+      innerWidth, scrollX: Math.round(window.scrollX), docWidth: document.documentElement.scrollWidth,
+      bodyColor: getComputedStyle(document.body).color,
+      anchor: a ? { ...R(a), color: getComputedStyle(a).color } : null,
+      ocl: o ? R(o) : null,
+      clicked: c ? { ...R(c), color: getComputedStyle(c).color, bg: getComputedStyle(c).backgroundColor } : null,
+      hasDesktopStyle: !!document.getElementById('wb-toc-desktop-style'),
+      hasMobileStyle: !!document.getElementById('wb-toc-native-scroll')
     };
   });
-  check('占位页正文最小高度已取消', data.mainbodyHeight < 300, data);
-  check('占位页底部导航出现在首屏', data.bottomY < 400, data);
-  check('占位页底部导航链接仍存在且可达', data.bottomLinks > 0 && data.docHeight >= data.bottomY, data);
+  check('目录文档宽度保持官方 480px', info.docWidth === 480, info);
+  check('目录文字颜色为官方 #9da3a8', info.bodyColor === 'rgb(157, 163, 168)', info);
+  check('目录一级文字缩进为官方 32px', !!info.anchor && info.anchor.x === 32, info.anchor);
+  check('目录箭头位置为官方 8px', !!info.ocl && info.ocl.x === 8, info.ocl);
+  check('桌面端未注入自定义目录样式', !info.hasDesktopStyle, info);
+  check('桌面端未误用移动端目录样式', !info.hasMobileStyle, info);
+  check('目录初始无水平滚动', info.scrollX === 0, info);
+  if (info.clicked) {
+    check('选中项背景为官方 #37435c', info.clicked.bg === 'rgb(55, 67, 92)', info.clicked);
+    check('选中项文字颜色为官方 #9da3a8', info.clicked.color === 'rgb(157, 163, 168)', info.clicked);
+  }
+
+  let expanded = 0;
+  for (let i = 0; i < 6; i++) {
+    const closed = frame.locator('.jstree-closed > .jstree-ocl');
+    if (!await closed.count()) break;
+    try { await closed.first().click({ timeout: 2500 }); expanded++; await sleep(100); } catch (e) { /* 断言判定 */ }
+  }
+  check('多级目录可连续展开', expanded >= 3, { expanded });
+  const before = await frame.evaluate(() => ({ max: document.body.scrollHeight - window.innerHeight, sh: document.body.scrollHeight }));
+  check('展开后目录内容可滚动', before.max > 0, before);
+  const box = await page.locator('#toctobj2').boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  for (let i = 0; i < 6; i++) {
+    const cur = await frame.evaluate(() => ({ y: Math.round(scrollY), max: Math.round(document.body.scrollHeight - innerHeight) }));
+    if (cur.y >= cur.max - 2) break;
+    await page.mouse.wheel(0, 3000); await sleep(260);
+  }
+  const bottom = await frame.evaluate(() => ({ y: Math.round(scrollY), max: Math.round(document.body.scrollHeight - innerHeight) }));
+  check('目录可滚动到底部', bottom.y >= bottom.max - 2, bottom);
+  for (let i = 0; i < 3; i++) {
+    const y = await frame.evaluate(() => Math.round(scrollY));
+    if (y <= 2) break;
+    await page.mouse.wheel(0, -3000); await sleep(220);
+  }
+  const top = await frame.evaluate(() => Math.round(scrollY));
+  check('目录可滚回顶部', top <= 2, { top });
+  const after = await frame.evaluate(() => ({ scrollX: Math.round(scrollX), docWidth: document.documentElement.scrollWidth }));
+  check('展开/滚动后无水平位移', after.scrollX === 0 && after.docWidth === 480, after);
+  return { info, expanded, bottom, top };
+}
+
+async function inspectClosed(page) {
+  await page.locator('#navbutton').click();
+  await sleep(900);
+  const data = await page.evaluate(() => {
+    const R = e => { const r = e.getBoundingClientRect(); return { x: Math.round(r.x), w: Math.round(r.width), h: Math.round(r.height) }; };
+    const btn = document.getElementById('navbutton');
+    return {
+      navOpen: document.body.classList.contains('nav-open'),
+      side: R(document.getElementById('mySidenav')),
+      button: { ...R(btn), text: btn.textContent.trim(), childCount: btn.children.length, aria: btn.getAttribute('aria-label') },
+      mainbody: R(document.getElementById('mainbody'))
+    };
+  });
+  check('目录可收起', !data.navOpen && data.side.w <= 2, data);
+  check('收起后按钮仍为官方 ⇄', data.button.text === '⇄' && data.button.childCount === 0, data.button);
+  check('收起后按钮位于官方 3px', Math.abs(data.button.x - 3) <= 2, data.button);
+  check('收起后按钮可访问名称为“展开目录”', data.button.aria === '展开目录', data.button);
   return data;
 }
 
@@ -192,42 +189,27 @@ for (const engineName of ENGINES) {
       current.engine = engineName; current.width = width; current.page = pagePath;
       let context;
       try {
-        const prepared = await open(browser, engineName, width, pagePath);
+        const prepared = await openPage(browser, engineName, width, pagePath);
         context = prepared.context;
         const page = prepared.page;
         await shot(page, 'open');
-        const buttonOpen = await inspectButton(page);
-        const toc = await inspectIframe(page);
-        let placeholder = null;
-        if (/tutorials\.html$/.test(pagePath)) placeholder = await inspectPlaceholder(page);
-
-        // 关闭目录后截图并确认按钮仍正常
-        await page.locator('#navbutton').click();
-        await sleep(900);
-        const closedOpen = await page.evaluate(() => !document.body.classList.contains('nav-open'));
-        check('目录可收起', closedOpen, {});
+        const parent = await inspectParent(page);
+        const frame = await inspectFrame(page);
+        const closed = await inspectClosed(page);
         await shot(page, 'closed');
-        const buttonClosed = await page.evaluate(() => {
-          const btn = document.getElementById('navbutton');
-          const r = btn.getBoundingClientRect();
-          const kids = [...btn.children].map(c => { const kr = c.getBoundingClientRect(); return { text: c.textContent.trim(), x: Math.round(kr.x), y: Math.round(kr.y), h: Math.round(kr.height) }; });
-          return { x: Math.round(r.x), w: Math.round(r.width), h: Math.round(r.height), kids };
-        });
-        check('收起后按钮仍为横向且尺寸正常', buttonClosed.w >= 50 && buttonClosed.h <= 40 &&
-          buttonClosed.kids.length === 2 && Math.abs(buttonClosed.kids[0].y - buttonClosed.kids[1].y) <= 12, buttonClosed);
         for (const err of prepared.errors) {
           check('无意外页面错误', false, { error: err }, /Cannot load blob:|favicon/i.test(err) ? 'warn' : 'fail');
         }
-        samples.push({ engine: engineName, width, page: pagePath, buttonOpen, toc, placeholder, buttonClosed });
+        samples.push({ engine: engineName, width, page: pagePath, parent, frame, closed });
       } catch (e) {
-        check('页面视觉测试未抛出异常', false, { error: String(e) });
+        check('页面基线测试未抛出异常', false, { error: String(e) });
       } finally { if (context) await context.close(); }
     }
   }
   await browser.close();
 }
 
-fs.writeFileSync(path.join(OUT, `visual_report_${PHASE}.json`), JSON.stringify({ assertions, samples }, null, 2));
+fs.writeFileSync(path.join(OUT, `official_report_${PHASE}.json`), JSON.stringify({ assertions, samples }, null, 2));
 const failed = assertions.filter(a => !a.ok && a.severity === 'fail');
 console.log(JSON.stringify({ phase: PHASE, assertions: assertions.length,
   passed: assertions.filter(a => a.ok).length, failed: failed.length,
