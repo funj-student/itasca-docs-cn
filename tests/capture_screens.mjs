@@ -47,6 +47,9 @@ for (const engineName of ENGINES) {
         const response = await page.goto(`${BASE}/${pagePath}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
         if (!response || response.status() >= 400) throw new Error('HTTP ' + (response && response.status()));
         await page.waitForFunction(() => !!window.ItascaNav, null, { timeout: 20000 });
+        // MathJax 的 "Processing math" 加载提示会造成截图时序差异。
+        await page.waitForFunction(() => !document.body.innerText.includes('Processing math'), null, { timeout: 20000 }).catch(() => {});
+        await page.evaluate(() => document.fonts && document.fonts.ready);
         await page.waitForTimeout(width <= 959 ? 400 : 1400);
         const metrics = await page.evaluate(() => {
           const rect = sel => {

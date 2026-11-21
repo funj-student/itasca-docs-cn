@@ -181,6 +181,18 @@ async function testToggle(page, m0, width) {
   check('可重新展开目录', reopened.navOpen && reopened.sidenav.w >= 250,
     { navOpen: reopened.navOpen, w: reopened.sidenav.w });
   await page.evaluate(y => window.scrollTo(0, y), beforeScroll);
+
+  // 最后验证目录链接可跳转到目标页面（会离开当前页，因此放在交互检查之后）。
+  const frame = page.frames().find(f => f.url().includes('navtree.html'));
+  if (frame) {
+    const beforeUrl = page.url();
+    try {
+      await frame.locator('.jstree-anchor').nth(1).click({ timeout: 6000 });
+      await sleep(900);
+    } catch (e) { /* 由断言判定 */ }
+    check('目录链接可跳转到目标页面', page.url() !== beforeUrl,
+      { before: beforeUrl, after: page.url() });
+  }
   return { closed, reopened };
 }
 
