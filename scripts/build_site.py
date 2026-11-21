@@ -28,11 +28,14 @@ SHA-256 内容哈希，并把 HTML 中的引用改写为带 ``?v=<hash>`` 的形
   再统一计算哈希，保证脚本版本号对应其最终内容）；``doc/search.html`` 的
   ``Search.loadIndex("searchindex.js")``。
 - 外部 CDN/第三方 URL 不改写。
+- 输出目录安全：只允许清空空目录或带 ``.site-build-marker`` 标记的目录
+  （本脚本生成），防止误把 ``doc/`` 等源码目录当作输出目录删除。
 
-GitHub Pages 的限制（见「静态资源缓存失效说明.md」）：HTML 自身仍会被缓存
-最多 10 分钟（max-age=600），这一层无法通过构建脚本控制；版本号保证的是
-「拿到新 HTML 后一定加载新 CSS/JS」。
+GitHub Pages 的限制（见「静态资源缓存失效说明.md」）：``Cache-Control:
+max-age=600`` 是缓存副本的新鲜期，HTML 自身仍受它约束，实际生效时间不由
+本站保证；版本号保证的是「拿到新 HTML 后一定加载新 CSS/JS」。
 """
+
 
 from __future__ import annotations
 
@@ -68,6 +71,15 @@ EXCLUDED_FILE_NAMES = {
 EXCLUDED_FILE_SUFFIXES = {".pyc"}
 # 构建清单属于 CI 工件，不应进入部署产物。
 EXCLUDED_FILE_GLOBS = ("cache-manifest*.json",)
+# 常见的构建输出目录名（防止旧的构建产物被当作站点内容再次复制）。
+EXCLUDED_DIR_GLOBS = (".site-build*",)
+
+# 构建标记：写入输出目录根部，仅用于下次构建时确认「这个目录是本脚本生成的」。
+# 内容固定（不含时间戳），保证重复构建产物逐字节一致。
+BUILD_MARKER = ".site-build-marker"
+BUILD_MARKER_GENERATOR = "scripts/build_site.py"
+BUILD_MARKER_VERSION = 1
+EXCLUDED_FILE_NAMES.add(BUILD_MARKER)
 
 # HTML 中 (href|src)="...css/js" 引用。扩展名仅匹配小写（全站已核实无大写、
 # 无 %编码、无单引号、无绝对路径引用；含 scheme 的 URL 因路径段不允许 ':' 而
@@ -105,15 +117,32 @@ def _strip_version(text: str) -> str:
 
 
 def collect_site_files(source: Path, output: Path) -> list[Path]:
-    """收集网站需要的源文件（先物化列表再创建输出目录，避免自我复制）。"""
+    """收集网站需要的源文件（先物化列表再创建输出目录，避免自我复制）。
+
+    除显式排除清单外，还会跳过：
+    - 输出目录自身；
+    - 任意带 ``.site-build-marker`` 的目录（本脚本的旧构建产物）；
+    - 名称形如 ``.site-build*`` 的目录（无语标记的旧版本产物）。
+    """
+    marked_dirs = {
+        marker.parent.resolve()
+        for marker in source.rglob(BUILD_MARKER)
+        if marker.is_file() and marker.parent.resolve() != source
+    }
     files: list[Path] = []
     for path in source.rglob("*"):
-        if path.resolve() == output or output in path.resolve().parents:
+        resolved = path.resolve()
+        if resolved == output or output in resolved.parents:
             continue  # 输出目录本身（可能存在旧产物）
+        if marked_dirs and any(parent in marked_dirs for parent in resolved.parents):
+            continue  # 带构建标记的旧产物目录
         if not path.is_file():
             continue
         rel = path.relative_to(source)
         if any(part in EXCLUDED_DIR_NAMES for part in rel.parts[:-1]):
+            continue
+        if any(fnmatch.fnmatch(part, pattern)
+               for part in rel.parts[:-1] for pattern in EXCLUDED_DIR_GLOBS):
             continue
         name = rel.parts[-1]
         if name in EXCLUDED_FILE_NAMES or path.suffix in EXCLUDED_FILE_SUFFIXES:
@@ -124,17 +153,60 @@ def collect_site_files(source: Path, output: Path) -> list[Path]:
     return files
 
 
+def prepare_output_dir(output: Path) -> None:
+    """清空输出目录，但**只允许**删除空目录或本脚本生成的构建目录。
+
+    通过输出根部的 ``.site-build-marker`` 判断目录归属。任何非空且缺少
+    有效标记的目录（例如误指定的 ``doc/`` 或其它源码目录）一律拒绝，
+    且不会修改其中任何文件。
+    """
+    if not output.exists():
+        return
+    if not output.is_dir():
+        raise BuildError(f"输出路径已存在且不是目录，拒绝覆盖：{output}")
+    try:
+        entries = list(output.iterdir())
+    except OSError as exc:
+        raise BuildError(f"无法读取输出目录 {output}（{exc}）。") from exc
+    if not entries:
+        return  # 空目录可以直接使用
+    marker = output / BUILD_MARKER
+    if not marker.is_file():
+        raise BuildError(
+            f"输出目录非空且缺少构建标记 {BUILD_MARKER}，拒绝清空：{output}\n"
+            "只允许自动删除本脚本生成的构建目录；若确认该目录可删除，请手动处理后重试。"
+        )
+    try:
+        payload = json.loads(read_exact(marker))
+    except (OSError, ValueError) as exc:
+        raise BuildError(f"构建标记内容无法解析，拒绝清空 {output}：{exc}") from exc
+    if not isinstance(payload, dict) or \
+            payload.get("generator") != BUILD_MARKER_GENERATOR or \
+            payload.get("marker_version") != BUILD_MARKER_VERSION:
+        raise BuildError(
+            f"构建标记不属于本脚本（{payload!r}），拒绝清空 {output}。"
+        )
+    try:
+        shutil.rmtree(output)
+    except OSError as exc:  # 权限/占用/受保护目录
+        raise BuildError(
+            f"无法清空旧输出目录 {output}（{exc}）。请手动删除后重试。"
+        ) from exc
+
+
 def copy_site(source: Path, output: Path) -> int:
-    """把网站所需文件复制到输出目录（先清空旧产物），返回复制文件数。"""
+    """把网站所需文件复制到输出目录（仅清理本脚本的旧产物），返回复制文件数。"""
+    prepare_output_dir(output)
     files = collect_site_files(source, output)
-    if output.exists():
-        try:
-            shutil.rmtree(output)
-        except OSError as exc:  # 权限/占用/受保护目录
-            raise BuildError(
-                f"无法清空旧输出目录 {output}（{exc}）。请手动删除后重试。"
-            ) from exc
-    output.mkdir(parents=True)
+    output.mkdir(parents=True, exist_ok=True)
+    write_exact(
+        output / BUILD_MARKER,
+        json.dumps(
+            {"generator": BUILD_MARKER_GENERATOR, "marker_version": BUILD_MARKER_VERSION},
+            ensure_ascii=False,
+            sort_keys=True,
+        ) + "\n",
+    )
     for path in sorted(files):
         rel = path.relative_to(source)
         dest = output / rel

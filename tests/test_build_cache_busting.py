@@ -338,6 +338,79 @@ class BuildCacheBusting(unittest.TestCase):
         self.assertIn('Git 仓库', result.stderr)
         self.assertTrue((out / 'index.html').exists())  # 内容未被删除
 
+    # 构建标记保护：误指定源码目录时拒绝执行且不改动任何文件 -------------------
+    def test_refuses_existing_docs_directory_and_preserves_files(self):
+        docs = self.fx.src / 'doc'  # 模拟误把 doc/ 当作输出目录
+        before = {
+            p.relative_to(docs).as_posix(): p.read_bytes()
+            for p in docs.rglob('*') if p.is_file()
+        }
+        self.assertTrue(before)  # fixture 中确实有文档文件
+        result = build(self.fx.src, docs)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('构建标记', result.stderr)
+        after = {
+            p.relative_to(docs).as_posix(): p.read_bytes()
+            for p in docs.rglob('*') if p.is_file()
+        }
+        self.assertEqual(before, after)                     # 一个字节都没变
+        self.assertFalse((docs / '.site-build-marker').exists())  # 未写入标记
+
+    def test_refuses_foreign_marker_and_preserves_files(self):
+        target = self.fx.base / 'someone-elses-dir'
+        target.mkdir()
+        (target / '.site-build-marker').write_text(
+            '{"generator": "other-tool", "marker_version": 1}', encoding='utf-8')
+        (target / 'keep.txt').write_text('keep', encoding='utf-8')
+        result = build(self.fx.src, target)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('不属于本脚本', result.stderr)
+        self.assertEqual((target / 'keep.txt').read_text(encoding='utf-8'), 'keep')
+        self.assertTrue((target / '.site-build-marker').exists())
+
+    def test_refuses_corrupted_marker(self):
+        target = self.fx.base / 'corrupted'
+        target.mkdir()
+        (target / '.site-build-marker').write_text('not json', encoding='utf-8')
+        (target / 'keep.txt').write_text('keep', encoding='utf-8')
+        result = build(self.fx.src, target)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('无法解析', result.stderr)
+        self.assertEqual((target / 'keep.txt').read_text(encoding='utf-8'), 'keep')
+
+    def test_refuses_output_path_that_is_a_file(self):
+        outfile = self.fx.base / 'outfile'
+        outfile.write_text('x', encoding='utf-8')
+        result = build(self.fx.src, outfile)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('不是目录', result.stderr)
+        self.assertEqual(outfile.read_text(encoding='utf-8'), 'x')
+
+    def test_empty_output_directory_allowed(self):
+        out = self.fx.base / 'empty-out'
+        out.mkdir()
+        result = build(self.fx.src, out)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue((out / '.site-build-marker').exists())
+        self.assertTrue((out / 'index.html').exists())
+
+    # 源目录内残留的旧构建产物不得被再次复制 -------------------------------------
+    def test_nested_marked_build_output_excluded(self):
+        old = self.fx.src / 'some-output'
+        old.mkdir()
+        (old / '.site-build-marker').write_text(
+            '{"generator": "scripts/build_site.py", "marker_version": 1}', encoding='utf-8')
+        (old / 'stale.html').write_text('<html>stale</html>', encoding='utf-8')
+        build_dir = self.run_build()
+        self.assertFalse((build_dir / 'some-output').exists())
+
+    def test_named_build_dir_without_marker_excluded(self):
+        old = self.fx.src / '.site-build'
+        old.mkdir()
+        (old / 'stale.html').write_text('<html>stale</html>', encoding='utf-8')
+        build_dir = self.run_build()
+        self.assertFalse((build_dir / '.site-build').exists())
+
 
 if __name__ == '__main__':
     unittest.main()
