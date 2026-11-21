@@ -50,7 +50,8 @@ for (const engineName of ENGINES) {
         // MathJax 的 "Processing math" 加载提示会造成截图时序差异。
         await page.waitForFunction(() => !document.body.innerText.includes('Processing math'), null, { timeout: 20000 }).catch(() => {});
         await page.evaluate(() => document.fonts && document.fonts.ready);
-        await page.waitForTimeout(width <= 959 ? 400 : 1400);
+        // 目录页的 MathJax 进度提示是异步渲染的，多等一会儿再截图。
+        await page.waitForTimeout(width <= 959 ? 1500 : 1400);
         const metrics = await page.evaluate(() => {
           const rect = sel => {
             const el = document.querySelector(sel);
